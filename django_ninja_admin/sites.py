@@ -296,10 +296,11 @@ class NinjaAdminSite:
             if not isinstance(route, AdminRoute):
                 raise ImproperlyConfigured("Custom admin get_urls() entries must be AdminRoute instances.")
             path = self._join_route_path(prefix, route.path)
+            view_func = self._custom_route_view_func(route.view_func)
             router.add_api_operation(
                 path,
                 list(route.methods),
-                route.view_func,
+                view_func,
                 auth=route.auth,
                 response=route.response,
                 operation_id=route.operation_id,
@@ -308,6 +309,16 @@ class NinjaAdminSite:
                 tags=route.tags or default_tags,
                 include_in_schema=route.include_in_schema,
             )
+
+    def _custom_route_view_func(self, view_func):
+        if not (hasattr(view_func, "__self__") and hasattr(view_func, "__func__")):
+            return view_func
+
+        @wraps(view_func)
+        def inner(request, *args, **kwargs):
+            return view_func(request, *args, **kwargs)
+
+        return inner
 
     def _join_route_path(self, prefix, path):
         prefix = prefix.rstrip("/")

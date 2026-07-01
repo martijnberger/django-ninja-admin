@@ -78,7 +78,7 @@ Completed or mostly complete:
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
 - Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, radio fields, widget-option conflicts, date hierarchy, actions, and inlines.
 - `get_changelist()` and `get_changelist_instance()` hooks for changelist customization.
-- Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration.
+- Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration, raw bound method wrapping, route tags/descriptions, hidden routes, and explicit route-level `auth=None`.
 - Display decorator metadata for descriptions, ordering, booleans, and per-field empty values is reflected in changelist columns/results.
 - File field read serialization now uses typed Pydantic metadata (`name`, `url`) and form descriptions expose multipart/current-file hints.
 - Existing file fields can be cleared in JSON mutations by sending explicit `null`, using Django's form clear semantics and recording change messages.
@@ -98,7 +98,7 @@ Known non-parity areas:
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
 - Inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works and now has semantic contract coverage for core model routes, but it does not yet expose full per-model request/response contracts or the same richness upstream provided through drf-spectacular hooks.
-- Admin extensibility is still young: custom view routing and display metadata exist, but deeper auth/tag/response-schema coverage and override-hook parity need work.
+- Admin extensibility is still young: custom view routing, route metadata/auth overrides, and display metadata exist, but deeper multi-auth/response-schema coverage and override-hook parity need work.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix.
 
 ## Implementation Phases

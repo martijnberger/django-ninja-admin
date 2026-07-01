@@ -377,6 +377,14 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert site_response.status_code == 200
     assert site_response.json() == {"site": "ok"}
 
+    public_response = Client().get("/custom-admin/public-status")
+    assert public_response.status_code == 200
+    assert public_response.json() == {"public": "ok"}
+
+    hidden_response = admin_client.get("/custom-admin/hidden-status")
+    assert hidden_response.status_code == 200
+    assert hidden_response.json() == {"hidden": "ok"}
+
     stats = admin_client.get("/custom-admin/testapp/product/stats")
     assert stats.status_code == 200
     assert stats.json() == {"count": 2}
@@ -385,8 +393,19 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert denied.status_code == 403
 
     schema = admin_client.get("/custom-admin/openapi.json").json()
-    assert schema["paths"]["/custom-admin/status"]["get"]["operationId"] == "custom_site_status"
-    assert schema["paths"]["/custom-admin/testapp/product/stats"]["get"]["operationId"] == "custom_product_stats"
+    status_operation = schema["paths"]["/custom-admin/status"]["get"]
+    public_operation = schema["paths"]["/custom-admin/public-status"]["get"]
+    stats_operation = schema["paths"]["/custom-admin/testapp/product/stats"]["get"]
+    assert status_operation["operationId"] == "custom_site_status"
+    assert status_operation["tags"] == ["custom.site"]
+    assert public_operation["operationId"] == "custom_public_status"
+    assert public_operation["tags"] == ["custom.public"]
+    assert "security" not in public_operation
+    assert stats_operation["operationId"] == "custom_product_stats"
+    assert stats_operation["tags"] == ["custom.product"]
+    assert stats_operation["summary"] == "Product stats"
+    assert stats_operation["description"] == "Custom product statistics."
+    assert "/custom-admin/hidden-status" not in schema["paths"]
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
