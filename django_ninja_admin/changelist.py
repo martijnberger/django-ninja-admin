@@ -503,6 +503,14 @@ class ChangeList:
             return None
         return self.get_query_string(remove=self.active_filter_params())
 
+    def search_query_strings(self):
+        search_term = self.params.get("q") or ""
+        return {
+            "search_term": search_term,
+            "has_search": bool(search_term),
+            "clear_search_query_string": self.get_query_string(remove={"q"}) if search_term else None,
+        }
+
     def facet_query_strings(self):
         if not self.facets_optional():
             return {

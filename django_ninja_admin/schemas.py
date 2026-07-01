@@ -252,6 +252,9 @@ class ChangelistConfig(Schema):
     list_display_links: list[str] = []
     ordering_field_columns: dict[str, str] = {}
     ordering: list[str] = []
+    search_term: str = ""
+    has_search: bool = False
+    clear_search_query_string: str | None = None
     search_fields: list[str] = []
     search_help_text: str | None = None
 

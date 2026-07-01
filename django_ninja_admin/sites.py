@@ -1182,6 +1182,7 @@ class NinjaAdminSite:
                 ],
                 "ordering_field_columns": ordering_field_columns,
                 "ordering": changelist.ordering,
+                **changelist.search_query_strings(),
                 "search_fields": list(changelist.search_fields),
                 "search_help_text": model_admin.search_help_text,
             },

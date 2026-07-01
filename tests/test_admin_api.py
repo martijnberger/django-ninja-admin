@@ -1590,6 +1590,9 @@ def test_changelist_search_filter_and_detail(admin_client, sample):
     assert response.status_code == 200
     body = response.json()
     assert body["config"]["result_count"] == 1
+    assert body["config"]["search_term"] == "Alpha"
+    assert body["config"]["has_search"] is True
+    assert body["config"]["clear_search_query_string"] == "?"
     assert body["rows"][0]["cells"]["name"] == "Alpha"
 
     filtered = admin_client.get("/admin-api/testapp/product?stock_status=out_of_stock")
@@ -1717,6 +1720,9 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert prefixed_body["config"]["show_all_query_string"] == "?price__gte=1&pp=1&o=3&all=1"
     assert prefixed_body["config"]["has_active_filters"] is True
     assert prefixed_body["config"]["clear_all_filters_query_string"] == "?pp=1&o=3"
+    assert prefixed_body["config"]["search_term"] == ""
+    assert prefixed_body["config"]["has_search"] is False
+    assert prefixed_body["config"]["clear_search_query_string"] is None
     assert prefixed_price_column["descending_query_string"] == "?price__gte=1&pp=1&o=-3"
     assert prefixed_price_column["remove_sorting_query_string"] == "?price__gte=1&pp=1"
     prefixed_stock_filter = next(
@@ -1726,6 +1732,12 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
         choice for choice in prefixed_stock_filter["choices"] if choice["display"] == "In Stock"
     )
     assert prefixed_stock_choice["query_string"] == "?price__gte=1&pp=1&o=3&stock_status__exact=in_stock"
+
+    searched_with_state = admin_client.get("/admin-api/testapp/product?price__gte=1&q=a&pp=1&page=2&o=3")
+    assert searched_with_state.status_code == 200
+    assert searched_with_state.json()["config"]["search_term"] == "a"
+    assert searched_with_state.json()["config"]["has_search"] is True
+    assert searched_with_state.json()["config"]["clear_search_query_string"] == "?price__gte=1&pp=1&o=3"
 
     last_page = admin_client.get("/admin-api/testapp/product?pp=1&page=last")
     assert last_page.status_code == 200
@@ -1797,6 +1809,9 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
 
     empty = admin_client.get("/admin-api/testapp/product?q=missing")
     assert empty.status_code == 200
+    assert empty.json()["config"]["search_term"] == "missing"
+    assert empty.json()["config"]["has_search"] is True
+    assert empty.json()["config"]["clear_search_query_string"] == "?"
     assert empty.json()["config"]["result_count"] == 0
     assert empty.json()["config"]["page_result_count"] == 0
     assert empty.json()["config"]["result_start_index"] == 0
