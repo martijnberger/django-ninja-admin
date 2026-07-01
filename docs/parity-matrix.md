@@ -25,7 +25,7 @@ Statuses:
 | `GET /apps` and `GET /apps/{app_label}` | implemented | `NinjaAdminSite.get_app_list`, API tests | Upstream fixture comparisons |
 | `GET /context` | implemented | `NinjaAdminSite.each_context`, API tests | Add site customization tests |
 | `GET /permissions` | implemented | Site route in `sites.py` | Broader auth matrix |
-| `GET /history` | partial | History route, log model, app/model/object/action filter, permission-filter tests, and page/page-size pagination metadata | Upstream change message parity |
+| `GET /history` | partial | History route, log model, app/model/object/action filter, permission-filter tests, page/page-size pagination metadata, and Django-style change-message text | Broader upstream history fixture comparisons |
 | `GET /autocomplete` | partial | Permission-hardened route plus rich pagination metadata and many-to-many source-field tests | More remote-field edge cases |
 | `GET /view-on-site/{content_type_id}/{object_id}` | implemented | Route, permission, callable hook, external URL tests, configured Site-domain URLs, and request-host fallback when Site is missing | Upstream fixture comparisons |
 | Docs/OpenAPI routes | partial | `/docs`, `/openapi.json`, semantic model-route contract tests, and built-in site-route error response maps | Full docs examples and broader snapshots |
@@ -79,7 +79,7 @@ Statuses:
 | Bulk list-editable update | partial | Strict row schema, duplicate-PK rejection, unchanged-row skip, row-indexed server errors, and all-rows-before-write tests | Full changelist formset semantics |
 | Default delete action/actions | partial | `delete_selected`, custom return, empty-selection, invalid selected IDs, select-across, action permission-hook checks, protected response tests, and object-level delete permission details | Additional permission edge coverage |
 | Protected delete | partial | Direct and action delete return protected/perms details, including object-level delete hook denials | Exact Django protected-object presentation |
-| Log entries/change messages | partial | Field-label, no-op direct update skip, and inline add/change/delete tests, including deleted inline object text | Exact Django-admin message format parity |
+| Log entries/change messages | partial | Field-label, no-op direct update skip, Django-style human-readable history text, and inline add/change/delete tests, including deleted inline object text | Broader upstream message fixture comparisons |
 
 ## Errors, Auth, And OpenAPI
 

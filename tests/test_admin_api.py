@@ -188,6 +188,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
 def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):
     schema = admin_client.get("/admin-api/openapi.json").json()
     paths = schema["paths"]
+    components = schema["components"]["schemas"]
 
     expected_site_operations = {
         ("/admin-api/apps", "get"): "admin_list_apps",
@@ -259,6 +260,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     )
     assert _response_schema_ref(paths["/admin-api/context"]["get"], "200") == "#/components/schemas/SiteContext"
     assert _response_schema_ref(paths["/admin-api/history"]["get"], "200") == "#/components/schemas/HistoryResponse"
+    assert components["HistoryItem"]["properties"]["change_message_text"]["type"] == "string"
     assert _response_schema_ref(paths["/admin-api/autocomplete"]["get"], "200") == (
         "#/components/schemas/AutocompleteResponse"
     )
@@ -2433,6 +2435,9 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     history = admin_client.get("/admin-api/history?app_label=testapp&model=product")
     assert history.status_code == 200
     assert history.json()["pagination"]["count"] >= 2
+    latest_history = history.json()["results"][0]
+    assert latest_history["change_message"] == [{"changed": {"fields": ["Tags"]}}]
+    assert latest_history["change_message_text"] == "Changed Tags."
 
     deleted = admin_client.delete(f"/admin-api/testapp/product/{created_id}")
     assert deleted.status_code == 204
@@ -2561,6 +2566,7 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     assert global_history.json()["pagination"]["page"] == 1
     assert global_history.json()["pagination"]["per_page"] == 20
     assert global_history.json()["pagination"]["count"] == 2
+    assert {item["change_message_text"] for item in global_history.json()["results"]} == {"Added.", "Changed Name."}
 
     filtered = client.get(
         "/admin-api/history",
@@ -2568,6 +2574,7 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     )
     assert filtered.status_code == 200
     assert [item["id"] for item in filtered.json()["results"]] == [product_addition.pk]
+    assert filtered.json()["results"][0]["change_message_text"] == "Added."
 
     forbidden = client.get("/admin-api/history", {"app_label": "testapp", "model": "category"})
     assert forbidden.status_code == 403
@@ -3356,6 +3363,16 @@ def test_inline_change_message_includes_inline_operations(admin_client, sample):
     assert {"added": {"name": "product image", "object": "Side"}} in change_message
     assert {"changed": {"name": "product image", "object": "Profile", "fields": ["title"]}} in change_message
     assert {"deleted": {"name": "product image", "object": "Back"}} in change_message
+    history = admin_client.get(
+        "/admin-api/history",
+        {"app_label": "testapp", "model": "product", "object_id": str(sample.pk), "action_flag": CHANGE},
+    )
+    assert history.status_code == 200
+    assert history.json()["results"][0]["change_message_text"] == (
+        "Added product image \u201cSide\u201d. "
+        "Changed title for product image \u201cProfile\u201d. "
+        "Deleted product image \u201cBack\u201d."
+    )
 
 
 def test_inline_mutation_rejects_duplicate_and_conflicting_rows(admin_client, sample):

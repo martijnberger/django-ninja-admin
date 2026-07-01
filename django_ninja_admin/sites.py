@@ -528,6 +528,7 @@ class NinjaAdminSite:
                         "object_repr": item.object_repr,
                         "action_flag": item.action_flag,
                         "change_message": message,
+                        "change_message_text": item.get_change_message(),
                     }
                 )
             return {

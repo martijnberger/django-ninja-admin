@@ -158,6 +158,7 @@ Completed or mostly complete:
 - Relation form field descriptions now include structured related-model identity and autocomplete request parameters for frontend clients.
 - Readonly form descriptions now expose display labels, values, boolean flags, and empty-value fallbacks for admin methods and model properties.
 - Custom `form_class` and generated-form `formfield_*` customization hooks are covered through mounted Ninja routes for write-schema generation, custom widget attributes, Django form validation, and mutation persistence.
+- History responses now include Django-style human-readable change-message text for parent and inline add/change/delete operations.
 - Semantic OpenAPI contract tests now cover core site/model route operation IDs, tags, security, request body schemas, success response schemas, and typed error response maps.
 - API and authentication docs now cover Ninja-native customization hooks such as `form_class`, `output_schema`, and `schema_field_overrides`, plus default/custom/disabled auth patterns.
 - Local release gates now use `just` for lint, tests, package smoke, and aggregate checks.

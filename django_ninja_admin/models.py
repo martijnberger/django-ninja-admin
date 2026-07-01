@@ -105,19 +105,30 @@ class LogEntry(models.Model):
             messages = []
             for sub_message in change_message:
                 if "added" in sub_message:
-                    added = sub_message["added"]
-                    if added:
-                        messages.append(gettext('Added {name} "{object}".').format(**added))
+                    if sub_message["added"]:
+                        sub_message["added"]["name"] = gettext(sub_message["added"]["name"])
+                        messages.append(gettext("Added {name} \u201c{object}\u201d.").format(**sub_message["added"]))
                     else:
                         messages.append(gettext("Added."))
                 elif "changed" in sub_message:
-                    changed = sub_message["changed"]
-                    changed["fields"] = get_text_list([gettext(field) for field in changed["fields"]], gettext("and"))
-                    messages.append(gettext("Changed {fields}.").format(**changed))
+                    sub_message["changed"]["fields"] = get_text_list(
+                        [gettext(field_name) for field_name in sub_message["changed"]["fields"]],
+                        gettext("and"),
+                    )
+                    if "name" in sub_message["changed"]:
+                        sub_message["changed"]["name"] = gettext(sub_message["changed"]["name"])
+                        messages.append(
+                            gettext("Changed {fields} for {name} \u201c{object}\u201d.").format(
+                                **sub_message["changed"]
+                            )
+                        )
+                    else:
+                        messages.append(gettext("Changed {fields}.").format(**sub_message["changed"]))
                 elif "deleted" in sub_message:
-                    deleted = sub_message["deleted"]
-                    messages.append(gettext("Deleted {name} \"{object}\".").format(**deleted))
-            return " ".join(messages) or gettext("No fields changed.")
+                    sub_message["deleted"]["name"] = gettext(sub_message["deleted"]["name"])
+                    messages.append(gettext("Deleted {name} \u201c{object}\u201d.").format(**sub_message["deleted"]))
+            change_message = " ".join(message[0].upper() + message[1:] for message in messages)
+            return change_message or gettext("No fields changed.")
         return self.change_message
 
     def get_edited_object(self):

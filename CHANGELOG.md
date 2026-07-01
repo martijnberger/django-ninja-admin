@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added Django-style human-readable change-message text to history responses,
+  including inline add/change/delete wording.
 - Added OpenAPI response maps for built-in site-route error responses.
 
 ## 0.1.7 - 2026-07-01

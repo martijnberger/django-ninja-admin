@@ -267,6 +267,7 @@ class HistoryItem(Schema):
     object_repr: str
     action_flag: int
     change_message: Any
+    change_message_text: str
 
 
 class HistoryResponse(Schema):
