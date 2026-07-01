@@ -2570,6 +2570,39 @@ def test_scalar_payload_normalizes_pydantic_python_values_for_form_binding(admin
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_disabled_form_fields_are_optional_in_write_schema(admin_client, sample):
+    schema = admin_client.get("/disabled-admin/openapi.json").json()
+    create_data_schema = schema["components"]["schemas"]["ProductAdminCreateData"]
+
+    assert "name" in create_data_schema["properties"]
+    assert "name" not in create_data_schema["required"]
+    assert set(create_data_schema["required"]) == {"category", "price", "stock_status"}
+
+    form = admin_client.get("/disabled-admin/testapp/product/form")
+    assert form.status_code == 200
+    fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
+    assert fields_by_name["name"]["attrs"]["required"] is True
+    assert fields_by_name["name"]["attrs"]["disabled"] is True
+    assert fields_by_name["name"]["attrs"]["initial"] == "Server named product"
+
+    created = admin_client.post(
+        "/disabled-admin/testapp/product",
+        data={
+            "data": {
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+            }
+        },
+        content_type="application/json",
+    )
+
+    assert created.status_code == 201, created.json()
+    product = Product.objects.get(pk=created.json()["data"]["id"])
+    assert product.name == "Server named product"
+
+
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_client, sample):
     allowed_category = Category.objects.create(name="Allowed Cameras")
 
@@ -4058,6 +4091,30 @@ def test_inline_admin_form_class_drives_metadata_and_validation(admin_client, sa
 
     assert valid.status_code == 200
     assert ProductImage.objects.filter(product=sample, title="Allowed inline").exists()
+
+
+def test_disabled_inline_form_fields_are_optional_in_write_schema(db, sample):
+    class DisabledProductImageForm(forms.ModelForm):
+        title = forms.CharField(disabled=True, initial="Generated image title", max_length=100)
+
+        class Meta:
+            model = ProductImage
+            fields = ("title",)
+
+    class DisabledProductImageInline(TabularInline):
+        model = ProductImage
+        form_class = DisabledProductImageForm
+
+    inline_admin = DisabledProductImageInline(Product, NinjaAdminSite(include_auth=False))
+    request = RequestFactory().get(f"/admin-api/testapp/product/{sample.pk}/form")
+    field = inline_admin.get_form_fields_description(request, None)[0]
+    row_schema = inline_admin.get_inline_row_schema(request, sample)
+
+    assert field["name"] == "title"
+    assert field["attrs"]["required"] is True
+    assert field["attrs"]["disabled"] is True
+    assert field["attrs"]["initial"] == "Generated image title"
+    assert "title" not in row_schema.model_json_schema().get("required", [])
 
 
 def test_readonly_display_fields_include_values_and_display_metadata(admin_client, sample, monkeypatch):

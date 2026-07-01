@@ -99,7 +99,7 @@ class InlineModelAdmin(BaseAdmin):
                 fields["pk"] = (Any, ...)
             for field_name, form_field in form_fields.items():
                 field_type = self.get_pydantic_type_for_form_field(form_field)
-                required = bool(form_field.required and not partial)
+                required = bool(form_field.required and not getattr(form_field, "disabled", False) and not partial)
                 fields[field_name] = (field_type, ...) if required else (field_type | None, None)
             operation = "Change" if require_pk else "Add"
             cache[cache_key] = create_model(

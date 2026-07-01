@@ -195,7 +195,12 @@ class BaseAdmin:
             for field_name in selected_fields:
                 form_field = form_fields.get(field_name)
                 field_type = Any if form_field is None else self.get_pydantic_type_for_form_field(form_field)
-                required = bool(form_field and form_field.required and not partial)
+                required = bool(
+                    form_field
+                    and form_field.required
+                    and not getattr(form_field, "disabled", False)
+                    and not partial
+                )
                 if required:
                     schema_fields[field_name] = (field_type, ...)
                 else:

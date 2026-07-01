@@ -242,6 +242,23 @@ scalar_site.register(Category, ModelAdmin)
 scalar_site.register(Product, ScalarProductAdmin)
 
 
+class DisabledProductForm(forms.ModelForm):
+    name = forms.CharField(disabled=True, initial="Server named product", max_length=100)
+
+    class Meta:
+        model = Product
+        fields = ("name", "category", "price", "stock_status")
+
+
+class DisabledProductAdmin(ModelAdmin):
+    form_class = DisabledProductForm
+
+
+disabled_site = NinjaAdminSite(name="disabled_admin", include_auth=False)
+disabled_site.register(Category, ModelAdmin)
+disabled_site.register(Product, DisabledProductAdmin)
+
+
 class InlineCodeProductImageForm(forms.ModelForm):
     title = CodeCountField()
 
@@ -273,5 +290,6 @@ urlpatterns = [
     path("multi-value-admin/", multi_value_site.urls),
     path("temporal-admin/", temporal_site.urls),
     path("scalar-admin/", scalar_site.urls),
+    path("disabled-admin/", disabled_site.urls),
     path("inline-multivalue-admin/", inline_multivalue_site.urls),
 ]
