@@ -37,7 +37,7 @@ Statuses:
 | Model registration/unregistration | implemented | `NinjaAdminSite.register`, `unregister`, duplicate/unregistered/abstract/swapped/decorator tests | Upstream fixture comparisons |
 | Default site/autodiscover | partial | Lazy `site`, `autodiscover()` | Project-level smoke test |
 | Permission hooks | partial | `BaseAdmin.has_*_permission`, API tests | More object-level and custom hook coverage |
-| Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, callable/many-to-many `list_display`, `list_editable` form-layout conflict, `fields`/`exclude` item checks, `prepopulated_fields`, `sortable_by`, custom `form_class`, `formfield_overrides`, `list_select_related`, widget-conflict, reverse relation widget, and manual-through m2m widget tests | Match Django check IDs/coverage more closely |
+| Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, callable/many-to-many `list_display`, action permission hooks, `list_editable` form-layout conflict, `fields`/`exclude` item checks, `prepopulated_fields`, `sortable_by`, custom `form_class`, `formfield_overrides`, `list_select_related`, widget-conflict, reverse relation widget, and manual-through m2m widget tests | Match Django check IDs/coverage more closely |
 | `get_changelist()` hooks | implemented | `ModelAdmin.get_changelist*`, route hook test | More subclassing examples/docs |
 | Custom site/model views | partial | `admin_view()`, `get_urls()`, `route()`, route tags/descriptions, hidden routes, raw method wrapping, `auth=None`, named response schemas, custom route tests, and site/route-level auth-sequence route tests | Deeper override-hook parity and upstream fixture comparisons |
 | Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values, callable `list_display`, model-property metadata in changelist tests, and callable readonly-field metadata | More readonly-field display variants |
@@ -77,7 +77,7 @@ Statuses:
 | Create/update/delete routes | partial | CRUD/history tests plus mounted save/delete/response hook and bad `_to_field` tests | More response hook edge cases |
 | Inline add/change/delete | partial | Formset implementation, typed inline schemas, row-indexed server errors, max/delete/duplicate/conflict/unknown-object/rollback/permission/unknown-key/unknown-field/readonly-field tests | Deeper upstream formset edge cases |
 | Bulk list-editable update | partial | Strict row schema, duplicate-PK rejection, unchanged-row skip, row-indexed server errors, and all-rows-before-write tests | Full changelist formset semantics |
-| Default delete action/actions | partial | `delete_selected`, custom return, empty-selection, select-across, and protected response tests | Additional permission edge coverage |
+| Default delete action/actions | partial | `delete_selected`, custom return, empty-selection, select-across, action permission-hook checks, and protected response tests | Additional permission edge coverage |
 | Protected delete | partial | Direct and action delete return protected/perms details | Exact Django protected-object presentation |
 | Log entries/change messages | partial | Field-label and inline add/change/delete tests, including deleted inline object text | Exact Django-admin message format parity |
 

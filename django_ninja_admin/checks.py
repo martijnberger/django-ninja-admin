@@ -720,10 +720,20 @@ def _check_actions(model_admin):
     if model_admin.actions is None:
         return errors
     for item in model_admin.actions:
-        if callable(item):
-            continue
-        if not isinstance(item, str) or model_admin.get_action(item) is None:
+        action = model_admin.get_action(item) if callable(item) or isinstance(item, str) else None
+        if action is None:
             errors.append(_error(model_admin.__class__, f"The action '{item}' is not a registered action.", "E030"))
+            continue
+        func = action[0]
+        for permission in getattr(func, "allowed_permissions", ()):
+            if not isinstance(permission, str) or not hasattr(model_admin, f"has_{permission}_permission"):
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The action '{action[1]}' references unknown permission '{permission}'.",
+                        "E064",
+                    )
+                )
     return errors
 
 

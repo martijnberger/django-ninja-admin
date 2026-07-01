@@ -24,6 +24,7 @@ from django_ninja_admin import (
     NinjaAdminSite,
     SimpleListFilter,
     TabularInline,
+    action,
     display,
     register,
     site,
@@ -360,6 +361,40 @@ def test_admin_checks_report_invalid_model_admin_configuration(db):
         "django_ninja_admin.E033",
         "django_ninja_admin.E043",
     } <= error_ids
+
+
+def test_admin_checks_validate_action_permission_hooks(db):
+    @action(permissions=["change"])
+    def valid_action(model_admin, request, queryset):
+        return {"count": queryset.count()}
+
+    @action(permissions=["publish"])
+    def custom_permission_action(model_admin, request, queryset):
+        return {"count": queryset.count()}
+
+    @action(permissions=["typo"])
+    def bad_action(model_admin, request, queryset):
+        return {"count": queryset.count()}
+
+    class ValidActionProductAdmin(ModelAdmin):
+        actions = [valid_action, custom_permission_action]
+
+        def has_publish_permission(self, request):
+            return True
+
+    class BadActionProductAdmin(ModelAdmin):
+        actions = [bad_action]
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidActionProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadActionProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+
+    assert "django_ninja_admin.E064" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E064"}
 
 
 def test_admin_checks_report_form_widget_option_conflicts(db):

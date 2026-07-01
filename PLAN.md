@@ -63,6 +63,7 @@ Completed or mostly complete:
 - Dynamic per-inline Pydantic operation schemas for add/change/delete payloads, exposed under the real `app.model` inline wire keys.
 - Dynamic per-model action payload schemas with OpenAPI enums for registered/global action names.
 - Custom actions can now declare Pydantic/Ninja input and response schemas through `@action(input_schema=..., response_schema=...)`; input schemas are validated before dispatch and exposed as discriminated per-action OpenAPI payload variants.
+- Action system checks now validate `allowed_permissions` entries while preserving custom `has_<permission>_permission()` hooks.
 - Global action changes now invalidate the lazy Ninja API/OpenAPI cache so action payload schemas stay current after initial API construction.
 - Model routes now advertise richer OpenAPI response maps for typed error bodies, including normalized `422` request-validation responses.
 - Pydantic/Ninja request validation errors are normalized into typed API error bodies.

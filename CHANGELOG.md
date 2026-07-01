@@ -28,6 +28,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   stable response keys, display metadata, and `admin_order_field` sorting.
 - Improved `schema_field_overrides` serialization so computed `ModelAdmin`
   methods are included in output responses.
+- Added admin system checks for action `allowed_permissions` entries, including
+  support for custom `has_<permission>_permission()` hooks.
 - Added changelist row URL and object-permission metadata for detail, change
   form, delete, and view-on-site frontend actions.
 - Added image-specific response schema and form metadata for Django
