@@ -17,6 +17,13 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
+            name="Tag",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=100)),
+            ],
+        ),
+        migrations.CreateModel(
             name="Product",
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
@@ -33,6 +40,7 @@ class Migration(migrations.Migration):
                 ),
                 ("description", models.TextField(blank=True)),
                 ("manual", models.FileField(blank=True, upload_to="manuals")),
+                ("tags", models.ManyToManyField(blank=True, related_name="products", to="testapp.tag")),
                 (
                     "category",
                     models.ForeignKey(

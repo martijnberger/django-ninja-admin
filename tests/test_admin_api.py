@@ -13,7 +13,7 @@ from ninja.security import SessionAuthIsStaff
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, TabularInline, site
 from django_ninja_admin.changelist import ChangeList
 from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
-from tests.testapp.models import Category, Product, ProductImage, ProductReview
+from tests.testapp.models import Category, Product, ProductImage, ProductReview, Tag
 
 
 @pytest.fixture
@@ -44,6 +44,8 @@ def staff_client(db):
 @pytest.fixture
 def sample(db):
     category = Category.objects.create(name="Cameras")
+    featured = Tag.objects.create(name="Featured")
+    compact = Tag.objects.create(name="Compact")
     product = Product.objects.create(
         name="Alpha",
         category=category,
@@ -51,6 +53,7 @@ def sample(db):
         description="Nice camera",
         manual="manuals/alpha.pdf",
     )
+    product.tags.set([featured, compact])
     Product.objects.create(name="Beta", category=category, price="3.00", stock_status="out_of_stock")
     ProductImage.objects.create(product=product, title="Front")
     return product
@@ -89,6 +92,9 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert set(components["ProductAdminCreateData"]["required"]) == {"name", "category", "price", "stock_status"}
     assert "required" not in components["ProductAdminPartialUpdateData"]
     assert components["ProductAdminCreateData"]["properties"]["stock_status"]["type"] == "string"
+    tags_options = components["ProductAdminCreateData"]["properties"]["tags"]["anyOf"]
+    tags_schema = next(option for option in tags_options if option.get("type") == "array")
+    assert {option["type"] for option in tags_schema["items"]["anyOf"]} == {"integer", "string"}
     price_options = components["ProductAdminCreateData"]["properties"]["price"]["anyOf"]
     assert any(option.get("type") == "number" for option in price_options)
     assert components["ProductAdminBulkRow"]["required"] == ["pk"]
@@ -165,6 +171,7 @@ def test_changelist_search_filter_and_detail(admin_client, sample):
         "name": "manuals/alpha.pdf",
         "url": "/media/manuals/alpha.pdf",
     }
+    assert set(detail.json()["tags"]) == set(sample.tags.values_list("pk", flat=True))
 
 
 def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sample):
@@ -331,10 +338,15 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     ]
     assert fields_by_name["manual"]["type"] == "FileField"
     assert fields_by_name["manual"]["attrs"]["needs_multipart_form"] is True
+    assert fields_by_name["tags"]["type"] == "ModelMultipleChoiceField"
+    assert fields_by_name["tags"]["attrs"]["related_model"] == "testapp.tag"
+    assert fields_by_name["tags"]["attrs"]["multiple"] is True
+    assert form.json()["form"]["filter_horizontal"] == ["tags"]
 
     change_form = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
     assert change_form.status_code == 200
     change_fields_by_name = {field["name"]: field for field in change_form.json()["form"]["fields"]}
+    assert set(change_fields_by_name["tags"]["attrs"]["value"]) == set(sample.tags.values_list("pk", flat=True))
     assert change_fields_by_name["manual"]["attrs"]["current_file"] == {
         "name": "manuals/alpha.pdf",
         "url": "/media/manuals/alpha.pdf",
@@ -347,6 +359,7 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
             "data": {
                 "name": "Gamma",
                 "category": category.pk,
+                "tags": list(sample.tags.values_list("pk", flat=True)),
                 "price": "9.00",
                 "stock_status": "in_stock",
                 "description": "Created",
@@ -357,6 +370,10 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     )
     assert created.status_code == 201
     created_id = created.json()["data"]["id"]
+    assert set(created.json()["data"]["tags"]) == set(sample.tags.values_list("pk", flat=True))
+    assert set(Product.objects.get(pk=created_id).tags.values_list("pk", flat=True)) == set(
+        sample.tags.values_list("pk", flat=True)
+    )
     assert ProductImage.objects.filter(product_id=created_id, title="Side").exists()
     addition_entry = LogEntry.objects.get(object_id=str(created_id), action_flag=ADDITION)
     addition_message = json.loads(addition_entry.change_message)
@@ -369,8 +386,20 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     )
     assert changed.status_code == 200
     assert Product.objects.get(pk=created_id).price == 11
+    price_change_entry = LogEntry.objects.filter(object_id=str(created_id), action_flag=CHANGE).latest("action_time")
+    assert json.loads(price_change_entry.change_message) == [{"changed": {"fields": ["Price"]}}]
+
+    tag = Tag.objects.create(name="Clearance")
+    retagged = admin_client.patch(
+        f"/admin-api/testapp/product/{created_id}",
+        data={"data": {"tags": [tag.pk]}},
+        content_type="application/json",
+    )
+    assert retagged.status_code == 200
+    assert retagged.json()["data"]["tags"] == [tag.pk]
+    assert list(Product.objects.get(pk=created_id).tags.values_list("pk", flat=True)) == [tag.pk]
     change_entry = LogEntry.objects.filter(object_id=str(created_id), action_flag=CHANGE).latest("action_time")
-    assert json.loads(change_entry.change_message) == [{"changed": {"fields": ["Price"]}}]
+    assert json.loads(change_entry.change_message) == [{"changed": {"fields": ["Tags"]}}]
 
     history = admin_client.get("/admin-api/history?app_label=testapp&model=product")
     assert history.status_code == 200

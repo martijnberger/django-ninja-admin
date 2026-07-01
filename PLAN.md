@@ -79,6 +79,7 @@ Completed or mostly complete:
 - Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration.
 - Display decorator metadata for descriptions, ordering, booleans, and per-field empty values is reflected in changelist columns/results.
 - File field read serialization now uses typed Pydantic metadata (`name`, `url`) and form descriptions expose multipart/current-file hints.
+- Many-to-many fields now have Pydantic write schemas, JSON-safe change-form values, form relation metadata, output serialization, and create/update persistence coverage.
 - Initial behavioral tests and no DRF/drf-spectacular runtime dependency.
 
 Known non-parity areas:
@@ -87,7 +88,7 @@ Known non-parity areas:
 - Filter handling now covers common Django admin filter families plus initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas advertise action names, but custom action-specific extra payload contracts are not yet modeled.
-- Field metadata now covers common widget, relation, choice, validator, numeric, decimal, readonly, and initial file attributes, but multipart file mutations, image-specific behavior, custom model fields, raw-id fields, radio fields, prepopulated fields, and many-to-many widgets still need deeper parity.
+- Field metadata now covers common widget, relation, choice, validator, numeric, decimal, readonly, initial file attributes, and basic many-to-many values/widgets, but multipart file mutations, image-specific behavior, custom model fields, raw-id fields, radio fields, prepopulated fields, and advanced many-to-many widget behavior still need deeper parity.
 - Inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works, but it does not yet expose full per-model request/response contracts or the same richness upstream provided through drf-spectacular hooks.
 - Admin extensibility is still young: custom view routing and display metadata exist, but deeper auth/tag/response-schema coverage and override-hook parity need work.

@@ -24,6 +24,8 @@ def model_data_for_form(instance, fields):
             data[key] = str(value)
         elif hasattr(value, "name") and hasattr(value, "storage"):
             data[key] = value.name or ""
+        elif isinstance(value, list):
+            data[key] = [item.pk if hasattr(item, "pk") else item for item in value]
     return data
 
 
@@ -37,6 +39,8 @@ def _jsonish_value(value):
         return None
     if isinstance(value, Decimal):
         return str(value)
+    if hasattr(value, "pk"):
+        return value.pk
     if isinstance(value, str | int | float | bool) or value is None:
         return value
     if isinstance(value, (list, tuple)):
@@ -87,6 +91,9 @@ def field_description(name, field, *, read_only=False, current_value=None):
         initial = _jsonish_value(field.initial)
         if initial is not None:
             attrs["initial"] = initial
+    current = _jsonish_value(current_value)
+    if current not in (None, ""):
+        attrs["value"] = current
     if getattr(field, "max_length", None) is not None:
         attrs["max_length"] = field.max_length
     if getattr(field, "min_length", None) is not None:
@@ -112,7 +119,7 @@ def form_field_descriptions(form_class, *, readonly_fields=(), instance=None):
     form = form_class(instance=instance)
     descriptions = []
     for name, field in form.fields.items():
-        current_value = getattr(instance, name, None) if instance is not None else None
+        current_value = form.initial.get(name)
         descriptions.append(
             field_description(name, field, read_only=name in readonly_fields, current_value=current_value)
         )

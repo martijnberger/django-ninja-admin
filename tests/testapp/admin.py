@@ -1,5 +1,5 @@
 from django_ninja_admin import ModelAdmin, SimpleListFilter, TabularInline, action, display, site
-from tests.testapp.models import Category, Product, ProductImage
+from tests.testapp.models import Category, Product, ProductImage, Tag
 
 
 class PriceBandFilter(SimpleListFilter):
@@ -30,6 +30,7 @@ class ProductAdmin(ModelAdmin):
     list_editable = ("stock_status",)
     search_fields = ("name", "description", "category__name")
     autocomplete_fields = ("category",)
+    filter_horizontal = ("tags",)
     ordering = ("name",)
     inlines = [ProductImageInline]
     actions = ["mark_out_of_stock", "report_names"]
@@ -62,5 +63,11 @@ class CategoryAdmin(ModelAdmin):
     search_fields = ("name",)
 
 
+class TagAdmin(ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
 site.register(Category, CategoryAdmin)
+site.register(Tag, TagAdmin)
 site.register(Product, ProductAdmin)
