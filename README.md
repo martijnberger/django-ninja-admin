@@ -26,6 +26,8 @@ urlpatterns = [
 This package intentionally uses Django Ninja and Pydantic instead of Django
 REST Framework or drf-spectacular.
 
+Supported versions are Python 3.12+ and Django 5.0+.
+
 ## Development Checks
 
 This repository uses `just` for local workflow commands:
@@ -48,6 +50,6 @@ the registered model app list. `just postgres-test` expects PostgreSQL
 connection env vars and is used by CI. `just test` and `just postgres-test`
 accept pytest selectors. `just ci` is an alias for the full local gate.
 
-See [Migration And Authentication](docs/migration-and-auth.md) for guidance on
-moving DRF serializer customizations to `form_class`, `output_schema`, and
-`schema_field_overrides`, plus examples for default, custom, and disabled auth.
+See [API And Authentication](docs/api-and-auth.md) for Ninja-native
+customization hooks (`form_class`, `output_schema`, and
+`schema_field_overrides`) plus examples for default, custom, and disabled auth.

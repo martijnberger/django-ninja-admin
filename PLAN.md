@@ -37,7 +37,7 @@ urlpatterns = [path("admin-api/", site.urls)]
 
 ## Implementation Changes
 
-- Scaffold packaging with `django>=4.2,<6.1`, `django-ninja>=1.6.2,<2`, `pydantic>=2,<3`, Python `>=3.12`, pytest/ruff dev tooling, and MIT plus Django BSD attribution.
+- Scaffold packaging with `django>=5.0,<6.1`, `django-ninja>=1.6.2,<2`, `pydantic>=2,<3`, Python `>=3.12`, pytest/ruff dev tooling, and MIT plus Django BSD attribution.
 - Port reusable admin logic first: registry, decorators, checks, filters, changelist/query handling, quote utilities, deleted-object collection, action dispatch, inline operation validation, and custom `LogEntry` migration/table.
 - Build a lazy `NinjaAdminSite` that constructs a `NinjaAPI` and per-model routers after registration/autodiscovery; registration invalidates router/OpenAPI schema caches.
 - Generate Pydantic schemas per registered model/operation for OpenAPI and response serialization; use Django `ModelForm`/formset validation internally for admin-grade create/update/inline behavior.
@@ -122,12 +122,12 @@ Completed or mostly complete:
 - Readonly form descriptions now expose display labels, values, boolean flags, and empty-value fallbacks for admin methods and model properties.
 - Custom `form_class` and generated-form `formfield_*` customization hooks are covered through mounted Ninja routes for write-schema generation, custom widget attributes, Django form validation, and mutation persistence.
 - Semantic OpenAPI contract tests now cover model-route operation IDs, tags, security, request body schemas, success response schemas, and typed error response maps.
-- Migration and authentication docs now cover replacing DRF serializer hooks with `form_class`, `output_schema`, and `schema_field_overrides`, plus default/custom/disabled auth patterns.
+- API and authentication docs now cover Ninja-native customization hooks such as `form_class`, `output_schema`, and `schema_field_overrides`, plus default/custom/disabled auth patterns.
 - Local release gates now use `just` for lint, tests, package smoke, and aggregate checks.
 - Package smoke tooling builds the wheel, installs it into an isolated target, verifies public API imports, and checks dependency metadata for absent DRF/drf-spectacular dependencies.
 - Sample-project smoke tooling installs the built wheel into a temporary Django project, registers a model, mounts `site.urls`, opens docs/OpenAPI, and exercises the registered model app list/changelist.
 - Release hardening docs now include a changelog and explicit alpha/beta/stable checklist.
-- GitHub Actions now runs the `just` gates across Django 4.2, 5.0, 5.1, 5.2, and an experimental 6.0 lane.
+- GitHub Actions now runs the `just` gates across Django 5.0, 5.1, 5.2, and an experimental 6.0 lane on Python 3.12+.
 - CI now has a PostgreSQL lane using env-driven test database settings and `just postgres-test`.
 - An initial copyright/license audit records MIT package licensing, Django BSD attribution, upstream parity references, and no-DRF dependency checks.
 - Initial behavioral tests and no DRF/drf-spectacular runtime dependency.
@@ -250,7 +250,7 @@ Goal: make generated docs a release-quality contract.
 - Stabilize operation IDs, tags, response maps, error schemas, pagination schemas, inline schemas, and model component names.
 - Document every built-in route with examples for success and error responses.
 - Add snapshot or semantic OpenAPI tests that tolerate ordering differences but catch contract regressions.
-- Add docs for migrating DRF `serializer_class` customizations to `form_class`, `output_schema`, and `schema_field_overrides`.
+- Document that DRF `serializer_class` hooks are unsupported and provide Ninja-native customization hooks: `form_class`, `output_schema`, and `schema_field_overrides`.
 - Document authentication choices: default staff-session auth, custom Ninja auth, multiple auth callables, and explicit unauthenticated APIs with `auth=None`.
 
 Acceptance:
@@ -262,7 +262,7 @@ Acceptance:
 
 Goal: reach the original "no public release until full parity" bar.
 
-- Run the full local test suite across Django 4.2, 5.0, 5.1, 5.2, and the latest supported 6.0 pre-release when practical.
+- Run the full local test suite across Django 5.0, 5.1, 5.2, and the latest supported 6.0 pre-release when practical.
 - Test against SQLite and PostgreSQL.
 - Add package build checks and install smoke tests in a clean sample Django project.
 - Audit copyright notices for Django-derived and upstream-derived code.
@@ -285,5 +285,5 @@ Acceptance:
 
 - This is a v2 package, not a drop-in replacement for existing DRF clients.
 - No public release happens until full parity is implemented and tested.
-- Existing DRF `serializer_class` customizations migrate to `form_class` and/or `output_schema`.
+- DRF `serializer_class` customizations are intentionally unsupported; use `form_class`, `output_schema`, and/or `schema_field_overrides`.
 - The implementation may reuse/port Django-derived logic with BSD notices and upstream MIT-attributed logic where appropriate.

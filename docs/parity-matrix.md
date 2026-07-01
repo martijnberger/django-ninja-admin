@@ -16,7 +16,7 @@ Statuses:
 | Distribution/import package | implemented | `pyproject.toml`, `django_ninja_admin` package | Release metadata hardening in Phase 7 |
 | Public exports | implemented | `django_ninja_admin/__init__.py` exports site/admin/filter/decorator APIs | Keep stable as new hooks land |
 | No DRF/drf-spectacular runtime dependency | implemented | Dependencies in `pyproject.toml`, `test_no_drf_imports`, `scripts/package_smoke.py` | Keep smoke coverage in CI |
-| DRF serializer hooks | changed | Replaced by `form_class`, `output_schema`, `schema_field_overrides`; migration guide added | Expand examples as hooks grow |
+| DRF serializer hooks | changed | Intentionally unsupported; replaced by Ninja-native `form_class`, `output_schema`, and `schema_field_overrides` hooks in `docs/api-and-auth.md` | Expand examples as hooks grow |
 
 ## Site Routes
 
@@ -37,7 +37,7 @@ Statuses:
 | Model registration/unregistration | implemented | `NinjaAdminSite.register`, `unregister`, duplicate/unregistered/abstract/swapped/decorator tests | Upstream fixture comparisons |
 | Default site/autodiscover | partial | Lazy `site`, `autodiscover()` | Project-level smoke test |
 | Permission hooks | partial | `BaseAdmin.has_*_permission`, API tests | More object-level and custom hook coverage |
-| Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, many-to-many `list_display`, `list_editable` form-layout conflict, `list_select_related`, widget-conflict, and manual-through m2m widget tests | Match Django check IDs/coverage more closely |
+| Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, many-to-many `list_display`, `list_editable` form-layout conflict, `fields`/`exclude` item checks, `list_select_related`, widget-conflict, and manual-through m2m widget tests | Match Django check IDs/coverage more closely |
 | `get_changelist()` hooks | implemented | `ModelAdmin.get_changelist*`, route hook test | More subclassing examples/docs |
 | Custom site/model views | partial | `admin_view()`, `get_urls()`, `route()`, route tags/descriptions, hidden routes, raw method wrapping, `auth=None`, named response schemas, custom route tests, and site/route-level auth-sequence route tests | Deeper override-hook parity and upstream fixture comparisons |
 | Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values, and model-property metadata in changelist tests | More readonly-field display variants |
@@ -97,7 +97,7 @@ Statuses:
 | --- | --- | --- | --- |
 | Ruff/pytest local gates | implemented | `just lint`, `just test`, `just check`, `.github/workflows/ci.yml` | Keep CI and local gates aligned |
 | Package build/install smoke | implemented | `scripts/package_smoke.py`, `scripts/sample_project_smoke.py`, `just package-smoke`, `just sample-project-smoke` | Expand sample project scenarios as parity grows |
-| Django version matrix | partial | `.github/workflows/ci.yml` covers Django 4.2, 5.0, 5.1, 5.2, and experimental 6.0 | Confirm CI results and expand Python versions when supported |
+| Django version matrix | partial | `.github/workflows/ci.yml` covers Django 5.0, 5.1, 5.2, and experimental 6.0 on Python 3.12+ | Confirm CI results and expand Python versions when supported |
 | PostgreSQL coverage | partial | Env-driven `tests/settings.py`, `just postgres-test`, PostgreSQL CI job | Confirm CI results and broaden database-specific edge cases |
 | Copyright/license audit | implemented | `LICENSE`, `LICENSE-DJANGO`, `docs/copyright-audit.md` | Re-run before each release candidate and after substantial ports |
 | Changelog/release checklist | implemented | `CHANGELOG.md`, `docs/release-checklist.md` | Expand release notes before each tag |

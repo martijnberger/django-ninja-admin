@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Narrowed supported versions to Python 3.12+ and Django 5.0+, including
+  package metadata, CI, and planning docs.
+- Reframed customization docs around Ninja-native hooks and made DRF
+  `serializer_class` hooks explicitly unsupported.
+- Added admin system checks for invalid `fields`/`exclude` entries and unknown
+  fields listed in `exclude`.
 - Added changelist row URL and object-permission metadata for detail, change
   form, delete, and view-on-site frontend actions.
 - Added image-specific response schema and form metadata for Django

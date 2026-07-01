@@ -39,13 +39,13 @@ just check
   the same semantics.
 - Changelist, filter, action, inline, delete, history, and form behavior cover
   common Django-admin edge cases.
-- The Django and database compatibility matrix is exercised in CI.
+- The Django 5.0+ and database compatibility matrix is exercised in CI.
 - OpenAPI changes are guarded by semantic or snapshot tests.
 
 ## Stable Criteria
 
 - All parity gaps are implemented or documented as intentional v2 differences.
-- Release notes describe migration impact from the previous package version.
+- Release notes describe API contract impact from the previous package version.
 - Copyright notices for Django-derived and upstream-derived code have been
   reviewed and recorded in `docs/copyright-audit.md`.
 - The version follows semantic versioning: patch for compatible bug fixes,

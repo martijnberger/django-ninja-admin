@@ -194,6 +194,8 @@ def _check_form_layout(model_admin):
         )
     errors.extend(_check_sequence_option(model_admin, "fields"))
     errors.extend(_check_sequence_option(model_admin, "exclude"))
+    errors.extend(_check_form_option_items(model_admin, "fields"))
+    errors.extend(_check_form_option_items(model_admin, "exclude", require_model_field=True))
 
     readonly_fields = tuple(model_admin.get_readonly_fields(None) or ())
     for item in readonly_fields:
@@ -217,6 +219,8 @@ def _check_form_layout(model_admin):
                 _error(model_admin.__class__, f"The value of 'fieldsets' is malformed: {exc}.", "E013")
             )
     for item in fields:
+        if not isinstance(item, str):
+            continue
         if item in readonly_fields:
             continue
         field = _model_field(model_admin, item)
@@ -233,6 +237,19 @@ def _check_form_layout(model_admin):
                 _error(model_admin.__class__, f"The form layout includes non-editable field '{item}'.", "E015")
             )
 
+    return errors
+
+
+def _check_form_option_items(model_admin, option, *, require_model_field=False):
+    errors = []
+    for item in getattr(model_admin, option, None) or ():
+        if not isinstance(item, str):
+            errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E048"))
+            continue
+        if require_model_field and _model_field(model_admin, item) is None:
+            errors.append(
+                _error(model_admin.__class__, f"The value of '{option}' refers to unknown field '{item}'.", "E049")
+            )
     return errors
 
 

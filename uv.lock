@@ -75,7 +75,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "django", specifier = ">=4.2,<6.1" },
+    { name = "django", specifier = ">=5.0,<6.1" },
     { name = "django-ninja", specifier = ">=1.6.2,<2" },
     { name = "pydantic", specifier = ">=2,<3" },
 ]

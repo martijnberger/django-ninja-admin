@@ -436,6 +436,25 @@ def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db
     assert "django_ninja_admin.E044" in {error.id for error in exclude_errors}
 
 
+def test_admin_checks_validate_fields_and_exclude_items(db):
+    class BadFieldsProductAdmin(ModelAdmin):
+        fields = ("name", 123)
+
+    class BadExcludeProductAdmin(ModelAdmin):
+        exclude = ("missing", 123)
+
+    fields_site = NinjaAdminSite(include_auth=False)
+    fields_site.register(Product, BadFieldsProductAdmin)
+    exclude_site = NinjaAdminSite(include_auth=False)
+    exclude_site.register(Product, BadExcludeProductAdmin)
+
+    fields_errors = fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    exclude_errors = exclude_site.check(app_configs=[django_apps.get_app_config("testapp")])
+
+    assert {error.id for error in fields_errors} == {"django_ninja_admin.E048"}
+    assert {error.id for error in exclude_errors} == {"django_ninja_admin.E048", "django_ninja_admin.E049"}
+
+
 def test_admin_checks_validate_radio_fields_shape(db):
     class BadRadioShapeAdmin(ModelAdmin):
         radio_fields = ("stock_status",)

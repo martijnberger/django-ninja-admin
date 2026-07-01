@@ -1,4 +1,4 @@
-# Migration And Authentication
+# API And Authentication
 
 This package is a v2 API, not a wire-compatible replacement for
 `django-api-admin` clients. It keeps Django admin concepts, but uses Django
@@ -29,10 +29,10 @@ urlpatterns = [
 The mounted API exposes `/docs` and `/openapi.json` under the mounted prefix.
 For example, the snippet above exposes `/admin-api/docs`.
 
-## Replacing DRF Serializer Hooks
+## Ninja-Native Customization Hooks
 
-Old DRF-style `serializer_class` customizations should move to one or more of
-these hooks.
+DRF-style `serializer_class` customizations are intentionally not part of this
+API. Use one or more of these Ninja/Django-native hooks instead.
 
 ### Input Validation: `form_class`
 
