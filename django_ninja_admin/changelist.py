@@ -36,6 +36,7 @@ class ChangeList:
         self.date_hierarchy_model_field = None
         self.date_hierarchy_field = self.get_date_hierarchy_field()
         self.filter_specs = self.get_filters(self.params)
+        self.has_filters = any(filter_spec.has_output() for filter_spec in self.filter_specs)
         self.queryset = self.get_queryset(self.params, self.filter_specs)
         self.show_full_result_count = bool(getattr(model_admin, "show_full_result_count", True))
         self.full_result_count = model_admin.get_queryset(request).count() if self.show_full_result_count else None
@@ -486,6 +487,18 @@ class ChangeList:
             ),
             "clear_show_all_query_string": self.get_query_string(remove={"all"}) if self.show_all else None,
         }
+
+    def active_filter_params(self):
+        ignored = IGNORED_LOOKUP_PARAMS | PAGE_PARAMS
+        return tuple(key for key, value in self.params.items() if key not in ignored and value not in ("", None))
+
+    def has_active_filters(self):
+        return bool(self.active_filter_params())
+
+    def clear_all_filters_query_string(self):
+        if not self.has_active_filters():
+            return None
+        return self.get_query_string(remove=self.active_filter_params())
 
     def get_query_string(self, new_params=None, remove=None):
         new_params = new_params or {}

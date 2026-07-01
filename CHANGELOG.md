@@ -34,6 +34,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   all filtered results share a year or month.
 - Added an admin system check for non-string, non-callable
   `list_display_links` entries.
+- Added changelist filter-state metadata and clear-all-filters query strings.
 
 ## 0.1.15 - 2026-07-02
 
