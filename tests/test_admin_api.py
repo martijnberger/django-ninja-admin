@@ -1650,6 +1650,8 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert paginated_body["config"]["page_result_count"] == 1
     assert paginated_body["config"]["result_start_index"] == 2
     assert paginated_body["config"]["result_end_index"] == 2
+    assert paginated_body["rows"][0]["index"] == 0
+    assert paginated_body["rows"][0]["result_index"] == 2
     assert paginated_body["config"]["first_page_query_string"] == "?pp=1"
     assert paginated_body["config"]["previous_page_query_string"] == "?pp=1"
     assert paginated_body["config"]["next_page_query_string"] == "?pp=1&p=3"
@@ -1740,6 +1742,8 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert columns_by_field["subtitle"]["headerName"] == "Subtitle"
     assert columns_by_field["subtitle"]["empty_value_display"] == "No subtitle"
     rows_by_name = {row["cells"]["name"]: row for row in show_all_body["rows"]}
+    assert [row["index"] for row in show_all_body["rows"]] == [0, 1, 2]
+    assert [row["result_index"] for row in show_all_body["rows"]] == [1, 2, 3]
     alpha_row = rows_by_name["Alpha"]
     content_type = ContentType.objects.get_for_model(Product)
     assert alpha_row["detail_url"] == f"/admin-api/testapp/product/{sample.pk}"
@@ -1825,6 +1829,8 @@ def test_changelist_row_metadata_honors_object_permissions(staff_client, sample)
 
     assert response.status_code == 200
     row = response.json()["rows"][0]
+    assert row["index"] == 0
+    assert row["result_index"] == 1
     assert row["detail_url"] == f"/admin-api/testapp/product/{sample.pk}"
     assert row["change_form_url"] == f"/admin-api/testapp/product/{sample.pk}/form"
     assert row["delete_url"] is None

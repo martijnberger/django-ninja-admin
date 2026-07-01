@@ -1087,14 +1087,23 @@ class NinjaAdminSite:
         ]
         rows = []
         empty_value = model_admin.get_empty_value_display()
-        for obj in changelist.result_list:
+        result_start_index = changelist.page.start_index()
+        for index, obj in enumerate(changelist.result_list):
             cells = {}
             for field in list_display:
                 value = lookup_field(field, obj, model_admin)
                 display_metadata = display_metadata_for_field(field, model_admin.model, model_admin)
                 field_empty_value = display_metadata["empty_value_display"] or empty_value
                 cells[field_name_for_display(field)] = field_empty_value if value in (None, "") else value
-            rows.append({"id": obj.pk, "cells": cells, **self._changelist_row_metadata(request, model_admin, obj)})
+            rows.append(
+                {
+                    "id": obj.pk,
+                    "index": index,
+                    "result_index": result_start_index + index,
+                    "cells": cells,
+                    **self._changelist_row_metadata(request, model_admin, obj),
+                }
+            )
         action_form = [
             {
                 "name": "action",

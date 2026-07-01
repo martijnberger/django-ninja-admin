@@ -153,6 +153,8 @@ class Column(Schema):
 
 class Row(Schema):
     id: Any
+    index: int = 0
+    result_index: int = 0
     cells: dict[str, Any]
     detail_url: str | None = None
     change_form_url: str | None = None

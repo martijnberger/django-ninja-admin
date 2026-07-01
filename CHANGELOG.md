@@ -28,6 +28,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   preserves active filters, search, page size, and ordering.
 - Added structured changelist page choices with selected state and query
   strings for page-range rendering.
+- Added page-local and filtered-result row indexes to changelist rows.
 
 ## 0.1.15 - 2026-07-02
 
