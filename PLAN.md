@@ -124,6 +124,7 @@ Completed or mostly complete:
 - `formfield_overrides` system checks now validate field-class keys, mapping-shaped overrides, and string formfield keyword names.
 - Admin system checks now reject direct many-to-many and reverse relation fields in `list_display`, preventing raw related managers from leaking into changelist cells.
 - Admin system checks now reject `list_editable` fields removed from generated forms by `fields`, `fieldsets`, or `exclude`, preventing silent bulk-update no-ops.
+- Admin system checks now reject manual-through many-to-many fields in explicit `fields` and `fieldsets` form layouts.
 - Admin system checks now reject first-column `list_editable` fields unless an explicit `list_display_links` target is configured.
 - Admin system checks now validate `list_select_related` types and relation paths before changelist runtime.
 - Admin system checks now reject `filter_horizontal`/`filter_vertical` on many-to-many fields with custom through models.

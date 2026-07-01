@@ -379,8 +379,20 @@ def _check_form_layout(model_admin):
             errors.append(
                 _error(model_admin.__class__, f"The form layout includes non-editable field '{item}'.", "E015")
             )
+        elif _is_manual_through_many_to_many(field):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The form layout includes many-to-many field '{item}', which uses a custom through model.",
+                    "E078",
+                )
+            )
 
     return errors
+
+
+def _is_manual_through_many_to_many(field):
+    return isinstance(field, models.ManyToManyField) and not field.remote_field.through._meta.auto_created
 
 
 def _fieldsets_fields_and_errors(model_admin):

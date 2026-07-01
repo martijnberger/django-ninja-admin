@@ -1122,6 +1122,46 @@ def test_admin_checks_reject_manual_through_many_to_many_widget_modes(db):
     assert {error.id for error in vertical_errors} == {"django_ninja_admin.E047"}
 
 
+@isolate_apps("tests.testapp")
+def test_admin_checks_reject_manual_through_many_to_many_form_layouts(db):
+    class ArticleTag(models.Model):
+        name = models.CharField(max_length=20)
+
+        class Meta:
+            app_label = "testapp"
+
+    class Article(models.Model):
+        title = models.CharField(max_length=20)
+        tags = models.ManyToManyField(ArticleTag, through="ArticleTagging")
+
+        class Meta:
+            app_label = "testapp"
+
+    class ArticleTagging(models.Model):
+        article = models.ForeignKey(Article, on_delete=models.CASCADE)
+        tag = models.ForeignKey(ArticleTag, on_delete=models.CASCADE)
+
+        class Meta:
+            app_label = "testapp"
+
+    class FieldsArticleAdmin(ModelAdmin):
+        fields = ("title", "tags")
+
+    class FieldsetsArticleAdmin(ModelAdmin):
+        fieldsets = ((None, {"fields": ("title", "tags")}),)
+
+    fields_site = NinjaAdminSite(include_auth=False)
+    fields_site.register(Article, FieldsArticleAdmin)
+    fieldsets_site = NinjaAdminSite(include_auth=False)
+    fieldsets_site.register(Article, FieldsetsArticleAdmin)
+
+    fields_errors = fields_site.get_model_admin(Article).check()
+    fieldsets_errors = fieldsets_site.get_model_admin(Article).check()
+
+    assert {error.id for error in fields_errors} == {"django_ninja_admin.E078"}
+    assert {error.id for error in fieldsets_errors} == {"django_ninja_admin.E078"}
+
+
 def test_changelist_search_filter_and_detail(admin_client, sample):
     response = admin_client.get("/admin-api/testapp/product?q=Alpha")
     assert response.status_code == 200

@@ -31,6 +31,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `BaseInlineFormSet` subclasses.
 - Added an inline admin system check rejecting `exclude` entries that remove
   the parent foreign key field.
+- Added admin system checks rejecting manual-through many-to-many fields in
+  explicit `fields` and `fieldsets` form layouts.
 
 ## 0.1.4 - 2026-07-01
 
