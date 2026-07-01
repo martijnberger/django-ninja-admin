@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   package metadata, CI, and planning docs.
 - Reframed customization docs around Ninja-native hooks and made DRF
   `serializer_class` hooks explicitly unsupported.
+- Rolled back partial site registry/action mutations when autodiscovered
+  `admin.py` modules raise during import.
 - Added admin system checks for invalid `fields`/`exclude` entries and unknown
   fields listed in `exclude`.
 - Allowed Django-style row tuples in the `fields` option during admin checks,

@@ -328,6 +328,40 @@ def test_site_action_changes_invalidate_openapi_schema(db):
     assert "cache_probe" not in after_disable_mapping
 
 
+def test_autodiscover_rolls_back_partial_admin_imports(monkeypatch):
+    from django_ninja_admin.utils import module_loading
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Category)
+    admin_site._api = object()
+
+    class BrokenAppConfig:
+        name = "broken_app"
+        module = object()
+
+    def broken_action(model_admin, request, queryset):
+        return {"count": queryset.count()}
+
+    def import_broken_admin(module_name):
+        assert module_name == "broken_app.admin"
+        admin_site.register(Product)
+        admin_site.add_action(broken_action)
+        raise RuntimeError("broken admin module")
+
+    monkeypatch.setattr(module_loading.apps, "get_app_configs", lambda: [BrokenAppConfig()])
+    monkeypatch.setattr(module_loading, "import_module", import_broken_admin)
+    monkeypatch.setattr(module_loading, "module_has_submodule", lambda module, module_name: True)
+
+    with pytest.raises(RuntimeError, match="broken admin module"):
+        module_loading.autodiscover_modules("admin", register_to=admin_site)
+
+    assert admin_site.is_registered(Category) is True
+    assert admin_site.is_registered(Product) is False
+    assert "broken_action" not in dict(admin_site.actions)
+    assert "broken_action" not in admin_site._global_actions
+    assert admin_site._api is None
+
+
 def test_admin_checks_report_invalid_model_admin_configuration(db):
     class BadInline(TabularInline):
         model = Category
