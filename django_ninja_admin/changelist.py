@@ -254,15 +254,63 @@ class ChangeList:
         index = self.ordering_field_columns.get(field_name)
         if index is None:
             return {
+                "sorted": False,
+                "ascending": False,
+                "sort_priority": None,
                 "ascending_query_string": None,
                 "descending_query_string": None,
                 "remove_sorting_query_string": None,
             }
+        active_ordering = self.active_ordering_field_columns()
+        other_tokens = [
+            self.ordering_token(active_index, direction)
+            for active_index, direction in active_ordering.items()
+            if active_index != index
+        ]
+        active_direction = active_ordering.get(index)
+        sort_priority = list(active_ordering).index(index) + 1 if active_direction else None
+        if other_tokens:
+            remove_sorting_query_string = self.get_query_string({"o": ",".join(other_tokens)})
+        else:
+            remove_sorting_query_string = self.get_query_string(remove=["o"])
         return {
-            "ascending_query_string": self.get_query_string({"o": index}),
-            "descending_query_string": self.get_query_string({"o": f"-{index}"}),
-            "remove_sorting_query_string": self.get_query_string(remove=["o"]),
+            "sorted": active_direction is not None,
+            "ascending": active_direction == "asc",
+            "sort_priority": sort_priority,
+            "ascending_query_string": self.get_query_string({"o": ",".join([index, *other_tokens])}),
+            "descending_query_string": self.get_query_string({"o": ",".join([f"-{index}", *other_tokens])}),
+            "remove_sorting_query_string": remove_sorting_query_string,
         }
+
+    def active_ordering_field_columns(self):
+        ordering_param = self.params.get("o")
+        if not ordering_param:
+            return {}
+
+        active = {}
+        for token in [item.strip() for item in ordering_param.split(",") if item.strip()]:
+            descending = token.startswith("-")
+            raw_field = token.removeprefix("-")
+            index = self.ordering_column_index(raw_field)
+            if index is None:
+                continue
+            active[index] = "desc" if descending else "asc"
+        return active
+
+    def ordering_column_index(self, raw_field):
+        if raw_field.isdigit():
+            display_field = self.ordering_field_from_column(raw_field)
+            if display_field and self.get_ordering_field(display_field):
+                return raw_field
+            return None
+        for index, field_name in enumerate(self.list_display, start=1):
+            if field_name == raw_field or self.get_ordering_field(field_name) == raw_field:
+                if self.get_ordering_field(field_name):
+                    return str(index)
+        return None
+
+    def ordering_token(self, index, direction):
+        return f"-{index}" if direction == "desc" else str(index)
 
     def get_per_page(self):
         value = self.params.get("pp") or self.model_admin.list_per_page
@@ -314,7 +362,7 @@ class ChangeList:
                 query.pop(key, None)
             else:
                 query[key] = value
-        encoded = query.urlencode()
+        encoded = query.urlencode(safe=",")
         return f"?{encoded}" if encoded else "?"
 
     def params_from_query_string(self, query_string):

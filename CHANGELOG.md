@@ -24,6 +24,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   validation for impossible year/month/day combinations.
 - Aligned changelist search `__exact` handling for non-text fields with
   Django admin by casting field values to text instead of coercing search terms.
+- Added multi-column ordering state metadata and sort links that preserve other
+  active sort columns.
 
 ## 0.1.1 - 2026-07-01
 

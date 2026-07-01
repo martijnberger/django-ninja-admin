@@ -129,6 +129,9 @@ class Column(Schema):
     boolean: bool = False
     empty_value_display: str | None = None
     sortable: bool = False
+    sorted: bool = False
+    ascending: bool = False
+    sort_priority: int | None = None
     ordering_field: str | None = None
     ordering_index: str | None = None
     ascending_query_string: str | None = None

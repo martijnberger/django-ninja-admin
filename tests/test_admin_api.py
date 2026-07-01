@@ -464,6 +464,36 @@ def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client
     assert [row["cells"]["name"] for row in response.json()["rows"]] == ["Alpha"]
 
 
+def test_changelist_multi_column_ordering_metadata(admin_client, sample):
+    Product.objects.create(name="Gamma", category=sample.category, price="3.00")
+
+    response = admin_client.get("/admin-api/testapp/product?o=3,-1")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["config"]["ordering"] == ["price", "-name"]
+    assert [row["cells"]["name"] for row in body["rows"]][:2] == ["Gamma", "Beta"]
+
+    columns_by_field = {column["field"]: column for column in body["columns"]}
+    price_column = columns_by_field["price"]
+    name_column = columns_by_field["name"]
+    stock_column = columns_by_field["stock_status"]
+    assert price_column["sorted"] is True
+    assert price_column["ascending"] is True
+    assert price_column["sort_priority"] == 1
+    assert price_column["ascending_query_string"] == "?o=3,-1"
+    assert price_column["descending_query_string"] == "?o=-3,-1"
+    assert price_column["remove_sorting_query_string"] == "?o=-1"
+    assert name_column["sorted"] is True
+    assert name_column["ascending"] is False
+    assert name_column["sort_priority"] == 2
+    assert name_column["ascending_query_string"] == "?o=1,3"
+    assert name_column["descending_query_string"] == "?o=-1,3"
+    assert name_column["remove_sorting_query_string"] == "?o=3"
+    assert stock_column["sorted"] is False
+    assert stock_column["sort_priority"] is None
+
+
 def test_changelist_search_supports_lookup_suffixes(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
     Product.objects.create(

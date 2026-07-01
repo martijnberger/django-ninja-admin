@@ -89,7 +89,7 @@ Completed or mostly complete:
 - Changelist search now applies distinct results for duplicate-prone many-to-many search paths.
 - Changelist search now covers Django-style prefix and lookup-suffix behavior, including non-text `__exact` searches that cast field values to text.
 - Package-owned list filter classes for simple, field, choices, related, related-only, boolean, date, all-values, and empty-value filters, with Pydantic-safe filter metadata.
-- Expanded changelist metadata for display links, sortable columns, sort query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
+- Expanded changelist metadata for display links, sortable columns, multi-column sort state/query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
 - Date hierarchy metadata now includes clear/back navigation query strings and validates impossible year/month/day combinations.
 - Initial N+1 hardening through automatic `select_related()` for direct relation fields in `list_display`.
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
