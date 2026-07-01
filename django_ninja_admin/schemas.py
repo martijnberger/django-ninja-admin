@@ -250,6 +250,8 @@ class ChangelistConfig(Schema):
     date_hierarchy: DateHierarchyDescription | None = None
     list_display_fields: list[str]
     list_display_links: list[str] = []
+    to_field: str | None = None
+    object_id_field: str
     ordering_field_columns: dict[str, str] = {}
     ordering: list[str] = []
     search_term: str = ""

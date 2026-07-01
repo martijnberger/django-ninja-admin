@@ -5105,6 +5105,33 @@ def test_model_routes_validate_to_field(admin_client, sample):
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_changelist_routes_support_allowed_to_field(admin_client):
+    Category.objects.create(name="Cameras", slug="cameras")
+
+    response = admin_client.get("/slug-autocomplete-admin/testapp/category?_to_field=slug&o=1")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["config"]["to_field"] == "slug"
+    assert body["config"]["object_id_field"] == "slug"
+    row = body["rows"][0]
+    assert row["id"] == "cameras"
+    assert row["detail_url"] == "/slug-autocomplete-admin/testapp/category/cameras?_to_field=slug"
+    assert row["change_form_url"] == "/slug-autocomplete-admin/testapp/category/cameras/form?_to_field=slug"
+    assert row["delete_url"] == "/slug-autocomplete-admin/testapp/category/cameras?_to_field=slug"
+
+    detail = admin_client.get(row["detail_url"])
+    assert detail.status_code == 200
+    assert detail.json()["name"] == "Cameras"
+
+    bad_field = admin_client.get("/slug-autocomplete-admin/testapp/category?_to_field=name")
+    assert bad_field.status_code == 400
+    assert bad_field.json()["errors"] == [
+        {"message": "The field 'name' cannot be referenced.", "param": "_to_field"}
+    ]
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_update_routes_support_allowed_to_field(admin_client):
     category = Category.objects.create(name="Cameras", slug="cameras")
 

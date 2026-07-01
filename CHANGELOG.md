@@ -37,6 +37,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added changelist filter-state metadata and clear-all-filters query strings.
 - Added changelist facet toggle metadata and add/remove facet query strings.
 - Added changelist active search metadata and clear-search query strings.
+- Added changelist `_to_field` validation plus alternate row IDs and object
+  links when an allowed object field is requested.
 
 ## 0.1.15 - 2026-07-02
 

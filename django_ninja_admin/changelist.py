@@ -17,7 +17,7 @@ from django_ninja_admin.utils.lookup import (
     single_valued_model_field_from_path,
 )
 
-IGNORED_LOOKUP_PARAMS = {"q", "p", "page", "pp", "all", "o", "_facets"}
+IGNORED_LOOKUP_PARAMS = {"q", "p", "page", "pp", "all", "o", "_facets", "_to_field"}
 PAGE_PARAMS = {"p", "page"}
 
 
@@ -33,6 +33,7 @@ class ChangeList:
         self.list_select_related = model_admin.get_list_select_related(request)
         self.search_fields = tuple(model_admin.get_search_fields(request))
         self.sortable_by = tuple(model_admin.get_sortable_by(request))
+        self.to_field = self.get_to_field()
         self.date_hierarchy_model_field = None
         self.date_hierarchy_field = self.get_date_hierarchy_field()
         self.filter_specs = self.get_filters(self.params)
@@ -76,6 +77,23 @@ class ChangeList:
 
     def expected_special_params(self, filter_specs):
         return IGNORED_LOOKUP_PARAMS | self.expected_filter_params(filter_specs) | set(self.date_hierarchy_param_names)
+
+    def get_to_field(self):
+        to_field = self.params.get("_to_field")
+        if not to_field:
+            return None
+        if not self.model_admin.to_field_allowed(self.request, to_field):
+            raise AdminValidationError(
+                [{"message": f"The field '{to_field}' cannot be referenced.", "param": "_to_field"}]
+            )
+        return to_field
+
+    @property
+    def object_id_field(self):
+        return self.to_field or self.model._meta.pk.name
+
+    def object_id_for(self, obj):
+        return obj.serializable_value(self.object_id_field)
 
     def get_queryset(self, params, filter_specs, *, apply_date_hierarchy=True, apply_ordering=True):
         if not self.model_admin.has_view_or_change_permission(self.request):

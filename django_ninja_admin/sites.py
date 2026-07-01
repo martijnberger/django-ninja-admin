@@ -1095,13 +1095,14 @@ class NinjaAdminSite:
                 display_metadata = display_metadata_for_field(field, model_admin.model, model_admin)
                 field_empty_value = display_metadata["empty_value_display"] or empty_value
                 cells[field_name_for_display(field)] = field_empty_value if value in (None, "") else value
+            object_id = changelist.object_id_for(obj)
             rows.append(
                 {
-                    "id": obj.pk,
+                    "id": object_id,
                     "index": index,
                     "result_index": result_start_index + index,
                     "cells": cells,
-                    **self._changelist_row_metadata(request, model_admin, obj),
+                    **self._changelist_row_metadata(request, model_admin, obj, object_id, changelist.to_field),
                 }
             )
         action_form = [
@@ -1180,6 +1181,8 @@ class NinjaAdminSite:
                 "list_display_links": [
                     field_name_for_display(field) for field in (changelist.list_display_links or ())
                 ],
+                "to_field": changelist.to_field,
+                "object_id_field": changelist.object_id_field,
                 "ordering_field_columns": ordering_field_columns,
                 "ordering": changelist.ordering,
                 **changelist.search_query_strings(),
@@ -1192,17 +1195,18 @@ class NinjaAdminSite:
         }
         return ChangelistResponse.model_validate(payload).model_dump(mode="json")
 
-    def _changelist_row_metadata(self, request, model_admin, obj):
-        object_id = quote(obj.pk)
-        detail_url = f"{request.path.rstrip('/')}/{object_id}"
+    def _changelist_row_metadata(self, request, model_admin, obj, object_id, to_field=None):
+        quoted_object_id = quote(object_id)
+        detail_url = f"{request.path.rstrip('/')}/{quoted_object_id}"
+        to_field_query_string = f"?_to_field={quote(to_field)}" if to_field else ""
         has_view_permission = model_admin.has_view_permission(request, obj)
         has_change_permission = model_admin.has_change_permission(request, obj)
         has_delete_permission = model_admin.has_delete_permission(request, obj)
         can_open_object = has_view_permission or has_change_permission
         return {
-            "detail_url": detail_url if can_open_object else None,
-            "change_form_url": f"{detail_url}/form" if can_open_object else None,
-            "delete_url": detail_url if has_delete_permission else None,
+            "detail_url": f"{detail_url}{to_field_query_string}" if can_open_object else None,
+            "change_form_url": f"{detail_url}/form{to_field_query_string}" if can_open_object else None,
+            "delete_url": f"{detail_url}{to_field_query_string}" if has_delete_permission else None,
             "view_on_site_url": model_admin.get_view_on_site_url(obj) if can_open_object else None,
             "permissions": {
                 "has_add_permission": model_admin.has_add_permission(request),
