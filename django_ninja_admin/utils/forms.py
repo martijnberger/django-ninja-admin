@@ -272,6 +272,21 @@ def _input_formats(field):
     ]
 
 
+def _filepath_metadata(field):
+    if not isinstance(field, forms.FilePathField):
+        return {}
+    attrs = {
+        "path": _jsonish_value(getattr(field, "path", None)),
+        "recursive": bool(getattr(field, "recursive", False)),
+        "allow_files": bool(getattr(field, "allow_files", True)),
+        "allow_folders": bool(getattr(field, "allow_folders", False)),
+    }
+    match = _jsonish_value(getattr(field, "match", None))
+    if match not in (None, ""):
+        attrs["match"] = match
+    return {key: value for key, value in attrs.items() if value is not None}
+
+
 def field_description(name, field, *, read_only=False, current_value=None, model_field=None):
     widget = field.widget
     attrs = {
@@ -298,6 +313,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         attrs["input_formats"] = input_formats
     if getattr(field, "choices", None):
         attrs["choices"] = [(_choice_value(value), str(label)) for value, label in field.choices]
+    attrs.update(_filepath_metadata(field))
     if getattr(field, "initial", None) not in (None, ""):
         initial = _jsonish_value(field.initial)
         if initial is not None:

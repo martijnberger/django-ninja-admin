@@ -118,6 +118,9 @@ Completed or mostly complete:
 - Pydantic request schemas now recursively derive fixed tuple payloads for
   generic Django `MultiValueField` subfields, including subfield constraints,
   and normalize them into Django `MultiWidget` form data.
+- Pydantic request schemas now cover `FilePathField` fixed filesystem choices,
+  and form descriptions expose path, match, recursion, and allow-files/folders
+  metadata for frontend renderers.
 - Pydantic request schemas now infer typed list entries for multiple-choice
   fields from declared choice values.
 - Pydantic request schemas now constrain concrete Django choice values with

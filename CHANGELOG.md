@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   Django `SplitDateTimeField` payloads.
 - Added recursive Pydantic request schema typing and mutation normalization for
   generic Django `MultiValueField` payloads.
+- Added `FilePathField` request schema coverage and form metadata for path,
+  match, recursion, and allowed target kinds.
 
 ## 0.1.12 - 2026-07-01
 

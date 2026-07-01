@@ -2355,13 +2355,17 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
     assert product.description == "Hooked description"
 
 
-def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
+def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_path):
+    fixture_file = tmp_path / "choice.txt"
+    fixture_file.write_text("ok")
+
     class RichPayloadProductForm(forms.ModelForm):
         metadata = forms.JSONField(required=False)
         tracking_id = forms.UUIDField(required=False)
         host = forms.GenericIPAddressField(required=False)
         contact_email = forms.EmailField(required=False)
         homepage = forms.URLField(required=False)
+        file_path = forms.FilePathField(path=str(tmp_path), match=r".*\.txt$", required=False)
         duration = forms.DurationField(required=False)
         release_window = forms.SplitDateTimeField(
             required=False,
@@ -2403,6 +2407,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
             "host": "2001:db8::1",
             "contact_email": "buyer@example.com",
             "homepage": "https://example.com/products",
+            "file_path": str(fixture_file),
             "duration": "1 02:03:04",
             "release_window": ["2026-07-01", "09:30"],
             "bounded_name": "Camera",
@@ -2419,6 +2424,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert str(validated.host) == "2001:db8::1"
     assert validated.contact_email == "buyer@example.com"
     assert str(validated.homepage) == "https://example.com/products"
+    assert validated.file_path == str(fixture_file)
     assert validated.duration == timedelta(days=1, hours=2, minutes=3, seconds=4)
     assert validated.release_window == (date(2026, 7, 1), time(9, 30))
     assert validated.bounded_name == "Camera"
@@ -2435,6 +2441,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert json_schema["bounded_count"]["anyOf"][0]["minimum"] == 2
     assert json_schema["contact_email"]["anyOf"][0]["format"] == "email"
     assert json_schema["homepage"]["anyOf"][0]["format"] == "uri"
+    assert json_schema["file_path"]["anyOf"][0]["const"] == str(fixture_file)
     assert json_schema["release_window"]["anyOf"][0]["prefixItems"] == [
         {"format": "date", "type": "string"},
         {"format": "time", "type": "string"},
@@ -2456,6 +2463,27 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "metadata": {},
                 "tracking_id": "not-a-uuid",
                 "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "file_path": str(tmp_path / "missing.txt"),
                 "duration": "1 02:03:04",
                 "bounded_name": "Camera",
                 "bounded_count": 3,
@@ -3681,6 +3709,52 @@ def test_form_description_exposes_multiwidget_metadata(db):
         detail.get("pattern") == "^[A-Z]{3}$"
         for detail in code_field["attrs"]["validator_details"]
     )
+
+
+def test_form_description_exposes_filepath_field_metadata(db, tmp_path):
+    fixture_file = tmp_path / "choice.txt"
+    fixture_file.write_text("ok")
+    skipped_file = tmp_path / "skipped.md"
+    skipped_file.write_text("no")
+    nested_dir = tmp_path / "nested"
+    nested_dir.mkdir()
+    nested_file = nested_dir / "deep.txt"
+    nested_file.write_text("nested")
+
+    class FilePathProductForm(forms.ModelForm):
+        file_path = forms.FilePathField(
+            path=str(tmp_path),
+            match=r".*\.txt$",
+            recursive=True,
+            allow_files=True,
+            allow_folders=False,
+            required=False,
+        )
+
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status")
+
+    class FilePathProductAdmin(ModelAdmin):
+        form_class = FilePathProductForm
+
+    model_admin = FilePathProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    request = RequestFactory().get("/")
+    field = next(
+        item for item in model_admin.get_form_fields_description(request) if item["name"] == "file_path"
+    )
+
+    attrs = field["attrs"]
+    choice_values = [value for value, _label in attrs["choices"]]
+    assert field["type"] == "FilePathField"
+    assert attrs["path"] == str(tmp_path)
+    assert attrs["match"] == r".*\.txt$"
+    assert attrs["recursive"] is True
+    assert attrs["allow_files"] is True
+    assert attrs["allow_folders"] is False
+    assert str(fixture_file) in choice_values
+    assert str(nested_file) in choice_values
+    assert str(skipped_file) not in choice_values
 
 
 @pytest.mark.parametrize(
