@@ -33,6 +33,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   duplicate/unregistered errors, abstract-model rejection, and `@register`.
 - Added property-aware changelist display metadata so model properties can
   carry labels, boolean flags, and empty-value text from their getter.
+- Improved inline deletion change messages so logs preserve the deleted
+  inline object's display text while keeping public mutation responses stable.
 - Added support for passing pytest selectors through `just test` and
   `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full

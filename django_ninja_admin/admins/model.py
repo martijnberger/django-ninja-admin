@@ -441,8 +441,8 @@ class ModelAdmin(BaseAdmin):
                         }
                     }
                 )
-            for item in results.get("delete", []):
-                messages.append({"deleted": {"name": verbose_name, "object": str(item)}})
+            for item in results.get("_delete_objects", results.get("delete", [])):
+                messages.append({"deleted": {"name": verbose_name, "object": self._inline_object_repr(item)}})
         return messages
 
     def _inline_verbose_name(self, inline_id):
@@ -454,7 +454,7 @@ class ModelAdmin(BaseAdmin):
 
     def _inline_object_repr(self, item):
         if isinstance(item, dict):
-            return str(item.get("title") or item.get("name") or item.get("id") or item)
+            return str(item.get("_object_repr") or item.get("title") or item.get("name") or item.get("id") or item)
         return str(item)
 
     def save_form(self, request, form, change):
@@ -498,6 +498,8 @@ class ModelAdmin(BaseAdmin):
         for inline_id, operations in inline_results.items():
             public_results[inline_id] = {}
             for operation, values in operations.items():
+                if operation.startswith("_"):
+                    continue
                 public_values = []
                 for value in values:
                     if isinstance(value, dict):

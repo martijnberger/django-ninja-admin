@@ -1150,6 +1150,10 @@ class NinjaAdminSite:
         formset = formset_class(data=formset_data, instance=obj, queryset=queryset)
         if not formset.is_valid():
             raise AdminValidationError({inline_id: {"formset": formset_errors(formset)}})
+        deleted_objects = [
+            {"id": existing_by_pk[pk].pk, "_object_repr": str(existing_by_pk[pk])}
+            for pk in delete_values
+        ]
         formset.save()
         changed_objects = []
         for instance, fields in formset.changed_objects:
@@ -1159,7 +1163,8 @@ class NinjaAdminSite:
         return {
             "add": [inline.serialize_object(instance, request) for instance in formset.new_objects],
             "change": changed_objects,
-            "delete": [instance.pk for instance in formset.deleted_objects],
+            "delete": [item["id"] for item in deleted_objects],
+            "_delete_objects": deleted_objects,
         }
 
     def _validate_inline_row_fields(self, inline_id, rows, allowed_fields, *, operation):

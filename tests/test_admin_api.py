@@ -1305,6 +1305,7 @@ def test_inline_formset_honors_can_delete(admin_client, sample, monkeypatch):
 
 def test_inline_change_message_includes_inline_operations(admin_client, sample):
     image = sample.images.get()
+    deleted_image = ProductImage.objects.create(product=sample, title="Back")
     response = admin_client.patch(
         f"/admin-api/testapp/product/{sample.pk}",
         data={
@@ -1313,6 +1314,7 @@ def test_inline_change_message_includes_inline_operations(admin_client, sample):
                 "testapp.productimage": {
                     "change": [{"pk": image.pk, "title": "Profile"}],
                     "add": [{"title": "Side"}],
+                    "delete": [deleted_image.pk],
                 }
             },
         },
@@ -1322,10 +1324,12 @@ def test_inline_change_message_includes_inline_operations(admin_client, sample):
     assert response.status_code == 200
     inline_response = response.json()["inlines"]["testapp.productimage"]
     assert "_changed_fields" not in inline_response["change"][0]
+    assert inline_response["delete"] == [deleted_image.pk]
     change_entry = LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).latest("action_time")
     change_message = json.loads(change_entry.change_message)
     assert {"added": {"name": "product image", "object": "Side"}} in change_message
     assert {"changed": {"name": "product image", "object": "Profile", "fields": ["title"]}} in change_message
+    assert {"deleted": {"name": "product image", "object": "Back"}} in change_message
 
 
 def test_inline_mutation_rejects_duplicate_and_conflicting_rows(admin_client, sample):
