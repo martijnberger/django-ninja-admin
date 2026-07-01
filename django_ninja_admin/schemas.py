@@ -279,6 +279,12 @@ class AutocompleteItem(Schema):
 
 class AutocompletePagination(Schema):
     more: bool
+    count: int = 0
+    num_pages: int = 0
+    page: int = 1
+    per_page: int = 20
+    has_next: bool = False
+    has_previous: bool = False
 
 
 class AutocompleteResponse(Schema):

@@ -2856,7 +2856,15 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
     )
     assert first_page.status_code == 200
     assert len(first_page.json()["results"]) == 20
-    assert first_page.json()["pagination"] == {"more": True}
+    assert first_page.json()["pagination"] == {
+        "more": True,
+        "count": 25,
+        "num_pages": 2,
+        "page": 1,
+        "per_page": 20,
+        "has_next": True,
+        "has_previous": False,
+    }
 
     second_page = admin_client.get(
         "/admin-api/autocomplete",
@@ -2870,7 +2878,15 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
     )
     assert second_page.status_code == 200
     assert len(second_page.json()["results"]) == 5
-    assert second_page.json()["pagination"] == {"more": False}
+    assert second_page.json()["pagination"] == {
+        "more": False,
+        "count": 25,
+        "num_pages": 2,
+        "page": 2,
+        "per_page": 20,
+        "has_next": False,
+        "has_previous": True,
+    }
     assert all(result["text"].startswith("Tag ") for result in second_page.json()["results"])
 
     bad_page = admin_client.get(

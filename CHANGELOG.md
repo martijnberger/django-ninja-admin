@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added count, page, page-size, and next/previous metadata to autocomplete
+  pagination responses while preserving the existing `more` flag.
 - Added mounted-route coverage for `save_form()` during create/change
   mutations and bulk list-editable updates.
 - Added richer changelist pagination metadata with `multi_page`,

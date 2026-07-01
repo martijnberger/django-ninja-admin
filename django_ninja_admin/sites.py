@@ -568,7 +568,15 @@ class NinjaAdminSite:
                 raise Http404
             return {
                 "results": [{"id": str(getattr(obj, to_field_name)), "text": str(obj)} for obj in page_obj.object_list],
-                "pagination": {"more": page_obj.has_next()},
+                "pagination": {
+                    "more": page_obj.has_next(),
+                    "count": paginator.count,
+                    "num_pages": paginator.num_pages,
+                    "page": page_obj.number,
+                    "per_page": paginator.per_page,
+                    "has_next": page_obj.has_next(),
+                    "has_previous": page_obj.has_previous(),
+                },
             }
 
         @router.get(
