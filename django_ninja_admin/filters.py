@@ -87,6 +87,7 @@ class SimpleListFilter(ListFilter):
             self.used_parameters[self.parameter_name] = params.get(self.parameter_name)
         if self.title is None:
             self.title = self.parameter_name.replace("_", " ")
+        self.lookup_choices = list(self.lookups(request, model_admin) or ())
 
     def lookups(self, request, model_admin):
         return ()
@@ -98,13 +99,16 @@ class SimpleListFilter(ListFilter):
             "query_string": changelist.get_query_string(remove=self.expected_parameters()),
             "display": _display(_("All")),
         }
-        for lookup, title in self.lookups(self.request, self.model_admin) or ():
+        for lookup, title in self.lookup_choices:
             lookup = _lookup_value(lookup)
             yield {
                 "selected": str(current_value) == str(lookup),
                 "query_string": changelist.get_query_string({self.parameter_name: lookup}),
                 "display": _display(title),
             }
+
+    def has_output(self):
+        return bool(self.lookup_choices)
 
 
 class FieldListFilter(ListFilter):

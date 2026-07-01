@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+Nothing yet.
+
+## 0.1.2 - 2026-07-01
+
 - Aligned date list-filter ranges with Django admin by adding upper bounds for
   date-time choices and clearing stale date filter params when switching ranges.
 - Invalidated the lazy Ninja API/OpenAPI cache when global admin actions are
@@ -26,9 +30,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   exposing the real related lookup key.
 - Rejected invalid `EmptyFieldListFilter` values with typed changelist lookup
   errors instead of treating arbitrary strings as false.
-
-## 0.1.2 - 2026-07-01
-
+- Hid `SimpleListFilter` instances with no lookup choices, matching Django
+  admin's filter output threshold.
 - Improved inline mutations so server-side add/change/delete validation returns
   row-indexed errors across the payload before any parent or inline writes occur.
 - Added multipart create/update routes for file-field forms, validating the

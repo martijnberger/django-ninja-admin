@@ -20,6 +20,7 @@ from django_ninja_admin import (
     EmptyFieldListFilter,
     ModelAdmin,
     NinjaAdminSite,
+    SimpleListFilter,
     TabularInline,
     register,
     site,
@@ -617,6 +618,23 @@ def test_empty_field_list_filter_validates_values(admin_client, sample, monkeypa
     invalid = admin_client.get("/admin-api/testapp/product?description__isempty=maybe")
     assert invalid.status_code == 400
     assert invalid.json()["errors"] == [{"message": "Invalid lookup value.", "param": "description__isempty"}]
+
+
+def test_simple_list_filter_without_lookups_is_hidden(admin_client, sample, monkeypatch):
+    class HiddenFilter(SimpleListFilter):
+        title = "hidden"
+        parameter_name = "hidden"
+
+        def lookups(self, request, model_admin):
+            return ()
+
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", (HiddenFilter,))
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    assert response.json()["config"]["filters"] == []
 
 
 def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client, sample, monkeypatch):

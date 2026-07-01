@@ -53,7 +53,7 @@ Statuses:
 | Ordering/sort links | partial | Sort metadata plus multi-column ordering state/link tests | Deeper Django query-string semantics |
 | `list_select_related` and direct FK optimization | partial | `auto_select_related_fields`, tests | Query-count tests and m2m/prefetch strategy |
 | List display links/display metadata | partial | Changelist column metadata | URL/action metadata for frontend rendering |
-| List filters | partial | Package-owned filter classes, bounded date-range filter tests, choices-null tests, empty-filter validation tests, related-filter visibility tests, and common filter tests | Semantic edge-case comparison against Django/upstream |
+| List filters | partial | Package-owned filter classes, bounded date-range filter tests, choices-null tests, empty-filter validation tests, related-filter/simple-filter visibility tests, and common filter tests | Semantic edge-case comparison against Django/upstream |
 | Facets | partial | `_facets=1`, `ShowFacets` support, tests | Query-count optimization and exact Django facet semantics |
 | `date_hierarchy` | partial | Date hierarchy metadata/filter tests, clear/back navigation query strings, selected day state, and invalid date validation | Timezone edge cases and deeper Django navigation parity |
 
