@@ -38,6 +38,16 @@ class Migration(migrations.Migration):
                         max_length=20,
                     ),
                 ),
+                (
+                    "condition",
+                    models.CharField(
+                        blank=True,
+                        choices=[(None, "Unspecified"), ("new", "New"), ("used", "Used")],
+                        default=None,
+                        max_length=20,
+                        null=True,
+                    ),
+                ),
                 ("description", models.TextField(blank=True)),
                 ("manual", models.FileField(blank=True, upload_to="manuals")),
                 ("tags", models.ManyToManyField(blank=True, related_name="products", to="testapp.tag")),

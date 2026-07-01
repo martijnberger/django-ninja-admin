@@ -541,6 +541,38 @@ def test_changelist_can_skip_full_result_count(admin_client, sample, monkeypatch
     assert config["show_admin_actions"] is True
 
 
+def test_choices_list_filter_supports_null_choice(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", ("condition",))
+    Product.objects.filter(pk=sample.pk).update(condition="new")
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    condition_filter = next(
+        item for item in response.json()["config"]["filters"] if item["parameter_name"] == "condition__exact"
+    )
+    choices_by_display = {choice["display"]: choice for choice in condition_filter["choices"]}
+    assert choices_by_display["Unspecified"]["query_string"] == "?condition__isnull=1"
+    assert choices_by_display["New"]["query_string"] == "?condition__exact=new"
+
+    unspecified = admin_client.get("/admin-api/testapp/product?condition__isnull=1")
+    assert unspecified.status_code == 200
+    unspecified_body = unspecified.json()
+    assert unspecified_body["config"]["result_count"] == 1
+    assert unspecified_body["rows"][0]["cells"]["name"] == "Beta"
+    condition_filter = next(
+        item for item in unspecified_body["config"]["filters"] if item["parameter_name"] == "condition__exact"
+    )
+    selected_unspecified = next(choice for choice in condition_filter["choices"] if choice["display"] == "Unspecified")
+    assert selected_unspecified["selected"] is True
+
+    concrete = admin_client.get("/admin-api/testapp/product?condition__exact=new")
+    assert concrete.status_code == 200
+    assert concrete.json()["config"]["result_count"] == 1
+    assert concrete.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+
 def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
     match_one = Tag.objects.create(name="Search Match One")

@@ -19,6 +19,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   with `full_count` omitted when full counts are disabled.
 - Normalized invalid changelist lookup values into typed 400 responses instead
   of leaking Django ORM conversion errors.
+- Added Django-admin-style `NULL` choice handling for choices list filters via
+  `__isnull` query strings.
 
 ## 0.1.2 - 2026-07-01
 

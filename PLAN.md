@@ -93,6 +93,7 @@ Completed or mostly complete:
 - Changelist search now covers Django-style prefix and lookup-suffix behavior, including non-text `__exact` searches that cast field values to text.
 - Package-owned list filter classes for simple, field, choices, related, related-only, boolean, date, all-values, and empty-value filters, with Pydantic-safe filter metadata.
 - Date list filters now use Django-admin-style bounded ranges and clear stale grouped date params when switching choices.
+- Choices list filters now support explicit `NULL` choices with `__isnull` query behavior.
 - Invalid changelist lookup values now return typed API errors for both declared filters and direct field lookups.
 - Expanded changelist metadata for display links, sortable columns, multi-column sort state/query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
 - Date hierarchy metadata now includes clear/back navigation query strings and validates impossible year/month/day combinations.

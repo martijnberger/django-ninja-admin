@@ -31,6 +31,17 @@ class Product(models.Model):
         ],
         default="in_stock",
     )
+    condition = models.CharField(
+        max_length=20,
+        choices=[
+            (None, "Unspecified"),
+            ("new", "New"),
+            ("used", "Used"),
+        ],
+        null=True,
+        blank=True,
+        default=None,
+    )
     description = models.TextField(blank=True)
     manual = models.FileField(upload_to="manuals", blank=True)
 
