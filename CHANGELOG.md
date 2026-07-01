@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Aligned date list-filter ranges with Django admin by adding upper bounds for
   date-time choices and clearing stale date filter params when switching ranges.
+- Invalidated the lazy Ninja API/OpenAPI cache when global admin actions are
+  added or disabled after initial API construction.
 
 ## 0.1.2 - 2026-07-01
 

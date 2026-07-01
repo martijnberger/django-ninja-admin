@@ -136,9 +136,11 @@ class NinjaAdminSite:
         name = name or action.__name__
         self._actions[name] = action
         self._global_actions[name] = action
+        self.clear_cache()
 
     def disable_action(self, name):
         del self._actions[name]
+        self.clear_cache()
 
     def get_action(self, name):
         return self._global_actions[name]

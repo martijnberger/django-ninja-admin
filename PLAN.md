@@ -62,6 +62,7 @@ Completed or mostly complete:
 - Dynamic per-inline Pydantic operation schemas for add/change/delete payloads, exposed under the real `app.model` inline wire keys.
 - Dynamic per-model action payload schemas with OpenAPI enums for registered/global action names.
 - Custom actions can now declare Pydantic/Ninja input and response schemas through `@action(input_schema=..., response_schema=...)`; input schemas are validated before dispatch and exposed as discriminated per-action OpenAPI payload variants.
+- Global action changes now invalidate the lazy Ninja API/OpenAPI cache so action payload schemas stay current after initial API construction.
 - Model routes now advertise richer OpenAPI response maps for typed error bodies, including normalized `422` request-validation responses.
 - Pydantic/Ninja request validation errors are normalized into typed API error bodies.
 - Django `ModelForm` and inline formset validation for create/update/inline mutations.
@@ -127,7 +128,7 @@ Known non-parity areas:
 - Action payload schemas now advertise action names, discriminated per-action input payload variants, and optional custom response schema unions.
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing and multipart file uploads, generated-form `formfield_*` customizations, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
 - Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, history permission filtering, autocomplete pagination, `_to_field` validation, inline permission checks, readonly/unknown inline field rejection, richer inline delete messages, unchanged bulk-row handling, row-indexed inline/bulk errors, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
-- OpenAPI generation works and now has semantic contract coverage for core model routes and custom action input/response schemas, but broader snapshots and example coverage are still needed before release.
+- OpenAPI generation works and now has semantic contract coverage for core model routes, custom action input/response schemas, and global action cache invalidation, but broader snapshots and example coverage are still needed before release.
 - Admin extensibility is still young: custom view routing, route metadata/auth overrides, named response-schema coverage, and display metadata exist, but deeper multi-auth and override-hook parity need work.
 - Release hardening has local/CI `just` gates, wheel import smoke, a clean sample-project smoke, initial PostgreSQL CI coverage, and an initial copyright audit; remaining work is to confirm CI results and repeat the audit before release candidates.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix and targeted local registry/route contracts.

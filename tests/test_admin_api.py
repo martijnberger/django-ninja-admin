@@ -267,6 +267,34 @@ def test_site_registration_contracts_and_decorator(db):
     assert isinstance(admin_site.get_model_admin(Tag), RegisteredTagAdmin)
 
 
+def test_site_action_changes_invalidate_openapi_schema(db):
+    admin_site = NinjaAdminSite(include_auth=False, name="action_cache")
+    admin_site.register(Product, ModelAdmin)
+
+    def action_mapping():
+        schema = admin_site.api.get_openapi_schema(path_prefix="/action-cache")
+        return schema["components"]["schemas"]["ProductAdminActionPayload"]["discriminator"]["mapping"]
+
+    before_mapping = action_mapping()
+    assert "cache_probe" not in before_mapping
+
+    def cache_probe(model_admin, request, queryset):
+        return {"count": queryset.count()}
+
+    cache_probe.short_description = "Cache probe"
+
+    admin_site.add_action(cache_probe)
+
+    after_add_mapping = action_mapping()
+    assert "cache_probe" in after_add_mapping
+    assert after_add_mapping["cache_probe"] == "#/components/schemas/ProductAdminCacheProbeActionPayload"
+
+    admin_site.disable_action("cache_probe")
+
+    after_disable_mapping = action_mapping()
+    assert "cache_probe" not in after_disable_mapping
+
+
 def test_admin_checks_report_invalid_model_admin_configuration(db):
     class BadInline(TabularInline):
         model = Category
