@@ -457,6 +457,18 @@ def test_admin_checks_validate_inline_count_options(db):
     assert bad_ids == {"django_ninja_admin.E073", "django_ninja_admin.E074", "django_ninja_admin.E075"}
 
 
+def test_admin_checks_reject_non_sequence_inlines_option(db):
+    class BadInlineShapeProductAdmin(ModelAdmin):
+        inlines = "not-a-sequence"
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, BadInlineShapeProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E081"}
+
+
 def test_inline_admin_supports_custom_formset_classes(db):
     class CustomInlineFormSet(BaseInlineFormSet):
         pass
@@ -563,6 +575,18 @@ def test_admin_checks_validate_action_permission_hooks(db):
 
     assert "django_ninja_admin.E064" not in valid_ids
     assert bad_ids == {"django_ninja_admin.E064"}
+
+
+def test_admin_checks_reject_non_sequence_actions_option(db):
+    class BadActionsShapeProductAdmin(ModelAdmin):
+        actions = "delete_selected"
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, BadActionsShapeProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E082"}
 
 
 def test_admin_checks_report_form_widget_option_conflicts(db):

@@ -74,6 +74,7 @@ Completed or mostly complete:
 - Inline mutations now distinguish unknown inline IDs from configured-but-forbidden inline operations, returning permission errors for forbidden add/change/delete attempts.
 - Inline mutations reject unknown or readonly row fields before formset save so ignored client input cannot silently pass.
 - Inline mutations now aggregate server-side add/change/delete row errors before any parent or inline writes occur.
+- Admin system checks now reject non-sequence `inlines` configurations before validating individual inline classes.
 - Admin system checks now validate inline `extra`, `min_num`, and `max_num` option types before formset construction.
 - Inline admins now support custom `formset` classes and validate that they inherit from Django's `BaseInlineFormSet`.
 - Inline admin checks now reject `exclude` entries that remove the parent foreign key field from inline forms.
@@ -89,6 +90,7 @@ Completed or mostly complete:
 - Change messages include field labels and inline add/change/delete entries for history/log consumers.
 - Inline deletion change messages now preserve deleted object display text instead of falling back to primary keys.
 - Actions cover custom return values, empty-selection validation, and `select_across` behavior over filtered changelists.
+- Admin system checks now reject non-sequence `actions` configurations before validating registered action names and permission hooks.
 - Changelist responses expose action UI placement and selection-counter metadata for frontend action controls.
 - Changelist responses now honor `show_full_result_count` and expose `show_admin_actions` metadata.
 - Changelist responses now support callable `list_display` entries with stable response keys, labels, display metadata, admin checks, and `admin_order_field` sorting.

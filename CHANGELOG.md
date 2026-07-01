@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added admin system checks rejecting non-sequence `inlines` and `actions`
+  configurations.
+
 ## 0.1.5 - 2026-07-01
 
 - Improved related list-filter parity: many-to-many filters now expose and apply

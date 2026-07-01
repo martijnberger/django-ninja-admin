@@ -886,6 +886,8 @@ def _check_actions(model_admin):
     errors = []
     if model_admin.actions is None:
         return errors
+    if not isinstance(model_admin.actions, (list, tuple)):
+        return [_error(model_admin.__class__, "The value of 'actions' must be a list, tuple, or None.", "E082")]
     for item in model_admin.actions:
         action = model_admin.get_action(item) if callable(item) or isinstance(item, str) else None
         if action is None:
@@ -908,7 +910,11 @@ def _check_inlines(model_admin):
     from django_ninja_admin.admins.inline import InlineModelAdmin
 
     errors = []
-    for inline_class in model_admin.inlines or ():
+    inlines = model_admin.inlines or ()
+    if not isinstance(inlines, (list, tuple)):
+        return [_error(model_admin.__class__, "The value of 'inlines' must be a list or tuple.", "E081")]
+
+    for inline_class in inlines:
         if not isinstance(inline_class, type) or not issubclass(inline_class, InlineModelAdmin):
             errors.append(_error(model_admin.__class__, "Items in 'inlines' must subclass InlineModelAdmin.", "E031"))
             continue
