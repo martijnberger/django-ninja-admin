@@ -22,6 +22,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added admin system checks for invalid custom `form_class` values and
   mismatched `ModelForm` models.
 - Added admin system checks for invalid `formfield_overrides` mappings.
+- Added form-description support for callable entries in `readonly_fields`,
+  including stable string names, labels, values, and display metadata.
 - Added changelist row URL and object-permission metadata for detail, change
   form, delete, and view-on-site frontend actions.
 - Added image-specific response schema and form metadata for Django

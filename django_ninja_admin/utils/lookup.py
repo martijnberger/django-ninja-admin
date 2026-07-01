@@ -2,7 +2,15 @@ from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from django.db.models import Model
 
 
+def field_name_for_display(name):
+    if isinstance(name, str):
+        return name
+    return getattr(name, "__name__", name.__class__.__name__)
+
+
 def display_attr_for_field(name, model, model_admin=None):
+    if not isinstance(name, str) and callable(name):
+        return name
     if model_admin is not None:
         attr = getattr(model_admin, name, None)
         if attr is not None and callable(attr):
@@ -17,11 +25,14 @@ def label_for_field(name, model, model_admin=None):
         short_description = getattr(attr, "short_description", None)
         if short_description:
             return short_description
-    try:
-        field = model._meta.get_field(name)
-        return str(field.verbose_name).title()
-    except FieldDoesNotExist:
-        return getattr(attr, "short_description", None) or name.replace("_", " ").title()
+    if isinstance(name, str):
+        try:
+            field = model._meta.get_field(name)
+            return str(field.verbose_name).title()
+        except FieldDoesNotExist:
+            pass
+    name = field_name_for_display(name)
+    return getattr(attr, "short_description", None) or name.replace("_", " ").title()
 
 
 def display_metadata_for_field(name, model, model_admin=None):
@@ -33,6 +44,8 @@ def display_metadata_for_field(name, model, model_admin=None):
 
 
 def lookup_field(name, obj, model_admin=None):
+    if not isinstance(name, str) and callable(name):
+        return name(obj)
     try:
         field = obj._meta.get_field(name)
         value = getattr(obj, name)

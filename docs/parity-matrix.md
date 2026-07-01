@@ -40,7 +40,7 @@ Statuses:
 | Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, many-to-many `list_display`, `list_editable` form-layout conflict, `fields`/`exclude` item checks, `prepopulated_fields`, `sortable_by`, custom `form_class`, `formfield_overrides`, `list_select_related`, widget-conflict, reverse relation widget, and manual-through m2m widget tests | Match Django check IDs/coverage more closely |
 | `get_changelist()` hooks | implemented | `ModelAdmin.get_changelist*`, route hook test | More subclassing examples/docs |
 | Custom site/model views | partial | `admin_view()`, `get_urls()`, `route()`, route tags/descriptions, hidden routes, raw method wrapping, `auth=None`, named response schemas, custom route tests, and site/route-level auth-sequence route tests | Deeper override-hook parity and upstream fixture comparisons |
-| Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values, and model-property metadata in changelist tests | More readonly-field display variants |
+| Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values, model-property metadata in changelist tests, and callable readonly-field metadata | More readonly-field display variants |
 
 ## Changelist, Filtering, Search, And Ordering
 
@@ -65,7 +65,7 @@ Statuses:
 | Pydantic request envelopes | partial | Per-model create/update/bulk, per-inline operation, discriminated action payload variants, and custom action input schemas with OpenAPI tests | Broader edge-case schemas and snapshots |
 | Django ModelForm validation | implemented | Create/update tests | More field/widget variants |
 | Custom `form_class` and formfield hooks | partial | Mounted custom-form and custom-formfield route tests cover schema fields, custom widget attrs, `formfield_overrides`, `formfield_for_dbfield`, relation/choice hooks, form validation, persistence, and system checks for `form_class`/`formfield_overrides` | More media and field override edge cases |
-| Form descriptions | partial | Widget, custom-widget, validator, relation, numeric, decimal, choice, readonly display, model-field, file/image, m2m, and admin-widget metadata tests | Custom field metadata and advanced widget details |
+| Form descriptions | partial | Widget, custom-widget, validator, relation, numeric, decimal, choice, readonly display/callable, model-field, file/image, m2m, and admin-widget metadata tests | Custom field metadata and advanced widget details |
 | File/image fields | partial | FileField output schema/serialization, ImageField typed metadata, current-file form metadata, JSON clear tests, multipart create/update routes, and Pydantic validation for multipart JSON parts | Real image upload validation and deeper storage/widget edge cases |
 | Many-to-many fields | partial | Pydantic write schema, form value metadata, output serialization, create/update tests | Through models, permissions, and richer dual-select widget semantics |
 | Raw ID/radio/filter-horizontal/prepopulated | partial | Per-field `admin_widget`, radio orientation, prepopulated source, raw-id, filter-horizontal/filter-vertical, and conflict-check tests | Full Django widget rendering semantics and more edge cases |

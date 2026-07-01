@@ -1519,11 +1519,22 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
 
 def test_readonly_display_fields_include_values_and_display_metadata(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
-    monkeypatch.setattr(product_admin, "readonly_fields", ("upper_name", "has_description", "subtitle"))
+
+    def callable_summary(obj):
+        return f"{obj.name}:{obj.stock_status}"
+
+    callable_summary.short_description = "Callable summary"
+    monkeypatch.setattr(
+        product_admin,
+        "readonly_fields",
+        ("upper_name", "has_description", "subtitle", callable_summary),
+    )
 
     response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
 
     assert response.status_code == 200
+    assert "callable_summary" in response.json()["form"]["readonly_fields"]
+    assert "django_ninja_admin.E012" not in {error.id for error in product_admin.check()}
     fields_by_name = {field["name"]: field for field in response.json()["form"]["fields"]}
     assert fields_by_name["upper_name"]["attrs"]["label"] == "Upper name"
     assert fields_by_name["upper_name"]["attrs"]["value"] == "ALPHA"
@@ -1534,6 +1545,9 @@ def test_readonly_display_fields_include_values_and_display_metadata(admin_clien
     assert fields_by_name["subtitle"]["attrs"]["label"] == "Subtitle"
     assert fields_by_name["subtitle"]["attrs"]["value"] == "Nice camera"
     assert fields_by_name["subtitle"]["attrs"]["empty_value_display"] == "No subtitle"
+    assert fields_by_name["callable_summary"]["attrs"]["label"] == "Callable summary"
+    assert fields_by_name["callable_summary"]["attrs"]["value"] == "Alpha:in_stock"
+    assert fields_by_name["callable_summary"]["attrs"]["read_only"] is True
 
     empty_product = Product.objects.get(name="Beta")
     empty_response = admin_client.get(f"/admin-api/testapp/product/{empty_product.pk}/form")

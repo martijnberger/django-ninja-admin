@@ -294,6 +294,8 @@ def _check_form_layout(model_admin):
 
     readonly_fields = tuple(model_admin.get_readonly_fields(None) or ())
     for item in readonly_fields:
+        if callable(item):
+            continue
         if not isinstance(item, str) or not _field_or_attr_exists(model_admin, item):
             errors.append(
                 _error(

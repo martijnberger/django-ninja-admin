@@ -18,6 +18,7 @@ from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 from django_ninja_admin.utils.forms import file_value_metadata, form_field_descriptions, image_value_metadata
+from django_ninja_admin.utils.lookup import field_name_for_display
 
 
 class BaseAdmin:
@@ -351,7 +352,7 @@ class BaseAdmin:
         }
         form_description = {
             "model": f"{self.model._meta.app_label}.{self.model._meta.model_name}",
-            "readonly_fields": list(self.get_readonly_fields(request, obj)),
+            "readonly_fields": [field_name_for_display(field) for field in self.get_readonly_fields(request, obj)],
             "fields": self.get_form_fields_description(request, obj),
             "fieldsets": list(self.get_fieldsets(request, obj)),
             "prepopulated": dict(self.get_prepopulated_fields(request, obj)),

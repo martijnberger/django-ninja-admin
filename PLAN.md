@@ -87,6 +87,7 @@ Completed or mostly complete:
 - Changelist responses expose action UI placement and selection-counter metadata for frontend action controls.
 - Changelist responses now honor `show_full_result_count` and expose `show_admin_actions` metadata.
 - Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, readonly, model `blank`/`null`, uniqueness/index, default, and upload metadata.
+- Form descriptions now support callable `readonly_fields`, exposing stable string names, labels, values, and display metadata while accepting them in admin checks.
 - Permission hardening for actions, autocomplete, view-on-site, and object-level bulk updates.
 - Ninja-native `ChangeList` foundation for validated lookup params, shared action/changelist querysets, search, ordering, pagination, show-all behavior, `list_select_related`, `date_hierarchy`, and facet counts.
 - Changelist search now applies distinct results for duplicate-prone many-to-many search paths.
