@@ -214,10 +214,39 @@ temporal_site.register(Category, ModelAdmin)
 temporal_site.register(Product, TemporalProductAdmin)
 
 
+class ScalarProductForm(forms.ModelForm):
+    homepage = forms.URLField(required=False)
+    host = forms.GenericIPAddressField(required=False)
+    tracking_id = forms.UUIDField(required=False)
+
+    class Meta:
+        model = Product
+        fields = ("name", "category", "price", "stock_status", "homepage", "host", "tracking_id")
+
+
+class ScalarProductAdmin(ModelAdmin):
+    form_class = ScalarProductForm
+
+    def save_form(self, request, form, change):
+        obj = super().save_form(request, form, change)
+        homepage = form.cleaned_data.get("homepage")
+        host = form.cleaned_data.get("host")
+        tracking_id = form.cleaned_data.get("tracking_id")
+        if homepage or host or tracking_id:
+            obj.description = f"{homepage}|{host}|{tracking_id}"
+        return obj
+
+
+scalar_site = NinjaAdminSite(name="scalar_admin", include_auth=False)
+scalar_site.register(Category, ModelAdmin)
+scalar_site.register(Product, ScalarProductAdmin)
+
+
 urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
     path("custom-formfield-admin/", custom_formfield_site.urls),
     path("split-datetime-admin/", split_datetime_site.urls),
     path("multi-value-admin/", multi_value_site.urls),
     path("temporal-admin/", temporal_site.urls),
+    path("scalar-admin/", scalar_site.urls),
 ]

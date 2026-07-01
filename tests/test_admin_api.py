@@ -2314,6 +2314,62 @@ def test_temporal_payload_uses_pydantic_cleaned_python_values_for_form_binding(a
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_scalar_payload_normalizes_pydantic_python_values_for_form_binding(admin_client, sample):
+    invalid = admin_client.post(
+        "/scalar-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Bad scalar",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "homepage": "https://example.com/products",
+                "host": "not-an-ip",
+                "tracking_id": "550e8400-e29b-41d4-a716-446655440000",
+            }
+        },
+        content_type="application/json",
+    )
+    assert invalid.status_code == 422
+    assert invalid.json()["errors"][0]["param"] == "data.host"
+
+    created = admin_client.post(
+        "/scalar-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Scalar payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "homepage": "https://example.com/products",
+                "host": "2001:db8::1",
+                "tracking_id": "550e8400-e29b-41d4-a716-446655440000",
+            }
+        },
+        content_type="application/json",
+    )
+    assert created.status_code == 201, created.json()
+    product_id = created.json()["data"]["id"]
+    product = Product.objects.get(pk=product_id)
+    assert product.description == "https://example.com/products|2001:db8::1|550e8400-e29b-41d4-a716-446655440000"
+
+    changed = admin_client.patch(
+        f"/scalar-admin/testapp/product/{product_id}",
+        data={
+            "data": {
+                "homepage": "https://example.com/changed",
+                "host": "192.0.2.10",
+                "tracking_id": "550e8400-e29b-41d4-a716-446655440001",
+            }
+        },
+        content_type="application/json",
+    )
+    assert changed.status_code == 200, changed.json()
+    product.refresh_from_db()
+    assert product.description == "https://example.com/changed|192.0.2.10|550e8400-e29b-41d4-a716-446655440001"
+
+
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_client, sample):
     allowed_category = Category.objects.create(name="Allowed Cameras")
 
