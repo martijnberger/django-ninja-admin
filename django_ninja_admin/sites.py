@@ -263,7 +263,7 @@ class NinjaAdminSite:
             "site_title": str(self.site_title),
             "site_header": str(self.site_header),
             "site_url": site_url,
-            "has_permission": request.user.is_active and request.user.is_staff,
+            "has_permission": self.has_permission(request),
             "available_apps": self.get_app_list(request),
             "is_nav_sidebar_enabled": self.enable_nav_sidebar,
         }

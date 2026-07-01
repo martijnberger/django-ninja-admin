@@ -55,6 +55,7 @@ Completed or mostly complete:
 - Public exports for `site`, `NinjaAdminSite`, `ModelAdmin`, inlines, decorators, registration, and package-owned admin filter classes.
 - Registry coverage now includes option-based registration, duplicate/unregistered errors, abstract-model rejection, swapped-model skipping, and the public `@register` decorator.
 - Core site/model routes for apps, context, permissions, history, autocomplete, view-on-site, changelist, detail, add/change/delete, actions, and bulk updates.
+- Context metadata honors custom site title/header/url/sidebar settings and uses `NinjaAdminSite.has_permission()` for permission status.
 - Default `SessionAuthIsStaff`, explicit `auth=None`, custom auth callable, and multiple Ninja auth callable support.
 - Basic Pydantic request envelopes and typed response schemas.
 - Dynamic Pydantic output schemas with FK labels, many-to-many IDs, and `schema_field_overrides`.

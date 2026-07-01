@@ -228,8 +228,30 @@ multi_auth_site = MultiAuthAdminSite(
     include_auth=False,
 )
 
+
+class CustomContextAdminSite(NinjaAdminSite):
+    site_title = "Custom Context Title"
+    site_header = "Custom Context Header"
+    site_url = "/dashboard/"
+    enable_nav_sidebar = False
+
+
+context_site = CustomContextAdminSite(name="context_admin", include_auth=False)
+context_site.register(Category, ModelAdmin)
+
+
+class LockedContextAdminSite(NinjaAdminSite):
+    def has_permission(self, request):
+        return False
+
+
+locked_context_site = LockedContextAdminSite(name="locked_context_admin", include_auth=False)
+
+
 urlpatterns = [
     path("custom-admin/", custom_site.urls),
     path("slug-autocomplete-admin/", slug_autocomplete_site.urls),
     path("multi-auth-admin/", multi_auth_site.urls),
+    path("context-admin/", context_site.urls),
+    path("locked-context-admin/", locked_context_site.urls),
 ]

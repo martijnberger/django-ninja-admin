@@ -2327,6 +2327,26 @@ def test_site_auth_accepts_ninja_auth_sequences():
     assert schema["components"]["securitySchemes"]["SecondaryTokenAuth"]["name"] == "X-Secondary-Token"
 
 
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_context_uses_site_customization_and_permission_hook(admin_client):
+    response = admin_client.get("/context-admin/context")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["site_title"] == "Custom Context Title"
+    assert body["site_header"] == "Custom Context Header"
+    assert body["site_url"] == "/dashboard/"
+    assert body["is_nav_sidebar_enabled"] is False
+    assert body["has_permission"] is True
+    assert [app["app_label"] for app in body["available_apps"]] == ["testapp"]
+    assert [model["model_name"] for model in body["available_apps"][0]["models"]] == ["category"]
+
+    locked_response = admin_client.get("/locked-context-admin/context")
+
+    assert locked_response.status_code == 200
+    assert locked_response.json()["has_permission"] is False
+
+
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, sample):
     schema = admin_client.get("/custom-form-admin/openapi.json").json()

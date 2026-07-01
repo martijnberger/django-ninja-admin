@@ -23,7 +23,7 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | `GET /apps` and `GET /apps/{app_label}` | implemented | `NinjaAdminSite.get_app_list`, API tests | Upstream fixture comparisons |
-| `GET /context` | implemented | `NinjaAdminSite.each_context`, API tests | Add site customization tests |
+| `GET /context` | implemented | `NinjaAdminSite.each_context`, API tests, custom metadata tests, and `has_permission()` override coverage | Upstream fixture comparisons |
 | `GET /permissions` | implemented | Site route in `sites.py` | Broader auth matrix |
 | `GET /history` | partial | History route, log model, app/model/object/action filter, permission-filter tests, client-controlled page/page-size pagination, per-row model identity/object links, and Django-style change-message text | Broader upstream history fixture comparisons |
 | `GET /autocomplete` | partial | Permission-hardened route plus rich pagination metadata, many-to-many source-field tests, and non-PK `ForeignKey(to_field=...)` option IDs | Additional remote-field and permission edge cases |

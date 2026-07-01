@@ -14,6 +14,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   routes by adding deterministic HTTP-method suffixes.
 - Added standard typed error response maps to custom site/model admin routes
   while preserving explicit response-map entries.
+- Made `/context` permission metadata honor `NinjaAdminSite.has_permission()`
+  overrides and added custom site metadata coverage.
 
 ## 0.1.15 - 2026-07-02
 
