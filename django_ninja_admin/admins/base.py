@@ -296,6 +296,8 @@ class BaseAdmin:
             return float
         if isinstance(field, forms.SplitDateTimeField):
             return tuple[date, time]
+        if isinstance(field, forms.MultiValueField):
+            return self.get_pydantic_type_for_multivalue_field(field, choices_as_literal=choices_as_literal)
         if isinstance(field, forms.DateTimeField):
             return datetime
         if isinstance(field, forms.DateField):
@@ -381,6 +383,15 @@ class BaseAdmin:
                 ]
             return coerce
         return self.get_pydantic_type_for_choices(field.choices, as_literal=choices_as_literal)
+
+    def get_pydantic_type_for_multivalue_field(self, field, *, choices_as_literal=True):
+        field_types = tuple(
+            self.get_pydantic_type_for_form_field(subfield, choices_as_literal=choices_as_literal)
+            for subfield in field.fields
+        )
+        if not field_types:
+            return list[Any]
+        return tuple.__class_getitem__(field_types)
 
     def get_pydantic_type_for_choices(self, choices, *, as_literal=True):
         literal_type = self.get_pydantic_literal_for_choices(choices) if as_literal else None

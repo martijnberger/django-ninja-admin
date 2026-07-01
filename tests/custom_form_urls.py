@@ -146,8 +146,53 @@ split_datetime_site.register(Category, ModelAdmin)
 split_datetime_site.register(Product, SplitDateTimeProductAdmin)
 
 
+class CodeCountWidget(forms.MultiWidget):
+    def __init__(self, attrs=None):
+        super().__init__([forms.TextInput(), forms.NumberInput()], attrs)
+
+    def decompress(self, value):
+        if not value:
+            return ["", ""]
+        code, _separator, count = str(value).partition(":")
+        return [code, count]
+
+
+class CodeCountField(forms.MultiValueField):
+    widget = CodeCountWidget
+
+    def __init__(self, *args, **kwargs):
+        fields = (
+            forms.RegexField(regex=r"^[A-Z]{3}$"),
+            forms.IntegerField(min_value=1, max_value=9),
+        )
+        super().__init__(*args, fields=fields, require_all_fields=True, **kwargs)
+
+    def compress(self, data_list):
+        if not data_list:
+            return ""
+        return f"{data_list[0]}:{data_list[1]}"
+
+
+class MultiValueProductForm(forms.ModelForm):
+    description = CodeCountField(required=False)
+
+    class Meta:
+        model = Product
+        fields = ("name", "category", "price", "stock_status", "description")
+
+
+class MultiValueProductAdmin(ModelAdmin):
+    form_class = MultiValueProductForm
+
+
+multi_value_site = NinjaAdminSite(name="multi_value_admin", include_auth=False)
+multi_value_site.register(Category, ModelAdmin)
+multi_value_site.register(Product, MultiValueProductAdmin)
+
+
 urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
     path("custom-formfield-admin/", custom_formfield_site.urls),
     path("split-datetime-admin/", split_datetime_site.urls),
+    path("multi-value-admin/", multi_value_site.urls),
 ]

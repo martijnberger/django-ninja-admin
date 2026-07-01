@@ -2203,6 +2203,70 @@ def test_split_datetime_payload_uses_pydantic_and_multivalue_form_normalization(
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_multivalue_payload_uses_subfield_pydantic_and_form_normalization(admin_client, sample):
+    schema = admin_client.get("/multi-value-admin/openapi.json").json()
+    description_schema = schema["components"]["schemas"]["ProductAdminCreateData"]["properties"]["description"][
+        "anyOf"
+    ][0]
+    assert description_schema["prefixItems"][0]["pattern"] == "^[A-Z]{3}$"
+    assert description_schema["prefixItems"][1]["minimum"] == 1
+    assert description_schema["prefixItems"][1]["maximum"] == 9
+
+    invalid = admin_client.post(
+        "/multi-value-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Bad code count",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "description": ["abc", 4],
+            }
+        },
+        content_type="application/json",
+    )
+    assert invalid.status_code == 422
+    assert invalid.json()["errors"][0]["param"] == "data.description.0"
+
+    created = admin_client.post(
+        "/multi-value-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Code counted",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "description": ["ABC", "4"],
+            }
+        },
+        content_type="application/json",
+    )
+    assert created.status_code == 201, created.json()
+    product_id = created.json()["data"]["id"]
+    product = Product.objects.get(pk=product_id)
+    assert product.description == "ABC:4"
+
+    renamed = admin_client.patch(
+        f"/multi-value-admin/testapp/product/{product_id}",
+        data={"data": {"name": "Code counted again"}},
+        content_type="application/json",
+    )
+    assert renamed.status_code == 200, renamed.json()
+    product.refresh_from_db()
+    assert product.name == "Code counted again"
+    assert product.description == "ABC:4"
+
+    changed = admin_client.patch(
+        f"/multi-value-admin/testapp/product/{product_id}",
+        data={"data": {"description": ["XYZ", 9]}},
+        content_type="application/json",
+    )
+    assert changed.status_code == 200, changed.json()
+    product.refresh_from_db()
+    assert product.description == "XYZ:9"
+
+
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_client, sample):
     allowed_category = Category.objects.create(name="Allowed Cameras")
 

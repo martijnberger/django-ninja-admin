@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added native Pydantic request schema typing and mutation normalization for
   Django `SplitDateTimeField` payloads.
+- Added recursive Pydantic request schema typing and mutation normalization for
+  generic Django `MultiValueField` payloads.
 
 ## 0.1.12 - 2026-07-01
 
