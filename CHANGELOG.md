@@ -26,6 +26,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   show-all, and empty result sets.
 - Added changelist first/previous/next/last page query-string metadata that
   preserves active filters, search, page size, and ordering.
+- Added structured changelist page choices with selected state and query
+  strings for page-range rendering.
 
 ## 0.1.15 - 2026-07-02
 

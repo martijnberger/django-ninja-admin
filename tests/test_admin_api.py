@@ -1641,6 +1641,11 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert paginated_body["config"]["multi_page"] is True
     assert paginated_body["config"]["pagination_required"] is True
     assert paginated_body["config"]["page_range"] == [1, 2, 3]
+    assert paginated_body["config"]["page_choices"] == [
+        {"display": "1", "page": 1, "selected": False, "query_string": "?pp=1"},
+        {"display": "2", "page": 2, "selected": True, "query_string": "?pp=1&p=2"},
+        {"display": "3", "page": 3, "selected": False, "query_string": "?pp=1&p=3"},
+    ]
     assert len(paginated_body["rows"]) == 1
     assert paginated_body["config"]["page_result_count"] == 1
     assert paginated_body["config"]["result_start_index"] == 2
@@ -1671,6 +1676,7 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
         paginated_body["config"]["previous_page_query_string"],
         paginated_body["config"]["next_page_query_string"],
         paginated_body["config"]["last_page_query_string"],
+        *(choice["query_string"] for choice in paginated_body["config"]["page_choices"] if choice["query_string"]),
     ):
         params = QueryDict(query_string.removeprefix("?"))
         assert "page" not in params
@@ -1708,6 +1714,7 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert show_all_body["config"]["can_show_all"] is True
     assert show_all_body["config"]["pagination_required"] is False
     assert show_all_body["config"]["page_range"] == []
+    assert show_all_body["config"]["page_choices"] == []
     assert show_all_body["config"]["first_page_query_string"] is None
     assert show_all_body["config"]["previous_page_query_string"] is None
     assert show_all_body["config"]["next_page_query_string"] is None

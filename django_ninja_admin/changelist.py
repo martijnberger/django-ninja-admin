@@ -430,6 +430,29 @@ class ChangeList:
             return []
         return list(self.paginator.get_elided_page_range(self.page_num))
 
+    def get_page_choices(self):
+        choices = []
+        for item in self.get_page_range():
+            if isinstance(item, int):
+                choices.append(
+                    {
+                        "display": str(item),
+                        "page": item,
+                        "selected": item == self.page_num,
+                        "query_string": self.page_query_string(item),
+                    }
+                )
+            else:
+                choices.append(
+                    {
+                        "display": str(item),
+                        "page": None,
+                        "selected": False,
+                        "query_string": None,
+                    }
+                )
+        return choices
+
     def page_query_string(self, page_number):
         if page_number <= 1:
             return self.get_query_string(remove=PAGE_PARAMS | {"all"})

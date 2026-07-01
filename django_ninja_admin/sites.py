@@ -1149,6 +1149,7 @@ class NinjaAdminSite:
                 "multi_page": changelist.multi_page,
                 "pagination_required": changelist.pagination_required,
                 "page_range": changelist.get_page_range(),
+                "page_choices": changelist.get_page_choices(),
                 **changelist.pagination_query_strings(),
                 "show_all": changelist.show_all,
                 "can_show_all": changelist.can_show_all_results,

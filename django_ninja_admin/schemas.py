@@ -201,6 +201,13 @@ class DateHierarchyDescription(Schema):
     choices: list[DateHierarchyChoice]
 
 
+class PageChoice(Schema):
+    display: str
+    page: int | None = None
+    selected: bool = False
+    query_string: str | None = None
+
+
 class ChangelistConfig(Schema):
     full_count: int | None
     result_count: int
@@ -215,6 +222,7 @@ class ChangelistConfig(Schema):
     multi_page: bool = False
     pagination_required: bool = False
     page_range: list[int | str] = []
+    page_choices: list[PageChoice] = []
     first_page_query_string: str | None = None
     previous_page_query_string: str | None = None
     next_page_query_string: str | None = None
