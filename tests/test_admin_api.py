@@ -1555,6 +1555,25 @@ def test_all_values_list_filter_supports_null_choice(admin_client, sample, monke
     assert null_choice["selected"] is True
 
 
+def test_list_filters_reject_invalid_isnull_values(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    monkeypatch.setattr(product_admin, "list_filter", ("condition",))
+    choices_response = admin_client.get("/admin-api/testapp/product?condition__isnull=maybe")
+    assert choices_response.status_code == 400
+    assert choices_response.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
+
+    monkeypatch.setattr(product_admin, "list_filter", ("category",))
+    related_response = admin_client.get("/admin-api/testapp/product?category__isnull=maybe")
+    assert related_response.status_code == 400
+    assert related_response.json()["errors"] == [{"message": "Invalid lookup value.", "param": "category__isnull"}]
+
+    monkeypatch.setattr(product_admin, "list_filter", (("condition", AllValuesFieldListFilter),))
+    all_values_response = admin_client.get("/admin-api/testapp/product?condition__isnull=maybe")
+    assert all_values_response.status_code == 400
+    assert all_values_response.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
+
+
 def test_empty_field_list_filter_validates_values(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
     monkeypatch.setattr(product_admin, "list_filter", (("description", EmptyFieldListFilter),))

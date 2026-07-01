@@ -29,6 +29,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `ShowFacets.ALWAYS` behavior.
 - Aligned all-values list filters with Django-admin null-choice behavior by
   using `__isnull` query strings for `NULL` values.
+- Tightened list-filter `__isnull` handling so malformed boolean values return
+  typed lookup errors instead of being treated as false.
 
 ## 0.1.5 - 2026-07-01
 
