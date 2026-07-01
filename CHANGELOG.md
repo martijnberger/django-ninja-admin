@@ -22,6 +22,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   the generated admin form by `fields`, `fieldsets`, or `exclude`.
 - Expanded date hierarchy metadata with clear/back navigation query strings and
   validation for impossible year/month/day combinations.
+- Aligned changelist search `__exact` handling for non-text fields with
+  Django admin by casting field values to text instead of coercing search terms.
 
 ## 0.1.1 - 2026-07-01
 

@@ -464,6 +464,41 @@ def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client
     assert [row["cells"]["name"] for row in response.json()["rows"]] == ["Alpha"]
 
 
+def test_changelist_search_supports_lookup_suffixes(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    Product.objects.create(
+        name="Alphabet",
+        category=sample.category,
+        price="14.00",
+        description="Starts the same",
+    )
+    Product.objects.create(
+        name="Beta Alpha",
+        category=sample.category,
+        price="5.00",
+        description="Contains the word later",
+    )
+
+    monkeypatch.setattr(product_admin, "search_fields", ("^name",))
+    startswith = admin_client.get("/admin-api/testapp/product?q=Alpha")
+    assert startswith.status_code == 200
+    assert [row["cells"]["name"] for row in startswith.json()["rows"]] == ["Alpha", "Alphabet"]
+
+    monkeypatch.setattr(product_admin, "search_fields", ("=name",))
+    iexact = admin_client.get("/admin-api/testapp/product?q=alpha")
+    assert iexact.status_code == 200
+    assert [row["cells"]["name"] for row in iexact.json()["rows"]] == ["Alpha"]
+
+    monkeypatch.setattr(product_admin, "search_fields", ("category__id__exact",))
+    category_exact = admin_client.get(f"/admin-api/testapp/product?q={sample.category_id}")
+    assert category_exact.status_code == 200
+    assert category_exact.json()["config"]["result_count"] == 4
+
+    padded_category = admin_client.get(f"/admin-api/testapp/product?q={sample.category_id:03d}")
+    assert padded_category.status_code == 200
+    assert padded_category.json()["config"]["result_count"] == 0
+
+
 def test_changelist_auto_selects_related_list_display_fields(db):
     user = get_user_model().objects.create_user("query-admin", password="pw", is_staff=True)
     user.user_permissions.set(Permission.objects.all())

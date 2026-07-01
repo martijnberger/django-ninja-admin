@@ -9,6 +9,7 @@ from django.core.exceptions import FieldDoesNotExist, PermissionDenied, Validati
 from django.core.paginator import Paginator
 from django.db import models
 from django.db.models.constants import LOOKUP_SEP
+from django.db.models.functions import Cast
 from django.forms.models import model_to_dict
 from django.utils.text import capfirst, smart_split, unescape_string_literal
 from django.utils.translation import gettext_lazy as _
@@ -233,14 +234,23 @@ class ModelAdmin(BaseAdmin):
             opts = queryset.model._meta
             prev_field = None
             may_have_duplicates = False
-            for path_part in field_name.split(LOOKUP_SEP):
+            lookup_fields = field_name.split(LOOKUP_SEP)
+            for index, path_part in enumerate(lookup_fields):
                 if path_part == "pk":
                     path_part = opts.pk.name
                 try:
                     field = opts.get_field(path_part)
                 except FieldDoesNotExist:
                     if prev_field and prev_field.get_lookup(path_part):
-                        return field_name, prev_field if path_part == "exact" else None, may_have_duplicates
+                        if path_part == "exact" and not isinstance(prev_field, (models.CharField, models.TextField)):
+                            field_name_without_exact = LOOKUP_SEP.join(lookup_fields[:index])
+                            alias_name = f"{'_'.join(lookup_fields[:index])}_str"
+                            return (
+                                alias_name,
+                                Cast(field_name_without_exact, output_field=models.CharField()),
+                                may_have_duplicates,
+                            )
+                        return field_name, None, may_have_duplicates
                     return f"{field_name}__icontains", None, may_have_duplicates
                 prev_field = field
                 if hasattr(field, "path_infos"):
@@ -254,22 +264,21 @@ class ModelAdmin(BaseAdmin):
         search_fields = self.get_search_fields(request)
         if search_fields and search_term:
             orm_lookups = [construct_search(str(field)) for field in search_fields]
+            str_aliases = {
+                orm_lookup: alias
+                for orm_lookup, alias, _lookup_may_have_duplicates in orm_lookups
+                if alias is not None
+            }
+            if str_aliases:
+                queryset = queryset.alias(**str_aliases)
             may_have_duplicates = any(lookup_may_have_duplicates for _, _, lookup_may_have_duplicates in orm_lookups)
             term_queries = []
             for bit in smart_split(search_term):
                 if bit.startswith(('"', "'")) and bit[0] == bit[-1]:
                     bit = unescape_string_literal(bit)
                 bit_lookups = []
-                for orm_lookup, validate_field, _lookup_may_have_duplicates in orm_lookups:
-                    if validate_field is not None:
-                        formfield = validate_field.formfield()
-                        try:
-                            value = formfield.to_python(bit) if formfield is not None else validate_field.to_python(bit)
-                        except ValidationError:
-                            continue
-                    else:
-                        value = bit
-                    bit_lookups.append((orm_lookup, value))
+                for orm_lookup, _alias, _lookup_may_have_duplicates in orm_lookups:
+                    bit_lookups.append((orm_lookup, bit))
                 if bit_lookups:
                     term_queries.append(models.Q.create(bit_lookups, connector=models.Q.OR))
                 else:
