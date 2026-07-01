@@ -12,7 +12,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added native Pydantic request schema typing for Django typed choice fields
   whose `coerce` hook uses a concrete Python type.
 - Added Pydantic request schema constraints for Django form string lengths,
-  regex patterns, numeric bounds, and decimal precision.
+  field/validator regex patterns, numeric bounds, and decimal precision.
 
 ## 0.1.11 - 2026-07-01
 

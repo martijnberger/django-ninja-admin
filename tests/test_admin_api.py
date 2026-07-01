@@ -12,6 +12,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.paginator import Paginator
+from django.core.validators import RegexValidator
 from django.db import connection, models
 from django.forms.models import BaseInlineFormSet
 from django.test import Client, RequestFactory, override_settings
@@ -2244,6 +2245,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
             decimal_places=2,
         )
         product_code = forms.RegexField(required=False, regex=r"^[A-Z]{3}$", min_length=3, max_length=3)
+        sku = forms.CharField(required=False, validators=[RegexValidator(r"^SKU-[0-9]+$")])
+        slug = forms.SlugField(required=False)
 
         class Meta:
             model = Product
@@ -2270,6 +2273,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
             "bounded_count": 3,
             "bounded_price": "4.50",
             "product_code": "ABC",
+            "sku": "SKU-123",
+            "slug": "camera-case",
         }
     )
 
@@ -2281,6 +2286,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert validated.bounded_count == 3
     assert validated.bounded_price == Decimal("4.50")
     assert validated.product_code == "ABC"
+    assert validated.sku == "SKU-123"
+    assert validated.slug == "camera-case"
 
     json_schema = schema.model_json_schema()["properties"]
     assert json_schema["bounded_name"]["anyOf"][0]["maxLength"] == 8
@@ -2291,6 +2298,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert json_schema["bounded_price"]["anyOf"][0]["minimum"] == 1.0
     assert json_schema["bounded_price"]["anyOf"][1]["pattern"]
     assert json_schema["product_code"]["anyOf"][0]["pattern"] == "^[A-Z]{3}$"
+    assert json_schema["sku"]["anyOf"][0]["pattern"] == "^SKU-[0-9]+$"
+    assert json_schema["slug"]["anyOf"][0]["pattern"].endswith(r"\z")
 
     with pytest.raises(PydanticValidationError):
         schema.model_validate(
@@ -2307,6 +2316,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_count": 3,
                 "bounded_price": "4.50",
                 "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
             }
         )
 
@@ -2325,6 +2336,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_count": 3,
                 "bounded_price": "4.50",
                 "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
             }
         )
 
@@ -2343,6 +2356,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_count": 3,
                 "bounded_price": "4.50",
                 "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
             }
         )
 
@@ -2361,6 +2376,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_count": 3,
                 "bounded_price": "4.50",
                 "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
             }
         )
 
@@ -2379,6 +2396,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_count": 6,
                 "bounded_price": "4.50",
                 "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
             }
         )
 
@@ -2397,6 +2416,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_count": 3,
                 "bounded_price": "123.45",
                 "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
             }
         )
 
@@ -2415,6 +2436,48 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_count": 3,
                 "bounded_price": "4.50",
                 "product_code": "abc",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "not a slug",
             }
         )
 

@@ -7,6 +7,7 @@ from uuid import UUID
 from django import forms
 from django.contrib.auth import get_permission_codename
 from django.core.exceptions import FieldDoesNotExist
+from django.core.validators import RegexValidator
 from django.db import models
 from django.forms import modelform_factory
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
@@ -302,8 +303,7 @@ class BaseAdmin:
                 constraints["min_length"] = field.min_length
             if getattr(field, "max_length", None) is not None:
                 constraints["max_length"] = field.max_length
-            regex = getattr(field, "regex", None)
-            pattern = getattr(regex, "pattern", regex)
+            pattern = self.get_pydantic_pattern_for_form_field(field)
             if pattern:
                 constraints["pattern"] = pattern
         if isinstance(field, (forms.DecimalField, forms.FloatField, forms.IntegerField)):
@@ -317,6 +317,23 @@ class BaseAdmin:
             if getattr(field, "decimal_places", None) is not None:
                 constraints["decimal_places"] = field.decimal_places
         return constraints
+
+    def get_pydantic_pattern_for_form_field(self, field):
+        pattern = self.normalize_pydantic_pattern(getattr(field, "regex", None))
+        if pattern:
+            return pattern
+        for validator in getattr(field, "validators", ()):
+            if isinstance(validator, RegexValidator):
+                pattern = self.normalize_pydantic_pattern(getattr(validator, "regex", None))
+                if pattern:
+                    return pattern
+        return None
+
+    def normalize_pydantic_pattern(self, regex):
+        pattern = getattr(regex, "pattern", regex)
+        if not isinstance(pattern, str):
+            return None
+        return pattern.replace(r"\A", "^").replace(r"\Z", r"\z")
 
     def get_pydantic_type_for_typed_choice_field(self, field):
         coerce = getattr(field, "coerce", None)
