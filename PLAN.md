@@ -115,7 +115,7 @@ Completed or mostly complete:
 - Pydantic request schemas now infer typed list entries for multiple-choice
   fields from declared choice values.
 - Pydantic request schemas now constrain concrete Django choice values with
-  enum-style `Literal` schemas where possible.
+  enum-style `Literal` schemas where possible, including grouped choices.
 - Pydantic request schemas now infer Django typed choice fields from concrete
   `coerce` hooks such as `int`.
 - Pydantic request schemas now validate typed choice fields against declared

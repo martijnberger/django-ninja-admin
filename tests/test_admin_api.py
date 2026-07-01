@@ -2545,6 +2545,13 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
             required=False,
             choices=(("draft", "Draft"), ("live", "Live")),
         )
+        grouped_status = forms.ChoiceField(
+            required=False,
+            choices=(
+                ("Publishing", (("draft", "Draft"), ("live", "Live"))),
+                ("Archive", (("archived", "Archived"),)),
+            ),
+        )
         numeric_flags = forms.MultipleChoiceField(
             required=False,
             choices=((1, "One"), (2, "Two")),
@@ -2581,6 +2588,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
             "price": "9.00",
             "stock_status": "in_stock",
             "status_override": "draft",
+            "grouped_status": "archived",
             "numeric_flags": [1, 2],
             "mixed_flags": [1, "two"],
             "typed_number": "1",
@@ -2590,12 +2598,14 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
 
     json_schema = schema.model_json_schema()["properties"]
     assert json_schema["status_override"]["anyOf"][0]["enum"] == ["draft", "live"]
+    assert json_schema["grouped_status"]["anyOf"][0]["enum"] == ["draft", "live", "archived"]
     assert json_schema["numeric_flags"]["anyOf"][0]["items"]["enum"] == [1, 2]
     assert json_schema["mixed_flags"]["anyOf"][0]["items"]["enum"] == [1, "two"]
     assert json_schema["typed_number"]["anyOf"][0]["enum"] == [1, 2]
     assert json_schema["typed_numbers"]["anyOf"][0]["items"]["enum"] == [1, 2]
 
     assert validated.status_override == "draft"
+    assert validated.grouped_status == "archived"
     assert validated.numeric_flags == [1, 2]
     assert validated.mixed_flags == [1, "two"]
     assert validated.typed_number == 1
@@ -2609,6 +2619,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "price": "9.00",
                 "stock_status": "in_stock",
                 "status_override": "draft",
+                "grouped_status": "archived",
                 "numeric_flags": ["one"],
                 "mixed_flags": [1, "two"],
                 "typed_number": "1",
@@ -2624,6 +2635,23 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "price": "9.00",
                 "stock_status": "in_stock",
                 "status_override": "draft",
+                "grouped_status": "deleted",
+                "numeric_flags": [1, 2],
+                "mixed_flags": [1, "two"],
+                "typed_number": "1",
+                "typed_numbers": ["1", "2"],
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed choices",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "status_override": "draft",
+                "grouped_status": "archived",
                 "numeric_flags": [1, 2],
                 "mixed_flags": [1, "two"],
                 "typed_number": "3",
@@ -2639,6 +2667,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "price": "9.00",
                 "stock_status": "in_stock",
                 "status_override": "draft",
+                "grouped_status": "archived",
                 "numeric_flags": [1, 2],
                 "mixed_flags": [1, "two"],
                 "typed_number": "1",
@@ -2654,6 +2683,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "price": "9.00",
                 "stock_status": "in_stock",
                 "status_override": "archived",
+                "grouped_status": "archived",
                 "numeric_flags": [1, 2],
                 "mixed_flags": [1, "two"],
                 "typed_number": "1",
@@ -2669,6 +2699,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "price": "9.00",
                 "stock_status": "in_stock",
                 "status_override": "draft",
+                "grouped_status": "archived",
                 "numeric_flags": [3],
                 "mixed_flags": [1, "two"],
                 "typed_number": "1",
@@ -2684,6 +2715,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "price": "9.00",
                 "stock_status": "in_stock",
                 "status_override": "draft",
+                "grouped_status": "archived",
                 "numeric_flags": [1, 2],
                 "mixed_flags": ["three"],
                 "typed_number": "1",
@@ -2699,6 +2731,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "price": "9.00",
                 "stock_status": "in_stock",
                 "status_override": "draft",
+                "grouped_status": "archived",
                 "numeric_flags": [1, 2],
                 "mixed_flags": [1, "two"],
                 "typed_number": "one",
@@ -2714,6 +2747,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "price": "9.00",
                 "stock_status": "in_stock",
                 "status_override": "draft",
+                "grouped_status": "archived",
                 "numeric_flags": [1, 2],
                 "mixed_flags": [1, "two"],
                 "typed_number": "1",
