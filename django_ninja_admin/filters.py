@@ -337,6 +337,7 @@ class EmptyFieldListFilter(FieldListFilter):
             )
         super().__init__(field, request, params, model, model_admin, field_path)
         self.lookup_kwarg = f"{field_path}__isempty"
+        self.parameter_name = self.lookup_kwarg
         self.used_parameters = {}
         if self.lookup_kwarg in params:
             self.used_parameters[self.lookup_kwarg] = params.get(self.lookup_kwarg)
@@ -348,6 +349,8 @@ class EmptyFieldListFilter(FieldListFilter):
         value = self.used_parameters.get(self.lookup_kwarg)
         if value is None:
             return queryset
+        if value not in {"0", "1"}:
+            raise ValueError("Invalid empty filter value.")
         empty_q = Q(**{f"{self.field_path}__isnull": True})
         if _field_is_empty_lookup_supported(self.field):
             empty_q |= Q(**{self.field_path: ""})

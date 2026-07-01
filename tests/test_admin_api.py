@@ -15,7 +15,15 @@ from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.utils import timezone
 from ninja.security import SessionAuthIsStaff
 
-from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline, register, site
+from django_ninja_admin import (
+    VERTICAL,
+    EmptyFieldListFilter,
+    ModelAdmin,
+    NinjaAdminSite,
+    TabularInline,
+    register,
+    site,
+)
 from django_ninja_admin.changelist import ChangeList
 from django_ninja_admin.exceptions import AlreadyRegistered, NotRegistered
 from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
@@ -580,6 +588,35 @@ def test_choices_list_filter_supports_null_choice(admin_client, sample, monkeypa
     assert concrete.status_code == 200
     assert concrete.json()["config"]["result_count"] == 1
     assert concrete.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+
+def test_empty_field_list_filter_validates_values(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", (("description", EmptyFieldListFilter),))
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    description_filter = next(
+        item for item in response.json()["config"]["filters"] if item["parameter_name"] == "description__isempty"
+    )
+    choices_by_display = {choice["display"]: choice for choice in description_filter["choices"]}
+    assert choices_by_display["Empty"]["query_string"] == "?description__isempty=1"
+    assert choices_by_display["Not empty"]["query_string"] == "?description__isempty=0"
+
+    empty = admin_client.get("/admin-api/testapp/product?description__isempty=1")
+    assert empty.status_code == 200
+    assert empty.json()["config"]["result_count"] == 1
+    assert empty.json()["rows"][0]["cells"]["name"] == "Beta"
+
+    not_empty = admin_client.get("/admin-api/testapp/product?description__isempty=0")
+    assert not_empty.status_code == 200
+    assert not_empty.json()["config"]["result_count"] == 1
+    assert not_empty.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+    invalid = admin_client.get("/admin-api/testapp/product?description__isempty=maybe")
+    assert invalid.status_code == 400
+    assert invalid.json()["errors"] == [{"message": "Invalid lookup value.", "param": "description__isempty"}]
 
 
 def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client, sample, monkeypatch):

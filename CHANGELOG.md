@@ -24,6 +24,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Matched Django admin related-filter visibility by hiding related filters that
   have only one non-empty choice while still applying their query params, and
   exposing the real related lookup key.
+- Rejected invalid `EmptyFieldListFilter` values with typed changelist lookup
+  errors instead of treating arbitrary strings as false.
 
 ## 0.1.2 - 2026-07-01
 
