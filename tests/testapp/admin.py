@@ -33,6 +33,12 @@ class StockStatusActionData(Schema):
     note: str | None = None
 
 
+class StockStatusActionResult(Schema):
+    updated: int
+    status: str
+    note: str | None = None
+
+
 class ProductAdmin(ModelAdmin):
     list_display = ("name", "category", "price", "stock_status", "upper_name", "has_description", "tagline")
     list_filter = ("stock_status", "category", PriceBandFilter)
@@ -68,7 +74,12 @@ class ProductAdmin(ModelAdmin):
     def report_names(self, request, queryset):
         return {"names": list(queryset.order_by("name").values_list("name", flat=True))}
 
-    @action(description="Set stock status", permissions=["change"], input_schema=StockStatusActionData)
+    @action(
+        description="Set stock status",
+        permissions=["change"],
+        input_schema=StockStatusActionData,
+        response_schema=StockStatusActionResult,
+    )
     def set_stock_status(self, request, queryset, data):
         updated = queryset.update(stock_status=data.status)
         return {"updated": updated, "status": data.status, "note": data.note}

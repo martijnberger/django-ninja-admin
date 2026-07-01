@@ -8,6 +8,7 @@ def action(
     permissions: list[str] | None = None,
     description: str | None = None,
     input_schema: type[Any] | None = None,
+    response_schema: type[Any] | None = None,
 ):
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         if permissions is not None:
@@ -16,6 +17,8 @@ def action(
             func.short_description = description  # type: ignore[attr-defined]
         if input_schema is not None:
             func.action_input_schema = input_schema  # type: ignore[attr-defined]
+        if response_schema is not None:
+            func.action_response_schema = response_schema  # type: ignore[attr-defined]
         return func
 
     if function is None:

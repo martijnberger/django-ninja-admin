@@ -563,6 +563,7 @@ class NinjaAdminSite:
         replace_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=False)
         bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
         action_payload_schema = model_admin.get_action_payload_schema(None)
+        action_response_schema = model_admin.get_action_response_schema(None)
 
         @router.get(
             prefix,
@@ -615,7 +616,7 @@ class NinjaAdminSite:
         @router.post(
             f"{prefix}/actions",
             response={
-                200: dict[str, Any],
+                200: action_response_schema,
                 400: ErrorResponse,
                 403: ErrorResponse,
                 409: ErrorResponse,

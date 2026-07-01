@@ -131,10 +131,19 @@ class StockStatusActionData(Schema):
     note: str | None = None
 
 
+class StockStatusActionResult(Schema):
+    status: str
+    note: str | None = None
+
+
 class ProductAdmin(ModelAdmin):
     actions = ["set_stock_status"]
 
-    @action(input_schema=StockStatusActionData, permissions=["change"])
+    @action(
+        input_schema=StockStatusActionData,
+        response_schema=StockStatusActionResult,
+        permissions=["change"],
+    )
     def set_stock_status(self, request, queryset, data):
         queryset.update(stock_status=data.status)
         return {"status": data.status, "note": data.note}
@@ -154,7 +163,8 @@ custom payload:
 }
 ```
 
-The schema is included in OpenAPI under the model action payload component.
+Input and response schemas are included in OpenAPI under the model action
+payload and response components.
 
 ## Request And Error Shapes
 

@@ -111,6 +111,10 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert {"$ref": "#/components/schemas/StockStatusActionData"} in components["ProductAdminActionPayload"][
         "properties"
     ]["data"]["anyOf"]
+    action_response_schema = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["responses"]["200"][
+        "content"
+    ]["application/json"]["schema"]
+    assert {"$ref": "#/components/schemas/StockStatusActionResult"} in action_response_schema["anyOf"]
 
 
 def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):

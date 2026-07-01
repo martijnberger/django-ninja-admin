@@ -1,6 +1,7 @@
 import enum
-from functools import wraps
-from typing import Any, Literal, Union
+from functools import reduce, wraps
+from operator import or_
+from typing import Any, Literal
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
@@ -327,14 +328,7 @@ class ModelAdmin(BaseAdmin):
         cache = getattr(self, "_action_payload_schema_cache", {})
         actions = self._get_base_actions()
         action_names = tuple(name for _func, name, _description in actions)
-        action_data_schemas = tuple(
-            schema
-            for schema in dict.fromkeys(
-                getattr(func, "action_input_schema", None)
-                for func, _name, _description in actions
-                if getattr(func, "action_input_schema", None) is not None
-            )
-        )
+        action_data_schemas = self._action_schemas(actions, "action_input_schema")
         cache_key = ("action-payload", action_names, action_data_schemas)
         if cache_key not in cache:
             action_type = Literal.__getitem__(action_names) if action_names else str
@@ -350,12 +344,38 @@ class ModelAdmin(BaseAdmin):
             self._action_payload_schema_cache = cache
         return cache[cache_key]
 
+    def get_action_response_schema(self, request=None):
+        cache = getattr(self, "_action_response_schema_cache", {})
+        actions = self._get_base_actions()
+        action_response_schemas = self._action_schemas(actions, "action_response_schema")
+        cache_key = ("action-response", action_response_schemas)
+        if cache_key not in cache:
+            if action_response_schemas:
+                cache[cache_key] = self._union_type((*action_response_schemas, dict[str, Any]))
+            else:
+                cache[cache_key] = dict[str, Any]
+            self._action_response_schema_cache = cache
+        return cache[cache_key]
+
+    def _action_schemas(self, actions, attr_name):
+        return tuple(
+            schema
+            for schema in dict.fromkeys(
+                getattr(func, attr_name, None)
+                for func, _name, _description in actions
+                if getattr(func, attr_name, None) is not None
+            )
+        )
+
     def _action_data_union(self, action_data_schemas):
         if not action_data_schemas:
             return dict[str, Any]
         if len(action_data_schemas) == 1:
             return action_data_schemas[0]
-        return Union.__getitem__(action_data_schemas)
+        return self._union_type(action_data_schemas)
+
+    def _union_type(self, types):
+        return reduce(or_, types)
 
     def construct_change_message(self, request, form, inline_results=None, add=False):
         inline_results = inline_results or {}
