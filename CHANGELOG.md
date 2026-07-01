@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added custom `form_class` support for inline formsets, including admin checks,
+  form metadata, and mutation validation through the inline `ModelForm`.
+
 ## 0.1.9 - 2026-07-01
 
 - Added relation `limit_choices_to` metadata to form field descriptions,

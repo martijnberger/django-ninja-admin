@@ -2,7 +2,7 @@ from typing import Any
 
 from django import forms
 from django.contrib.auth import get_permission_codename
-from django.forms.models import BaseInlineFormSet, _get_foreign_key, inlineformset_factory
+from django.forms.models import BaseInlineFormSet, _get_foreign_key, inlineformset_factory, modelform_factory
 from django.utils.text import format_lazy
 from pydantic import Field, create_model
 
@@ -52,7 +52,9 @@ class InlineModelAdmin(BaseAdmin):
             return queryset.none()
         return queryset
 
-    def get_formset(self, request, obj=None, change=False):
+    def get_form_class(self, request, obj=None, change=False):
+        if self.form_class is not None:
+            return self.form_class
         fk = _get_foreign_key(self.parent_model, self.model, fk_name=self.fk_name)
         excluded_fields = set(self.get_exclude(request, obj) or ())
         excluded_fields.update(self.get_readonly_fields(request, obj) or ())
@@ -62,22 +64,28 @@ class InlineModelAdmin(BaseAdmin):
             for field in flatten_fieldsets(self.get_fieldsets(request, obj))
             if field not in excluded_fields
         ]
+        return modelform_factory(
+            self.model,
+            form=forms.ModelForm,
+            fields=fields or None,
+            formfield_callback=lambda db_field, **kwargs: self.formfield_for_dbfield(db_field, request, **kwargs),
+        )
+
+    def get_formset(self, request, obj=None, change=False):
         min_num = self.get_min_num(request, obj)
         max_num = self.get_max_num(request, obj)
         return inlineformset_factory(
             self.parent_model,
             self.model,
-            form=forms.ModelForm,
+            form=self.get_form_class(request, obj, change=change),
             formset=self.formset,
             fk_name=self.fk_name,
-            fields=fields,
             extra=self.get_extra(request, obj),
             min_num=min_num,
             max_num=max_num,
             can_delete=self.can_delete,
             validate_min=min_num is not None,
             validate_max=max_num is not None,
-            formfield_callback=lambda db_field, **kwargs: self.formfield_for_dbfield(db_field, request, **kwargs),
         )
 
     def get_inline_row_schema(self, request=None, obj=None, *, change=False, partial=False, require_pk=False):

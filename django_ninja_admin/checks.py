@@ -991,4 +991,19 @@ def _check_inlines(model_admin):
         formset = getattr(inline_class, "formset", None)
         if not isinstance(formset, type) or not issubclass(formset, BaseInlineFormSet):
             errors.append(_error(inline_class, "The value of 'formset' must inherit from BaseInlineFormSet.", "E076"))
+        form_class = getattr(inline_class, "form_class", None)
+        if form_class is not None:
+            if not isinstance(form_class, type) or not issubclass(form_class, BaseModelForm):
+                errors.append(_error(inline_class, "The value of 'form_class' must inherit from ModelForm.", "E058"))
+            else:
+                form_model = getattr(getattr(form_class, "_meta", None), "model", None)
+                if form_model is not None and form_model is not inline_model:
+                    errors.append(
+                        _error(
+                            inline_class,
+                            f"The value of 'form_class' declares model '{form_model._meta.label}', "
+                            f"but this admin is registered for '{inline_model._meta.label}'.",
+                            "E059",
+                        )
+                    )
     return errors

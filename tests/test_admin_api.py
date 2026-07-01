@@ -965,6 +965,11 @@ def test_admin_checks_validate_form_class(db):
             model = Product
             fields = ("name", "category", "price", "stock_status")
 
+    class ProductImageAdminForm(forms.ModelForm):
+        class Meta:
+            model = ProductImage
+            fields = ("title",)
+
     class CategoryAdminForm(forms.ModelForm):
         class Meta:
             model = Category
@@ -982,20 +987,53 @@ def test_admin_checks_validate_form_class(db):
     class WrongModelFormProductAdmin(ModelAdmin):
         form_class = CategoryAdminForm
 
+    class ValidFormInline(TabularInline):
+        model = ProductImage
+        form_class = ProductImageAdminForm
+
+    class PlainFormInline(TabularInline):
+        model = ProductImage
+        form_class = PlainForm
+
+    class WrongModelFormInline(TabularInline):
+        model = ProductImage
+        form_class = ProductAdminForm
+
+    class ValidInlineFormProductAdmin(ModelAdmin):
+        inlines = [ValidFormInline]
+
+    class PlainInlineFormProductAdmin(ModelAdmin):
+        inlines = [PlainFormInline]
+
+    class WrongModelInlineFormProductAdmin(ModelAdmin):
+        inlines = [WrongModelFormInline]
+
     valid_site = NinjaAdminSite(include_auth=False)
     valid_site.register(Product, ValidFormProductAdmin)
     plain_site = NinjaAdminSite(include_auth=False)
     plain_site.register(Product, PlainFormProductAdmin)
     wrong_model_site = NinjaAdminSite(include_auth=False)
     wrong_model_site.register(Product, WrongModelFormProductAdmin)
+    valid_inline_site = NinjaAdminSite(include_auth=False)
+    valid_inline_site.register(Product, ValidInlineFormProductAdmin)
+    plain_inline_site = NinjaAdminSite(include_auth=False)
+    plain_inline_site.register(Product, PlainInlineFormProductAdmin)
+    wrong_model_inline_site = NinjaAdminSite(include_auth=False)
+    wrong_model_inline_site.register(Product, WrongModelInlineFormProductAdmin)
 
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     plain_ids = {error.id for error in plain_site.get_model_admin(Product).check()}
     wrong_model_ids = {error.id for error in wrong_model_site.get_model_admin(Product).check()}
+    valid_inline_ids = {error.id for error in valid_inline_site.get_model_admin(Product).check()}
+    plain_inline_ids = {error.id for error in plain_inline_site.get_model_admin(Product).check()}
+    wrong_model_inline_ids = {error.id for error in wrong_model_inline_site.get_model_admin(Product).check()}
 
     assert valid_ids.isdisjoint({"django_ninja_admin.E058", "django_ninja_admin.E059"})
     assert plain_ids == {"django_ninja_admin.E058"}
     assert wrong_model_ids == {"django_ninja_admin.E059"}
+    assert valid_inline_ids.isdisjoint({"django_ninja_admin.E058", "django_ninja_admin.E059"})
+    assert plain_inline_ids == {"django_ninja_admin.E058"}
+    assert wrong_model_inline_ids == {"django_ninja_admin.E059"}
 
 
 def test_admin_checks_validate_formfield_overrides(db):
@@ -2618,6 +2656,62 @@ def test_inline_descriptions_use_formfield_hooks_and_media(admin_client, sample,
     assert title_fields
     assert all(field["attrs"]["help_text"] == "Inline title from formfield hook." for field in title_fields)
     assert all(field["attrs"]["widget_attrs"]["data-inline"] == "title" for field in title_fields)
+
+
+def test_inline_admin_form_class_drives_metadata_and_validation(admin_client, sample, monkeypatch):
+    from tests.testapp.admin import ProductImageInline
+
+    class ProductImageAdminForm(forms.ModelForm):
+        title = forms.CharField(
+            max_length=100,
+            required=False,
+            help_text="Inline title from custom form.",
+            widget=forms.TextInput(attrs={"data-form": "inline"}),
+        )
+
+        class Meta:
+            model = ProductImage
+            fields = ("title",)
+
+        def clean_title(self):
+            title = self.cleaned_data["title"]
+            if title == "Forbidden":
+                raise forms.ValidationError("Forbidden inline title.")
+            return title
+
+    monkeypatch.setattr(ProductImageInline, "form_class", ProductImageAdminForm)
+
+    response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+
+    assert response.status_code == 200
+    inline = next(item for item in response.json()["inlines"] if item["model"] == "testapp.productimage")
+    title_fields = [field for row in inline["formset"] for field in row if field["name"] == "title"]
+    assert title_fields
+    assert all(field["attrs"]["required"] is False for field in title_fields)
+    assert all(field["attrs"]["help_text"] == "Inline title from custom form." for field in title_fields)
+    assert all(field["attrs"]["widget_attrs"]["data-form"] == "inline" for field in title_fields)
+    inline_admin = ProductImageInline(Product, NinjaAdminSite(include_auth=False))
+    row_schema = inline_admin.get_inline_row_schema(RequestFactory().get("/"), sample)
+    assert "title" not in row_schema.model_json_schema().get("required", [])
+
+    invalid = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"add": [{"title": "Forbidden"}]}}},
+        content_type="application/json",
+    )
+
+    assert invalid.status_code == 400
+    assert "Forbidden inline title." in str(invalid.json()["errors"])
+    assert not ProductImage.objects.filter(product=sample, title="Forbidden").exists()
+
+    valid = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"add": [{"title": "Allowed inline"}]}}},
+        content_type="application/json",
+    )
+
+    assert valid.status_code == 200
+    assert ProductImage.objects.filter(product=sample, title="Allowed inline").exists()
 
 
 def test_readonly_display_fields_include_values_and_display_metadata(admin_client, sample, monkeypatch):
