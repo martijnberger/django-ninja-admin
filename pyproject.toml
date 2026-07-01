@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/martijnberger/django-admin-ninja-api"
+Repository = "https://github.com/martijnberger/django-ninja-admin"
 
 [dependency-groups]
 dev = [

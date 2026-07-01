@@ -28,6 +28,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   Django admin by casting field values to text instead of coercing search terms.
 - Added multi-column ordering state metadata and sort links that preserve other
   active sort columns.
+- Corrected the package repository URL to the canonical GitHub remote.
 
 ## 0.1.1 - 2026-07-01
 
