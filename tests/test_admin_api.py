@@ -2577,6 +2577,61 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert deleted.status_code == 204
 
 
+def test_add_form_description_uses_changeform_initial_data(admin_client, sample):
+    tag_ids = list(sample.tags.order_by("name").values_list("pk", flat=True))
+    response = admin_client.get(
+        "/admin-api/testapp/product/form",
+        {
+            "name": "Seed product",
+            "category": sample.category_id,
+            "tags": ",".join(str(tag_id) for tag_id in tag_ids),
+            "price": "4.50",
+            "stock_status": "out_of_stock",
+        },
+    )
+
+    assert response.status_code == 200
+    fields_by_name = {field["name"]: field for field in response.json()["form"]["fields"]}
+    assert fields_by_name["name"]["attrs"]["value"] == "Seed product"
+    assert fields_by_name["category"]["attrs"]["value"] == str(sample.category_id)
+    assert fields_by_name["category"]["attrs"]["selected_options"] == [
+        {"id": str(sample.category_id), "text": "Cameras"}
+    ]
+    assert set(fields_by_name["tags"]["attrs"]["value"]) == {str(tag_id) for tag_id in tag_ids}
+    assert {option["text"] for option in fields_by_name["tags"]["attrs"]["selected_options"]} == {
+        "Compact",
+        "Featured",
+    }
+    assert fields_by_name["price"]["attrs"]["value"] == "4.50"
+    assert fields_by_name["stock_status"]["attrs"]["value"] == "out_of_stock"
+
+    class InitialProductAdmin(ModelAdmin):
+        def get_changeform_initial_data(self, request):
+            return {
+                "name": "Hooked initial",
+                "category": sample.category_id,
+                "tags": tag_ids,
+            }
+
+    user = get_user_model().objects.create_user("initial-admin", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product/form?name=Ignored")
+    request.user = user
+    model_admin = InitialProductAdmin(Product, NinjaAdminSite(include_auth=False))
+
+    hooked_form = model_admin.get_form_description(request)["form"]
+    hooked_fields_by_name = {field["name"]: field for field in hooked_form["fields"]}
+
+    assert hooked_fields_by_name["name"]["attrs"]["value"] == "Hooked initial"
+    assert hooked_fields_by_name["category"]["attrs"]["selected_options"] == [
+        {"id": str(sample.category_id), "text": "Cameras"}
+    ]
+    assert {option["text"] for option in hooked_fields_by_name["tags"]["attrs"]["selected_options"]} == {
+        "Compact",
+        "Featured",
+    }
+
+
 def test_direct_update_skips_empty_change_log(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
     save_calls = []

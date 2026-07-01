@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added custom `form_class` support for inline formsets, including admin checks,
   form metadata, and mutation validation through the inline `ModelForm`.
+- Added `get_changeform_initial_data()` support so add-form descriptions expose
+  querystring and hook-provided initial values, including relation labels.
 
 ## 0.1.9 - 2026-07-01
 

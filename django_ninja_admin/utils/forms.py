@@ -269,6 +269,7 @@ def form_field_descriptions(
     *,
     readonly_fields=(),
     instance=None,
+    initial=None,
     model_admin=None,
     empty_value_display="-",
     autocomplete_fields=(),
@@ -278,7 +279,7 @@ def form_field_descriptions(
     radio_fields=None,
     prepopulated_fields=None,
 ):
-    form = form_class(instance=instance)
+    form = form_class(instance=instance, initial=initial)
     model = getattr(getattr(form_class, "_meta", None), "model", None)
     autocomplete_fields = set(autocomplete_fields or ())
     raw_id_fields = set(raw_id_fields or ())

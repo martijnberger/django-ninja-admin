@@ -339,11 +339,12 @@ class BaseAdmin:
                 return value[0], None
         return value, None
 
-    def get_form_fields_description(self, request, obj=None):
+    def get_form_fields_description(self, request, obj=None, *, initial=None):
         return form_field_descriptions(
             self.get_form_class(request, obj, change=obj is not None),
             readonly_fields=self.get_readonly_fields(request, obj),
             instance=obj,
+            initial=initial,
             model_admin=self,
             empty_value_display=self.get_empty_value_display(),
             autocomplete_fields=self.get_autocomplete_fields(request),
@@ -353,6 +354,17 @@ class BaseAdmin:
             radio_fields=self.radio_fields,
             prepopulated_fields=self.get_prepopulated_fields(request, obj),
         )
+
+    def get_changeform_initial_data(self, request):
+        initial = dict(getattr(request, "GET", {}).items())
+        for name, value in list(initial.items()):
+            try:
+                field = self.opts.get_field(name)
+            except FieldDoesNotExist:
+                continue
+            if isinstance(field, models.ManyToManyField):
+                initial[name] = value.split(",") if value else []
+        return initial
 
     def serialize_object(self, obj, request=None):
         schema = self.get_output_schema(request)
@@ -389,8 +401,9 @@ class BaseAdmin:
         return value
 
     def get_form_description(self, request, obj=None, **kwargs):
+        initial = self.get_changeform_initial_data(request) if obj is None else None
         form_class = self.get_form_class(request, obj, change=obj is not None)
-        form = form_class(instance=obj)
+        form = form_class(instance=obj, initial=initial)
         permissions = {
             "has_add_permission": self.has_add_permission(request),
             "has_change_permission": self.has_change_permission(request, obj),
@@ -400,7 +413,7 @@ class BaseAdmin:
         form_description = {
             "model": f"{self.model._meta.app_label}.{self.model._meta.model_name}",
             "readonly_fields": [field_name_for_display(field) for field in self.get_readonly_fields(request, obj)],
-            "fields": self.get_form_fields_description(request, obj),
+            "fields": self.get_form_fields_description(request, obj, initial=initial),
             "media": form_media_description(form),
             "fieldsets": list(self.get_fieldsets(request, obj)),
             "prepopulated": dict(self.get_prepopulated_fields(request, obj)),
