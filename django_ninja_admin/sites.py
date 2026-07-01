@@ -400,6 +400,36 @@ class NinjaAdminSite:
             location_parts = location_parts[1:]
         return ".".join(location_parts)
 
+    def _history_content_type_ids(self, request, *, app_label=None, model_name=None):
+        if model_name and not app_label:
+            raise AdminValidationError(
+                [{"message": "app_label is required when model is provided.", "param": "app_label"}]
+            )
+        if app_label and model_name:
+            try:
+                model = apps.get_model(app_label, model_name)
+                model_admin = self.get_model_admin(model)
+            except (LookupError, NotRegistered):
+                raise Http404
+            if not model_admin.has_view_or_change_permission(request):
+                raise PermissionDenied
+            return [ContentType.objects.get_for_model(model, for_concrete_model=False).pk]
+        registered_models = [
+            model
+            for model, model_admin in self._registry.items()
+            if (app_label is None or model._meta.app_label == app_label)
+            and model_admin.has_view_or_change_permission(request)
+        ]
+        if app_label is not None and not any(model._meta.app_label == app_label for model in self._registry):
+            raise Http404
+        return [
+            content_type.pk
+            for content_type in ContentType.objects.get_for_models(
+                *registered_models,
+                for_concrete_models=False,
+            ).values()
+        ]
+
     def _register_site_routes(self, router):
         site = self
 
@@ -431,30 +461,38 @@ class NinjaAdminSite:
             app_label: str | None = None,
             model: str | None = None,
             object_id: str | None = None,
+            action_flag: int | None = None,
             o: str = "-action_time",
             page: int = 1,
         ):
-            from django_ninja_admin.models import LogEntry
+            from django_ninja_admin.models import ACTION_FLAG_CHOICES, LogEntry
 
             if o not in {"action_time", "-action_time"}:
                 raise AdminValidationError([{"message": "Invalid ordering provided.", "param": "o"}])
-            qs = LogEntry.objects.all().order_by(o).select_related("content_type")
-            if app_label and model:
-                model_class = apps.get_model(app_label, model)
-                qs = qs.filter(content_type=ContentType.objects.get_for_model(model_class))
+            if action_flag is not None and action_flag not in dict(ACTION_FLAG_CHOICES):
+                raise AdminValidationError([{"message": "Invalid action flag provided.", "param": "action_flag"}])
+            qs = (
+                LogEntry.objects.filter(
+                    content_type_id__in=site._history_content_type_ids(
+                        request,
+                        app_label=app_label,
+                        model_name=model,
+                    )
+                )
+                .order_by(o)
+                .select_related("content_type")
+            )
             if object_id is not None:
                 qs = qs.filter(object_id=object_id)
+            if action_flag is not None:
+                qs = qs.filter(action_flag=action_flag)
             paginator = site.paginator(qs, 20)
-            page_obj = paginator.page(page)
+            try:
+                page_obj = paginator.page(page)
+            except InvalidPage:
+                raise Http404
             results = []
             for item in page_obj.object_list:
-                if item.content_type and item.content_type.model_class():
-                    try:
-                        model_admin = site.get_model_admin(item.content_type.model_class())
-                        if not model_admin.has_view_or_change_permission(request):
-                            raise PermissionDenied
-                    except NotRegistered:
-                        pass
                 try:
                     message = json.loads(item.change_message or "[]")
                 except json.JSONDecodeError:

@@ -685,6 +685,60 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert deleted.status_code == 204
 
 
+def test_history_filters_by_permission_and_params(staff_client, sample):
+    actor = get_user_model().objects.create_user("history-actor", password="pw", is_staff=True)
+    product_ct = ContentType.objects.get_for_model(Product, for_concrete_model=False)
+    category_ct = ContentType.objects.get_for_model(Category, for_concrete_model=False)
+    product_addition = LogEntry.objects.create(
+        user=actor,
+        content_type=product_ct,
+        object_id=str(sample.pk),
+        object_repr=str(sample),
+        action_flag=ADDITION,
+        change_message=json.dumps([{"added": {}}]),
+    )
+    LogEntry.objects.create(
+        user=actor,
+        content_type=product_ct,
+        object_id=str(sample.pk),
+        object_repr=str(sample),
+        action_flag=CHANGE,
+        change_message=json.dumps([{"changed": {"fields": ["Name"]}}]),
+    )
+    LogEntry.objects.create(
+        user=actor,
+        content_type=category_ct,
+        object_id=str(sample.category_id),
+        object_repr=str(sample.category),
+        action_flag=CHANGE,
+        change_message=json.dumps([{"changed": {"fields": ["Name"]}}]),
+    )
+
+    client = staff_client("view_product")
+    global_history = client.get("/admin-api/history")
+    assert global_history.status_code == 200
+    assert {item["content_type_id"] for item in global_history.json()["results"]} == {product_ct.pk}
+
+    filtered = client.get(
+        "/admin-api/history",
+        {"app_label": "testapp", "model": "product", "object_id": str(sample.pk), "action_flag": ADDITION},
+    )
+    assert filtered.status_code == 200
+    assert [item["id"] for item in filtered.json()["results"]] == [product_addition.pk]
+
+    forbidden = client.get("/admin-api/history", {"app_label": "testapp", "model": "category"})
+    assert forbidden.status_code == 403
+
+    missing_app_label = client.get("/admin-api/history", {"model": "product"})
+    assert missing_app_label.status_code == 400
+    assert missing_app_label.json()["errors"] == [
+        {"message": "app_label is required when model is provided.", "param": "app_label"}
+    ]
+
+    bad_page = client.get("/admin-api/history", {"page": 0})
+    assert bad_page.status_code == 404
+
+
 def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db):
     user = get_user_model().objects.create_user("widget-admin", password="pw", is_staff=True)
     user.user_permissions.set(Permission.objects.all())

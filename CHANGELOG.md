@@ -19,6 +19,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   returned without invoking save hooks or writing empty change-log entries.
 - Tightened `_to_field` validation to follow Django-admin relation-target
   semantics instead of allowing arbitrary fields from related models.
+- Hardened history listing with permission-aware querysets, app/model/action
+  filters, and typed errors for invalid history parameters.
 - Added support for passing pytest selectors through `just test` and
   `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full
