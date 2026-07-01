@@ -76,6 +76,7 @@ Completed or mostly complete:
 - Inline mutations now aggregate server-side add/change/delete row errors before any parent or inline writes occur.
 - Admin system checks now validate inline `extra`, `min_num`, and `max_num` option types before formset construction.
 - Inline admins now support custom `formset` classes and validate that they inherit from Django's `BaseInlineFormSet`.
+- Inline admin checks now reject `exclude` entries that remove the parent foreign key field from inline forms.
 - Bulk list-editable updates use strict row schemas, reject duplicate PKs, and validate all rows before writing.
 - Bulk list-editable updates now skip save hooks and empty change-log entries for unchanged rows while still returning validated row data.
 - Bulk list-editable updates now aggregate server-side row errors before writing.

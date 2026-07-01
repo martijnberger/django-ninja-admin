@@ -29,6 +29,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `max_num` option types.
 - Added custom inline `formset` support with system checks requiring
   `BaseInlineFormSet` subclasses.
+- Added an inline admin system check rejecting `exclude` entries that remove
+  the parent foreign key field.
 
 ## 0.1.4 - 2026-07-01
 

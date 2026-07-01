@@ -490,6 +490,34 @@ def test_inline_admin_supports_custom_formset_classes(db):
     assert bad_ids == {"django_ninja_admin.E076"}
 
 
+def test_admin_checks_reject_inline_excluding_parent_foreign_key(db):
+    class ValidInline(TabularInline):
+        model = ProductImage
+        exclude = ("title",)
+
+    class BadInline(TabularInline):
+        model = ProductImage
+        exclude = ("product",)
+
+    class ValidInlineProductAdmin(ModelAdmin):
+        inlines = [ValidInline]
+
+    class BadInlineProductAdmin(ModelAdmin):
+        inlines = [BadInline]
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidInlineProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadInlineProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_errors = bad_site.get_model_admin(Product).check()
+
+    assert "django_ninja_admin.E077" not in valid_ids
+    assert {error.id for error in bad_errors} == {"django_ninja_admin.E077"}
+    assert "parent foreign key field 'product'" in bad_errors[0].msg
+
+
 def test_admin_checks_reject_reverse_relation_in_list_display(db):
     class ReverseRelationProductAdmin(ModelAdmin):
         list_display = ("name", "reviews")

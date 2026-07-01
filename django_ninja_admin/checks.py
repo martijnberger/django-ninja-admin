@@ -893,9 +893,19 @@ def _check_inlines(model_admin):
             errors.append(_error(inline_class, "Inline classes must define a concrete model.", "E032"))
             continue
         try:
-            _get_foreign_key(model_admin.model, inline_model, fk_name=getattr(inline_class, "fk_name", None))
+            fk = _get_foreign_key(model_admin.model, inline_model, fk_name=getattr(inline_class, "fk_name", None))
         except ValueError as exc:
             errors.append(_error(inline_class, str(exc), "E033"))
+            fk = None
+        exclude = getattr(inline_class, "exclude", None)
+        if fk is not None and exclude is not None and fk.name in exclude:
+            errors.append(
+                _error(
+                    inline_class,
+                    f"Cannot exclude the parent foreign key field '{fk.name}' from inline forms.",
+                    "E077",
+                )
+            )
         if not isinstance(getattr(inline_class, "extra", None), int):
             errors.append(_error(inline_class, "The value of 'extra' must be an integer.", "E073"))
         min_num = getattr(inline_class, "min_num", None)
