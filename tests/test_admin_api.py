@@ -538,6 +538,27 @@ def test_admin_checks_validate_sortable_by(db):
     assert bad_items_ids == {"django_ninja_admin.E056", "django_ninja_admin.E057"}
 
 
+def test_admin_checks_validate_pagination_options(db):
+    class ValidPaginationProductAdmin(ModelAdmin):
+        list_per_page = 25
+        list_max_show_all = 250
+
+    class BadPaginationProductAdmin(ModelAdmin):
+        list_per_page = "25"
+        list_max_show_all = "250"
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidPaginationProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadPaginationProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint({"django_ninja_admin.E067", "django_ninja_admin.E068"})
+    assert bad_ids == {"django_ninja_admin.E067", "django_ninja_admin.E068"}
+
+
 def test_admin_checks_validate_form_class(db):
     class ProductAdminForm(forms.ModelForm):
         class Meta:

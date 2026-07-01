@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added an admin system check for first-column `list_editable` fields without an
   explicit `list_display_links` target, matching Django admin's configuration
   guard.
+- Added admin system checks for non-integer `list_per_page` and
+  `list_max_show_all` values.
 
 ## 0.1.4 - 2026-07-01
 

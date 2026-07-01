@@ -112,6 +112,7 @@ Completed or mostly complete:
 - Relation widget checks now reject reverse relations in `autocomplete_fields` and `raw_id_fields`, preventing frontend metadata for unsupported admin widget targets.
 - `prepopulated_fields` system checks now validate dict shape, target field suitability, source-field list shape, and source-field existence.
 - `sortable_by` system checks now validate sequence shape, item types, and membership in `list_display` before changelist sorting runs.
+- Admin system checks now validate `list_per_page` and `list_max_show_all` types before changelist pagination runs.
 - Custom `form_class` system checks now validate `ModelForm` inheritance and catch forms whose declared `Meta.model` does not match the registered admin model.
 - `formfield_overrides` system checks now validate field-class keys, mapping-shaped overrides, and string formfield keyword names.
 - Admin system checks now reject direct many-to-many fields in `list_display`, preventing raw related managers from leaking into changelist cells.

@@ -34,6 +34,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_sequence_option(model_admin, "filter_horizontal"))
     errors.extend(_check_sequence_option(model_admin, "filter_vertical"))
     errors.extend(_check_list_select_related(model_admin))
+    errors.extend(_check_pagination_options(model_admin))
     errors.extend(_check_display_options(model_admin))
     errors.extend(_check_sortable_by(model_admin))
     errors.extend(_check_form_class(model_admin))
@@ -221,6 +222,15 @@ def _check_sortable_by(model_admin):
                     "E057",
                 )
             )
+    return errors
+
+
+def _check_pagination_options(model_admin):
+    errors = []
+    if not isinstance(getattr(model_admin, "list_per_page", None), int):
+        errors.append(_error(model_admin.__class__, "The value of 'list_per_page' must be an integer.", "E067"))
+    if not isinstance(getattr(model_admin, "list_max_show_all", None), int):
+        errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must be an integer.", "E068"))
     return errors
 
 
