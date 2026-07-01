@@ -7,7 +7,8 @@ from uuid import UUID
 from django import forms
 from django.contrib.auth import get_permission_codename
 from django.core.exceptions import FieldDoesNotExist
-from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import RegexValidator, validate_email
 from django.db import models
 from django.forms import modelform_factory
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
@@ -15,7 +16,7 @@ from django.urls import reverse
 from django.utils.dateparse import parse_duration
 from django.utils.safestring import mark_safe
 from ninja import Schema
-from pydantic import AnyUrl, BeforeValidator, ConfigDict, Field, IPvAnyAddress, create_model
+from pydantic import AfterValidator, AnyUrl, BeforeValidator, ConfigDict, Field, IPvAnyAddress, create_model
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
@@ -34,6 +35,14 @@ def _parse_duration_value(value):
         parsed = parse_duration(value)
         if parsed is not None:
             return parsed
+    return value
+
+
+def _validate_email_value(value):
+    try:
+        validate_email(value)
+    except DjangoValidationError as exc:
+        raise ValueError("; ".join(str(message) for message in exc.messages)) from exc
     return value
 
 
@@ -280,6 +289,12 @@ class BaseAdmin:
             return Annotated[timedelta, BeforeValidator(_parse_duration_value)]
         if isinstance(field, forms.UUIDField):
             return UUID
+        if isinstance(field, forms.EmailField):
+            return Annotated[
+                str,
+                AfterValidator(_validate_email_value),
+                Field(json_schema_extra={"format": "email"}),
+            ]
         if isinstance(field, forms.URLField):
             return AnyUrl
         if isinstance(field, forms.GenericIPAddressField):

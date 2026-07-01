@@ -11,6 +11,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   structured radio and prepopulated field descriptors.
 - Added native Pydantic request schema typing for Django typed choice fields
   whose `coerce` hook uses a concrete Python type.
+- Added native Pydantic request schema validation for Django email form fields.
 - Added native Pydantic request schema typing for Django URL form fields.
 - Added Pydantic request schema constraints for Django form string lengths,
   field/validator regex patterns, numeric bounds, and decimal precision.

@@ -116,6 +116,8 @@ Completed or mostly complete:
   fields from declared choice values.
 - Pydantic request schemas now infer Django typed choice fields from concrete
   `coerce` hooks such as `int`.
+- Pydantic request schemas now validate Django email form fields using Django's
+  email validator.
 - Pydantic request schemas now use native URL validation for Django URL form
   fields.
 - Pydantic request schemas now carry Django form string length, field/validator
