@@ -1308,6 +1308,35 @@ def test_admin_checks_validate_fields_and_exclude_items(db):
     assert {error.id for error in duplicate_exclude_errors} == {"django_ninja_admin.E080"}
 
 
+def test_admin_checks_reject_duplicate_readonly_fields(db):
+    def readonly_summary(obj):
+        return obj.name
+
+    class ValidReadonlyProductAdmin(ModelAdmin):
+        readonly_fields = ("name", readonly_summary)
+
+    class DuplicateNameReadonlyProductAdmin(ModelAdmin):
+        readonly_fields = ("name", "name")
+
+    class DuplicateCallableReadonlyProductAdmin(ModelAdmin):
+        readonly_fields = (readonly_summary, readonly_summary)
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidReadonlyProductAdmin)
+    duplicate_name_site = NinjaAdminSite(include_auth=False)
+    duplicate_name_site.register(Product, DuplicateNameReadonlyProductAdmin)
+    duplicate_callable_site = NinjaAdminSite(include_auth=False)
+    duplicate_callable_site.register(Product, DuplicateCallableReadonlyProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    duplicate_name_ids = {error.id for error in duplicate_name_site.get_model_admin(Product).check()}
+    duplicate_callable_ids = {error.id for error in duplicate_callable_site.get_model_admin(Product).check()}
+
+    assert "django_ninja_admin.E092" not in valid_ids
+    assert duplicate_name_ids == {"django_ninja_admin.E092"}
+    assert duplicate_callable_ids == {"django_ninja_admin.E092"}
+
+
 def test_admin_checks_validate_fieldsets_shape_and_duplicates(db):
     class ValidFieldsetsProductAdmin(ModelAdmin):
         fieldsets = (

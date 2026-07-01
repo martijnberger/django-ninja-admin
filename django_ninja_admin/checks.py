@@ -397,7 +397,18 @@ def _check_form_layout(model_admin):
     errors.extend(_check_form_option_items(model_admin, "exclude", require_model_field=True))
 
     readonly_fields = tuple(model_admin.get_readonly_fields(None) or ())
+    seen_readonly_fields = set()
     for item in readonly_fields:
+        item_key = field_name_for_display(item)
+        if item_key in seen_readonly_fields:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The field '{item_key}' is duplicated in 'readonly_fields'.",
+                    "E092",
+                )
+            )
+        seen_readonly_fields.add(item_key)
         if callable(item):
             continue
         if not isinstance(item, str) or not _field_or_attr_exists(model_admin, item):
