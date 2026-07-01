@@ -1,0 +1,372 @@
+from __future__ import annotations
+
+from django.core import checks
+from django.core.exceptions import FieldDoesNotExist
+from django.db import models
+from django.db.models.base import ModelBase
+from django.forms.models import _get_foreign_key
+
+from django_ninja_admin.exceptions import NotRegistered
+from django_ninja_admin.filters import FieldListFilter, SimpleListFilter
+from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
+
+ERROR_PREFIX = "django_ninja_admin"
+
+
+def _error(obj, message, code, *, hint=None):
+    return checks.Error(message, hint=hint, obj=obj, id=f"{ERROR_PREFIX}.{code}")
+
+
+def check_model_admin(model_admin):
+    errors = []
+    errors.extend(_check_sequence_option(model_admin, "list_display", allow_none=False))
+    errors.extend(_check_sequence_option(model_admin, "list_display_links"))
+    errors.extend(_check_sequence_option(model_admin, "list_editable"))
+    errors.extend(_check_sequence_option(model_admin, "list_filter"))
+    errors.extend(_check_sequence_option(model_admin, "search_fields"))
+    errors.extend(_check_sequence_option(model_admin, "ordering"))
+    errors.extend(_check_sequence_option(model_admin, "readonly_fields"))
+    errors.extend(_check_sequence_option(model_admin, "autocomplete_fields"))
+    errors.extend(_check_sequence_option(model_admin, "raw_id_fields"))
+    errors.extend(_check_sequence_option(model_admin, "filter_horizontal"))
+    errors.extend(_check_sequence_option(model_admin, "filter_vertical"))
+    errors.extend(_check_display_options(model_admin))
+    errors.extend(_check_form_layout(model_admin))
+    errors.extend(_check_list_filters(model_admin))
+    errors.extend(_check_lookup_fields(model_admin, "search_fields", allow_search_prefixes=True))
+    errors.extend(_check_lookup_fields(model_admin, "ordering", allow_descending=True, allow_random=True))
+    errors.extend(_check_relation_fields(model_admin, "autocomplete_fields", require_registered_remote=True))
+    errors.extend(_check_relation_fields(model_admin, "raw_id_fields"))
+    errors.extend(_check_relation_fields(model_admin, "filter_horizontal", many_to_many_only=True))
+    errors.extend(_check_relation_fields(model_admin, "filter_vertical", many_to_many_only=True))
+    errors.extend(_check_date_hierarchy(model_admin))
+    errors.extend(_check_actions(model_admin))
+    errors.extend(_check_inlines(model_admin))
+    return errors
+
+
+def _check_sequence_option(model_admin, option, *, allow_none=True):
+    value = getattr(model_admin, option, None)
+    if value is None and allow_none:
+        return []
+    if not isinstance(value, (list, tuple)):
+        return [_error(model_admin.__class__, f"The value of '{option}' must be a list or tuple.", "E001")]
+    return []
+
+
+def _field_or_attr_exists(model_admin, name):
+    if name == "__str__":
+        return True
+    if hasattr(model_admin, name):
+        return True
+    try:
+        model_admin.model._meta.get_field(name)
+        return True
+    except FieldDoesNotExist:
+        return hasattr(model_admin.model, name)
+
+
+def _model_field(model_admin, name):
+    try:
+        return model_admin.model._meta.get_field(name)
+    except FieldDoesNotExist:
+        return None
+
+
+def _check_display_options(model_admin):
+    errors = []
+    list_display = tuple(model_admin.get_list_display(None))
+    for item in list_display:
+        if not isinstance(item, str):
+            errors.append(_error(model_admin.__class__, "Items in 'list_display' must be strings.", "E002"))
+            continue
+        if "__" in item:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_display' refers to '{item}', which must not contain '__'.",
+                    "E003",
+                )
+            )
+            continue
+        if not _field_or_attr_exists(model_admin, item):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_display' refers to '{item}', which is not a field, method, or attribute.",
+                    "E004",
+                )
+            )
+
+    list_display_links = model_admin.get_list_display_links(None, list_display)
+    if list_display_links is not None:
+        for item in list_display_links:
+            if item not in list_display:
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The value of 'list_display_links' refers to '{item}', which is not in 'list_display'.",
+                        "E005",
+                    )
+                )
+
+    editable = tuple(model_admin.list_editable or ())
+    for item in editable:
+        if item not in list_display:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_editable' refers to '{item}', which is not in 'list_display'.",
+                    "E006",
+                )
+            )
+            continue
+        if list_display_links and item in list_display_links:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_editable' refers to '{item}', which is also in 'list_display_links'.",
+                    "E007",
+                )
+            )
+        field = _model_field(model_admin, item)
+        if field is None:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_editable' refers to '{item}', which is not a model field.",
+                    "E008",
+                )
+            )
+            continue
+        if field.primary_key:
+            errors.append(_error(model_admin.__class__, f"The field '{item}' is a primary key.", "E009"))
+        if not field.editable:
+            errors.append(_error(model_admin.__class__, f"The field '{item}' is not editable.", "E010"))
+    return errors
+
+
+def _check_form_layout(model_admin):
+    errors = []
+    if model_admin.fields is not None and model_admin.fieldsets is not None:
+        errors.append(
+            _error(
+                model_admin.__class__,
+                "Both 'fields' and 'fieldsets' are set; use only one form layout option.",
+                "E011",
+            )
+        )
+    errors.extend(_check_sequence_option(model_admin, "fields"))
+    errors.extend(_check_sequence_option(model_admin, "exclude"))
+
+    readonly_fields = tuple(model_admin.get_readonly_fields(None) or ())
+    for item in readonly_fields:
+        if not isinstance(item, str) or not _field_or_attr_exists(model_admin, item):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'readonly_fields' refers to '{item}', which is not a field, method, or attribute.",
+                    "E012",
+                )
+            )
+
+    fields = []
+    if model_admin.fields is not None:
+        fields = list(model_admin.fields)
+    elif model_admin.fieldsets is not None:
+        try:
+            fields = flatten_fieldsets(model_admin.fieldsets)
+        except (KeyError, TypeError, ValueError) as exc:
+            errors.append(
+                _error(model_admin.__class__, f"The value of 'fieldsets' is malformed: {exc}.", "E013")
+            )
+    for item in fields:
+        if item in readonly_fields:
+            continue
+        field = _model_field(model_admin, item)
+        if field is None:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The form layout refers to '{item}', which is not an editable model field.",
+                    "E014",
+                )
+            )
+        elif not field.editable:
+            errors.append(
+                _error(model_admin.__class__, f"The form layout includes non-editable field '{item}'.", "E015")
+            )
+
+    return errors
+
+
+def _check_list_filters(model_admin):
+    errors = []
+    for item in model_admin.get_list_filter(None):
+        if isinstance(item, type) and issubclass(item, SimpleListFilter):
+            if getattr(item, "parameter_name", None) is None:
+                errors.append(
+                    _error(model_admin.__class__, f"The list filter {item.__name__!r} has no parameter_name.", "E016")
+                )
+            continue
+        if isinstance(item, (tuple, list)) and len(item) == 2:
+            field_path, filter_class = item
+            if not isinstance(filter_class, type) or not issubclass(filter_class, (FieldListFilter, SimpleListFilter)):
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The list filter for '{field_path}' does not use a supported filter class.",
+                        "E017",
+                    )
+                )
+        else:
+            field_path = item
+        if not isinstance(field_path, str):
+            errors.append(_error(model_admin.__class__, "Items in 'list_filter' must be strings or filters.", "E018"))
+            continue
+        errors.extend(_check_field_path(model_admin, field_path, "list_filter", "E019"))
+    return errors
+
+
+def _check_lookup_fields(
+    model_admin,
+    option,
+    *,
+    allow_search_prefixes=False,
+    allow_descending=False,
+    allow_random=False,
+):
+    errors = []
+    for item in getattr(model_admin, option) or ():
+        if not isinstance(item, str):
+            errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E020"))
+            continue
+        field_path = item
+        if allow_descending:
+            field_path = field_path.removeprefix("-")
+        if allow_random and field_path == "?":
+            continue
+        if allow_search_prefixes and field_path[:1] in {"^", "=", "@"}:
+            field_path = field_path[1:]
+        errors.extend(
+            _check_field_path(model_admin, field_path, option, "E021", allow_final_lookup=allow_search_prefixes)
+        )
+    return errors
+
+
+def _check_field_path(model_admin, field_path, option, code, *, allow_final_lookup=False):
+    if field_path == "pk":
+        return []
+    model = model_admin.model
+    opts = model._meta
+    previous_field = None
+    path_parts = field_path.split("__")
+    for index, path_part in enumerate(path_parts):
+        if path_part == "pk":
+            path_part = opts.pk.name
+        try:
+            field = opts.get_field(path_part)
+        except FieldDoesNotExist:
+            if allow_final_lookup and previous_field is not None and previous_field.get_lookup(path_part):
+                return []
+            return [
+                _error(
+                    model_admin.__class__,
+                    f"The value of '{option}' refers to unknown field '{field_path}'.",
+                    code,
+                )
+            ]
+        previous_field = field
+        has_more_parts = index < len(path_parts) - 1
+        if has_more_parts and hasattr(field, "path_infos"):
+            opts = field.path_infos[-1].to_opts
+        elif has_more_parts:
+            return [_error(model_admin.__class__, f"The value of '{option}' cannot traverse '{field_path}'.", code)]
+    return []
+
+
+def _check_relation_fields(model_admin, option, *, many_to_many_only=False, require_registered_remote=False):
+    errors = []
+    for item in getattr(model_admin, option) or ():
+        if not isinstance(item, str):
+            errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E022"))
+            continue
+        field = _model_field(model_admin, item)
+        if field is None:
+            errors.append(
+                _error(model_admin.__class__, f"The value of '{option}' refers to unknown field '{item}'.", "E023")
+            )
+            continue
+        if many_to_many_only and not isinstance(field, models.ManyToManyField):
+            errors.append(_error(model_admin.__class__, f"The field '{item}' must be a many-to-many field.", "E024"))
+            continue
+        if not many_to_many_only and not getattr(field, "remote_field", None):
+            errors.append(_error(model_admin.__class__, f"The field '{item}' must be a relation field.", "E025"))
+            continue
+        if require_registered_remote:
+            remote_model = field.remote_field.model
+            try:
+                remote_admin = model_admin.admin_site.get_model_admin(remote_model)
+            except NotRegistered:
+                errors.append(
+                    _error(model_admin.__class__, f"The related model for '{item}' is not registered.", "E026")
+                )
+                continue
+            if not remote_admin.get_search_fields(None):
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The related admin for '{item}' must define search_fields.",
+                        "E027",
+                    )
+                )
+    return errors
+
+
+def _check_date_hierarchy(model_admin):
+    field_name = getattr(model_admin, "date_hierarchy", None)
+    if not field_name:
+        return []
+    field = _model_field(model_admin, field_name)
+    if field is None:
+        return [
+            _error(
+                model_admin.__class__,
+                f"The value of 'date_hierarchy' refers to unknown field '{field_name}'.",
+                "E028",
+            )
+        ]
+    if not isinstance(field, (models.DateField, models.DateTimeField)):
+        return [_error(model_admin.__class__, f"The field '{field_name}' is not a date or datetime field.", "E029")]
+    return []
+
+
+def _check_actions(model_admin):
+    errors = []
+    if model_admin.actions is None:
+        return errors
+    for item in model_admin.actions:
+        if callable(item):
+            continue
+        if not isinstance(item, str) or model_admin.get_action(item) is None:
+            errors.append(_error(model_admin.__class__, f"The action '{item}' is not a registered action.", "E030"))
+    return errors
+
+
+def _check_inlines(model_admin):
+    from django_ninja_admin.admins.inline import InlineModelAdmin
+
+    errors = []
+    for inline_class in model_admin.inlines or ():
+        if not isinstance(inline_class, type) or not issubclass(inline_class, InlineModelAdmin):
+            errors.append(_error(model_admin.__class__, "Items in 'inlines' must subclass InlineModelAdmin.", "E031"))
+            continue
+        inline_model = getattr(inline_class, "model", None)
+        if not isinstance(inline_model, ModelBase):
+            errors.append(_error(inline_class, "Inline classes must define a concrete model.", "E032"))
+            continue
+        try:
+            _get_foreign_key(model_admin.model, inline_model, fk_name=getattr(inline_class, "fk_name", None))
+        except ValueError as exc:
+            errors.append(_error(inline_class, str(exc), "E033"))
+    return errors

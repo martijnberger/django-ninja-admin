@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.forms.models import model_to_dict
+from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 
 from django_ninja_admin.utils.format_error import format_error
 
@@ -18,20 +18,74 @@ def _choice_value(value):
     return str(raw) if raw is not None else None
 
 
+def _jsonish_value(value):
+    if callable(value):
+        return None
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, str | int | float | bool) or value is None:
+        return value
+    if isinstance(value, (list, tuple)):
+        return [_jsonish_value(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _jsonish_value(item) for key, item in value.items()}
+    return str(value)
+
+
+def _relation_metadata(field):
+    if not isinstance(field, (ModelChoiceField, ModelMultipleChoiceField)):
+        return {}
+    model = field.queryset.model
+    attrs = {
+        "related_model": f"{model._meta.app_label}.{model._meta.model_name}",
+        "to_field_name": field.to_field_name or model._meta.pk.name,
+        "multiple": isinstance(field, ModelMultipleChoiceField),
+    }
+    if isinstance(field, ModelChoiceField):
+        attrs["empty_label"] = field.empty_label
+    return attrs
+
+
+def _validator_names(field):
+    return [validator.__class__.__name__ for validator in getattr(field, "validators", ())]
+
+
 def field_description(name, field, *, read_only=False):
+    widget = field.widget
     attrs = {
         "required": field.required,
         "label": field.label or name.replace("_", " ").title(),
         "help_text": str(field.help_text or ""),
         "read_only": read_only,
-        "widget": field.widget.__class__.__name__,
+        "disabled": getattr(field, "disabled", False),
+        "widget": widget.__class__.__name__,
+        "is_hidden": widget.is_hidden,
+        "multiple": getattr(widget, "allow_multiple_selected", False),
+        "validators": _validator_names(field),
     }
+    if getattr(widget, "input_type", None):
+        attrs["input_type"] = widget.input_type
+    if hasattr(widget, "needs_multipart_form"):
+        attrs["needs_multipart_form"] = widget.needs_multipart_form
     if getattr(field, "choices", None):
         attrs["choices"] = [(_choice_value(value), str(label)) for value, label in field.choices]
     if getattr(field, "initial", None) not in (None, ""):
-        attrs["initial"] = field.initial
+        initial = _jsonish_value(field.initial)
+        if initial is not None:
+            attrs["initial"] = initial
     if getattr(field, "max_length", None) is not None:
         attrs["max_length"] = field.max_length
+    if getattr(field, "min_length", None) is not None:
+        attrs["min_length"] = field.min_length
+    if getattr(field, "min_value", None) is not None:
+        attrs["min_value"] = _jsonish_value(field.min_value)
+    if getattr(field, "max_value", None) is not None:
+        attrs["max_value"] = _jsonish_value(field.max_value)
+    if getattr(field, "max_digits", None) is not None:
+        attrs["max_digits"] = field.max_digits
+    if getattr(field, "decimal_places", None) is not None:
+        attrs["decimal_places"] = field.decimal_places
+    attrs.update(_relation_metadata(field))
     return {"name": name, "type": field.__class__.__name__, "attrs": attrs}
 
 

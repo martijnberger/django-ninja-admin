@@ -1,18 +1,26 @@
 import enum
+from functools import wraps
+from typing import Any, Literal
 
-from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.apps import apps
+from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import models
 from django.db.models.constants import LOOKUP_SEP
 from django.forms.models import model_to_dict
 from django.utils.text import capfirst, smart_split, unescape_string_literal
 from django.utils.translation import gettext_lazy as _
+from ninja import Schema
+from pydantic import Field, create_model
 
 from django_ninja_admin.admins.base import BaseAdmin
 from django_ninja_admin.models import ADDITION, CHANGE, DELETION, LogEntry
+from django_ninja_admin.routes import AdminRoute
+from django_ninja_admin.schemas import AdminInlinePayloadSchema
 from django_ninja_admin.utils.deletion import get_deleted_objects
 
 HORIZONTAL, VERTICAL = 1, 2
+DEFAULT_ROUTE_AUTH = object()
 
 
 class ShowFacets(enum.Enum):
@@ -86,6 +94,88 @@ class ModelAdmin(BaseAdmin):
             inline_instances.append(inline)
         return inline_instances
 
+    def admin_view(self, view_func):
+        @wraps(view_func)
+        def inner(request, *args, **kwargs):
+            if not self.has_view_or_change_permission(request):
+                raise PermissionDenied
+            return view_func(request, *args, **kwargs)
+
+        return inner
+
+    def route(
+        self,
+        path,
+        view_func,
+        *,
+        methods=("GET",),
+        response=dict[str, Any],
+        operation_id=None,
+        summary=None,
+        description=None,
+        tags=None,
+        auth=DEFAULT_ROUTE_AUTH,
+        include_in_schema=True,
+    ):
+        route_auth = self.admin_site.auth if auth is DEFAULT_ROUTE_AUTH else auth
+        return AdminRoute(
+            path=path,
+            view_func=view_func,
+            methods=tuple(method.upper() for method in methods),
+            response=response,
+            operation_id=operation_id,
+            summary=summary,
+            description=description,
+            tags=tags,
+            auth=route_auth,
+            include_in_schema=include_in_schema,
+        )
+
+    def get_urls(self):
+        return []
+
+    def get_inline_payload_schema(self, request=None, obj=None, *, change=False, partial=False):
+        cache = getattr(self, "_inline_payload_schema_cache", {})
+        inline_instances = self.get_inline_instances(request, obj)
+        cache_key = (
+            "inline-payload",
+            tuple(f"{inline.model._meta.app_label}.{inline.model._meta.model_name}" for inline in inline_instances),
+            change,
+            partial,
+        )
+        if cache_key not in cache:
+            fields = {}
+            for inline in inline_instances:
+                inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
+                field_name = inline_id.replace(".", "_")
+                fields[field_name] = (
+                    inline.get_inline_operations_schema(request, obj, change=change) | None,
+                    Field(default=None, alias=inline_id),
+                )
+            cache[cache_key] = create_model(
+                f"{self.model.__name__}AdminInlinePayload",
+                __base__=AdminInlinePayloadSchema,
+                **fields,
+            )
+            self._inline_payload_schema_cache = cache
+        return cache[cache_key]
+
+    def get_mutation_payload_schema(self, request=None, obj=None, *, change=False, partial=False):
+        cache = getattr(self, "_mutation_payload_schema_cache", {})
+        cache_key = ("model-mutation", change, partial)
+        if cache_key not in cache:
+            data_schema = self.get_write_schema(request, obj, change=change, partial=partial)
+            inline_payload_schema = self.get_inline_payload_schema(request, obj, change=change, partial=partial)
+            operation = "PartialUpdate" if partial else "Update" if change else "Create"
+            cache[cache_key] = create_model(
+                f"{self.model.__name__}Admin{operation}Payload",
+                __base__=Schema,
+                data=(data_schema, ...),
+                inlines=(inline_payload_schema | None, None),
+            )
+            self._mutation_payload_schema_cache = cache
+        return cache[cache_key]
+
     def get_model_perms(self, request):
         return {
             "has_add_permission": self.has_add_permission(request),
@@ -116,6 +206,14 @@ class ModelAdmin(BaseAdmin):
 
     def get_list_select_related(self, request):
         return self.list_select_related
+
+    def get_changelist(self, request, **kwargs):
+        from django_ninja_admin.changelist import ChangeList
+
+        return ChangeList
+
+    def get_changelist_instance(self, request, **kwargs):
+        return self.get_changelist(request, **kwargs)(request, self)
 
     def get_search_fields(self, request):
         return self.search_fields
@@ -223,13 +321,76 @@ class ModelAdmin(BaseAdmin):
                 return None
         return func, action, self._get_action_description(func, action)
 
+    def get_action_payload_schema(self, request=None):
+        cache = getattr(self, "_action_payload_schema_cache", {})
+        action_names = tuple(name for _func, name, _description in self._get_base_actions())
+        cache_key = ("action-payload", action_names)
+        if cache_key not in cache:
+            action_type = Literal.__getitem__(action_names) if action_names else str
+            cache[cache_key] = create_model(
+                f"{self.model.__name__}AdminActionPayload",
+                __base__=Schema,
+                action=(action_type, ...),
+                selected_ids=(list[Any], Field(default_factory=list)),
+                select_across=(bool, False),
+            )
+            self._action_payload_schema_cache = cache
+        return cache[cache_key]
+
     def construct_change_message(self, request, form, inline_results=None, add=False):
+        inline_results = inline_results or {}
         if add:
-            return [{"added": {}}]
+            message = [{"added": {}}]
+            message.extend(self._inline_change_messages(inline_results))
+            return message
         changed = getattr(form, "changed_data", None) or []
+        message = []
         if changed:
-            return [{"changed": {"fields": changed}}]
-        return []
+            message.append({"changed": {"fields": [self._form_field_label(form, field) for field in changed]}})
+        message.extend(self._inline_change_messages(inline_results))
+        return message
+
+    def _form_field_label(self, form, field_name):
+        field = form.fields.get(field_name)
+        if field is not None and field.label:
+            return str(field.label)
+        try:
+            return str(self.model._meta.get_field(field_name).verbose_name)
+        except FieldDoesNotExist:
+            return field_name.replace("_", " ")
+
+    def _inline_change_messages(self, inline_results):
+        messages = []
+        for inline_id, results in inline_results.items():
+            verbose_name = self._inline_verbose_name(inline_id)
+            for item in results.get("add", []):
+                messages.append({"added": {"name": verbose_name, "object": self._inline_object_repr(item)}})
+            for item in results.get("change", []):
+                fields = item.get("_changed_fields") or []
+                messages.append(
+                    {
+                        "changed": {
+                            "name": verbose_name,
+                            "object": self._inline_object_repr(item),
+                            "fields": fields,
+                        }
+                    }
+                )
+            for item in results.get("delete", []):
+                messages.append({"deleted": {"name": verbose_name, "object": str(item)}})
+        return messages
+
+    def _inline_verbose_name(self, inline_id):
+        try:
+            app_label, model_name = inline_id.split(".", 1)
+            return str(apps.get_model(app_label, model_name)._meta.verbose_name)
+        except (LookupError, ValueError):
+            return inline_id
+
+    def _inline_object_repr(self, item):
+        if isinstance(item, dict):
+            return str(item.get("title") or item.get("name") or item.get("id") or item)
+        return str(item)
 
     def save_form(self, request, form, change):
         return form.save(commit=False)
@@ -260,10 +421,26 @@ class ModelAdmin(BaseAdmin):
         return LogEntry.objects.log_actions(user_id=request.user.pk, queryset=queryset, action_flag=DELETION)
 
     def response_add(self, request, obj, form, inline_results):
-        return {"data": self.serialize_object(obj, request), "inlines": inline_results or None}
+        return {"data": self.serialize_object(obj, request), "inlines": self._public_inline_results(inline_results)}
 
     def response_change(self, request, obj, form, inline_results):
-        return {"data": self.serialize_object(obj, request), "inlines": inline_results or None}
+        return {"data": self.serialize_object(obj, request), "inlines": self._public_inline_results(inline_results)}
+
+    def _public_inline_results(self, inline_results):
+        if not inline_results:
+            return None
+        public_results = {}
+        for inline_id, operations in inline_results.items():
+            public_results[inline_id] = {}
+            for operation, values in operations.items():
+                public_values = []
+                for value in values:
+                    if isinstance(value, dict):
+                        public_values.append({key: item for key, item in value.items() if not key.startswith("_")})
+                    else:
+                        public_values.append(value)
+                public_results[inline_id][operation] = public_values
+        return public_results
 
     def response_delete(self, request, obj_display, obj_id):
         return None

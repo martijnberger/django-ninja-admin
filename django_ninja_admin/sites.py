@@ -1,4 +1,5 @@
 import json
+from functools import wraps
 from typing import Any
 from weakref import WeakSet
 
@@ -7,7 +8,13 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist, PermissionDenied, ValidationError
+from django.core.exceptions import (
+    FieldDoesNotExist,
+    ImproperlyConfigured,
+    ObjectDoesNotExist,
+    PermissionDenied,
+    ValidationError,
+)
 from django.core.paginator import InvalidPage, Paginator
 from django.db import router, transaction
 from django.db.models.base import ModelBase
@@ -18,6 +25,7 @@ from django.utils.module_loading import import_string
 from django.utils.text import capfirst
 from ninja import NinjaAPI, Query, Router, Status
 from ninja.errors import AuthenticationError, AuthorizationError, HttpError
+from ninja.errors import ValidationError as NinjaValidationError
 from ninja.security import SessionAuthIsStaff
 from pydantic import ValidationError as PydanticValidationError
 
@@ -32,20 +40,19 @@ from django_ninja_admin.exceptions import (
     NotRegistered,
     ProtectedDelete,
 )
+from django_ninja_admin.routes import AdminRoute
 from django_ninja_admin.schemas import (
-    ActionPayload,
     AppSummary,
     AutocompleteResponse,
-    BulkPayload,
     ChangelistResponse,
     ErrorResponse,
     FormResponse,
     HistoryResponse,
-    MutationPayload,
     MutationResponse,
     SiteContext,
     ViewOnSiteResponse,
 )
+from django_ninja_admin.utils.deletion import deletion_error_payload
 from django_ninja_admin.utils.format_error import format_error
 from django_ninja_admin.utils.forms import form_errors, formset_errors, model_data_for_form
 from django_ninja_admin.utils.lookup import label_for_field, lookup_field
@@ -133,6 +140,49 @@ class NinjaAdminSite:
 
     def get_action(self, name):
         return self._global_actions[name]
+
+    def has_permission(self, request):
+        return request.user.is_active and request.user.is_staff
+
+    def admin_view(self, view_func):
+        @wraps(view_func)
+        def inner(request, *args, **kwargs):
+            if not self.has_permission(request):
+                raise PermissionDenied
+            return view_func(request, *args, **kwargs)
+
+        return inner
+
+    def route(
+        self,
+        path,
+        view_func,
+        *,
+        methods=("GET",),
+        response=dict[str, Any],
+        operation_id=None,
+        summary=None,
+        description=None,
+        tags=None,
+        auth=DEFAULT_AUTH,
+        include_in_schema=True,
+    ):
+        route_auth = self.auth if auth is DEFAULT_AUTH else auth
+        return AdminRoute(
+            path=path,
+            view_func=view_func,
+            methods=tuple(method.upper() for method in methods),
+            response=response,
+            operation_id=operation_id,
+            summary=summary,
+            description=description,
+            tags=tags,
+            auth=route_auth,
+            include_in_schema=include_in_schema,
+        )
+
+    def get_urls(self):
+        return []
 
     def check(self, app_configs=None):
         if app_configs is None:
@@ -234,10 +284,34 @@ class NinjaAdminSite:
         self._register_exception_handlers(api)
         router = Router(tags=["admin"])
         self._register_site_routes(router)
+        self._register_custom_routes(router, self.get_urls(), default_tags=["admin"])
         for model, model_admin in self._registry.items():
             self._register_model_routes(router, model, model_admin)
         api.add_router("", router)
         return api
+
+    def _register_custom_routes(self, router, routes, *, prefix="", default_tags=None):
+        for route in routes:
+            if not isinstance(route, AdminRoute):
+                raise ImproperlyConfigured("Custom admin get_urls() entries must be AdminRoute instances.")
+            path = self._join_route_path(prefix, route.path)
+            router.add_api_operation(
+                path,
+                list(route.methods),
+                route.view_func,
+                auth=route.auth,
+                response=route.response,
+                operation_id=route.operation_id,
+                summary=route.summary,
+                description=route.description,
+                tags=route.tags or default_tags,
+                include_in_schema=route.include_in_schema,
+            )
+
+    def _join_route_path(self, prefix, path):
+        prefix = prefix.rstrip("/")
+        path = path if path.startswith("/") else f"/{path}"
+        return f"{prefix}{path}" if prefix else path
 
     def _register_exception_handlers(self, api):
         def error_response(request, message, status, param="non_field_errors"):
@@ -279,6 +353,28 @@ class NinjaAdminSite:
         api.add_exception_handler(DisallowedModelAdminToField, bad_request)
         api.add_exception_handler(ValidationError, bad_request)
         api.add_exception_handler(PydanticValidationError, bad_request)
+
+        def request_validation_error(request, exc):
+            errors = []
+            raw_errors = getattr(exc, "errors", None)
+            raw_errors = raw_errors() if callable(raw_errors) else raw_errors
+            raw_errors = raw_errors if isinstance(raw_errors, list) else [raw_errors or str(exc)]
+            for error in raw_errors:
+                if isinstance(error, dict):
+                    location = ".".join(
+                        str(part) for part in error.get("loc", []) if part not in {"body", "payload"}
+                    )
+                    errors.append(
+                        {
+                            "message": error.get("msg", str(error)),
+                            "param": location or "body",
+                        }
+                    )
+                else:
+                    errors.append({"message": str(error), "param": "body"})
+            return api.create_response(request, {"errors": errors}, status=422)
+
+        api.add_exception_handler(NinjaValidationError, request_validation_error)
 
         @api.exception_handler(MissingSearchFields)
         def missing_search_fields(request, exc):
@@ -450,6 +546,11 @@ class NinjaAdminSite:
         model_name = model._meta.model_name
         prefix = f"/{app_label}/{model_name}"
         tags = [f"{app_label}.{model_name}"]
+        create_payload_schema = model_admin.get_mutation_payload_schema(None, change=False, partial=False)
+        update_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=True)
+        replace_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=False)
+        bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
+        action_payload_schema = model_admin.get_action_payload_schema(None)
 
         @router.get(prefix, response=ChangelistResponse, tags=tags, operation_id=f"{app_label}_{model_name}_list")
         def changelist(request):
@@ -472,12 +573,12 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_create",
         )
-        def create(request, payload: MutationPayload):
+        def create(request, payload: create_payload_schema):
             if not model_admin.has_add_permission(request):
                 raise PermissionDenied
             with transaction.atomic(using=router_db_for_write(model_admin.model)):
                 form_class = model_admin.get_form_class(request, None, change=False)
-                form = form_class(data=payload.data)
+                form = form_class(data=self._payload_data(payload))
                 if not form.is_valid():
                     raise AdminValidationError({"form": form_errors(form)})
                 obj = model_admin.save_form(request, form, change=False)
@@ -486,7 +587,7 @@ class NinjaAdminSite:
                     request,
                     model_admin,
                     obj,
-                    payload.inlines or {},
+                    self._payload_inlines(payload) or {},
                     change=False,
                 )
                 model_admin.save_related(request, form, inline_results, change=False)
@@ -496,11 +597,11 @@ class NinjaAdminSite:
 
         @router.post(
             f"{prefix}/actions",
-            response={200: dict[str, Any], 400: ErrorResponse, 403: ErrorResponse},
+            response={200: dict[str, Any], 400: ErrorResponse, 403: ErrorResponse, 409: ErrorResponse},
             tags=tags,
             operation_id=f"{app_label}_{model_name}_action",
         )
-        def actions_view(request, payload: ActionPayload):
+        def actions_view(request, payload: action_payload_schema):
             if not model_admin.has_view_or_change_permission(request):
                 raise PermissionDenied
             cl_queryset = site._filtered_queryset(request, model_admin)
@@ -512,10 +613,17 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_bulk_update",
         )
-        def bulk_update(request, payload: BulkPayload):
+        def bulk_update(request, payload: bulk_payload_schema):
             if not model_admin.has_change_permission(request):
                 raise PermissionDenied
             return site._bulk_update(request, model_admin, payload)
+
+        self._register_custom_routes(
+            router,
+            model_admin.get_urls(),
+            prefix=prefix,
+            default_tags=tags,
+        )
 
         @router.get(
             f"{prefix}/{{object_id}}",
@@ -547,7 +655,7 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_partial_update",
         )
-        def update(request, object_id: str, payload: MutationPayload):
+        def update(request, object_id: str, payload: update_payload_schema):
             return site._update_object(request, model_admin, object_id, payload, partial=True)
 
         @router.put(
@@ -556,7 +664,7 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_update",
         )
-        def replace(request, object_id: str, payload: MutationPayload):
+        def replace(request, object_id: str, payload: replace_payload_schema):
             return site._update_object(request, model_admin, object_id, payload, partial=False)
 
         @router.delete(
@@ -571,9 +679,23 @@ class NinjaAdminSite:
                 raise PermissionDenied
             deleted_objects, model_count, perms_needed, protected = model_admin.get_deleted_objects([obj], request)
             if protected:
-                return Status(409, {"errors": [{"message": "Cannot delete protected objects.", "param": "object_id"}]})
+                return Status(
+                    409,
+                    deletion_error_payload(
+                        "Cannot delete protected objects.",
+                        protected=protected,
+                        model_count=model_count,
+                    ),
+                )
             if perms_needed:
-                raise PermissionDenied
+                return Status(
+                    403,
+                    deletion_error_payload(
+                        "Permission denied.",
+                        perms_needed=perms_needed,
+                        model_count=model_count,
+                    ),
+                )
             with transaction.atomic(using=router_db_for_write(model_admin.model)):
                 model_admin.log_deletion(request, [obj])
                 model_admin.delete_model(request, obj)
@@ -590,59 +712,31 @@ class NinjaAdminSite:
         return obj
 
     def _filtered_queryset(self, request, model_admin):
-        qs = model_admin.get_queryset(request)
-        if model_admin.get_list_select_related(request):
-            qs = qs.select_related(*model_admin.get_list_select_related(request))
-        params = request.GET
-        reserved = {"q", "p", "pp", "all", "o", "page"}
-        for key, value in params.items():
-            if key in reserved or value in ("", None):
-                continue
-            if not model_admin.lookup_allowed(key, value, request):
-                raise DisallowedModelAdminLookup(f"Filtering by {key!r} is not allowed.")
-            qs = qs.filter(**{key: value})
-        search_term = params.get("q")
-        if search_term:
-            qs, use_distinct = model_admin.get_search_results(request, qs, search_term)
-            if use_distinct:
-                qs = qs.distinct()
-        ordering = params.get("o")
-        if ordering:
-            fields = [field.strip() for field in ordering.split(",") if field.strip()]
-            sortable = set(model_admin.get_sortable_by(request))
-            safe_ordering = []
-            for field in fields:
-                bare = field.removeprefix("-")
-                if bare in sortable:
-                    safe_ordering.append(field)
-            if safe_ordering:
-                qs = qs.order_by(*safe_ordering)
-        return qs
+        return model_admin.get_changelist_instance(request).queryset
 
     def _changelist_response(self, request, model_admin):
-        if not model_admin.has_view_or_change_permission(request):
-            raise PermissionDenied
-        qs = self._filtered_queryset(request, model_admin)
-        full_count = model_admin.get_queryset(request).count()
-        result_count = qs.count()
-        per_page = int(request.GET.get("pp") or model_admin.list_per_page)
-        page_number = int(request.GET.get("p") or request.GET.get("page") or 1)
-        paginator = model_admin.paginator(qs, per_page)
-        page = paginator.page(page_number)
-        list_display = tuple(model_admin.get_list_display(request))
+        changelist = model_admin.get_changelist_instance(request)
+        list_display = changelist.list_display
         columns = [
-            {"field": field, "headerName": label_for_field(field, model_admin.model, model_admin)}
+            {
+                "field": field,
+                "headerName": label_for_field(field, model_admin.model, model_admin),
+                "display_link": field in (changelist.list_display_links or ()),
+                "sortable": field in changelist.ordering_field_columns,
+                "ordering_field": changelist.get_ordering_field(field),
+                "ordering_index": changelist.ordering_field_columns.get(field),
+                **changelist.column_sort_query_strings(field),
+            }
             for field in list_display
         ]
         rows = []
         empty_value = model_admin.get_empty_value_display()
-        for obj in page.object_list:
+        for obj in changelist.result_list:
             cells = {}
             for field in list_display:
                 value = lookup_field(field, obj, model_admin)
                 cells[field] = empty_value if value is None else value
             rows.append({"id": obj.pk, "cells": cells})
-        filters = self._filter_descriptions(request, model_admin)
         action_form = [
             {
                 "name": "action",
@@ -660,7 +754,7 @@ class NinjaAdminSite:
         ]
         list_editing_formset = []
         if model_admin.list_editable:
-            for obj in page.object_list:
+            for obj in changelist.result_list:
                 field_descriptions = model_admin.get_form_fields_description(request, obj)
                 list_editing_formset.append(
                     [field for field in field_descriptions if field["name"] in model_admin.list_editable]
@@ -672,15 +766,25 @@ class NinjaAdminSite:
             "columns": columns,
             "rows": rows,
             "config": {
-                "full_count": full_count,
-                "result_count": result_count,
-                "page_count": paginator.num_pages,
-                "page": page_number,
-                "per_page": per_page,
+                "full_count": changelist.full_result_count,
+                "result_count": changelist.result_count,
+                "page_count": changelist.paginator.num_pages,
+                "page": changelist.page_num,
+                "per_page": changelist.per_page,
+                "has_next": changelist.page.has_next(),
+                "has_previous": changelist.page.has_previous(),
+                "show_all": changelist.show_all,
+                "can_show_all": changelist.can_show_all_results,
+                "show_facets": changelist.show_facets,
                 "action_choices": model_admin.get_action_choices(request),
-                "filters": filters,
+                "filters": changelist.filter_descriptions(),
+                "date_hierarchy": changelist.date_hierarchy_description(),
                 "list_display_fields": model_field_names,
-                "ordering_field_columns": {field: field for field in model_field_names},
+                "list_display_links": list(changelist.list_display_links or ()),
+                "ordering_field_columns": changelist.ordering_field_columns,
+                "ordering": changelist.ordering,
+                "search_fields": list(changelist.search_fields),
+                "search_help_text": model_admin.search_help_text,
             },
             "action_form": action_form,
             "list_editing_formset": list_editing_formset,
@@ -762,13 +866,25 @@ class NinjaAdminSite:
         data["inlines"] = inlines
         return FormResponse.model_validate(data).model_dump(mode="json")
 
+    def _payload_data(self, payload, *, exclude_unset=True):
+        data = getattr(payload, "data", {})
+        if hasattr(data, "model_dump"):
+            return data.model_dump(mode="json", exclude_unset=exclude_unset)
+        return data
+
+    def _payload_inlines(self, payload):
+        inlines = getattr(payload, "inlines", None)
+        if hasattr(inlines, "model_dump"):
+            return inlines.model_dump(mode="json", by_alias=True, exclude_none=True, exclude_unset=True)
+        return inlines
+
     def _update_object(self, request, model_admin, object_id, payload, *, partial):
         obj = self._get_object_or_404(request, model_admin, object_id)
         if not model_admin.has_change_permission(request, obj):
             raise PermissionDenied
         with transaction.atomic(using=router_db_for_write(model_admin.model)):
             form_class = model_admin.get_form_class(request, obj, change=True)
-            form_data = payload.data
+            form_data = self._payload_data(payload, exclude_unset=partial)
             if partial:
                 current = model_data_for_form(obj, list(form_class.base_fields.keys()))
                 current.update(form_data)
@@ -782,7 +898,7 @@ class NinjaAdminSite:
                 request,
                 model_admin,
                 updated_object,
-                payload.inlines or {},
+                self._payload_inlines(payload) or {},
                 change=True,
             )
             model_admin.save_related(request, form, inline_results, change=True)
@@ -832,7 +948,17 @@ class NinjaAdminSite:
 
         add_rows = list(operations.get("add", []))
         change_rows = list(operations.get("change", []))
-        delete_pks = {str(pk) for pk in operations.get("delete", [])}
+        delete_values = [str(pk) for pk in operations.get("delete", [])]
+        duplicate_delete_pks = sorted({pk for pk in delete_values if delete_values.count(pk) > 1})
+        if duplicate_delete_pks:
+            raise AdminValidationError(
+                {
+                    f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": {
+                        "delete": [{"message": "Duplicate inline delete pk.", "param": "pk"}]
+                    }
+                }
+            )
+        delete_pks = set(delete_values)
         if add_rows and not inline.has_add_permission(request, obj):
             raise PermissionDenied
         if change_rows and not inline.has_change_permission(request, obj):
@@ -858,9 +984,26 @@ class NinjaAdminSite:
             if pk is None:
                 raise AdminValidationError({inline_id: {"change": [{"message": "Missing pk.", "param": "pk"}]}})
             pk = str(pk)
+            if pk in changes_by_pk:
+                raise AdminValidationError(
+                    {inline_id: {"change": [{"message": "Duplicate inline change pk.", "param": "pk"}]}}
+                )
             if pk not in existing_by_pk:
                 raise AdminValidationError(
                     {inline_id: {"change": [{"message": "Unknown inline object.", "param": "pk"}]}}
+                )
+            if pk in delete_pks:
+                raise AdminValidationError(
+                    {
+                        inline_id: {
+                            "change": [
+                                {
+                                    "message": "Inline object cannot be changed and deleted in the same request.",
+                                    "param": "pk",
+                                }
+                            ]
+                        }
+                    }
                 )
             changes_by_pk[pk] = row
         for pk in delete_pks:
@@ -884,11 +1027,22 @@ class NinjaAdminSite:
         if not formset.is_valid():
             raise AdminValidationError({inline_id: {"formset": formset_errors(formset)}})
         formset.save()
+        changed_objects = []
+        for instance, fields in formset.changed_objects:
+            item = inline.serialize_object(instance, request)
+            item["_changed_fields"] = [self._inline_field_label(inline, field_name) for field_name in fields]
+            changed_objects.append(item)
         return {
             "add": [inline.serialize_object(instance, request) for instance in formset.new_objects],
-            "change": [inline.serialize_object(instance, request) for instance, _fields in formset.changed_objects],
+            "change": changed_objects,
             "delete": [instance.pk for instance in formset.deleted_objects],
         }
+
+    def _inline_field_label(self, inline, field_name):
+        try:
+            return str(inline.model._meta.get_field(field_name).verbose_name)
+        except FieldDoesNotExist:
+            return field_name.replace("_", " ")
 
     def _inline_formset_data(
         self,
@@ -935,31 +1089,56 @@ class NinjaAdminSite:
             formset_data[f"{prefix}-{index}-{name}"] = value
 
     def _bulk_update(self, request, model_admin, payload):
-        if not payload.data:
+        payload_data = [
+            item.model_dump(mode="json", exclude_unset=True) if hasattr(item, "model_dump") else item
+            for item in payload.data
+        ]
+        if not payload_data:
             raise AdminValidationError([{"message": "Change data cannot be empty.", "param": "data"}])
-        results = {}
-        for idx, data in enumerate(payload.data):
+        validated_rows = []
+        seen_pks = set()
+        allowed = set(model_admin.list_editable) | {"pk", model_admin.model._meta.pk.name}
+        for idx, data in enumerate(payload_data):
             pk = data.get("pk") or data.get(model_admin.model._meta.pk.name)
             if pk is None:
                 raise AdminValidationError({idx: [{"message": "This field is required.", "param": "pk"}]})
+            pk_key = str(pk)
+            if pk_key in seen_pks:
+                raise AdminValidationError({idx: [{"message": "Duplicate object in bulk update.", "param": "pk"}]})
+            seen_pks.add(pk_key)
+            unknown_fields = sorted(set(data) - allowed)
+            if unknown_fields:
+                raise AdminValidationError(
+                    {
+                        idx: [
+                            {
+                                "message": f"Field is not list editable: {', '.join(unknown_fields)}.",
+                                "param": unknown_fields[0],
+                            }
+                        ]
+                    }
+                )
             obj = model_admin.get_object(request, pk)
             if obj is None:
                 raise AdminValidationError({idx: [{"message": "Object not found.", "param": "pk"}]})
             if not model_admin.has_change_permission(request, obj):
                 raise PermissionDenied
             form_class = model_admin.get_form_class(request, obj, change=True)
-            allowed = set(model_admin.list_editable) | {"pk", model_admin.model._meta.pk.name}
             current = model_data_for_form(obj, list(form_class.base_fields.keys()))
             current.update({key: value for key, value in data.items() if key in allowed})
             form = form_class(data=current, instance=obj)
             if not form.is_valid():
                 raise AdminValidationError({idx: form_errors(form)})
-            with transaction.atomic(using=router_db_for_write(model_admin.model)):
+            validated_rows.append((idx, obj, form))
+
+        results = {}
+        with transaction.atomic(using=router_db_for_write(model_admin.model)):
+            for idx, obj, form in validated_rows:
                 updated = model_admin.save_form(request, form, change=True)
                 model_admin.save_model(request, updated, form, change=True)
                 model_admin.save_related(request, form, {}, change=True)
                 model_admin.log_change(request, updated, model_admin.construct_change_message(request, form))
-            results[idx] = model_admin.serialize_object(obj, request)
+                results[idx] = model_admin.serialize_object(obj, request)
         return {"data": results}
 
 

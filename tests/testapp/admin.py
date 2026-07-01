@@ -1,5 +1,20 @@
-from django_ninja_admin import ModelAdmin, TabularInline, action, display, site
+from django_ninja_admin import ModelAdmin, SimpleListFilter, TabularInline, action, display, site
 from tests.testapp.models import Category, Product, ProductImage
+
+
+class PriceBandFilter(SimpleListFilter):
+    title = "price band"
+    parameter_name = "price_band"
+
+    def lookups(self, request, model_admin):
+        return [("cheap", "Cheap"), ("premium", "Premium")]
+
+    def queryset(self, request, queryset):
+        if self.value() == "cheap":
+            return queryset.filter(price__lt=10)
+        if self.value() == "premium":
+            return queryset.filter(price__gte=10)
+        return queryset
 
 
 class ProductImageInline(TabularInline):
@@ -11,22 +26,27 @@ class ProductImageInline(TabularInline):
 
 class ProductAdmin(ModelAdmin):
     list_display = ("name", "category", "price", "stock_status", "upper_name")
-    list_filter = ("stock_status",)
+    list_filter = ("stock_status", "category", PriceBandFilter)
     list_editable = ("stock_status",)
     search_fields = ("name", "description", "category__name")
     autocomplete_fields = ("category",)
     ordering = ("name",)
     inlines = [ProductImageInline]
-    actions = ["mark_out_of_stock"]
+    actions = ["mark_out_of_stock", "report_names"]
     readonly_fields = ("upper_name",)
+    date_hierarchy = "created_at"
 
-    @display(description="Upper name")
+    @display(description="Upper name", ordering="name")
     def upper_name(self, obj):
         return obj.name.upper()
 
     @action(description="Mark out of stock", permissions=["change"])
     def mark_out_of_stock(self, request, queryset):
         queryset.update(stock_status="out_of_stock")
+
+    @action(description="Report names", permissions=["view"])
+    def report_names(self, request, queryset):
+        return {"names": list(queryset.order_by("name").values_list("name", flat=True))}
 
 
 class CategoryAdmin(ModelAdmin):

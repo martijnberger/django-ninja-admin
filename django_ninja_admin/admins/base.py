@@ -1,11 +1,19 @@
+from datetime import date, datetime, time
+from decimal import Decimal
+from typing import Any
+
 from django import forms
 from django.contrib.auth import get_permission_codename
 from django.core.exceptions import FieldDoesNotExist
 from django.forms import modelform_factory
+from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from ninja import Schema
+from pydantic import create_model
 
 from django_ninja_admin.exceptions import NotRegistered
+from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 from django_ninja_admin.utils.forms import form_field_descriptions
 
@@ -30,7 +38,9 @@ class BaseAdmin:
     empty_value_display = "-"
 
     def check(self, **kwargs):
-        return []
+        from django_ninja_admin.checks import check_model_admin
+
+        return check_model_admin(self)
 
     def get_autocomplete_fields(self, request):
         return self.autocomplete_fields
@@ -78,6 +88,116 @@ class BaseAdmin:
 
     def get_schema_field_overrides(self, request=None):
         return self.schema_field_overrides
+
+    def get_write_schema(self, request=None, obj=None, *, change=False, partial=False, fields=None, name_suffix=None):
+        cache = getattr(self, "_write_schema_cache", {})
+        form_class = self.get_form_class(request, obj, change=change)
+        form_fields = form_class.base_fields
+        selected_fields = tuple(fields or form_fields.keys())
+        cache_key = ("write", selected_fields, change, partial, name_suffix)
+        if cache_key not in cache:
+            schema_fields = {}
+            for field_name in selected_fields:
+                form_field = form_fields.get(field_name)
+                field_type = Any if form_field is None else self.get_pydantic_type_for_form_field(form_field)
+                required = bool(form_field and form_field.required and not partial)
+                if required:
+                    schema_fields[field_name] = (field_type, ...)
+                else:
+                    schema_fields[field_name] = (field_type | None, None)
+            operation = name_suffix or ("PartialUpdate" if partial else "Update" if change else "Create")
+            cache[cache_key] = create_model(
+                f"{self.model.__name__}Admin{operation}Data",
+                __base__=AdminWriteSchema,
+                **schema_fields,
+            )
+            self._write_schema_cache = cache
+        return cache[cache_key]
+
+    def get_mutation_payload_schema(self, request=None, obj=None, *, change=False, partial=False):
+        cache = getattr(self, "_mutation_payload_schema_cache", {})
+        cache_key = ("mutation", change, partial)
+        if cache_key not in cache:
+            data_schema = self.get_write_schema(request, obj, change=change, partial=partial)
+            operation = "PartialUpdate" if partial else "Update" if change else "Create"
+            cache[cache_key] = create_model(
+                f"{self.model.__name__}Admin{operation}Payload",
+                __base__=Schema,
+                data=(data_schema, ...),
+                inlines=(dict[str, Any] | None, None),
+            )
+            self._mutation_payload_schema_cache = cache
+        return cache[cache_key]
+
+    def get_bulk_payload_schema(self, request=None):
+        cache = getattr(self, "_mutation_payload_schema_cache", {})
+        cache_key = ("bulk", tuple(self.list_editable))
+        if cache_key not in cache:
+            form_class = self.get_form_class(request, None, change=True)
+            form_fields = form_class.base_fields
+            row_fields = {"pk": (Any, ...)}
+            for field_name in self.list_editable:
+                form_field = form_fields.get(field_name)
+                field_type = Any if form_field is None else self.get_pydantic_type_for_form_field(form_field)
+                row_fields[field_name] = (field_type | None, None)
+            row_schema = create_model(
+                f"{self.model.__name__}AdminBulkRow",
+                __base__=AdminBulkRowSchema,
+                **row_fields,
+            )
+            cache[cache_key] = create_model(
+                f"{self.model.__name__}AdminBulkPayload",
+                __base__=Schema,
+                data=(list[row_schema], ...),
+            )
+            self._mutation_payload_schema_cache = cache
+        return cache[cache_key]
+
+    def get_pydantic_type_for_form_field(self, field):
+        if isinstance(field, ModelMultipleChoiceField):
+            return list[int | str]
+        if isinstance(field, ModelChoiceField):
+            return int | str
+        if isinstance(field, forms.BooleanField):
+            return bool
+        if isinstance(field, forms.DecimalField):
+            return Decimal
+        if isinstance(field, forms.IntegerField):
+            return int
+        if isinstance(field, forms.FloatField):
+            return float
+        if isinstance(field, forms.DateTimeField):
+            return datetime
+        if isinstance(field, forms.DateField):
+            return date
+        if isinstance(field, forms.TimeField):
+            return time
+        if isinstance(field, forms.MultipleChoiceField):
+            return list[str]
+        if isinstance(field, forms.FileField):
+            return Any
+        if getattr(field, "choices", None) and not isinstance(field.choices, str | bytes):
+            return self.get_pydantic_type_for_choices(field.choices)
+        return str
+
+    def get_pydantic_type_for_choices(self, choices):
+        value_types = set()
+        for value, label in choices:
+            if isinstance(label, (list, tuple)):
+                value_types.update(type(choice_value) for choice_value, _choice_label in label)
+            elif value not in ("", None):
+                value_types.add(type(value))
+        if not value_types:
+            return str
+        if value_types <= {int}:
+            return int
+        if value_types <= {str}:
+            return str
+        if value_types <= {int, str}:
+            return int | str
+        if value_types <= {bool}:
+            return bool
+        return str
 
     def _output_schema_for_fields(self, fields_key, custom_fields):
         from ninja.orm import create_schema

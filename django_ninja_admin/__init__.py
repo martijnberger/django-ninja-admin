@@ -44,7 +44,7 @@ def __getattr__(name):
         "RelatedOnlyFieldListFilter",
         "SimpleListFilter",
     }:
-        from django.contrib.admin import filters
+        from django_ninja_admin import filters
 
         return getattr(filters, name)
     if name in {"InlineModelAdmin", "StackedInline", "TabularInline"}:

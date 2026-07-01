@@ -1,5 +1,6 @@
 from django.db import models
 from django.urls import reverse
+from django.utils import timezone
 
 
 class Category(models.Model):
@@ -13,6 +14,7 @@ class Product(models.Model):
     name = models.CharField(max_length=100)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="products")
     price = models.DecimalField(max_digits=8, decimal_places=2)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
     stock_status = models.CharField(
         max_length=20,
         choices=[
@@ -37,3 +39,10 @@ class ProductImage(models.Model):
     def __str__(self):
         return self.title
 
+
+class ProductReview(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="reviews")
+    note = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.note

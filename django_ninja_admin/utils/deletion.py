@@ -19,3 +19,13 @@ def get_deleted_objects(objs, request, admin_site):
             perms_needed.add(opts.verbose_name)
     return collector.nested(), model_count, perms_needed, collector.protected
 
+
+def deletion_error_payload(message, *, param="object_id", protected=None, perms_needed=None, model_count=None):
+    payload = {"errors": [{"message": message, "param": param}]}
+    if protected:
+        payload["protected"] = [str(obj) for obj in protected]
+    if perms_needed:
+        payload["perms_needed"] = sorted(str(perm) for perm in perms_needed)
+    if model_count:
+        payload["model_count"] = dict(model_count)
+    return payload
