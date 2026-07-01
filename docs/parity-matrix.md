@@ -16,7 +16,7 @@ Statuses:
 | Distribution/import package | implemented | `pyproject.toml`, `django_ninja_admin` package | Release metadata hardening in Phase 7 |
 | Public exports | implemented | `django_ninja_admin/__init__.py` exports site/admin/filter/decorator APIs | Keep stable as new hooks land |
 | No DRF/drf-spectacular runtime dependency | implemented | Dependencies in `pyproject.toml`, `test_no_drf_imports` | Add packaging smoke in Phase 7 |
-| DRF serializer hooks | changed | Replaced by `form_class`, `output_schema`, `schema_field_overrides` | Add migration docs in Phase 6 |
+| DRF serializer hooks | changed | Replaced by `form_class`, `output_schema`, `schema_field_overrides`; migration guide added | Expand examples as hooks grow |
 
 ## Site Routes
 
@@ -85,8 +85,8 @@ Statuses:
 
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
-| Staff-session auth default | implemented | `SessionAuthIsStaff`, auth tests | Docs examples |
-| Custom auth and `auth=None` | implemented | Auth contract tests | Multi-auth test coverage |
+| Staff-session auth default | implemented | `SessionAuthIsStaff`, auth tests, auth docs | More project-level examples |
+| Custom auth and `auth=None` | implemented | Auth contract tests and auth docs | Multi-auth test coverage |
 | Typed error bodies | partial | Exception handlers, Ninja validation handler, API tests, and model-route OpenAPI error maps | Full error schema snapshots |
 | Stable operation IDs/tags | partial | Explicit operation IDs and semantic OpenAPI contract tests | Broader site/custom-route snapshot tests |
 | Per-model request/response contracts | partial | Output, write payload, inline operation, action payload, and response-map schemas in OpenAPI | Custom action schemas and Phase 6 snapshots |

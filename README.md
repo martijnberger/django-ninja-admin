@@ -26,3 +26,6 @@ urlpatterns = [
 This package intentionally uses Django Ninja and Pydantic instead of Django
 REST Framework or drf-spectacular.
 
+See [Migration And Authentication](docs/migration-and-auth.md) for guidance on
+moving DRF serializer customizations to `form_class`, `output_schema`, and
+`schema_field_overrides`, plus examples for default, custom, and disabled auth.

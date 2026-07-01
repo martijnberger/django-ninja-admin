@@ -86,6 +86,7 @@ Completed or mostly complete:
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Custom `form_class` is covered through mounted Ninja routes for write-schema generation, custom widget attributes, Django form validation, and mutation persistence.
 - Semantic OpenAPI contract tests now cover model-route operation IDs, tags, security, request body schemas, success response schemas, and typed error response maps.
+- Migration and authentication docs now cover replacing DRF serializer hooks with `form_class`, `output_schema`, and `schema_field_overrides`, plus default/custom/disabled auth patterns.
 - Initial behavioral tests and no DRF/drf-spectacular runtime dependency.
 
 Known non-parity areas:
