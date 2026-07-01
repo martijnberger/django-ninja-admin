@@ -1132,7 +1132,7 @@ class NinjaAdminSite:
     def _payload_data(self, payload, *, exclude_unset=True):
         data = getattr(payload, "data", {})
         if hasattr(data, "model_dump"):
-            return data.model_dump(mode="json", exclude_unset=exclude_unset)
+            return data.model_dump(mode="python", exclude_unset=exclude_unset)
         return data
 
     def _payload_inlines(self, payload):
@@ -1144,12 +1144,24 @@ class NinjaAdminSite:
     def _normalize_form_data(self, form_class, data):
         normalized = dict(data)
         for field_name, field in form_class.base_fields.items():
+            if field_name in normalized:
+                normalized[field_name] = self._normalize_form_value(field, normalized[field_name])
             if isinstance(field, forms.FileField) and field_name in normalized and normalized[field_name] is None:
                 normalized.pop(field_name)
                 normalized[f"{field_name}-clear"] = "on"
             if isinstance(field, forms.MultiValueField) and field_name in normalized:
                 self._expand_multivalue_form_data(normalized, field_name, field)
         return normalized
+
+    def _normalize_form_value(self, field, value):
+        if value is None:
+            return value
+        if isinstance(field, (forms.URLField, forms.GenericIPAddressField, forms.UUIDField)) and not isinstance(
+            value,
+            str,
+        ):
+            return str(value)
+        return value
 
     def _expand_multivalue_form_data(self, data, field_name, field):
         value = data[field_name]
@@ -1574,7 +1586,7 @@ class NinjaAdminSite:
 
     def _bulk_update(self, request, model_admin, payload):
         payload_data = [
-            item.model_dump(mode="json", exclude_unset=True) if hasattr(item, "model_dump") else item
+            item.model_dump(mode="python", exclude_unset=True) if hasattr(item, "model_dump") else item
             for item in payload.data
         ]
         if not payload_data:

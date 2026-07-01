@@ -21,6 +21,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   custom date, time, and datetime input formats are accepted before persistence.
 - Added typed-choice enum/member validation for float, decimal, and UUID
   coercion hooks.
+- Preserved Pydantic-cleaned Python values when binding mutation payloads to
+  Django forms, including custom temporal form fields.
 
 ## 0.1.12 - 2026-07-01
 

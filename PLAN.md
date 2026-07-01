@@ -132,6 +132,9 @@ Completed or mostly complete:
   payloads.
 - Pydantic request schemas now preserve enum/member validation for typed
   choice fields whose `coerce` hooks produce float, decimal, or UUID values.
+- Mutation handling now preserves Pydantic-cleaned Python values when binding
+  payloads to Django forms, with targeted normalization for string-oriented
+  URL, IP address, and UUID form fields.
 - Pydantic request schemas now infer typed list entries for multiple-choice
   fields from declared choice values.
 - Pydantic request schemas now constrain concrete Django choice values with

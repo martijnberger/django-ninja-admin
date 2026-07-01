@@ -190,9 +190,34 @@ multi_value_site.register(Category, ModelAdmin)
 multi_value_site.register(Product, MultiValueProductAdmin)
 
 
+class TemporalProductForm(forms.ModelForm):
+    description = forms.DateTimeField(
+        required=False,
+        input_formats=["%d/%m/%Y %H.%M"],
+    )
+
+    class Meta:
+        model = Product
+        fields = ("name", "category", "price", "stock_status", "description")
+
+    def clean_description(self):
+        value = self.cleaned_data["description"]
+        return "" if value is None else value.isoformat()
+
+
+class TemporalProductAdmin(ModelAdmin):
+    form_class = TemporalProductForm
+
+
+temporal_site = NinjaAdminSite(name="temporal_admin", include_auth=False)
+temporal_site.register(Category, ModelAdmin)
+temporal_site.register(Product, TemporalProductAdmin)
+
+
 urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
     path("custom-formfield-admin/", custom_formfield_site.urls),
     path("split-datetime-admin/", split_datetime_site.urls),
     path("multi-value-admin/", multi_value_site.urls),
+    path("temporal-admin/", temporal_site.urls),
 ]

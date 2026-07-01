@@ -2268,6 +2268,52 @@ def test_multivalue_payload_uses_subfield_pydantic_and_form_normalization(admin_
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_temporal_payload_uses_pydantic_cleaned_python_values_for_form_binding(admin_client, sample):
+    invalid = admin_client.post(
+        "/temporal-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Bad temporal",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "description": "not-a-datetime",
+            }
+        },
+        content_type="application/json",
+    )
+    assert invalid.status_code == 422
+    assert invalid.json()["errors"][0]["param"] == "data.description"
+
+    created = admin_client.post(
+        "/temporal-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Temporal window",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "description": "01/07/2026 09.30",
+            }
+        },
+        content_type="application/json",
+    )
+    assert created.status_code == 201, created.json()
+    product_id = created.json()["data"]["id"]
+    product = Product.objects.get(pk=product_id)
+    assert product.description.startswith("2026-07-01T09:30:00")
+
+    changed = admin_client.patch(
+        f"/temporal-admin/testapp/product/{product_id}",
+        data={"data": {"description": "02/07/2026 10.15"}},
+        content_type="application/json",
+    )
+    assert changed.status_code == 200, changed.json()
+    product.refresh_from_db()
+    assert product.description.startswith("2026-07-02T10:15:00")
+
+
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_client, sample):
     allowed_category = Category.objects.create(name="Allowed Cameras")
 
