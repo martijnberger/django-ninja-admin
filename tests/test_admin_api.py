@@ -100,8 +100,12 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductAdminBulkRow"]["required"] == ["pk"]
     assert components["ProductAdminBulkRow"]["additionalProperties"] is False
     assert "testapp.productimage" in components["ProductAdminInlinePayload"]["properties"]
+    assert components["ProductAdminInlinePayload"]["additionalProperties"] is False
+    assert components["ProductImageInlineOperations"]["additionalProperties"] is False
     assert components["ProductImageInlineAddRow"]["required"] == ["title"]
+    assert components["ProductImageInlineAddRow"]["additionalProperties"] is False
     assert components["ProductImageInlineChangeRow"]["required"] == ["pk"]
+    assert components["ProductImageInlineChangeRow"]["additionalProperties"] is False
     action_payload_schema = components["ProductAdminActionPayload"]
     assert action_payload_schema["discriminator"] == {
         "propertyName": "action",
@@ -996,6 +1000,59 @@ def test_inline_mutations_check_inline_permissions(staff_client, sample):
     )
     assert delete_response.status_code == 403
     assert ProductImage.objects.filter(pk=image.pk).exists()
+
+
+def test_inline_mutations_reject_unknown_and_readonly_fields(admin_client, sample, monkeypatch):
+    from tests.testapp.admin import ProductImageInline
+
+    image = sample.images.get()
+    unknown_response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={
+            "data": {},
+            "inlines": {"testapp.productimage": {"change": [{"pk": image.pk, "title": "Side", "bogus": "x"}]}},
+        },
+        content_type="application/json",
+    )
+    assert unknown_response.status_code == 422
+    assert unknown_response.json()["errors"] == [
+        {"message": "Extra inputs are not permitted", "param": "inlines.testapp.productimage.change.0.bogus"}
+    ]
+
+    monkeypatch.setattr(ProductImageInline, "readonly_fields", ("title",))
+    readonly_response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"change": [{"pk": image.pk, "title": "Side"}]}}},
+        content_type="application/json",
+    )
+    assert readonly_response.status_code == 400
+    assert readonly_response.json()["errors"]["testapp.productimage"]["change"] == [
+        {"message": "Unknown or readonly inline field.", "param": "title"}
+    ]
+    image.refresh_from_db()
+    assert image.title == "Front"
+
+
+def test_inline_mutations_reject_unknown_inline_keys(admin_client, sample):
+    unknown_inline = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.unknown": {"add": []}}},
+        content_type="application/json",
+    )
+    assert unknown_inline.status_code == 422
+    assert unknown_inline.json()["errors"] == [
+        {"message": "Extra inputs are not permitted", "param": "inlines.testapp.unknown"}
+    ]
+
+    unknown_operation = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"replace": []}}},
+        content_type="application/json",
+    )
+    assert unknown_operation.status_code == 422
+    assert unknown_operation.json()["errors"] == [
+        {"message": "Extra inputs are not permitted", "param": "inlines.testapp.productimage.replace"}
+    ]
 
 
 def test_inline_formset_enforces_max_num(admin_client, sample):

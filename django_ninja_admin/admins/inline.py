@@ -7,7 +7,7 @@ from django.utils.text import format_lazy
 from pydantic import Field, create_model
 
 from django_ninja_admin.admins.base import BaseAdmin
-from django_ninja_admin.schemas import AdminInlineOperationsSchema, AdminWriteSchema
+from django_ninja_admin.schemas import AdminInlineOperationsSchema, AdminInlineRowSchema
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 
 
@@ -93,7 +93,7 @@ class InlineModelAdmin(BaseAdmin):
             operation = "Change" if require_pk else "Add"
             cache[cache_key] = create_model(
                 f"{self.model.__name__}Inline{operation}Row",
-                __base__=AdminWriteSchema,
+                __base__=AdminInlineRowSchema,
                 **fields,
             )
             self._inline_row_schema_cache = cache

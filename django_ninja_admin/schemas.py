@@ -8,12 +8,16 @@ class AdminWriteSchema(Schema):
     model_config = ConfigDict(extra="allow")
 
 
+class AdminInlineRowSchema(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+
 class AdminInlineOperationsSchema(Schema):
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class AdminInlinePayloadSchema(Schema):
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
 class AdminBulkRowSchema(Schema):

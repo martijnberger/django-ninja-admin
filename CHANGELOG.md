@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   schemas.
 - Hardened inline mutations so configured-but-forbidden inline operations
   return permission errors instead of unknown-inline validation errors.
+- Hardened inline mutations so unknown or readonly inline row fields return
+  validation errors instead of being silently ignored.
 - Added support for passing pytest selectors through `just test` and
   `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full

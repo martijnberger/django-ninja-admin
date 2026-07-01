@@ -1047,11 +1047,22 @@ class NinjaAdminSite:
                 }
             )
 
+        formset_class = inline.get_formset(request, obj, change=change)
+        editable_fields = set(formset_class.form.base_fields)
+        pk_name = inline.model._meta.pk.name
+        inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
+        self._validate_inline_row_fields(inline_id, add_rows, editable_fields, operation="add")
+        self._validate_inline_row_fields(
+            inline_id,
+            change_rows,
+            editable_fields | {"pk", "id", pk_name},
+            operation="change",
+        )
+
         queryset = related_manager.all() if related_manager is not None else inline.model.objects.none()
         existing_instances = list(queryset)
         existing_by_pk = {str(instance.pk): instance for instance in existing_instances}
         changes_by_pk = {}
-        inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
         for row in change_rows:
             pk = row.get("pk") or row.get(inline.model._meta.pk.name)
             if pk is None:
@@ -1085,7 +1096,6 @@ class NinjaAdminSite:
                     {inline_id: {"delete": [{"message": "Unknown inline object.", "param": "pk"}]}}
                 )
 
-        formset_class = inline.get_formset(request, obj, change=change)
         formset_data = self._inline_formset_data(
             request,
             inline,
@@ -1110,6 +1120,24 @@ class NinjaAdminSite:
             "change": changed_objects,
             "delete": [instance.pk for instance in formset.deleted_objects],
         }
+
+    def _validate_inline_row_fields(self, inline_id, rows, allowed_fields, *, operation):
+        for row in rows:
+            unknown_fields = sorted(set(row) - allowed_fields)
+            if unknown_fields:
+                raise AdminValidationError(
+                    {
+                        inline_id: {
+                            operation: [
+                                {
+                                    "message": "Unknown or readonly inline field.",
+                                    "param": field,
+                                }
+                                for field in unknown_fields
+                            ]
+                        }
+                    }
+                )
 
     def _inline_field_label(self, inline, field_name):
         try:
