@@ -189,6 +189,21 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     schema = admin_client.get("/admin-api/openapi.json").json()
     paths = schema["paths"]
 
+    expected_site_operations = {
+        ("/admin-api/apps", "get"): "admin_list_apps",
+        ("/admin-api/apps/{app_label}", "get"): "admin_get_app",
+        ("/admin-api/context", "get"): "admin_context",
+        ("/admin-api/permissions", "get"): "admin_permissions",
+        ("/admin-api/history", "get"): "admin_history",
+        ("/admin-api/autocomplete", "get"): "admin_autocomplete",
+        ("/admin-api/view-on-site/{content_type_id}/{object_id}", "get"): "admin_view_on_site",
+    }
+    for (path, method), operation_id in expected_site_operations.items():
+        operation = paths[path][method]
+        assert operation["operationId"] == operation_id
+        assert operation["tags"] == ["admin"]
+        assert operation["security"] == [{"SessionAuthIsStaff": []}]
+
     expected_operations = {
         ("/admin-api/testapp/product", "get"): ("testapp_product_list", ["testapp.product"]),
         ("/admin-api/testapp/product", "post"): ("testapp_product_create", ["testapp.product"]),
@@ -239,6 +254,28 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert _response_schema_ref(paths["/admin-api/testapp/product/{object_id}/form"]["get"], "200") == (
         "#/components/schemas/FormResponse"
     )
+    assert _response_schema_ref(paths["/admin-api/apps/{app_label}"]["get"], "200") == (
+        "#/components/schemas/AppSummary"
+    )
+    assert _response_schema_ref(paths["/admin-api/context"]["get"], "200") == "#/components/schemas/SiteContext"
+    assert _response_schema_ref(paths["/admin-api/history"]["get"], "200") == "#/components/schemas/HistoryResponse"
+    assert _response_schema_ref(paths["/admin-api/autocomplete"]["get"], "200") == (
+        "#/components/schemas/AutocompleteResponse"
+    )
+    assert _response_schema_ref(paths["/admin-api/view-on-site/{content_type_id}/{object_id}"]["get"], "200") == (
+        "#/components/schemas/ViewOnSiteResponse"
+    )
+
+    for path, method, statuses in [
+        ("/admin-api/apps/{app_label}", "get", {"404"}),
+        ("/admin-api/history", "get", {"400", "403", "404", "422"}),
+        ("/admin-api/autocomplete", "get", {"403", "404", "409", "422"}),
+        ("/admin-api/view-on-site/{content_type_id}/{object_id}", "get", {"403", "404", "409", "422"}),
+    ]:
+        operation = paths[path][method]
+        assert statuses <= set(operation["responses"])
+        for status in statuses:
+            assert _response_schema_ref(operation, status) == "#/components/schemas/ErrorResponse"
 
     for path, method, statuses in [
         ("/admin-api/testapp/product", "get", {"400", "403", "404"}),

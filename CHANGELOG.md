@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added OpenAPI response maps for built-in site-route error responses.
+
 ## 0.1.7 - 2026-07-01
 
 - Added current page and page-size metadata to history pagination responses.

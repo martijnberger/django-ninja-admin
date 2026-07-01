@@ -28,7 +28,7 @@ Statuses:
 | `GET /history` | partial | History route, log model, app/model/object/action filter, permission-filter tests, and page/page-size pagination metadata | Upstream change message parity |
 | `GET /autocomplete` | partial | Permission-hardened route plus rich pagination metadata and many-to-many source-field tests | More remote-field edge cases |
 | `GET /view-on-site/{content_type_id}/{object_id}` | implemented | Route, permission, callable hook, external URL tests, configured Site-domain URLs, and request-host fallback when Site is missing | Upstream fixture comparisons |
-| Docs/OpenAPI routes | partial | `/docs`, `/openapi.json`, and semantic model-route contract tests | Full docs examples and broader snapshots |
+| Docs/OpenAPI routes | partial | `/docs`, `/openapi.json`, semantic model-route contract tests, and built-in site-route error response maps | Full docs examples and broader snapshots |
 
 ## Registry, Model Admins, And Checks
 
@@ -87,8 +87,8 @@ Statuses:
 | --- | --- | --- | --- |
 | Staff-session auth default | implemented | `SessionAuthIsStaff`, auth tests, auth docs | More project-level examples |
 | Custom auth and `auth=None` | implemented | Auth contract tests, multi-auth mounted-route tests, and auth docs | More project-level examples |
-| Typed error bodies | partial | Exception handlers, Ninja validation handler, API tests, and model-route OpenAPI error maps | Full error schema snapshots |
-| Stable operation IDs/tags | partial | Explicit operation IDs and semantic OpenAPI contract tests | Broader site/custom-route snapshot tests |
+| Typed error bodies | partial | Exception handlers, Ninja validation handler, API tests, and model/site-route OpenAPI error maps | Full error schema snapshots |
+| Stable operation IDs/tags | partial | Explicit operation IDs plus semantic OpenAPI contract tests for core site/model routes | Broader custom-route snapshot tests |
 | Per-model request/response contracts | partial | Output, write payload, mutation/bulk response, inline operation, discriminated action payload/input/response, global action cache invalidation, and response-map schemas in OpenAPI | Broader Phase 6 snapshots and examples |
 
 ## Release Hardening

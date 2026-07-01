@@ -444,7 +444,11 @@ class NinjaAdminSite:
         def list_apps(request):
             return site.get_app_list(request)
 
-        @router.get("/apps/{app_label}", response=AppSummary, operation_id="admin_get_app")
+        @router.get(
+            "/apps/{app_label}",
+            response={200: AppSummary, 404: ErrorResponse},
+            operation_id="admin_get_app",
+        )
         def get_app(request, app_label: str):
             return site.get_app_list(request, app_label)
 
@@ -462,7 +466,17 @@ class NinjaAdminSite:
                 "is_superuser": user.is_superuser,
             }
 
-        @router.get("/history", response=HistoryResponse, operation_id="admin_history")
+        @router.get(
+            "/history",
+            response={
+                200: HistoryResponse,
+                400: ErrorResponse,
+                403: ErrorResponse,
+                404: ErrorResponse,
+                422: ErrorResponse,
+            },
+            operation_id="admin_history",
+        )
         def history(
             request,
             app_label: str | None = None,
@@ -528,7 +542,17 @@ class NinjaAdminSite:
                 "results": results,
             }
 
-        @router.get("/autocomplete", response=AutocompleteResponse, operation_id="admin_autocomplete")
+        @router.get(
+            "/autocomplete",
+            response={
+                200: AutocompleteResponse,
+                403: ErrorResponse,
+                404: ErrorResponse,
+                409: ErrorResponse,
+                422: ErrorResponse,
+            },
+            operation_id="admin_autocomplete",
+        )
         def autocomplete(
             request,
             app_label: str,
@@ -583,7 +607,13 @@ class NinjaAdminSite:
 
         @router.get(
             "/view-on-site/{content_type_id}/{object_id}",
-            response=ViewOnSiteResponse,
+            response={
+                200: ViewOnSiteResponse,
+                403: ErrorResponse,
+                404: ErrorResponse,
+                409: ErrorResponse,
+                422: ErrorResponse,
+            },
             operation_id="admin_view_on_site",
         )
         def view_on_site(request, content_type_id: int, object_id: str):
