@@ -49,7 +49,7 @@ Statuses:
 | Shared changelist queryset for list/actions | implemented | `ChangeList`, filtered action test, and action UI metadata tests | More selected/action edge cases |
 | Search fields | partial | `ModelAdmin.get_search_results`, many-to-many duplicate distinct tests, prefix lookup tests, and non-text `__exact` cast tests | Broader upstream fixture comparisons |
 | Lookup validation | partial | `lookup_allowed`, local lookup-suffix tests, `limit_choices_to` relation-lookup tests, invalid lookup-key tests, and invalid lookup-value typed error tests | Match remaining Django suspicious lookup edge cases |
-| Pagination/show all | implemented | `ChangeList`, pagination/show-all tests, admin-style page range metadata, and `show_full_result_count` tests | Large-result behavior |
+| Pagination/show all | implemented | `ChangeList`, pagination/show-all/last-page tests, admin-style page range metadata, and `show_full_result_count` tests | Large-result behavior |
 | Ordering/sort links | partial | Sort metadata plus multi-column ordering state/link tests, stale-page reset in generated links, and preservation of unrelated lookup params such as `price__gte` | Deeper Django query-string semantics |
 | `list_select_related` and direct FK optimization | partial | `auto_select_related_fields`, direct-FK, relation-path, and callable related-ordering query-count tests | More m2m/prefetch strategy and broader query-count coverage |
 | List display links/display metadata | partial | Changelist column metadata, callable display columns, single-valued relation-path columns, plus row URL/object-permission metadata tests | More readonly-field action variants and upstream fixture comparisons |

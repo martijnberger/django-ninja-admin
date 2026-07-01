@@ -1621,6 +1621,11 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     )
     assert prefixed_stock_choice["query_string"] == "?price__gte=1&pp=1&o=3&stock_status__exact=in_stock"
 
+    last_page = admin_client.get("/admin-api/testapp/product?pp=1&page=last")
+    assert last_page.status_code == 200
+    assert last_page.json()["config"]["page"] == 3
+    assert last_page.json()["rows"][0]["cells"]["name"] == "Tripod"
+
     show_all = admin_client.get("/admin-api/testapp/product?all=1")
     assert show_all.status_code == 200
     show_all_body = show_all.json()

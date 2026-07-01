@@ -409,6 +409,8 @@ class ChangeList:
 
     def get_page_number(self):
         value = self.params.get("p") or self.params.get("page") or 1
+        if value == "last":
+            return self.paginator.num_pages
         try:
             page_number = int(value)
         except (TypeError, ValueError):
