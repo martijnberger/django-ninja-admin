@@ -15,7 +15,7 @@ Statuses:
 | --- | --- | --- | --- |
 | Distribution/import package | implemented | `pyproject.toml`, `django_ninja_admin` package | Release metadata hardening in Phase 7 |
 | Public exports | implemented | `django_ninja_admin/__init__.py` exports site/admin/filter/decorator APIs | Keep stable as new hooks land |
-| No DRF/drf-spectacular runtime dependency | implemented | Dependencies in `pyproject.toml`, `test_no_drf_imports` | Add packaging smoke in Phase 7 |
+| No DRF/drf-spectacular runtime dependency | implemented | Dependencies in `pyproject.toml`, `test_no_drf_imports`, `scripts/package_smoke.py` | Keep smoke coverage in CI |
 | DRF serializer hooks | changed | Replaced by `form_class`, `output_schema`, `schema_field_overrides`; migration guide added | Expand examples as hooks grow |
 
 ## Site Routes
@@ -95,9 +95,9 @@ Statuses:
 
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
-| Ruff/pytest local gates | implemented | Current test/lint commands | Add CI workflow |
-| Package build/install smoke | missing | No build smoke test | Phase 7 |
+| Ruff/pytest local gates | implemented | `just lint`, `just test`, `just check` | Add CI workflow |
+| Package build/install smoke | partial | `scripts/package_smoke.py`, `just package-smoke` | Add clean sample-project install/mount smoke |
 | Django version matrix | missing | Single local environment | Phase 7 |
 | PostgreSQL coverage | missing | SQLite-only tests | Phase 7 |
 | Copyright/license audit | partial | MIT and Django BSD license files | Audit any newly ported code |
-| Changelog/release checklist | missing | No changelog | Phase 7 |
+| Changelog/release checklist | implemented | `CHANGELOG.md`, `docs/release-checklist.md` | Expand release notes before each tag |

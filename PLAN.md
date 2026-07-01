@@ -88,6 +88,9 @@ Completed or mostly complete:
 - Custom `form_class` is covered through mounted Ninja routes for write-schema generation, custom widget attributes, Django form validation, and mutation persistence.
 - Semantic OpenAPI contract tests now cover model-route operation IDs, tags, security, request body schemas, success response schemas, and typed error response maps.
 - Migration and authentication docs now cover replacing DRF serializer hooks with `form_class`, `output_schema`, and `schema_field_overrides`, plus default/custom/disabled auth patterns.
+- Local release gates now use `just` for lint, tests, package smoke, and aggregate checks.
+- Package smoke tooling builds the wheel, installs it into an isolated target, verifies public API imports, and checks dependency metadata for absent DRF/drf-spectacular dependencies.
+- Release hardening docs now include a changelog and explicit alpha/beta/stable checklist.
 - Initial behavioral tests and no DRF/drf-spectacular runtime dependency.
 
 Known non-parity areas:
@@ -98,8 +101,9 @@ Known non-parity areas:
 - Action payload schemas advertise action names, but custom action-specific extra payload contracts are not yet modeled.
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
 - Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
-- OpenAPI generation works and now has semantic contract coverage for core model routes, but it does not yet expose full per-model request/response contracts or the same richness upstream provided through drf-spectacular hooks.
+- OpenAPI generation works and now has semantic contract coverage for core model routes, but it does not yet expose every custom action/request variant or the same richness upstream provided through drf-spectacular hooks.
 - Admin extensibility is still young: custom view routing, route metadata/auth overrides, and display metadata exist, but deeper multi-auth/response-schema coverage and override-hook parity need work.
+- Release hardening has local `just` gates and a wheel import smoke check, but still needs CI matrices, PostgreSQL coverage, a clean sample-project smoke, and a copyright audit.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix.
 
 ## Implementation Phases
