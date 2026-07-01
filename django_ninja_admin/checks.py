@@ -32,6 +32,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_sequence_option(model_admin, "filter_vertical"))
     errors.extend(_check_list_select_related(model_admin))
     errors.extend(_check_display_options(model_admin))
+    errors.extend(_check_sortable_by(model_admin))
     errors.extend(_check_form_layout(model_admin))
     errors.extend(_check_prepopulated_fields(model_admin))
     errors.extend(_check_list_filters(model_admin))
@@ -175,6 +176,30 @@ def _check_display_options(model_admin):
                     model_admin.__class__,
                     f"The value of 'list_editable' refers to '{item}', which is not included in the admin form.",
                     "E044",
+                )
+            )
+    return errors
+
+
+def _check_sortable_by(model_admin):
+    value = getattr(model_admin, "sortable_by", None)
+    if value is None:
+        return []
+    if not isinstance(value, (list, tuple)):
+        return [_error(model_admin.__class__, "The value of 'sortable_by' must be a list or tuple.", "E055")]
+
+    errors = []
+    list_display = tuple(model_admin.get_list_display(None))
+    for item in value:
+        if not isinstance(item, str):
+            errors.append(_error(model_admin.__class__, "Items in 'sortable_by' must be strings.", "E056"))
+            continue
+        if item not in list_display:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'sortable_by' refers to '{item}', which is not in 'list_display'.",
+                    "E057",
                 )
             )
     return errors

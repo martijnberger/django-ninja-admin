@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   and `raw_id_fields`.
 - Added admin system checks for invalid `prepopulated_fields` shapes, targets,
   and source fields.
+- Added admin system checks for invalid `sortable_by` shapes and entries outside
+  `list_display`.
 - Added changelist row URL and object-permission metadata for detail, change
   form, delete, and view-on-site frontend actions.
 - Added image-specific response schema and form metadata for Django

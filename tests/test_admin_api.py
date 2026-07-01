@@ -411,6 +411,35 @@ def test_admin_checks_validate_list_select_related(db):
     assert len(bad_path_errors) == 3
 
 
+def test_admin_checks_validate_sortable_by(db):
+    class ValidSortableProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        sortable_by = ("name",)
+
+    class BadShapeProductAdmin(ModelAdmin):
+        list_display = ("name",)
+        sortable_by = "name"
+
+    class BadItemsProductAdmin(ModelAdmin):
+        list_display = ("name",)
+        sortable_by = (123, "price")
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidSortableProductAdmin)
+    bad_shape_site = NinjaAdminSite(include_auth=False)
+    bad_shape_site.register(Product, BadShapeProductAdmin)
+    bad_items_site = NinjaAdminSite(include_auth=False)
+    bad_items_site.register(Product, BadItemsProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
+    bad_items_ids = {error.id for error in bad_items_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint({"django_ninja_admin.E055", "django_ninja_admin.E056", "django_ninja_admin.E057"})
+    assert bad_shape_ids == {"django_ninja_admin.E055"}
+    assert bad_items_ids == {"django_ninja_admin.E056", "django_ninja_admin.E057"}
+
+
 def test_admin_checks_reject_reverse_relation_widget_fields(db):
     class ReviewAdmin(ModelAdmin):
         search_fields = ("note",)
