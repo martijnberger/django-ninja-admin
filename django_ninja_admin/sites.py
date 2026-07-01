@@ -977,11 +977,20 @@ class NinjaAdminSite:
             {"name": "select_across", "type": "BooleanField", "attrs": {"required": False}},
         ]
         list_editing_formset = []
+        list_editing_rows = []
         if model_admin.list_editable:
-            for obj in changelist.result_list:
+            pk_name = model_admin.model._meta.pk.name
+            for index, obj in enumerate(changelist.result_list):
                 field_descriptions = model_admin.get_form_fields_description(request, obj)
-                list_editing_formset.append(
-                    [field for field in field_descriptions if field["name"] in model_admin.list_editable]
+                editable_fields = [field for field in field_descriptions if field["name"] in model_admin.list_editable]
+                list_editing_formset.append(editable_fields)
+                list_editing_rows.append(
+                    {
+                        "index": index,
+                        "pk": obj.pk,
+                        "pk_name": pk_name,
+                        "fields": editable_fields,
+                    }
                 )
         model_field_names = [
             field for field in list_display if self._model_has_field(model_admin.model, field)
@@ -1025,6 +1034,7 @@ class NinjaAdminSite:
             },
             "action_form": action_form,
             "list_editing_formset": list_editing_formset,
+            "list_editing_rows": list_editing_rows,
         }
         return ChangelistResponse.model_validate(payload).model_dump(mode="json")
 

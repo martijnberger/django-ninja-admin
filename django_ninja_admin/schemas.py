@@ -230,12 +230,20 @@ class ChangelistConfig(Schema):
     search_help_text: str | None = None
 
 
+class ListEditingRow(Schema):
+    index: int
+    pk: Any
+    pk_name: str
+    fields: list[FieldDescription]
+
+
 class ChangelistResponse(Schema):
     columns: list[Column]
     rows: list[Row]
     config: ChangelistConfig
     action_form: list[FieldDescription] = []
     list_editing_formset: list[list[FieldDescription]] = []
+    list_editing_rows: list[ListEditingRow] = []
 
 
 class MutationPayload(Schema):

@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added structured list-editing row metadata to changelist responses, including
+  row index, primary-key field, row primary key, and editable field
+  descriptions.
 - Limited bulk list-editable updates to the filtered changelist queryset so
   rows outside active filters/search are rejected before any writes occur.
 - Added active-timezone metadata and explicit timezone-aware bucketing for

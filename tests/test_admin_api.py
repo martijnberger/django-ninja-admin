@@ -116,6 +116,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "ProductAdminBulkPayload",
         "ProductAdminBulkRow",
         "ProductAdminBulkResponse",
+        "ListEditingRow",
         "ProductAdminInlinePayload",
         "ProductImageInlineOperations",
         "ProductImageInlineAddRow",
@@ -1620,6 +1621,27 @@ def test_changelist_action_ui_metadata_follows_model_admin(admin_client, sample,
     assert config["actions_on_bottom"] is True
     assert config["actions_selection_counter"] is False
     assert {field["name"] for field in response.json()["action_form"]} == {"action", "selected_ids", "select_across"}
+
+
+def test_changelist_exposes_list_editing_row_metadata(admin_client, sample):
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    body = response.json()
+    rows = body["list_editing_rows"]
+    legacy_formset = body["list_editing_formset"]
+
+    assert [row["index"] for row in rows] == [0, 1]
+    assert [row["pk"] for row in rows] == [row["id"] for row in body["rows"]]
+    assert {row["pk_name"] for row in rows} == {"id"}
+    assert [[field["name"] for field in row["fields"]] for row in rows] == [["stock_status"], ["stock_status"]]
+    assert legacy_formset == [row["fields"] for row in rows]
+    assert rows[0]["fields"][0]["attrs"]["value"] == "in_stock"
+    assert rows[1]["fields"][0]["attrs"]["value"] == "out_of_stock"
+    assert rows[0]["fields"][0]["attrs"]["choices"] == [
+        ["in_stock", "In Stock"],
+        ["out_of_stock", "Out of Stock"],
+    ]
 
 
 def test_changelist_can_skip_full_result_count(admin_client, sample, monkeypatch):
