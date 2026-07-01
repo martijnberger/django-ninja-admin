@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.2 - 2026-07-01
+
 - Improved inline mutations so server-side add/change/delete validation returns
   row-indexed errors across the payload before any parent or inline writes occur.
 - Added multipart create/update routes for file-field forms, validating the
