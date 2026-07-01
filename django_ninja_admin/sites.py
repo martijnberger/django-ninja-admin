@@ -57,7 +57,12 @@ from django_ninja_admin.schemas import (
 from django_ninja_admin.utils.deletion import deletion_error_payload
 from django_ninja_admin.utils.format_error import format_error
 from django_ninja_admin.utils.forms import form_errors, formset_errors, model_data_for_form
-from django_ninja_admin.utils.lookup import display_metadata_for_field, label_for_field, lookup_field
+from django_ninja_admin.utils.lookup import (
+    display_metadata_for_field,
+    field_name_for_display,
+    label_for_field,
+    lookup_field,
+)
 from django_ninja_admin.utils.quote import quote, unquote
 
 all_sites = WeakSet()
@@ -892,9 +897,9 @@ class NinjaAdminSite:
         list_display = changelist.list_display
         columns = [
             {
-                "field": field,
+                "field": field_name_for_display(field),
                 "headerName": label_for_field(field, model_admin.model, model_admin),
-                "display_link": field in (changelist.list_display_links or ()),
+                "display_link": self._display_field_in(field, changelist.list_display_links or ()),
                 **display_metadata_for_field(field, model_admin.model, model_admin),
                 "sortable": field in changelist.ordering_field_columns,
                 "ordering_field": changelist.get_ordering_field(field),
@@ -911,7 +916,7 @@ class NinjaAdminSite:
                 value = lookup_field(field, obj, model_admin)
                 display_metadata = display_metadata_for_field(field, model_admin.model, model_admin)
                 field_empty_value = display_metadata["empty_value_display"] or empty_value
-                cells[field] = field_empty_value if value in (None, "") else value
+                cells[field_name_for_display(field)] = field_empty_value if value in (None, "") else value
             rows.append({"id": obj.pk, "cells": cells, **self._changelist_row_metadata(request, model_admin, obj)})
         action_form = [
             {
@@ -938,6 +943,9 @@ class NinjaAdminSite:
         model_field_names = [
             field for field in list_display if self._model_has_field(model_admin.model, field)
         ]
+        ordering_field_columns = {
+            field_name_for_display(field): column for field, column in changelist.ordering_field_columns.items()
+        }
         payload = {
             "columns": columns,
             "rows": rows,
@@ -961,8 +969,10 @@ class NinjaAdminSite:
                 "filters": changelist.filter_descriptions(),
                 "date_hierarchy": changelist.date_hierarchy_description(),
                 "list_display_fields": model_field_names,
-                "list_display_links": list(changelist.list_display_links or ()),
-                "ordering_field_columns": changelist.ordering_field_columns,
+                "list_display_links": [
+                    field_name_for_display(field) for field in (changelist.list_display_links or ())
+                ],
+                "ordering_field_columns": ordering_field_columns,
                 "ordering": changelist.ordering,
                 "search_fields": list(changelist.search_fields),
                 "search_help_text": model_admin.search_help_text,
@@ -991,6 +1001,11 @@ class NinjaAdminSite:
                 "has_view_permission": has_view_permission,
             },
         }
+
+    @staticmethod
+    def _display_field_in(field, candidates):
+        field_key = field_name_for_display(field)
+        return any(field == candidate or field_key == field_name_for_display(candidate) for candidate in candidates)
 
     def _model_has_field(self, model, field):
         try:

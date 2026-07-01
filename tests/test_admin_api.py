@@ -24,6 +24,7 @@ from django_ninja_admin import (
     NinjaAdminSite,
     SimpleListFilter,
     TabularInline,
+    display,
     register,
     site,
 )
@@ -807,6 +808,35 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert rows_by_name["Beta"]["cells"]["tagline"] == "No description"
     assert rows_by_name["Beta"]["cells"]["is_expensive"] is False
     assert rows_by_name["Beta"]["cells"]["subtitle"] == "No subtitle"
+
+
+def test_changelist_supports_callable_list_display(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    @display(description="Stock badge", ordering="stock_status", boolean=True)
+    def stock_badge(obj):
+        return obj.stock_status == "in_stock"
+
+    monkeypatch.setattr(product_admin, "list_display", ("name", stock_badge))
+    monkeypatch.setattr(product_admin, "sortable_by", (stock_badge,))
+
+    response = admin_client.get("/admin-api/testapp/product?o=-2")
+
+    assert response.status_code == 200
+    error_ids = {error.id for error in product_admin.check()}
+    assert "django_ninja_admin.E002" not in error_ids
+    assert "django_ninja_admin.E057" not in error_ids
+    body = response.json()
+    stock_column = next(column for column in body["columns"] if column["field"] == "stock_badge")
+    assert stock_column["headerName"] == "Stock badge"
+    assert stock_column["boolean"] is True
+    assert stock_column["sortable"] is True
+    assert stock_column["ordering_field"] == "stock_status"
+    assert body["config"]["ordering_field_columns"] == {"stock_badge": "2"}
+    assert body["rows"][0]["cells"]["name"] == "Beta"
+    assert body["rows"][0]["cells"]["stock_badge"] is False
+    assert body["rows"][1]["cells"]["name"] == "Alpha"
+    assert body["rows"][1]["cells"]["stock_badge"] is True
 
 
 def test_changelist_row_metadata_honors_object_permissions(staff_client, sample):

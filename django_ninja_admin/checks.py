@@ -11,6 +11,7 @@ from django.forms.models import BaseModelForm, _get_foreign_key
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.filters import FieldListFilter, SimpleListFilter
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
+from django_ninja_admin.utils.lookup import field_name_for_display
 
 ERROR_PREFIX = "django_ninja_admin"
 
@@ -96,8 +97,12 @@ def _check_display_options(model_admin):
     editable_form_fields = _editable_form_field_names(model_admin)
     excluded_form_fields = set(model_admin.get_exclude(None) or ())
     for item in list_display:
+        if callable(item):
+            continue
         if not isinstance(item, str):
-            errors.append(_error(model_admin.__class__, "Items in 'list_display' must be strings.", "E002"))
+            errors.append(
+                _error(model_admin.__class__, "Items in 'list_display' must be strings or callables.", "E002")
+            )
             continue
         if item == "__str__":
             continue
@@ -132,7 +137,7 @@ def _check_display_options(model_admin):
     list_display_links = model_admin.get_list_display_links(None, list_display)
     if list_display_links is not None:
         for item in list_display_links:
-            if item not in list_display:
+            if not _display_item_in(item, list_display):
                 errors.append(
                     _error(
                         model_admin.__class__,
@@ -195,10 +200,10 @@ def _check_sortable_by(model_admin):
     errors = []
     list_display = tuple(model_admin.get_list_display(None))
     for item in value:
-        if not isinstance(item, str):
-            errors.append(_error(model_admin.__class__, "Items in 'sortable_by' must be strings.", "E056"))
+        if not isinstance(item, str) and not callable(item):
+            errors.append(_error(model_admin.__class__, "Items in 'sortable_by' must be strings or callables.", "E056"))
             continue
-        if item not in list_display:
+        if not _display_item_in(item, list_display):
             errors.append(
                 _error(
                     model_admin.__class__,
@@ -207,6 +212,11 @@ def _check_sortable_by(model_admin):
                 )
             )
     return errors
+
+
+def _display_item_in(item, candidates):
+    item_key = field_name_for_display(item)
+    return any(item == candidate or item_key == field_name_for_display(candidate) for candidate in candidates)
 
 
 def _check_form_class(model_admin):

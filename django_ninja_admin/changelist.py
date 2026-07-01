@@ -9,6 +9,7 @@ from django.http import Http404, QueryDict
 
 from django_ninja_admin.exceptions import AdminValidationError, DisallowedModelAdminLookup
 from django_ninja_admin.filters import build_filter_spec
+from django_ninja_admin.utils.lookup import field_name_for_display
 
 IGNORED_LOOKUP_PARAMS = {"q", "p", "page", "pp", "all", "o", "_facets"}
 
@@ -99,6 +100,8 @@ class ChangeList:
             return []
         related_fields = []
         for field_name in self.list_display:
+            if not isinstance(field_name, str):
+                continue
             try:
                 field = self.model._meta.get_field(field_name)
             except FieldDoesNotExist:
@@ -241,17 +244,30 @@ class ChangeList:
         return self.list_display[index]
 
     def get_ordering_field(self, field_name):
-        if field_name not in self.sortable_by:
+        if not self.is_sortable_field(field_name):
             return None
-        for attr in (getattr(self.model_admin, field_name, None), getattr(self.model, field_name, None)):
+        if callable(field_name) and not isinstance(field_name, str):
+            attrs = (field_name,)
+        else:
+            attrs = (getattr(self.model_admin, field_name, None), getattr(self.model, field_name, None))
+        for attr in attrs:
             ordering = getattr(attr, "admin_order_field", None)
             if ordering:
                 return ordering
+        if not isinstance(field_name, str):
+            return None
         try:
             field = self.model._meta.get_field(field_name)
         except FieldDoesNotExist:
             return None
         return field.name
+
+    def is_sortable_field(self, field_name):
+        field_key = field_name_for_display(field_name)
+        return any(
+            field_name == sortable_field or field_key == field_name_for_display(sortable_field)
+            for sortable_field in self.sortable_by
+        )
 
     @property
     def ordering_field_columns(self):
@@ -315,7 +331,7 @@ class ChangeList:
                 return raw_field
             return None
         for index, field_name in enumerate(self.list_display, start=1):
-            if field_name == raw_field or self.get_ordering_field(field_name) == raw_field:
+            if field_name_for_display(field_name) == raw_field or self.get_ordering_field(field_name) == raw_field:
                 if self.get_ordering_field(field_name):
                     return str(index)
         return None
