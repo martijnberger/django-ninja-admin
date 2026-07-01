@@ -63,7 +63,7 @@ Completed or mostly complete:
 - Model routes now advertise richer OpenAPI response maps for typed error bodies, including normalized `422` request-validation responses.
 - Pydantic/Ninja request validation errors are normalized into typed API error bodies.
 - Django `ModelForm` and inline formset validation for create/update/inline mutations.
-- Mounted-route tests now cover `save_model`, `save_related`, `response_add`, and `response_change` hooks during add/change mutations.
+- Mounted-route tests now cover `save_model`, `save_related`, `response_add`, `response_change`, `delete_model`, `delete_queryset`, and `response_delete` hooks during add/change/delete mutations.
 - Inline mutations reject duplicate change/delete PKs and rows that attempt to change and delete the same inline object.
 - Inline mutation tests now cover unknown inline objects and transaction rollback of parent saves when inline validation fails.
 - Bulk list-editable updates use strict row schemas, reject duplicate PKs, and validate all rows before writing.
@@ -97,7 +97,7 @@ Known non-parity areas:
 - System checks now cover common invalid configurations and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas advertise action names, but custom action-specific extra payload contracts are not yet modeled.
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
-- Save and response hooks, inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics, delete hook variants, and edge-case coverage are not exhaustive.
+- Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works and now has semantic contract coverage for core model routes, but it does not yet expose full per-model request/response contracts or the same richness upstream provided through drf-spectacular hooks.
 - Admin extensibility is still young: custom view routing, route metadata/auth overrides, and display metadata exist, but deeper multi-auth/response-schema coverage and override-hook parity need work.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix.

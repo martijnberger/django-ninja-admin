@@ -180,6 +180,13 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         assert statuses <= set(operation["responses"])
         for status in statuses:
             assert _response_schema_ref(operation, status) == "#/components/schemas/ErrorResponse"
+    delete_success_schema = (
+        paths["/admin-api/testapp/product/{object_id}"]["delete"]["responses"]["200"]["content"]["application/json"][
+            "schema"
+        ]
+    )
+    assert delete_success_schema["type"] == "object"
+    assert delete_success_schema["additionalProperties"] is True
 
 
 def _request_schema_ref(operation):
@@ -478,6 +485,31 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
     assert changed_body["data"]["response_hook"] == "change"
     assert set(changed_body["data"]["tags"]) == {*tag_ids, hooked_tag.pk}
     assert Product.objects.get(pk=created_id).description == "Changed through custom form [change:save_model]"
+
+    direct_deleted = admin_client.delete(f"/custom-form-admin/testapp/product/{created_id}")
+    assert direct_deleted.status_code == 200
+    assert direct_deleted.json() == {
+        "deleted_id": str(created_id),
+        "deleted_display": "Allowed",
+        "response_hook": "delete",
+    }
+    assert Tag.objects.filter(name=f"delete_model:{created_id}:Allowed").exists()
+    assert not Product.objects.filter(pk=created_id).exists()
+
+    bulk_product = Product.objects.create(
+        name="Bulk Hooked",
+        category=sample.category,
+        price="4.00",
+        stock_status="in_stock",
+    )
+    bulk_deleted = admin_client.post(
+        "/custom-form-admin/testapp/product/actions",
+        data={"action": "delete_selected", "selected_ids": [bulk_product.pk]},
+        content_type="application/json",
+    )
+    assert bulk_deleted.status_code == 200
+    assert Tag.objects.filter(name="delete_queryset:Bulk Hooked").exists()
+    assert not Product.objects.filter(pk=bulk_product.pk).exists()
 
 
 def test_changelist_facets_and_date_hierarchy(admin_client, sample):

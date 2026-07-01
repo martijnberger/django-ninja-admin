@@ -1,5 +1,6 @@
 from django import forms
 from django.urls import path
+from ninja import Status
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite
 from tests.testapp.models import Category, Product, Tag
@@ -29,6 +30,7 @@ class ProductAdminForm(forms.ModelForm):
 class CustomFormProductAdmin(ModelAdmin):
     form_class = ProductAdminForm
     filter_horizontal = ("tags",)
+    ordering = ("name",)
 
     def save_model(self, request, obj, form, change):
         action = "change" if change else "add"
@@ -49,6 +51,18 @@ class CustomFormProductAdmin(ModelAdmin):
         response = super().response_change(request, obj, form, inline_results)
         response["data"]["response_hook"] = "change"
         return response
+
+    def delete_model(self, request, obj):
+        Tag.objects.get_or_create(name=f"delete_model:{obj.pk}:{obj.name}")
+        super().delete_model(request, obj)
+
+    def delete_queryset(self, request, queryset):
+        names = list(queryset.order_by("name").values_list("name", flat=True))
+        Tag.objects.get_or_create(name=f"delete_queryset:{','.join(names)}")
+        super().delete_queryset(request, queryset)
+
+    def response_delete(self, request, obj_display, obj_id):
+        return Status(200, {"deleted_id": obj_id, "deleted_display": obj_display, "response_hook": "delete"})
 
 
 custom_form_site = NinjaAdminSite(name="custom_form_admin", include_auth=False)

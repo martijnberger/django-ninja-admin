@@ -709,7 +709,14 @@ class NinjaAdminSite:
 
         @router.delete(
             f"{prefix}/{{object_id}}",
-            response={204: None, 400: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse, 409: ErrorResponse},
+            response={
+                200: dict[str, Any],
+                204: None,
+                400: ErrorResponse,
+                403: ErrorResponse,
+                404: ErrorResponse,
+                409: ErrorResponse,
+            },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_delete",
         )
@@ -736,9 +743,14 @@ class NinjaAdminSite:
                         model_count=model_count,
                     ),
                 )
+            obj_display = str(obj)
+            obj_id = str(obj.pk)
             with transaction.atomic(using=router_db_for_write(model_admin.model)):
                 model_admin.log_deletion(request, [obj])
                 model_admin.delete_model(request, obj)
+            response = model_admin.response_delete(request, obj_display, obj_id)
+            if response is not None:
+                return response
             return Status(204, None)
 
     def _get_object_or_404(self, request, model_admin, object_id, to_field=None):
