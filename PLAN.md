@@ -58,6 +58,7 @@ Completed or mostly complete:
 - Default `SessionAuthIsStaff`, explicit `auth=None`, custom auth callable, and multiple Ninja auth callable support.
 - Basic Pydantic request envelopes and typed response schemas.
 - Dynamic Pydantic output schemas with FK labels, many-to-many IDs, and `schema_field_overrides`.
+- `schema_field_overrides` now serialize computed `ModelAdmin` methods, matching the documented Ninja-native output customization pattern.
 - Dynamic per-model Pydantic request schemas for create, replace, partial update, and list-editable bulk update payloads.
 - Dynamic per-inline Pydantic operation schemas for add/change/delete payloads, exposed under the real `app.model` inline wire keys.
 - Dynamic per-model action payload schemas with OpenAPI enums for registered/global action names.

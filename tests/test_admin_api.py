@@ -2445,14 +2445,19 @@ def test_inline_mutation_rolls_back_parent_save_for_unknown_inline_object(admin_
     assert not LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).exists()
 
 
-def test_schema_field_overrides_are_included():
+def test_schema_field_overrides_are_included_and_serialize_admin_methods(sample):
     class ProductAdminWithOverride(ModelAdmin):
         schema_field_overrides = {"custom_note": (str, None)}
+
+        @display(description="Custom note")
+        def custom_note(self, obj):
+            return f"{obj.name}:{obj.stock_status}"
 
     admin_site = NinjaAdminSite(include_auth=False)
     model_admin = ProductAdminWithOverride(Product, admin_site)
 
     assert "custom_note" in model_admin.get_output_schema().model_fields
+    assert model_admin.serialize_object(sample)["custom_note"] == "Alpha:in_stock"
 
 
 def test_model_actions_require_model_access(staff_client, sample):

@@ -339,9 +339,17 @@ class BaseAdmin:
         for name in self.get_schema_field_overrides(request) or {}:
             if name in data:
                 continue
-            value = getattr(obj, name, None)
-            data[name] = value() if callable(value) else value
+            data[name] = self._schema_override_value(obj, name)
         return schema.model_validate(data).model_dump(mode="json", by_alias=True)
+
+    def _schema_override_value(self, obj, name):
+        if hasattr(obj, name):
+            value = getattr(obj, name)
+            return value() if callable(value) else value
+        value = getattr(self, name, None)
+        if callable(value):
+            return value(obj)
+        return value
 
     def get_form_description(self, request, obj=None, **kwargs):
         permissions = {

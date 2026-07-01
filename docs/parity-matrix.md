@@ -61,7 +61,7 @@ Statuses:
 
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
-| Dynamic output schemas | partial | `BaseAdmin.get_output_schema`, schema override test | Stable component names and richer custom fields |
+| Dynamic output schemas | partial | `BaseAdmin.get_output_schema`, schema override tests including computed `ModelAdmin` methods | Stable component names and richer custom fields |
 | Pydantic request envelopes | partial | Per-model create/update/bulk, per-inline operation, discriminated action payload variants, and custom action input schemas with OpenAPI tests | Broader edge-case schemas and snapshots |
 | Django ModelForm validation | implemented | Create/update tests | More field/widget variants |
 | Custom `form_class` and formfield hooks | partial | Mounted custom-form and custom-formfield route tests cover schema fields, custom widget attrs, `formfield_overrides`, `formfield_for_dbfield`, relation/choice hooks, form validation, persistence, and system checks for `form_class`/`formfield_overrides` | More media and field override edge cases |
