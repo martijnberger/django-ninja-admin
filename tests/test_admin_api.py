@@ -6,6 +6,7 @@ from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import models
@@ -1017,7 +1018,7 @@ def test_actions_bulk_autocomplete_and_view_on_site(admin_client, sample):
     content_type = ContentType.objects.get_for_model(Product)
     onsite = admin_client.get(f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}")
     assert onsite.status_code == 200
-    assert onsite.json()["url"].endswith(f"/products/{sample.pk}/")
+    assert onsite.json() == {"url": f"http://example.com/products/{sample.pk}/"}
 
 
 def test_view_on_site_supports_callable_external_urls(admin_client, sample, monkeypatch):
@@ -1033,6 +1034,20 @@ def test_view_on_site_supports_callable_external_urls(admin_client, sample, monk
     protocol_relative = admin_client.get(f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}")
     assert protocol_relative.status_code == 200
     assert protocol_relative.json() == {"url": f"//assets.example.test/products/{sample.pk}/"}
+
+
+def test_view_on_site_falls_back_to_request_host_when_site_is_missing(admin_client, sample):
+    with override_settings(ALLOWED_HOSTS=["admin.testserver"]):
+        Site.objects.filter(pk=1).delete()
+        content_type = ContentType.objects.get_for_model(Product, for_concrete_model=False)
+
+        response = admin_client.get(
+            f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}",
+            HTTP_HOST="admin.testserver",
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"url": f"http://admin.testserver/products/{sample.pk}/"}
 
 
 def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_client, sample, monkeypatch):

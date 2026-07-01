@@ -597,10 +597,8 @@ class NinjaAdminSite:
             try:
                 object_domain = get_current_site(request).domain
             except ObjectDoesNotExist:
-                object_domain = None
-            if object_domain is not None:
-                return {"url": f"{request.scheme}://{object_domain}{absurl}"}
-            return {"url": absurl}
+                object_domain = request.get_host()
+            return {"url": f"{request.scheme}://{object_domain}{absurl}"}
 
     def _register_model_routes(self, router, model, model_admin):
         site = self

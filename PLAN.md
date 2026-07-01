@@ -79,6 +79,7 @@ Completed or mostly complete:
 - History listing now filters by caller-visible models before pagination and supports app/model/object/action filters with typed bad-param handling.
 - Autocomplete now returns typed not-found responses for invalid pages and has coverage for many-to-many source fields.
 - View-on-site route coverage now includes callable hooks that return absolute or protocol-relative external URLs.
+- View-on-site now returns absolute URLs from the configured Site domain and falls back to the request host when that Site row is missing.
 - Change messages include field labels and inline add/change/delete entries for history/log consumers.
 - Inline deletion change messages now preserve deleted object display text instead of falling back to primary keys.
 - Actions cover custom return values, empty-selection validation, and `select_across` behavior over filtered changelists.

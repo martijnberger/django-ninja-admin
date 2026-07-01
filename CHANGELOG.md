@@ -12,6 +12,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added multipart create/update routes for file-field forms, validating the
   JSON `data`/`inlines` parts with generated Pydantic schemas before passing
   uploads to Django `ModelForm` file handling.
+- Hardened view-on-site URL resolution so relative model URLs fall back to the
+  request host when the configured `Site` row is missing.
 
 ## 0.1.1 - 2026-07-01
 
