@@ -161,6 +161,22 @@ def _validator_names(field):
     return [validator.__class__.__name__ for validator in getattr(field, "validators", ())]
 
 
+def _validator_details(field):
+    details = []
+    for validator in getattr(field, "validators", ()):
+        detail = {"class": validator.__class__.__name__}
+        for attr_name in ("code", "message", "limit_value"):
+            value = _jsonish_value(getattr(validator, attr_name, None))
+            if value is not None:
+                detail[attr_name] = value
+        regex = getattr(validator, "regex", None)
+        pattern = getattr(regex, "pattern", regex)
+        if isinstance(pattern, str):
+            detail["pattern"] = pattern
+        details.append(detail)
+    return details
+
+
 def _model_field_for_name(model, name):
     if not isinstance(name, str):
         return None
@@ -270,6 +286,9 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     }
     if getattr(field, "error_messages", None):
         attrs["error_messages"] = _jsonish_value(field.error_messages)
+    validator_details = _validator_details(field)
+    if validator_details:
+        attrs["validator_details"] = validator_details
     attrs.update(_model_field_metadata(model_field))
     subwidgets = _multiwidget_metadata(widget)
     if subwidgets:

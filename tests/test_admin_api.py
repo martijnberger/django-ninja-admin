@@ -2160,6 +2160,13 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
     assert fields_by_name["name"]["attrs"]["help_text"] == "Name from formfield_for_dbfield."
     assert fields_by_name["name"]["attrs"]["min_length"] == 3
+    name_validator_details = fields_by_name["name"]["attrs"]["validator_details"]
+    assert {
+        "class": "MinLengthValidator",
+        "code": "min_length",
+        "limit_value": 3,
+        "message": "",
+    } in name_validator_details
     assert fields_by_name["description"]["attrs"]["help_text"] == "Describe the product carefully."
     assert fields_by_name["description"]["attrs"]["widget"] == "Textarea"
     assert fields_by_name["description"]["attrs"]["widget_attrs"]["data-hook"] == "override"
@@ -3346,6 +3353,7 @@ def test_form_description_exposes_multiwidget_metadata(db):
                 time_format="%H:%M",
             ),
         )
+        product_code = forms.RegexField(required=False, regex=r"^[A-Z]{3}$")
 
         class Meta:
             model = Product
@@ -3357,6 +3365,7 @@ def test_form_description_exposes_multiwidget_metadata(db):
     model_admin = SplitWidgetProductAdmin(Product, NinjaAdminSite(include_auth=False))
     form = model_admin.get_form_description(request)["form"]
     field = next(item for item in form["fields"] if item["name"] == "release_window")
+    code_field = next(item for item in form["fields"] if item["name"] == "product_code")
     attrs = field["attrs"]
 
     assert attrs["widget"] == "SplitDateTimeWidget"
@@ -3392,6 +3401,10 @@ def test_form_description_exposes_multiwidget_metadata(db):
             "needs_multipart_form": False,
         },
     ]
+    assert any(
+        detail.get("pattern") == "^[A-Z]{3}$"
+        for detail in code_field["attrs"]["validator_details"]
+    )
 
 
 @pytest.mark.parametrize(

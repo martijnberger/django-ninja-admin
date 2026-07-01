@@ -9,6 +9,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added JSON-safe form field error-message and localization metadata, plus
   structured radio and prepopulated field descriptors.
+- Added structured form field validator metadata for frontend form rendering.
 - Added native Pydantic request schema typing for Django typed choice fields
   whose `coerce` hook uses a concrete Python type.
 - Added native Pydantic request schema validation for Django email form fields.
