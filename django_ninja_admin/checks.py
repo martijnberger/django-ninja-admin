@@ -171,7 +171,18 @@ def _check_display_options(model_admin):
                 )
 
     editable = tuple(model_admin.list_editable or ())
+    seen_editable = set()
     for item in editable:
+        item_key = field_name_for_display(item)
+        if item_key in seen_editable:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The field '{item_key}' is duplicated in 'list_editable'.",
+                    "E093",
+                )
+            )
+        seen_editable.add(item_key)
         if item not in list_display:
             errors.append(
                 _error(

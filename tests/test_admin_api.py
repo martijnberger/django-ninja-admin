@@ -1261,6 +1261,20 @@ def test_admin_checks_reject_first_list_editable_without_explicit_display_link(d
     assert valid_ids.isdisjoint({"django_ninja_admin.E007", "django_ninja_admin.E066"})
 
 
+def test_admin_checks_reject_duplicate_list_editable_fields(db):
+    class DuplicateEditableProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        list_display_links = ("name",)
+        list_editable = ("price", "price")
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, DuplicateEditableProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E093"}
+
+
 def test_admin_checks_reject_duplicate_list_display_links(db):
     class DuplicateLinksProductAdmin(ModelAdmin):
         list_display = ("name", "price")
