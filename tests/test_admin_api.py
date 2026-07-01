@@ -22,6 +22,7 @@ from django_ninja_admin import (
     EmptyFieldListFilter,
     ModelAdmin,
     NinjaAdminSite,
+    RelatedOnlyFieldListFilter,
     SimpleListFilter,
     TabularInline,
     action,
@@ -1136,6 +1137,48 @@ def test_simple_list_filter_without_lookups_is_hidden(admin_client, sample, monk
 
     assert response.status_code == 200
     assert response.json()["config"]["filters"] == []
+
+
+def test_related_field_list_filter_includes_many_to_many_empty_choice(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", ("tags",))
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    tag_filter = next(
+        item for item in response.json()["config"]["filters"] if item["parameter_name"] == "tags__id__exact"
+    )
+    choices_by_display = {choice["display"]: choice for choice in tag_filter["choices"]}
+    assert choices_by_display["None"]["query_string"] == "?tags__isnull=1"
+
+    empty = admin_client.get("/admin-api/testapp/product?tags__isnull=1")
+
+    assert empty.status_code == 200
+    assert empty.json()["config"]["result_count"] == 1
+    assert empty.json()["rows"][0]["cells"]["name"] == "Beta"
+    tag_filter = next(item for item in empty.json()["config"]["filters"] if item["parameter_name"] == "tags__id__exact")
+    selected_none = next(choice for choice in tag_filter["choices"] if choice["display"] == "None")
+    assert selected_none["selected"] is True
+
+
+def test_related_only_list_filter_honors_related_admin_ordering(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    category_admin = site.get_model_admin(Category)
+    zooms = Category.objects.create(name="Zooms")
+    Category.objects.create(name="Accessories")
+    Product.objects.create(name="Tripod", category=zooms, price="6.00", description="Stable")
+    monkeypatch.setattr(product_admin, "list_filter", (("category", RelatedOnlyFieldListFilter),))
+    monkeypatch.setattr(category_admin, "ordering", ("-name",))
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    category_filter = next(
+        item for item in response.json()["config"]["filters"] if item["parameter_name"] == "category__id__exact"
+    )
+    choices = [choice["display"] for choice in category_filter["choices"] if choice["display"] != "All"]
+    assert choices == ["Zooms", "Cameras"]
 
 
 def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client, sample, monkeypatch):

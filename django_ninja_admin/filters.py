@@ -284,7 +284,7 @@ class RelatedFieldListFilter(FieldListFilter):
         extra = 1 if self.include_empty_choice else 0
         return len(self.field_choices(None)) + extra > 1
 
-    def field_choices(self, changelist):
+    def get_related_queryset(self):
         related_model = self.field.remote_field.model
         queryset = related_model._default_manager.all()
         try:
@@ -294,11 +294,14 @@ class RelatedFieldListFilter(FieldListFilter):
                 queryset = queryset.order_by(*ordering)
         except Exception:
             queryset = queryset.order_by(related_model._meta.pk.name)
-        return [(obj.pk, str(obj)) for obj in queryset]
+        return queryset
+
+    def field_choices(self, changelist):
+        return [(obj.pk, str(obj)) for obj in self.get_related_queryset()]
 
     def choices(self, changelist):
         yield from super().choices(changelist)
-        if self.field.null:
+        if self.include_empty_choice:
             selected = self.used_parameters.get(self.lookup_kwarg_isnull) is True
             yield {
                 "selected": selected,
@@ -312,14 +315,13 @@ class RelatedFieldListFilter(FieldListFilter):
 
 class RelatedOnlyFieldListFilter(RelatedFieldListFilter):
     def field_choices(self, changelist):
-        related_model = self.field.remote_field.model
         ids = (
             self.model_admin.get_queryset(self.request)
             .exclude(**{f"{self.field_path}__isnull": True})
             .values_list(self.field_path, flat=True)
             .distinct()
         )
-        queryset = related_model._default_manager.filter(pk__in=ids)
+        queryset = self.get_related_queryset().filter(pk__in=ids)
         return [(obj.pk, str(obj)) for obj in queryset]
 
 

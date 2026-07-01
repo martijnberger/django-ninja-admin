@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Improved related list-filter parity: many-to-many filters now expose and apply
+  the empty relation choice, and related-only filters preserve related-admin
+  ordering while limiting choices to used relations.
+
 ## 0.1.4 - 2026-07-01
 
 - Added per-model Pydantic response schemas for create/update and bulk

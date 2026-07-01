@@ -99,6 +99,7 @@ Completed or mostly complete:
 - Date list filters now use Django-admin-style bounded ranges and clear stale grouped date params when switching choices.
 - Choices list filters now support explicit `NULL` choices with `__isnull` query behavior.
 - Related list filters now hide when they have only one non-empty choice, still apply hidden-filter query params, and expose their real lookup keys, matching Django admin's output threshold.
+- Related list filters now expose many-to-many empty-relation choices and related-only filters preserve related-admin ordering while limiting choices to used relations.
 - Empty-value list filters now validate `__isempty` values and return typed lookup errors for invalid input.
 - Simple list filters now hide when `lookups()` returns no choices, matching Django admin.
 - Invalid changelist lookup values now return typed API errors for both declared filters and direct field lookups.
