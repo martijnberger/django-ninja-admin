@@ -60,6 +60,7 @@ Completed or mostly complete:
 - Dynamic per-model Pydantic request schemas for create, replace, partial update, and list-editable bulk update payloads.
 - Dynamic per-inline Pydantic operation schemas for add/change/delete payloads, exposed under the real `app.model` inline wire keys.
 - Dynamic per-model action payload schemas with OpenAPI enums for registered/global action names.
+- Model routes now advertise richer OpenAPI response maps for typed error bodies, including normalized `422` request-validation responses.
 - Pydantic/Ninja request validation errors are normalized into typed API error bodies.
 - Django `ModelForm` and inline formset validation for create/update/inline mutations.
 - Inline mutations reject duplicate change/delete PKs and rows that attempt to change and delete the same inline object.
@@ -84,6 +85,7 @@ Completed or mostly complete:
 - Many-to-many fields now have Pydantic write schemas, JSON-safe change-form values, form relation metadata, output serialization, and create/update persistence coverage.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Custom `form_class` is covered through mounted Ninja routes for write-schema generation, custom widget attributes, Django form validation, and mutation persistence.
+- Semantic OpenAPI contract tests now cover model-route operation IDs, tags, security, request body schemas, success response schemas, and typed error response maps.
 - Initial behavioral tests and no DRF/drf-spectacular runtime dependency.
 
 Known non-parity areas:
@@ -94,7 +96,7 @@ Known non-parity areas:
 - Action payload schemas advertise action names, but custom action-specific extra payload contracts are not yet modeled.
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
 - Inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
-- OpenAPI generation works, but it does not yet expose full per-model request/response contracts or the same richness upstream provided through drf-spectacular hooks.
+- OpenAPI generation works and now has semantic contract coverage for core model routes, but it does not yet expose full per-model request/response contracts or the same richness upstream provided through drf-spectacular hooks.
 - Admin extensibility is still young: custom view routing and display metadata exist, but deeper auth/tag/response-schema coverage and override-hook parity need work.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix.
 

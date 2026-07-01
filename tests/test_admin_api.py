@@ -109,6 +109,87 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     ]
 
 
+def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):
+    schema = admin_client.get("/admin-api/openapi.json").json()
+    paths = schema["paths"]
+
+    expected_operations = {
+        ("/admin-api/testapp/product", "get"): ("testapp_product_list", ["testapp.product"]),
+        ("/admin-api/testapp/product", "post"): ("testapp_product_create", ["testapp.product"]),
+        ("/admin-api/testapp/product/form", "get"): ("testapp_product_add_form", ["testapp.product"]),
+        ("/admin-api/testapp/product/actions", "post"): ("testapp_product_action", ["testapp.product"]),
+        ("/admin-api/testapp/product/bulk", "put"): ("testapp_product_bulk_update", ["testapp.product"]),
+        ("/admin-api/testapp/product/{object_id}", "get"): ("testapp_product_detail", ["testapp.product"]),
+        ("/admin-api/testapp/product/{object_id}", "patch"): ("testapp_product_partial_update", ["testapp.product"]),
+        ("/admin-api/testapp/product/{object_id}", "put"): ("testapp_product_update", ["testapp.product"]),
+        ("/admin-api/testapp/product/{object_id}", "delete"): ("testapp_product_delete", ["testapp.product"]),
+        ("/admin-api/testapp/product/{object_id}/form", "get"): ("testapp_product_change_form", ["testapp.product"]),
+    }
+    for (path, method), (operation_id, tags) in expected_operations.items():
+        operation = paths[path][method]
+        assert operation["operationId"] == operation_id
+        assert operation["tags"] == tags
+        assert operation["security"] == [{"SessionAuthIsStaff": []}]
+
+    assert _request_schema_ref(paths["/admin-api/testapp/product"]["post"]) == (
+        "#/components/schemas/ProductAdminCreatePayload"
+    )
+    assert (
+        _request_schema_ref(paths["/admin-api/testapp/product/{object_id}"]["patch"])
+        == "#/components/schemas/ProductAdminPartialUpdatePayload"
+    )
+    assert (
+        _request_schema_ref(paths["/admin-api/testapp/product/{object_id}"]["put"])
+        == "#/components/schemas/ProductAdminUpdatePayload"
+    )
+    assert (
+        _request_schema_ref(paths["/admin-api/testapp/product/actions"]["post"])
+        == "#/components/schemas/ProductAdminActionPayload"
+    )
+    assert (
+        _request_schema_ref(paths["/admin-api/testapp/product/bulk"]["put"])
+        == "#/components/schemas/ProductAdminBulkPayload"
+    )
+
+    assert _response_schema_ref(paths["/admin-api/testapp/product"]["get"], "200") == (
+        "#/components/schemas/ChangelistResponse"
+    )
+    assert _response_schema_ref(paths["/admin-api/testapp/product/form"]["get"], "200") == (
+        "#/components/schemas/FormResponse"
+    )
+    assert _response_schema_ref(paths["/admin-api/testapp/product/{object_id}"]["get"], "200") == (
+        "#/components/schemas/ProductAdminOut"
+    )
+    assert _response_schema_ref(paths["/admin-api/testapp/product/{object_id}/form"]["get"], "200") == (
+        "#/components/schemas/FormResponse"
+    )
+
+    for path, method, statuses in [
+        ("/admin-api/testapp/product", "get", {"400", "403", "404"}),
+        ("/admin-api/testapp/product", "post", {"400", "403", "422"}),
+        ("/admin-api/testapp/product/form", "get", {"403"}),
+        ("/admin-api/testapp/product/actions", "post", {"400", "403", "409", "422"}),
+        ("/admin-api/testapp/product/bulk", "put", {"400", "403", "422"}),
+        ("/admin-api/testapp/product/{object_id}", "get", {"400", "403", "404"}),
+        ("/admin-api/testapp/product/{object_id}", "patch", {"400", "403", "404", "422"}),
+        ("/admin-api/testapp/product/{object_id}", "put", {"400", "403", "404", "422"}),
+        ("/admin-api/testapp/product/{object_id}", "delete", {"400", "403", "404", "409"}),
+        ("/admin-api/testapp/product/{object_id}/form", "get", {"400", "403", "404"}),
+    ]:
+        operation = paths[path][method]
+        assert statuses <= set(operation["responses"])
+        for status in statuses:
+            assert _response_schema_ref(operation, status) == "#/components/schemas/ErrorResponse"
+
+
+def _request_schema_ref(operation):
+    return operation["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+
+
+def _response_schema_ref(operation, status):
+    return operation["responses"][status]["content"]["application/json"]["schema"]["$ref"]
+
+
 def test_admin_checks_accept_valid_test_admins(db):
     errors = site.check(app_configs=[django_apps.get_app_config("testapp")])
 

@@ -28,7 +28,7 @@ Statuses:
 | `GET /history` | partial | History route and log model tests | More filters, permission edge cases, upstream change message parity |
 | `GET /autocomplete` | partial | Permission-hardened route and tests | More pagination/source-field/remote-field edge cases |
 | `GET /view-on-site/{content_type_id}/{object_id}` | implemented | Route and permission tests | External URL and custom callable variants |
-| Docs/OpenAPI routes | partial | `/docs` and `/openapi.json` smoke tests | Stable snapshots and richer per-model payload schemas |
+| Docs/OpenAPI routes | partial | `/docs`, `/openapi.json`, and semantic model-route contract tests | Full docs examples and broader snapshots |
 
 ## Registry, Model Admins, And Checks
 
@@ -87,9 +87,9 @@ Statuses:
 | --- | --- | --- | --- |
 | Staff-session auth default | implemented | `SessionAuthIsStaff`, auth tests | Docs examples |
 | Custom auth and `auth=None` | implemented | Auth contract tests | Multi-auth test coverage |
-| Typed error bodies | partial | Exception handlers, Ninja validation handler, API tests | Full error schema snapshots |
-| Stable operation IDs/tags | partial | Explicit operation IDs in routes | Semantic OpenAPI snapshot tests |
-| Per-model request/response contracts | partial | Output, write payload, inline operation, and action payload schemas in OpenAPI | Custom action schemas and Phase 6 snapshots |
+| Typed error bodies | partial | Exception handlers, Ninja validation handler, API tests, and model-route OpenAPI error maps | Full error schema snapshots |
+| Stable operation IDs/tags | partial | Explicit operation IDs and semantic OpenAPI contract tests | Broader site/custom-route snapshot tests |
+| Per-model request/response contracts | partial | Output, write payload, inline operation, action payload, and response-map schemas in OpenAPI | Custom action schemas and Phase 6 snapshots |
 
 ## Release Hardening
 

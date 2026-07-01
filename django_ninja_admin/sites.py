@@ -553,13 +553,18 @@ class NinjaAdminSite:
         bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
         action_payload_schema = model_admin.get_action_payload_schema(None)
 
-        @router.get(prefix, response=ChangelistResponse, tags=tags, operation_id=f"{app_label}_{model_name}_list")
+        @router.get(
+            prefix,
+            response={200: ChangelistResponse, 400: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse},
+            tags=tags,
+            operation_id=f"{app_label}_{model_name}_list",
+        )
         def changelist(request):
             return site._changelist_response(request, model_admin)
 
         @router.get(
             f"{prefix}/form",
-            response=FormResponse,
+            response={200: FormResponse, 403: ErrorResponse},
             tags=tags,
             operation_id=f"{app_label}_{model_name}_add_form",
         )
@@ -570,7 +575,7 @@ class NinjaAdminSite:
 
         @router.post(
             prefix,
-            response={201: MutationResponse, 400: ErrorResponse, 403: ErrorResponse},
+            response={201: MutationResponse, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
             tags=tags,
             operation_id=f"{app_label}_{model_name}_create",
         )
@@ -598,7 +603,13 @@ class NinjaAdminSite:
 
         @router.post(
             f"{prefix}/actions",
-            response={200: dict[str, Any], 400: ErrorResponse, 403: ErrorResponse, 409: ErrorResponse},
+            response={
+                200: dict[str, Any],
+                400: ErrorResponse,
+                403: ErrorResponse,
+                409: ErrorResponse,
+                422: ErrorResponse,
+            },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_action",
         )
@@ -610,7 +621,7 @@ class NinjaAdminSite:
 
         @router.put(
             f"{prefix}/bulk",
-            response={200: dict[str, Any], 400: ErrorResponse, 403: ErrorResponse},
+            response={200: dict[str, Any], 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
             tags=tags,
             operation_id=f"{app_label}_{model_name}_bulk_update",
         )
@@ -628,7 +639,12 @@ class NinjaAdminSite:
 
         @router.get(
             f"{prefix}/{{object_id}}",
-            response=model_admin.get_output_schema(None),
+            response={
+                200: model_admin.get_output_schema(None),
+                400: ErrorResponse,
+                403: ErrorResponse,
+                404: ErrorResponse,
+            },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_detail",
         )
@@ -640,7 +656,7 @@ class NinjaAdminSite:
 
         @router.get(
             f"{prefix}/{{object_id}}/form",
-            response=FormResponse,
+            response={200: FormResponse, 400: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse},
             tags=tags,
             operation_id=f"{app_label}_{model_name}_change_form",
         )
@@ -652,7 +668,13 @@ class NinjaAdminSite:
 
         @router.patch(
             f"{prefix}/{{object_id}}",
-            response={200: MutationResponse, 400: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse},
+            response={
+                200: MutationResponse,
+                400: ErrorResponse,
+                403: ErrorResponse,
+                404: ErrorResponse,
+                422: ErrorResponse,
+            },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_partial_update",
         )
@@ -661,7 +683,13 @@ class NinjaAdminSite:
 
         @router.put(
             f"{prefix}/{{object_id}}",
-            response={200: MutationResponse, 400: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse},
+            response={
+                200: MutationResponse,
+                400: ErrorResponse,
+                403: ErrorResponse,
+                404: ErrorResponse,
+                422: ErrorResponse,
+            },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_update",
         )
