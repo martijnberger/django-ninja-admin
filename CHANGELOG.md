@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.8 - 2026-07-01
+
 - Added automatic `select_related()` inference for relation-path fields in
   `list_display`, even when those columns are not sortable.
 - Added changelist display and sorting support for single-valued relation paths
