@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.3 - 2026-07-01
+
 - Narrowed supported versions to Python 3.12+ and Django 5.0+, including
   package metadata, CI, and planning docs.
 - Reframed customization docs around Ninja-native hooks and made DRF
