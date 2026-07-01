@@ -1275,6 +1275,20 @@ def test_admin_checks_reject_duplicate_list_editable_fields(db):
     assert {error.id for error in errors} == {"django_ninja_admin.E093"}
 
 
+def test_admin_checks_reject_non_string_list_editable_fields(db):
+    class BadEditableProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        list_display_links = ("name",)
+        list_editable = (123,)
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, BadEditableProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E094"}
+
+
 def test_admin_checks_reject_duplicate_list_display_links(db):
     class DuplicateLinksProductAdmin(ModelAdmin):
         list_display = ("name", "price")

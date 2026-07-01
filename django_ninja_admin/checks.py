@@ -173,6 +173,9 @@ def _check_display_options(model_admin):
     editable = tuple(model_admin.list_editable or ())
     seen_editable = set()
     for item in editable:
+        if not isinstance(item, str):
+            errors.append(_error(model_admin.__class__, "Items in 'list_editable' must be strings.", "E094"))
+            continue
         item_key = field_name_for_display(item)
         if item_key in seen_editable:
             errors.append(
