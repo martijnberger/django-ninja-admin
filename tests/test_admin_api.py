@@ -881,6 +881,53 @@ def test_actions_bulk_autocomplete_and_view_on_site(admin_client, sample):
     assert onsite.json()["url"].endswith(f"/products/{sample.pk}/")
 
 
+def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "autocomplete_fields", ("category", "tags"))
+    Tag.objects.bulk_create(Tag(name=f"Tag {index:02d}") for index in range(25))
+
+    first_page = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "tags",
+            "term": "Tag",
+            "page": 1,
+        },
+    )
+    assert first_page.status_code == 200
+    assert len(first_page.json()["results"]) == 20
+    assert first_page.json()["pagination"] == {"more": True}
+
+    second_page = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "tags",
+            "term": "Tag",
+            "page": 2,
+        },
+    )
+    assert second_page.status_code == 200
+    assert len(second_page.json()["results"]) == 5
+    assert second_page.json()["pagination"] == {"more": False}
+    assert all(result["text"].startswith("Tag ") for result in second_page.json()["results"])
+
+    bad_page = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "tags",
+            "term": "Tag",
+            "page": 0,
+        },
+    )
+    assert bad_page.status_code == 404
+
+
 def test_actions_use_filtered_changelist_queryset(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/actions?stock_status__exact=out_of_stock",

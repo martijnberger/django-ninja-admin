@@ -555,7 +555,10 @@ class NinjaAdminSite:
             if not qs.ordered:
                 qs = qs.order_by(remote_model._meta.pk.name)
             paginator = model_admin.paginator(qs, 20)
-            page_obj = paginator.page(page)
+            try:
+                page_obj = paginator.page(page)
+            except InvalidPage:
+                raise Http404
             return {
                 "results": [{"id": str(getattr(obj, to_field_name)), "text": str(obj)} for obj in page_obj.object_list],
                 "pagination": {"more": page_obj.has_next()},

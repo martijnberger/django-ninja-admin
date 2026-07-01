@@ -21,6 +21,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   semantics instead of allowing arbitrary fields from related models.
 - Hardened history listing with permission-aware querysets, app/model/action
   filters, and typed errors for invalid history parameters.
+- Hardened autocomplete pagination and added coverage for many-to-many source
+  fields using the same endpoint contract.
 - Added support for passing pytest selectors through `just test` and
   `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full
