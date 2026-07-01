@@ -10,6 +10,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added deterministic default OpenAPI operation IDs for custom site/model
   admin routes that do not provide an explicit `operation_id`, including
   multi-method custom routes.
+- Made explicit `operation_id` values unique for multi-method custom admin
+  routes by adding deterministic HTTP-method suffixes.
 - Added standard typed error response maps to custom site/model admin routes
   while preserving explicit response-map entries.
 

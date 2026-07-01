@@ -108,6 +108,9 @@ class CustomAdminSite(NinjaAdminSite):
     def mapped_status(self, request):
         return {"site": "mapped"}
 
+    def explicit_multi_status(self, request):
+        return {"site": "explicit-multi"}
+
     def token_status(self, request):
         return {"auth": request.auth}
 
@@ -156,6 +159,14 @@ class CustomAdminSite(NinjaAdminSite):
                 self.admin_view(self.mapped_status),
                 response={200: SiteStatusResponse, 418: ErrorResponse},
                 operation_id="custom_mapped_status",
+                tags=["custom.site"],
+            ),
+            self.route(
+                "/explicit-multi-status",
+                self.admin_view(self.explicit_multi_status),
+                methods=("GET", "POST"),
+                response=SiteStatusResponse,
+                operation_id="custom_explicit_multi_status",
                 tags=["custom.site"],
             ),
             self.route(

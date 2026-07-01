@@ -2152,6 +2152,13 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert mapped_site_response.status_code == 200
     assert mapped_site_response.json() == {"site": "mapped"}
 
+    explicit_multi_get = admin_client.get("/custom-admin/explicit-multi-status")
+    explicit_multi_post = admin_client.post("/custom-admin/explicit-multi-status")
+    assert explicit_multi_get.status_code == 200
+    assert explicit_multi_get.json() == {"site": "explicit-multi"}
+    assert explicit_multi_post.status_code == 200
+    assert explicit_multi_post.json() == {"site": "explicit-multi"}
+
     decorated_auto_site_response = admin_client.get("/custom-admin/decorated-auto-status")
     assert decorated_auto_site_response.status_code == 200
     assert decorated_auto_site_response.json() == {"site": "decorated-auto"}
@@ -2203,6 +2210,8 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     decorated_status_operation = schema["paths"]["/custom-admin/decorated-status"]["get"]
     auto_status_operation = schema["paths"]["/custom-admin/auto-status"]["get"]
     mapped_status_operation = schema["paths"]["/custom-admin/mapped-status"]["get"]
+    explicit_multi_get_operation = schema["paths"]["/custom-admin/explicit-multi-status"]["get"]
+    explicit_multi_post_operation = schema["paths"]["/custom-admin/explicit-multi-status"]["post"]
     decorated_auto_status_operation = schema["paths"]["/custom-admin/decorated-auto-status"]["get"]
     token_operation = schema["paths"]["/custom-admin/token-status"]["get"]
     public_operation = schema["paths"]["/custom-admin/public-status"]["get"]
@@ -2218,6 +2227,14 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
             expected_statuses.add("401")
         for status in expected_statuses:
             assert _response_schema_ref(operation, status) == "#/components/schemas/ErrorResponse"
+
+    operation_ids = [
+        operation["operationId"]
+        for path_item in schema["paths"].values()
+        for operation in path_item.values()
+        if "operationId" in operation
+    ]
+    assert len(operation_ids) == len(set(operation_ids))
 
     assert status_operation["operationId"] == "custom_site_status"
     assert status_operation["tags"] == ["custom.site"]
@@ -2237,6 +2254,14 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert _response_schema_ref(mapped_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
     assert _response_schema_ref(mapped_status_operation, "418") == "#/components/schemas/ErrorResponse"
     assert_custom_route_error_responses(mapped_status_operation)
+    assert explicit_multi_get_operation["operationId"] == "custom_explicit_multi_status_get"
+    assert explicit_multi_get_operation["tags"] == ["custom.site"]
+    assert _response_schema_ref(explicit_multi_get_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert_custom_route_error_responses(explicit_multi_get_operation)
+    assert explicit_multi_post_operation["operationId"] == "custom_explicit_multi_status_post"
+    assert explicit_multi_post_operation["tags"] == ["custom.site"]
+    assert _response_schema_ref(explicit_multi_post_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert_custom_route_error_responses(explicit_multi_post_operation)
     assert decorated_auto_status_operation["operationId"] == "custom_get_decorated_auto_status"
     assert decorated_auto_status_operation["tags"] == ["custom.site"]
     assert _response_schema_ref(decorated_auto_status_operation, "200") == "#/components/schemas/SiteStatusResponse"

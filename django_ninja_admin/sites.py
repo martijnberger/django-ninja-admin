@@ -313,20 +313,7 @@ class NinjaAdminSite:
             view_func = self._custom_route_view_func(route.view_func)
             tags = route.tags or default_tags
             response = self._custom_route_response(route.response, auth=route.auth)
-            if route.operation_id is not None:
-                router.add_api_operation(
-                    path,
-                    list(route.methods),
-                    view_func,
-                    auth=route.auth,
-                    response=response,
-                    operation_id=route.operation_id,
-                    summary=route.summary,
-                    description=route.description,
-                    tags=tags,
-                    include_in_schema=route.include_in_schema,
-                )
-                continue
+            multi_method = len(route.methods) > 1
             for method in route.methods:
                 router.add_api_operation(
                     path,
@@ -334,14 +321,21 @@ class NinjaAdminSite:
                     view_func,
                     auth=route.auth,
                     response=response,
-                    operation_id=self._custom_route_operation_id(path, method),
+                    operation_id=self._custom_route_operation_id(
+                        path,
+                        method,
+                        route.operation_id,
+                        multi_method=multi_method,
+                    ),
                     summary=route.summary,
                     description=route.description,
                     tags=tags,
                     include_in_schema=route.include_in_schema,
                 )
 
-    def _custom_route_operation_id(self, path, method):
+    def _custom_route_operation_id(self, path, method, operation_id=None, *, multi_method=False):
+        if operation_id is not None:
+            return f"{operation_id}_{method.lower()}" if multi_method else operation_id
         normalized_path = path.strip("/").replace("{", "").replace("}", "") or "root"
         normalized_path = CUSTOM_OPERATION_ID_CHARS_RE.sub("_", normalized_path).strip("_").lower()
         return f"custom_{method.lower()}_{normalized_path}"
