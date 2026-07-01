@@ -393,6 +393,15 @@ def _check_relation_fields(model_admin, option, *, many_to_many_only=False, requ
         if many_to_many_only and not isinstance(field, models.ManyToManyField):
             errors.append(_error(model_admin.__class__, f"The field '{item}' must be a many-to-many field.", "E024"))
             continue
+        if many_to_many_only and not field.remote_field.through._meta.auto_created:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The field '{item}' uses a custom through model and cannot use '{option}'.",
+                    "E047",
+                )
+            )
+            continue
         if not many_to_many_only and not getattr(field, "remote_field", None):
             errors.append(_error(model_admin.__class__, f"The field '{item}' must be a relation field.", "E025"))
             continue

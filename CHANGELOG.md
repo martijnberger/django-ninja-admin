@@ -19,6 +19,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   model properties, including boolean flags and empty-value fallbacks.
 - Added explicit registry coverage for swapped models, which are skipped during
   registration to match Django admin behavior.
+- Added admin system checks rejecting `filter_horizontal`/`filter_vertical` on
+  many-to-many fields with custom through models.
 
 ## 0.1.2 - 2026-07-01
 

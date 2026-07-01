@@ -448,6 +448,46 @@ def test_admin_checks_validate_radio_fields_shape(db):
     assert {error.id for error in errors} == {"django_ninja_admin.E034"}
 
 
+@isolate_apps("tests.testapp")
+def test_admin_checks_reject_manual_through_many_to_many_widget_modes(db):
+    class Article(models.Model):
+        title = models.CharField(max_length=100)
+        tags = models.ManyToManyField("ArticleTag", through="ArticleTagging")
+
+        class Meta:
+            app_label = "testapp"
+
+    class ArticleTag(models.Model):
+        name = models.CharField(max_length=100)
+
+        class Meta:
+            app_label = "testapp"
+
+    class ArticleTagging(models.Model):
+        article = models.ForeignKey(Article, on_delete=models.CASCADE)
+        tag = models.ForeignKey(ArticleTag, on_delete=models.CASCADE)
+
+        class Meta:
+            app_label = "testapp"
+
+    class HorizontalArticleAdmin(ModelAdmin):
+        filter_horizontal = ("tags",)
+
+    class VerticalArticleAdmin(ModelAdmin):
+        filter_vertical = ("tags",)
+
+    horizontal_site = NinjaAdminSite(include_auth=False)
+    horizontal_site.register(Article, HorizontalArticleAdmin)
+    vertical_site = NinjaAdminSite(include_auth=False)
+    vertical_site.register(Article, VerticalArticleAdmin)
+
+    horizontal_errors = horizontal_site.get_model_admin(Article).check()
+    vertical_errors = vertical_site.get_model_admin(Article).check()
+
+    assert {error.id for error in horizontal_errors} == {"django_ninja_admin.E047"}
+    assert {error.id for error in vertical_errors} == {"django_ninja_admin.E047"}
+
+
 def test_changelist_search_filter_and_detail(admin_client, sample):
     response = admin_client.get("/admin-api/testapp/product?q=Alpha")
     assert response.status_code == 200

@@ -107,6 +107,7 @@ Completed or mostly complete:
 - Admin system checks now reject direct many-to-many fields in `list_display`, preventing raw related managers from leaking into changelist cells.
 - Admin system checks now reject `list_editable` fields removed from generated forms by `fields`, `fieldsets`, or `exclude`, preventing silent bulk-update no-ops.
 - Admin system checks now validate `list_select_related` types and relation paths before changelist runtime.
+- Admin system checks now reject `filter_horizontal`/`filter_vertical` on many-to-many fields with custom through models.
 - `get_changelist()` and `get_changelist_instance()` hooks for changelist customization.
 - Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration, raw bound method wrapping, route tags/descriptions, hidden routes, explicit route-level `auth=None`, and route-level auth sequence overrides.
 - Custom admin view tests now cover named Ninja response schemas together with route-level auth overrides.
