@@ -693,12 +693,22 @@ def test_admin_checks_validate_pagination_options(db):
 def test_admin_checks_validate_boolean_options(db):
     class CallableViewOnSiteProductAdmin(ModelAdmin):
         save_as = True
+        save_as_continue = True
         save_on_top = False
+        actions_on_top = True
+        actions_on_bottom = False
+        actions_selection_counter = True
+        show_full_result_count = True
         view_on_site = staticmethod(lambda obj: f"/products/{obj.pk}/")
 
     class BadBooleanOptionsProductAdmin(ModelAdmin):
         save_as = "yes"
+        save_as_continue = "yes"
         save_on_top = "no"
+        actions_on_top = "yes"
+        actions_on_bottom = "no"
+        actions_selection_counter = "yes"
+        show_full_result_count = "no"
         view_on_site = "/products/{pk}/"
 
     valid_site = NinjaAdminSite(include_auth=False)
@@ -709,8 +719,28 @@ def test_admin_checks_validate_boolean_options(db):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E069", "django_ninja_admin.E070", "django_ninja_admin.E071"})
-    assert bad_ids == {"django_ninja_admin.E069", "django_ninja_admin.E070", "django_ninja_admin.E071"}
+    assert valid_ids.isdisjoint(
+        {
+            "django_ninja_admin.E069",
+            "django_ninja_admin.E070",
+            "django_ninja_admin.E071",
+            "django_ninja_admin.E083",
+            "django_ninja_admin.E084",
+            "django_ninja_admin.E085",
+            "django_ninja_admin.E086",
+            "django_ninja_admin.E087",
+        }
+    )
+    assert bad_ids == {
+        "django_ninja_admin.E069",
+        "django_ninja_admin.E070",
+        "django_ninja_admin.E071",
+        "django_ninja_admin.E083",
+        "django_ninja_admin.E084",
+        "django_ninja_admin.E085",
+        "django_ninja_admin.E086",
+        "django_ninja_admin.E087",
+    }
 
 
 def test_admin_checks_reject_mixed_random_ordering(db):

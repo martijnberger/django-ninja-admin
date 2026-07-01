@@ -251,8 +251,20 @@ def _check_boolean_options(model_admin):
     errors = []
     if not isinstance(getattr(model_admin, "save_as", False), bool):
         errors.append(_error(model_admin.__class__, "The value of 'save_as' must be a boolean.", "E069"))
+    if not isinstance(getattr(model_admin, "save_as_continue", True), bool):
+        errors.append(_error(model_admin.__class__, "The value of 'save_as_continue' must be a boolean.", "E083"))
     if not isinstance(getattr(model_admin, "save_on_top", False), bool):
         errors.append(_error(model_admin.__class__, "The value of 'save_on_top' must be a boolean.", "E070"))
+    if not isinstance(getattr(model_admin, "actions_on_top", True), bool):
+        errors.append(_error(model_admin.__class__, "The value of 'actions_on_top' must be a boolean.", "E084"))
+    if not isinstance(getattr(model_admin, "actions_on_bottom", False), bool):
+        errors.append(_error(model_admin.__class__, "The value of 'actions_on_bottom' must be a boolean.", "E085"))
+    if not isinstance(getattr(model_admin, "actions_selection_counter", True), bool):
+        errors.append(
+            _error(model_admin.__class__, "The value of 'actions_selection_counter' must be a boolean.", "E086")
+        )
+    if not isinstance(getattr(model_admin, "show_full_result_count", True), bool):
+        errors.append(_error(model_admin.__class__, "The value of 'show_full_result_count' must be a boolean.", "E087"))
     view_on_site = getattr(model_admin, "view_on_site", True)
     if not callable(view_on_site) and not isinstance(view_on_site, bool):
         errors.append(
