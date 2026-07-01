@@ -1138,6 +1138,9 @@ class NinjaAdminSite:
             "config": {
                 "full_count": changelist.full_result_count,
                 "result_count": changelist.result_count,
+                "page_result_count": len(changelist.result_list),
+                "result_start_index": changelist.page.start_index(),
+                "result_end_index": changelist.page.end_index(),
                 "page_count": changelist.paginator.num_pages,
                 "page": changelist.page_num,
                 "per_page": changelist.per_page,

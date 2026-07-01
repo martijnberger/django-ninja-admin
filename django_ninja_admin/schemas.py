@@ -204,6 +204,9 @@ class DateHierarchyDescription(Schema):
 class ChangelistConfig(Schema):
     full_count: int | None
     result_count: int
+    page_result_count: int = 0
+    result_start_index: int = 0
+    result_end_index: int = 0
     page_count: int
     page: int
     per_page: int

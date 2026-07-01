@@ -1642,6 +1642,9 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert paginated_body["config"]["pagination_required"] is True
     assert paginated_body["config"]["page_range"] == [1, 2, 3]
     assert len(paginated_body["rows"]) == 1
+    assert paginated_body["config"]["page_result_count"] == 1
+    assert paginated_body["config"]["result_start_index"] == 2
+    assert paginated_body["config"]["result_end_index"] == 2
 
     generated_query_strings = []
     for filter_description in paginated_body["config"]["filters"]:
@@ -1684,6 +1687,9 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     show_all_body = show_all.json()
     assert len(show_all_body["rows"]) == show_all_body["config"]["result_count"]
     assert show_all_body["config"]["full_count"] == 3
+    assert show_all_body["config"]["page_result_count"] == 3
+    assert show_all_body["config"]["result_start_index"] == 1
+    assert show_all_body["config"]["result_end_index"] == 3
     assert show_all_body["config"]["show_all"] is True
     assert show_all_body["config"]["can_show_all"] is True
     assert show_all_body["config"]["pagination_required"] is False
@@ -1729,6 +1735,13 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert rows_by_name["Beta"]["cells"]["tagline"] == "No description"
     assert rows_by_name["Beta"]["cells"]["is_expensive"] is False
     assert rows_by_name["Beta"]["cells"]["subtitle"] == "No subtitle"
+
+    empty = admin_client.get("/admin-api/testapp/product?q=missing")
+    assert empty.status_code == 200
+    assert empty.json()["config"]["result_count"] == 0
+    assert empty.json()["config"]["page_result_count"] == 0
+    assert empty.json()["config"]["result_start_index"] == 0
+    assert empty.json()["config"]["result_end_index"] == 0
 
 
 def test_changelist_supports_callable_list_display(admin_client, sample, monkeypatch):

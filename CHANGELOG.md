@@ -22,6 +22,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   route auth-error response maps honor `auth=None` sites.
 - Added conditional `401` OpenAPI error response maps for protected built-in
   site and model admin routes.
+- Added changelist page-result and row-range metadata for paginated,
+  show-all, and empty result sets.
 
 ## 0.1.15 - 2026-07-02
 
