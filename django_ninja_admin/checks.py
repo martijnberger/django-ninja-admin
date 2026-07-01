@@ -630,7 +630,17 @@ def _check_lookup_fields(
     allow_random=False,
 ):
     errors = []
-    for item in getattr(model_admin, option) or ():
+    items = tuple(getattr(model_admin, option) or ())
+    if allow_random and "?" in items and len(items) > 1:
+        errors.append(
+            _error(
+                model_admin.__class__,
+                "The value of 'ordering' has the random ordering marker '?' but contains other fields.",
+                "E072",
+                hint='Either remove the "?", or remove the other fields.',
+            )
+        )
+    for item in items:
         if not isinstance(item, str):
             errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E020"))
             continue

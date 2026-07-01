@@ -19,6 +19,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `view_on_site` option types.
 - Extended `list_display` system checks to reject reverse relation fields in
   addition to many-to-many fields.
+- Added an admin system check rejecting `ordering` configurations that combine
+  random ordering (`"?"`) with other fields.
 
 ## 0.1.4 - 2026-07-01
 

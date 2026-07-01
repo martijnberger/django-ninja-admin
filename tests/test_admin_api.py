@@ -595,6 +595,26 @@ def test_admin_checks_validate_boolean_options(db):
     assert bad_ids == {"django_ninja_admin.E069", "django_ninja_admin.E070", "django_ninja_admin.E071"}
 
 
+def test_admin_checks_reject_mixed_random_ordering(db):
+    class RandomOrderingProductAdmin(ModelAdmin):
+        ordering = ("?",)
+
+    class MixedRandomOrderingProductAdmin(ModelAdmin):
+        ordering = ("?", "name")
+
+    random_site = NinjaAdminSite(include_auth=False)
+    random_site.register(Product, RandomOrderingProductAdmin)
+    mixed_site = NinjaAdminSite(include_auth=False)
+    mixed_site.register(Product, MixedRandomOrderingProductAdmin)
+
+    random_ids = {error.id for error in random_site.get_model_admin(Product).check()}
+    mixed_errors = mixed_site.get_model_admin(Product).check()
+
+    assert "django_ninja_admin.E072" not in random_ids
+    assert {error.id for error in mixed_errors} == {"django_ninja_admin.E072"}
+    assert mixed_errors[0].hint == 'Either remove the "?", or remove the other fields.'
+
+
 def test_admin_checks_validate_form_class(db):
     class ProductAdminForm(forms.ModelForm):
         class Meta:
