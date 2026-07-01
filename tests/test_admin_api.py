@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from django import forms
@@ -2225,6 +2225,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
         metadata = forms.JSONField(required=False)
         tracking_id = forms.UUIDField(required=False)
         host = forms.GenericIPAddressField(required=False)
+        duration = forms.DurationField(required=False)
 
         class Meta:
             model = Product
@@ -2246,12 +2247,14 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
             "metadata": {"nested": [1, "two"]},
             "tracking_id": tracking_id,
             "host": "2001:db8::1",
+            "duration": "1 02:03:04",
         }
-    ).model_dump(mode="json")
+    )
 
-    assert validated["metadata"] == {"nested": [1, "two"]}
-    assert validated["tracking_id"] == tracking_id
-    assert validated["host"] == "2001:db8::1"
+    assert validated.metadata == {"nested": [1, "two"]}
+    assert validated.tracking_id.hex == "550e8400e29b41d4a716446655440000"
+    assert str(validated.host) == "2001:db8::1"
+    assert validated.duration == timedelta(days=1, hours=2, minutes=3, seconds=4)
 
     with pytest.raises(PydanticValidationError):
         schema.model_validate(
@@ -2263,6 +2266,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "metadata": {},
                 "tracking_id": "not-a-uuid",
                 "host": "2001:db8::1",
+                "duration": "1 02:03:04",
             }
         )
 
@@ -2276,6 +2280,21 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "metadata": {},
                 "tracking_id": tracking_id,
                 "host": "not-an-ip",
+                "duration": "1 02:03:04",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "not-a-duration",
             }
         )
 
@@ -2961,6 +2980,8 @@ def test_form_description_exposes_multiwidget_metadata(db):
     class SplitWidgetProductForm(forms.ModelForm):
         release_window = forms.SplitDateTimeField(
             required=False,
+            input_date_formats=["%Y-%m-%d"],
+            input_time_formats=["%H:%M"],
             widget=forms.SplitDateTimeWidget(
                 date_attrs={"data-part": "date"},
                 time_attrs={"data-part": "time"},
@@ -2984,6 +3005,10 @@ def test_form_description_exposes_multiwidget_metadata(db):
     assert attrs["widget"] == "SplitDateTimeWidget"
     assert attrs["template_name"] == "django/forms/widgets/splitdatetime.html"
     assert attrs["use_fieldset"] is True
+    assert attrs["input_formats"] == [
+        {"index": 0, "input_formats": ["%Y-%m-%d"]},
+        {"index": 1, "input_formats": ["%H:%M"]},
+    ]
     assert attrs["subwidgets"] == [
         {
             "name_suffix": "_0",

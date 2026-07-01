@@ -1,7 +1,7 @@
 import copy
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from django import forms
@@ -11,9 +11,10 @@ from django.db import models
 from django.forms import modelform_factory
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
 from django.urls import reverse
+from django.utils.dateparse import parse_duration
 from django.utils.safestring import mark_safe
 from ninja import Schema
-from pydantic import ConfigDict, IPvAnyAddress, create_model
+from pydantic import BeforeValidator, ConfigDict, IPvAnyAddress, create_model
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
@@ -25,6 +26,14 @@ from django_ninja_admin.utils.forms import (
     image_value_metadata,
 )
 from django_ninja_admin.utils.lookup import field_name_for_display
+
+
+def _parse_duration_value(value):
+    if isinstance(value, str):
+        parsed = parse_duration(value)
+        if parsed is not None:
+            return parsed
+    return value
 
 
 class BaseAdmin:
@@ -259,6 +268,8 @@ class BaseAdmin:
             return date
         if isinstance(field, forms.TimeField):
             return time
+        if isinstance(field, forms.DurationField):
+            return Annotated[timedelta, BeforeValidator(_parse_duration_value)]
         if isinstance(field, forms.UUIDField):
             return UUID
         if isinstance(field, forms.GenericIPAddressField):

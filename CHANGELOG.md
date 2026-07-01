@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added native Pydantic request schema typing for duration form fields and
+  exposed temporal input formats in form field descriptions.
+
 ## 0.1.10 - 2026-07-01
 
 - Added custom `form_class` support for inline formsets, including admin checks,

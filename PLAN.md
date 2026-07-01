@@ -110,6 +110,8 @@ Completed or mostly complete:
   querystring-derived initial values, including selected relation labels.
 - Pydantic request schemas now use native JSON, UUID, and generic IP address
   types for matching Django form fields.
+- Pydantic request schemas now use native duration types, and form descriptions
+  expose temporal input formats.
 - Form descriptions now expose widget template, fieldset, format, and
   `MultiWidget` subwidget metadata for richer frontend rendering.
 - Form descriptions now support callable `readonly_fields`, exposing stable string names, labels, values, and display metadata while accepting them in admin checks.

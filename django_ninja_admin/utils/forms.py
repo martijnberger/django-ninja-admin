@@ -238,6 +238,23 @@ def _multiwidget_metadata(widget):
     ]
 
 
+def _input_formats(field):
+    input_formats = getattr(field, "input_formats", None)
+    if input_formats is not None:
+        return [str(item) for item in input_formats]
+    fields = getattr(field, "fields", None)
+    if not fields:
+        return []
+    return [
+        {
+            "index": index,
+            "input_formats": [str(item) for item in getattr(subfield, "input_formats", ())],
+        }
+        for index, subfield in enumerate(fields)
+        if getattr(subfield, "input_formats", None) is not None
+    ]
+
+
 def field_description(name, field, *, read_only=False, current_value=None, model_field=None):
     widget = field.widget
     attrs = {
@@ -253,6 +270,9 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     subwidgets = _multiwidget_metadata(widget)
     if subwidgets:
         attrs["subwidgets"] = subwidgets
+    input_formats = _input_formats(field)
+    if input_formats:
+        attrs["input_formats"] = input_formats
     if getattr(field, "choices", None):
         attrs["choices"] = [(_choice_value(value), str(label)) for value, label in field.choices]
     if getattr(field, "initial", None) not in (None, ""):
