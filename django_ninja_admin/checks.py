@@ -134,6 +134,7 @@ def _check_display_options(model_admin):
                 )
             )
 
+    configured_list_display_links = getattr(model_admin, "list_display_links", ())
     list_display_links = model_admin.get_list_display_links(None, list_display)
     if list_display_links is not None:
         for item in list_display_links:
@@ -157,12 +158,21 @@ def _check_display_options(model_admin):
                 )
             )
             continue
-        if list_display_links and item in list_display_links:
+        if configured_list_display_links and item in configured_list_display_links:
             errors.append(
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_editable' refers to '{item}', which is also in 'list_display_links'.",
                     "E007",
+                )
+            )
+        elif list_display and item == list_display[0] and configured_list_display_links == ():
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_editable' refers to the first field in 'list_display' ('{item}'), "
+                    "which cannot be used unless 'list_display_links' is set.",
+                    "E066",
                 )
             )
         field = _model_field(model_admin, item)

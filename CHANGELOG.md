@@ -10,6 +10,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Improved related list-filter parity: many-to-many filters now expose and apply
   the empty relation choice, and related-only filters preserve related-admin
   ordering while limiting choices to used relations.
+- Added an admin system check for first-column `list_editable` fields without an
+  explicit `list_display_links` target, matching Django admin's configuration
+  guard.
 
 ## 0.1.4 - 2026-07-01
 

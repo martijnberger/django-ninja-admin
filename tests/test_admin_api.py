@@ -731,6 +731,28 @@ def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db
     assert "django_ninja_admin.E044" in {error.id for error in fieldsets_errors}
 
 
+def test_admin_checks_reject_first_list_editable_without_explicit_display_link(db):
+    class BadFirstEditableProductAdmin(ModelAdmin):
+        list_display = ("stock_status", "name")
+        list_editable = ("stock_status",)
+
+    class ValidFirstEditableProductAdmin(ModelAdmin):
+        list_display = ("stock_status", "name")
+        list_display_links = ("name",)
+        list_editable = ("stock_status",)
+
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadFirstEditableProductAdmin)
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidFirstEditableProductAdmin)
+
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+
+    assert bad_ids == {"django_ninja_admin.E066"}
+    assert valid_ids.isdisjoint({"django_ninja_admin.E007", "django_ninja_admin.E066"})
+
+
 def test_admin_checks_validate_fields_and_exclude_items(db):
     class RowFieldsProductAdmin(ModelAdmin):
         fields = (("name", "price"), "category")
