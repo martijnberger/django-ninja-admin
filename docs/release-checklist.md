@@ -18,6 +18,9 @@ just check
 - `just package-smoke` to build a wheel, install it into a temporary target,
   import the public API, and confirm wheel metadata does not depend on DRF or
   drf-spectacular.
+- `just sample-project-smoke` to install the built wheel into a temporary
+  Django project, register a model, mount `site.urls`, open docs/OpenAPI, and
+  exercise authenticated model discovery.
 
 ## Alpha Criteria
 

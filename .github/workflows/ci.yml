@@ -66,3 +66,6 @@ jobs:
 
       - name: Package smoke
         run: just package-smoke
+
+      - name: Sample project smoke
+        run: just sample-project-smoke

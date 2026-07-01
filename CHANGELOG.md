@@ -12,4 +12,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added a package smoke script that builds the wheel, installs it into an
   isolated target, verifies public API imports, and checks dependency metadata
   for absent DRF/drf-spectacular dependencies.
+- Added a sample-project smoke script that installs the wheel into a temporary
+  Django project and exercises docs, OpenAPI, app discovery, and a model
+  changelist.
 - Added a release checklist with alpha, beta, and stable readiness criteria.
