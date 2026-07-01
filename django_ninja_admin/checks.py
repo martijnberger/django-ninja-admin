@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from django.core import checks
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
@@ -34,6 +36,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_display_options(model_admin))
     errors.extend(_check_sortable_by(model_admin))
     errors.extend(_check_form_class(model_admin))
+    errors.extend(_check_formfield_overrides(model_admin))
     errors.extend(_check_form_layout(model_admin))
     errors.extend(_check_prepopulated_fields(model_admin))
     errors.extend(_check_list_filters(model_admin))
@@ -224,6 +227,43 @@ def _check_form_class(model_admin):
             )
         ]
     return []
+
+
+def _check_formfield_overrides(model_admin):
+    value = getattr(model_admin, "formfield_overrides", {}) or {}
+    if not isinstance(value, Mapping):
+        return [_error(model_admin.__class__, "The value of 'formfield_overrides' must be a mapping.", "E060")]
+
+    errors = []
+    for field_class, overrides in value.items():
+        if not isinstance(field_class, type) or not issubclass(field_class, models.Field):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    "Keys in 'formfield_overrides' must be Django model field classes.",
+                    "E061",
+                )
+            )
+            continue
+        if not isinstance(overrides, Mapping):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The override for '{field_class.__name__}' must be a mapping of formfield keyword arguments.",
+                    "E062",
+                )
+            )
+            continue
+        for key in overrides:
+            if not isinstance(key, str):
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"Keys in the override for '{field_class.__name__}' must be strings.",
+                        "E063",
+                    )
+                )
+    return errors
 
 
 def _editable_form_field_names(model_admin):

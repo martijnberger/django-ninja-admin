@@ -480,6 +480,53 @@ def test_admin_checks_validate_form_class(db):
     assert wrong_model_ids == {"django_ninja_admin.E059"}
 
 
+def test_admin_checks_validate_formfield_overrides(db):
+    class ValidOverrideProductAdmin(ModelAdmin):
+        formfield_overrides = {models.TextField: {"help_text": "Custom help."}}
+
+    class BadShapeProductAdmin(ModelAdmin):
+        formfield_overrides = [(models.TextField, {"help_text": "Custom help."})]
+
+    class BadFieldKeyProductAdmin(ModelAdmin):
+        formfield_overrides = {"description": {"help_text": "Custom help."}}
+
+    class BadOverrideValueProductAdmin(ModelAdmin):
+        formfield_overrides = {models.TextField: ["help_text", "Custom help."]}
+
+    class BadOverrideKeyProductAdmin(ModelAdmin):
+        formfield_overrides = {models.TextField: {123: "Custom help."}}
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidOverrideProductAdmin)
+    bad_shape_site = NinjaAdminSite(include_auth=False)
+    bad_shape_site.register(Product, BadShapeProductAdmin)
+    bad_field_key_site = NinjaAdminSite(include_auth=False)
+    bad_field_key_site.register(Product, BadFieldKeyProductAdmin)
+    bad_override_value_site = NinjaAdminSite(include_auth=False)
+    bad_override_value_site.register(Product, BadOverrideValueProductAdmin)
+    bad_override_key_site = NinjaAdminSite(include_auth=False)
+    bad_override_key_site.register(Product, BadOverrideKeyProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
+    bad_field_key_ids = {error.id for error in bad_field_key_site.get_model_admin(Product).check()}
+    bad_override_value_ids = {error.id for error in bad_override_value_site.get_model_admin(Product).check()}
+    bad_override_key_ids = {error.id for error in bad_override_key_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint(
+        {
+            "django_ninja_admin.E060",
+            "django_ninja_admin.E061",
+            "django_ninja_admin.E062",
+            "django_ninja_admin.E063",
+        }
+    )
+    assert bad_shape_ids == {"django_ninja_admin.E060"}
+    assert bad_field_key_ids == {"django_ninja_admin.E061"}
+    assert bad_override_value_ids == {"django_ninja_admin.E062"}
+    assert bad_override_key_ids == {"django_ninja_admin.E063"}
+
+
 def test_admin_checks_reject_reverse_relation_widget_fields(db):
     class ReviewAdmin(ModelAdmin):
         search_fields = ("note",)

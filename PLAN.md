@@ -108,6 +108,7 @@ Completed or mostly complete:
 - `prepopulated_fields` system checks now validate dict shape, target field suitability, source-field list shape, and source-field existence.
 - `sortable_by` system checks now validate sequence shape, item types, and membership in `list_display` before changelist sorting runs.
 - Custom `form_class` system checks now validate `ModelForm` inheritance and catch forms whose declared `Meta.model` does not match the registered admin model.
+- `formfield_overrides` system checks now validate field-class keys, mapping-shaped overrides, and string formfield keyword names.
 - Admin system checks now reject direct many-to-many fields in `list_display`, preventing raw related managers from leaking into changelist cells.
 - Admin system checks now reject `list_editable` fields removed from generated forms by `fields`, `fieldsets`, or `exclude`, preventing silent bulk-update no-ops.
 - Admin system checks now validate `list_select_related` types and relation paths before changelist runtime.

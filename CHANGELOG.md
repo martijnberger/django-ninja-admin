@@ -21,6 +21,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `list_display`.
 - Added admin system checks for invalid custom `form_class` values and
   mismatched `ModelForm` models.
+- Added admin system checks for invalid `formfield_overrides` mappings.
 - Added changelist row URL and object-permission metadata for detail, change
   form, delete, and view-on-site frontend actions.
 - Added image-specific response schema and form metadata for Django
