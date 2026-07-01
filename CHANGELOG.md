@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added deterministic default OpenAPI operation IDs for custom site/model
+  admin routes that do not provide an explicit `operation_id`, including
+  multi-method custom routes.
+
 ## 0.1.15 - 2026-07-02
 
 - Allowed `response_add` and `response_change` hooks to return Ninja `Status`

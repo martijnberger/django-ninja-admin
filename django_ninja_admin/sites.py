@@ -1,4 +1,5 @@
 import json
+import re
 from functools import wraps
 from typing import Any
 from weakref import WeakSet
@@ -66,6 +67,7 @@ from django_ninja_admin.utils.quote import quote, unquote
 
 all_sites = WeakSet()
 DEFAULT_AUTH = object()
+CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
 
 
 class NinjaAdminSite:
@@ -309,18 +311,39 @@ class NinjaAdminSite:
                 raise ImproperlyConfigured("Custom admin get_urls() entries must be AdminRoute instances.")
             path = self._join_route_path(prefix, route.path)
             view_func = self._custom_route_view_func(route.view_func)
-            router.add_api_operation(
-                path,
-                list(route.methods),
-                view_func,
-                auth=route.auth,
-                response=route.response,
-                operation_id=route.operation_id,
-                summary=route.summary,
-                description=route.description,
-                tags=route.tags or default_tags,
-                include_in_schema=route.include_in_schema,
-            )
+            tags = route.tags or default_tags
+            if route.operation_id is not None:
+                router.add_api_operation(
+                    path,
+                    list(route.methods),
+                    view_func,
+                    auth=route.auth,
+                    response=route.response,
+                    operation_id=route.operation_id,
+                    summary=route.summary,
+                    description=route.description,
+                    tags=tags,
+                    include_in_schema=route.include_in_schema,
+                )
+                continue
+            for method in route.methods:
+                router.add_api_operation(
+                    path,
+                    [method],
+                    view_func,
+                    auth=route.auth,
+                    response=route.response,
+                    operation_id=self._custom_route_operation_id(path, method),
+                    summary=route.summary,
+                    description=route.description,
+                    tags=tags,
+                    include_in_schema=route.include_in_schema,
+                )
+
+    def _custom_route_operation_id(self, path, method):
+        normalized_path = path.strip("/").replace("{", "").replace("}", "") or "root"
+        normalized_path = CUSTOM_OPERATION_ID_CHARS_RE.sub("_", normalized_path).strip("_").lower()
+        return f"custom_{method.lower()}_{normalized_path}"
 
     def _custom_route_view_func(self, view_func):
         if not (hasattr(view_func, "__self__") and hasattr(view_func, "__func__")):

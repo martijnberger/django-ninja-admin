@@ -2144,6 +2144,14 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert decorated_site_response.status_code == 200
     assert decorated_site_response.json() == {"site": "decorated"}
 
+    auto_site_response = admin_client.get("/custom-admin/auto-status")
+    assert auto_site_response.status_code == 200
+    assert auto_site_response.json() == {"site": "auto"}
+
+    decorated_auto_site_response = admin_client.get("/custom-admin/decorated-auto-status")
+    assert decorated_auto_site_response.status_code == 200
+    assert decorated_auto_site_response.json() == {"site": "decorated-auto"}
+
     token_primary = Client().get("/custom-admin/token-status", headers={"X-Primary-Token": "primary"})
     token_secondary = Client().get("/custom-admin/token-status", headers={"X-Secondary-Token": "secondary"})
     token_denied = Client().get("/custom-admin/token-status")
@@ -2169,6 +2177,17 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert decorated_stats.status_code == 200
     assert decorated_stats.json() == {"count": 2}
 
+    auto_stats = admin_client.get("/custom-admin/testapp/product/auto-stats")
+    assert auto_stats.status_code == 200
+    assert auto_stats.json() == {"count": 2}
+
+    auto_multi_get = admin_client.get("/custom-admin/testapp/product/auto-multi-stats")
+    auto_multi_post = admin_client.post("/custom-admin/testapp/product/auto-multi-stats")
+    assert auto_multi_get.status_code == 200
+    assert auto_multi_get.json() == {"count": 2}
+    assert auto_multi_post.status_code == 200
+    assert auto_multi_post.json() == {"count": 2}
+
     denied = staff_client().get("/custom-admin/testapp/product/stats")
     assert denied.status_code == 403
 
@@ -2178,10 +2197,15 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     schema = admin_client.get("/custom-admin/openapi.json").json()
     status_operation = schema["paths"]["/custom-admin/status"]["get"]
     decorated_status_operation = schema["paths"]["/custom-admin/decorated-status"]["get"]
+    auto_status_operation = schema["paths"]["/custom-admin/auto-status"]["get"]
+    decorated_auto_status_operation = schema["paths"]["/custom-admin/decorated-auto-status"]["get"]
     token_operation = schema["paths"]["/custom-admin/token-status"]["get"]
     public_operation = schema["paths"]["/custom-admin/public-status"]["get"]
     stats_operation = schema["paths"]["/custom-admin/testapp/product/stats"]["get"]
     decorated_stats_operation = schema["paths"]["/custom-admin/testapp/product/decorated-stats"]["get"]
+    auto_stats_operation = schema["paths"]["/custom-admin/testapp/product/auto-stats"]["get"]
+    auto_multi_get_operation = schema["paths"]["/custom-admin/testapp/product/auto-multi-stats"]["get"]
+    auto_multi_post_operation = schema["paths"]["/custom-admin/testapp/product/auto-multi-stats"]["post"]
     assert status_operation["operationId"] == "custom_site_status"
     assert status_operation["tags"] == ["custom.site"]
     assert status_operation["security"] == [{"SessionAuthIsStaff": []}]
@@ -2189,6 +2213,12 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert decorated_status_operation["operationId"] == "custom_site_decorated_status"
     assert decorated_status_operation["tags"] == ["custom.site"]
     assert _response_schema_ref(decorated_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert auto_status_operation["operationId"] == "custom_get_auto_status"
+    assert auto_status_operation["tags"] == ["custom.site"]
+    assert _response_schema_ref(auto_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert decorated_auto_status_operation["operationId"] == "custom_get_decorated_auto_status"
+    assert decorated_auto_status_operation["tags"] == ["custom.site"]
+    assert _response_schema_ref(decorated_auto_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
     assert token_operation["operationId"] == "custom_token_status"
     assert token_operation["tags"] == ["custom.auth"]
     assert {"PrimaryTokenAuth": []} in token_operation["security"]
@@ -2206,6 +2236,15 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert decorated_stats_operation["operationId"] == "custom_product_decorated_stats"
     assert decorated_stats_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(decorated_stats_operation, "200") == "#/components/schemas/ProductStatsResponse"
+    assert auto_stats_operation["operationId"] == "custom_get_testapp_product_auto_stats"
+    assert auto_stats_operation["tags"] == ["custom.product"]
+    assert _response_schema_ref(auto_stats_operation, "200") == "#/components/schemas/ProductStatsResponse"
+    assert auto_multi_get_operation["operationId"] == "custom_get_testapp_product_auto_multi_stats"
+    assert auto_multi_get_operation["tags"] == ["custom.product"]
+    assert _response_schema_ref(auto_multi_get_operation, "200") == "#/components/schemas/ProductStatsResponse"
+    assert auto_multi_post_operation["operationId"] == "custom_post_testapp_product_auto_multi_stats"
+    assert auto_multi_post_operation["tags"] == ["custom.product"]
+    assert _response_schema_ref(auto_multi_post_operation, "200") == "#/components/schemas/ProductStatsResponse"
     assert "/custom-admin/hidden-status" not in schema["paths"]
 
 

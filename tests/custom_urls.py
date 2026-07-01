@@ -46,6 +46,9 @@ class CustomProductAdmin(ModelAdmin):
     def stats(self, request):
         return {"count": Product.objects.count()}
 
+    def auto_stats(self, request):
+        return {"count": Product.objects.count()}
+
     def get_urls(self):
         @self.route(
             "/decorated-stats",
@@ -67,6 +70,19 @@ class CustomProductAdmin(ModelAdmin):
                 description="Custom product statistics.",
                 tags=["custom.product"],
             ),
+            self.route(
+                "/auto-stats",
+                self.admin_view(self.auto_stats),
+                response=ProductStatsResponse,
+                tags=["custom.product"],
+            ),
+            self.route(
+                "/auto-multi-stats",
+                self.admin_view(self.auto_stats),
+                methods=("GET", "POST"),
+                response=ProductStatsResponse,
+                tags=["custom.product"],
+            ),
             decorated_stats,
         ]
 
@@ -84,6 +100,9 @@ class CategorySlugLinkAdmin(ModelAdmin):
 class CustomAdminSite(NinjaAdminSite):
     def status(self, request):
         return {"site": "ok"}
+
+    def auto_status(self, request):
+        return {"site": "auto"}
 
     def token_status(self, request):
         return {"auth": request.auth}
@@ -105,12 +124,27 @@ class CustomAdminSite(NinjaAdminSite):
         def decorated_status(request):
             return {"site": "decorated"}
 
+        @self.route(
+            "/decorated-auto-status",
+            response=SiteStatusResponse,
+            tags=["custom.site"],
+        )
+        @self.admin_view
+        def decorated_auto_status(request):
+            return {"site": "decorated-auto"}
+
         return [
             self.route(
                 "/status",
                 self.admin_view(self.status),
                 response=SiteStatusResponse,
                 operation_id="custom_site_status",
+                tags=["custom.site"],
+            ),
+            self.route(
+                "/auto-status",
+                self.admin_view(self.auto_status),
+                response=SiteStatusResponse,
                 tags=["custom.site"],
             ),
             self.route(
@@ -137,6 +171,7 @@ class CustomAdminSite(NinjaAdminSite):
                 include_in_schema=False,
             ),
             decorated_status,
+            decorated_auto_status,
         ]
 
 
