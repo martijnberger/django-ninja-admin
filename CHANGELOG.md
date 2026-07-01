@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   form metadata, and mutation validation through the inline `ModelForm`.
 - Added `get_changeform_initial_data()` support so add-form descriptions expose
   querystring and hook-provided initial values, including relation labels.
+- Added richer Pydantic request schema types for JSON, UUID, and generic IP
+  address form fields.
 
 ## 0.1.9 - 2026-07-01
 

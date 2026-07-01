@@ -2,6 +2,7 @@ import copy
 from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Any
+from uuid import UUID
 
 from django import forms
 from django.contrib.auth import get_permission_codename
@@ -12,7 +13,7 @@ from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from ninja import Schema
-from pydantic import ConfigDict, create_model
+from pydantic import ConfigDict, IPvAnyAddress, create_model
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
@@ -258,6 +259,12 @@ class BaseAdmin:
             return date
         if isinstance(field, forms.TimeField):
             return time
+        if isinstance(field, forms.UUIDField):
+            return UUID
+        if isinstance(field, forms.GenericIPAddressField):
+            return IPvAnyAddress
+        if isinstance(field, forms.JSONField):
+            return Any
         if isinstance(field, forms.MultipleChoiceField):
             return list[str]
         if isinstance(field, forms.FileField):

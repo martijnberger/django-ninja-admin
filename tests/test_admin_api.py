@@ -18,6 +18,7 @@ from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.test.utils import CaptureQueriesContext, isolate_apps
 from django.utils import timezone
 from ninja.security import SessionAuthIsStaff
+from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin import (
     VERTICAL,
@@ -2217,6 +2218,66 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
     product = Product.objects.get(pk=created_id)
     assert product.category == allowed_category
     assert product.description == "Hooked description"
+
+
+def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
+    class RichPayloadProductForm(forms.ModelForm):
+        metadata = forms.JSONField(required=False)
+        tracking_id = forms.UUIDField(required=False)
+        host = forms.GenericIPAddressField(required=False)
+
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status")
+
+    class RichPayloadProductAdmin(ModelAdmin):
+        form_class = RichPayloadProductForm
+
+    model_admin = RichPayloadProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    schema = model_admin.get_write_schema(None)
+    tracking_id = "550e8400-e29b-41d4-a716-446655440000"
+
+    validated = schema.model_validate(
+        {
+            "name": "Typed payload",
+            "category": sample.category_id,
+            "price": "9.00",
+            "stock_status": "in_stock",
+            "metadata": {"nested": [1, "two"]},
+            "tracking_id": tracking_id,
+            "host": "2001:db8::1",
+        }
+    ).model_dump(mode="json")
+
+    assert validated["metadata"] == {"nested": [1, "two"]}
+    assert validated["tracking_id"] == tracking_id
+    assert validated["host"] == "2001:db8::1"
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": "not-a-uuid",
+                "host": "2001:db8::1",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "not-an-ip",
+            }
+        )
 
 
 def test_changelist_facets_and_date_hierarchy(admin_client, sample):

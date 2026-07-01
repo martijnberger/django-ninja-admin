@@ -108,6 +108,8 @@ Completed or mostly complete:
   Pydantic inline payload schemas, and ModelForm validation.
 - Add-form descriptions now honor `get_changeform_initial_data()` and
   querystring-derived initial values, including selected relation labels.
+- Pydantic request schemas now use native JSON, UUID, and generic IP address
+  types for matching Django form fields.
 - Form descriptions now support callable `readonly_fields`, exposing stable string names, labels, values, and display metadata while accepting them in admin checks.
 - Permission hardening for actions, autocomplete, view-on-site, and object-level bulk updates.
 - Ninja-native `ChangeList` foundation for validated lookup params, shared action/changelist querysets, search, ordering, pagination, show-all behavior, `list_select_related`, `date_hierarchy`, and facet counts.
