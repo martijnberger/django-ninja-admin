@@ -202,6 +202,19 @@ class BaseAdmin:
             self._mutation_payload_schema_cache = cache
         return cache[cache_key]
 
+    def get_bulk_response_schema(self, request=None):
+        cache = getattr(self, "_mutation_response_schema_cache", {})
+        output_schema = self.get_output_schema(request)
+        cache_key = ("bulk-response", output_schema)
+        if cache_key not in cache:
+            cache[cache_key] = create_model(
+                f"{self.model.__name__}AdminBulkResponse",
+                __base__=Schema,
+                data=(dict[str, output_schema], ...),
+            )
+            self._mutation_response_schema_cache = cache
+        return cache[cache_key]
+
     def get_pydantic_type_for_form_field(self, field):
         if isinstance(field, ModelMultipleChoiceField):
             return list[int | str]

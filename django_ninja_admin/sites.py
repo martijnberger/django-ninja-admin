@@ -617,6 +617,7 @@ class NinjaAdminSite:
         update_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=True)
         replace_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=False)
         bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
+        bulk_response_schema = model_admin.get_bulk_response_schema(None)
         action_payload_schema = model_admin.get_action_payload_schema(None)
         action_response_schema = model_admin.get_action_response_schema(None)
         create_file_fields = site._file_form_field_names(model_admin, change=False)
@@ -694,7 +695,7 @@ class NinjaAdminSite:
 
         @router.put(
             f"{prefix}/bulk",
-            response={200: dict[str, Any], 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
+            response={200: bulk_response_schema, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
             tags=tags,
             operation_id=f"{app_label}_{model_name}_bulk_update",
         )
@@ -1562,7 +1563,7 @@ class NinjaAdminSite:
                     model_admin.save_related(request, form, {}, change=True)
                     model_admin.log_change(request, updated, model_admin.construct_change_message(request, form))
                     obj = updated
-                results[idx] = model_admin.serialize_object(obj, request)
+                results[str(idx)] = model_admin.serialize_object(obj, request)
         return {"data": results}
 
 

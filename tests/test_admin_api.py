@@ -103,6 +103,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "ProductAdminPartialUpdatePayload",
         "ProductAdminBulkPayload",
         "ProductAdminBulkRow",
+        "ProductAdminBulkResponse",
         "ProductAdminInlinePayload",
         "ProductImageInlineOperations",
         "ProductImageInlineAddRow",
@@ -123,6 +124,14 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert any(option.get("type") == "number" for option in price_options)
     assert components["ProductAdminBulkRow"]["required"] == ["pk"]
     assert components["ProductAdminBulkRow"]["additionalProperties"] is False
+    bulk_response_schema = components["ProductAdminBulkResponse"]
+    assert bulk_response_schema["required"] == ["data"]
+    assert bulk_response_schema["properties"]["data"]["additionalProperties"] == {
+        "$ref": "#/components/schemas/ProductAdminOut"
+    }
+    assert schema_body["paths"]["/admin-api/testapp/product/bulk"]["put"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"] == {"$ref": "#/components/schemas/ProductAdminBulkResponse"}
     assert "testapp.productimage" in components["ProductAdminInlinePayload"]["properties"]
     assert components["ProductAdminInlinePayload"]["additionalProperties"] is False
     assert components["ProductImageInlineOperations"]["additionalProperties"] is False

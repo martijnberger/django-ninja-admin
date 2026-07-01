@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added per-model Pydantic response schemas for bulk list-editable updates so
+  OpenAPI advertises row-indexed `ProductAdminOut`-style response objects.
+
 ## 0.1.3 - 2026-07-01
 
 - Narrowed supported versions to Python 3.12+ and Django 5.0+, including
