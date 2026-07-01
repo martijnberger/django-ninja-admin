@@ -207,6 +207,37 @@ def _model_field_metadata(field):
     return attrs
 
 
+def _widget_metadata(widget):
+    metadata = {
+        "widget": widget.__class__.__name__,
+        "widget_attrs": _jsonish_value(getattr(widget, "attrs", {})),
+        "is_hidden": widget.is_hidden,
+        "multiple": getattr(widget, "allow_multiple_selected", False),
+    }
+    if getattr(widget, "template_name", None):
+        metadata["template_name"] = widget.template_name
+    if getattr(widget, "use_fieldset", False):
+        metadata["use_fieldset"] = True
+    if getattr(widget, "input_type", None):
+        metadata["input_type"] = widget.input_type
+    if getattr(widget, "format", None):
+        metadata["format"] = widget.format
+    if hasattr(widget, "needs_multipart_form"):
+        metadata["needs_multipart_form"] = widget.needs_multipart_form
+    return metadata
+
+
+def _multiwidget_metadata(widget):
+    widgets = getattr(widget, "widgets", None)
+    if not widgets:
+        return []
+    widget_names = getattr(widget, "widgets_names", [f"_{index}" for index, _item in enumerate(widgets)])
+    return [
+        {"name_suffix": name_suffix, **_widget_metadata(subwidget)}
+        for name_suffix, subwidget in zip(widget_names, widgets, strict=False)
+    ]
+
+
 def field_description(name, field, *, read_only=False, current_value=None, model_field=None):
     widget = field.widget
     attrs = {
@@ -215,17 +246,13 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         "help_text": str(field.help_text or ""),
         "read_only": read_only,
         "disabled": getattr(field, "disabled", False),
-        "widget": widget.__class__.__name__,
-        "widget_attrs": _jsonish_value(getattr(widget, "attrs", {})),
-        "is_hidden": widget.is_hidden,
-        "multiple": getattr(widget, "allow_multiple_selected", False),
         "validators": _validator_names(field),
+        **_widget_metadata(widget),
     }
     attrs.update(_model_field_metadata(model_field))
-    if getattr(widget, "input_type", None):
-        attrs["input_type"] = widget.input_type
-    if hasattr(widget, "needs_multipart_form"):
-        attrs["needs_multipart_form"] = widget.needs_multipart_form
+    subwidgets = _multiwidget_metadata(widget)
+    if subwidgets:
+        attrs["subwidgets"] = subwidgets
     if getattr(field, "choices", None):
         attrs["choices"] = [(_choice_value(value), str(label)) for value, label in field.choices]
     if getattr(field, "initial", None) not in (None, ""):

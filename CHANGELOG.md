@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   querystring and hook-provided initial values, including relation labels.
 - Added richer Pydantic request schema types for JSON, UUID, and generic IP
   address form fields.
+- Added form widget template, fieldset, format, and `MultiWidget` subwidget
+  metadata to form field descriptions.
 
 ## 0.1.9 - 2026-07-01
 

@@ -2952,6 +2952,64 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
     }
 
 
+def test_form_description_exposes_multiwidget_metadata(db):
+    user = get_user_model().objects.create_user("multiwidget-admin", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product/form")
+    request.user = user
+
+    class SplitWidgetProductForm(forms.ModelForm):
+        release_window = forms.SplitDateTimeField(
+            required=False,
+            widget=forms.SplitDateTimeWidget(
+                date_attrs={"data-part": "date"},
+                time_attrs={"data-part": "time"},
+                date_format="%Y-%m-%d",
+                time_format="%H:%M",
+            ),
+        )
+
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status")
+
+    class SplitWidgetProductAdmin(ModelAdmin):
+        form_class = SplitWidgetProductForm
+
+    model_admin = SplitWidgetProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    form = model_admin.get_form_description(request)["form"]
+    field = next(item for item in form["fields"] if item["name"] == "release_window")
+    attrs = field["attrs"]
+
+    assert attrs["widget"] == "SplitDateTimeWidget"
+    assert attrs["template_name"] == "django/forms/widgets/splitdatetime.html"
+    assert attrs["use_fieldset"] is True
+    assert attrs["subwidgets"] == [
+        {
+            "name_suffix": "_0",
+            "widget": "DateInput",
+            "widget_attrs": {"data-part": "date"},
+            "is_hidden": False,
+            "multiple": False,
+            "template_name": "django/forms/widgets/date.html",
+            "input_type": "text",
+            "format": "%Y-%m-%d",
+            "needs_multipart_form": False,
+        },
+        {
+            "name_suffix": "_1",
+            "widget": "TimeInput",
+            "widget_attrs": {"data-part": "time"},
+            "is_hidden": False,
+            "multiple": False,
+            "template_name": "django/forms/widgets/time.html",
+            "input_type": "text",
+            "format": "%H:%M",
+            "needs_multipart_form": False,
+        },
+    ]
+
+
 @pytest.mark.parametrize(
     ("limit_choices_to", "expected"),
     [
