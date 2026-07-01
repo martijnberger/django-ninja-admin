@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   added or disabled after initial API construction.
 - Exposed changelist action placement and selection-counter metadata in the
   typed response config for frontend parity with Django admin action controls.
+- Added admin system checks for invalid `list_select_related` types and
+  relation paths.
 
 ## 0.1.2 - 2026-07-01
 

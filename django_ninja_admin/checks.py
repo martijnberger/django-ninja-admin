@@ -30,6 +30,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_sequence_option(model_admin, "raw_id_fields"))
     errors.extend(_check_sequence_option(model_admin, "filter_horizontal"))
     errors.extend(_check_sequence_option(model_admin, "filter_vertical"))
+    errors.extend(_check_list_select_related(model_admin))
     errors.extend(_check_display_options(model_admin))
     errors.extend(_check_form_layout(model_admin))
     errors.extend(_check_list_filters(model_admin))
@@ -261,6 +262,63 @@ def _check_list_filters(model_admin):
             continue
         errors.extend(_check_field_path(model_admin, field_path, "list_filter", "E019"))
     return errors
+
+
+def _check_list_select_related(model_admin):
+    value = getattr(model_admin, "list_select_related", False)
+    if value is True or value is False:
+        return []
+    if not isinstance(value, (list, tuple)):
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'list_select_related' must be a boolean, list, or tuple.",
+                "E045",
+            )
+        ]
+
+    errors = []
+    for item in value:
+        if not isinstance(item, str):
+            errors.append(_error(model_admin.__class__, "Items in 'list_select_related' must be strings.", "E045"))
+            continue
+        errors.extend(_check_select_related_path(model_admin, item))
+    return errors
+
+
+def _check_select_related_path(model_admin, field_path):
+    opts = model_admin.model._meta
+    for path_part in field_path.split("__"):
+        try:
+            field = opts.get_field(path_part)
+        except FieldDoesNotExist:
+            return [
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_select_related' refers to unknown field '{field_path}'.",
+                    "E046",
+                )
+            ]
+        if not getattr(field, "is_relation", False) or getattr(field, "many_to_many", False):
+            return [
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_select_related' refers to '{field_path}', "
+                    "which is not a select_related relation.",
+                    "E046",
+                )
+            ]
+        related_model = getattr(field, "related_model", None)
+        if related_model is None:
+            return [
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_select_related' refers to unknown relation '{field_path}'.",
+                    "E046",
+                )
+            ]
+        opts = related_model._meta
+    return []
 
 
 def _check_lookup_fields(

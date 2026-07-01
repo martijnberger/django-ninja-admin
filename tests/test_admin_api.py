@@ -354,6 +354,33 @@ def test_admin_checks_report_form_widget_option_conflicts(db):
     } <= error_ids
 
 
+def test_admin_checks_validate_list_select_related(db):
+    class ValidProductAdmin(ModelAdmin):
+        list_select_related = ("category",)
+
+    class BadTypeProductAdmin(ModelAdmin):
+        list_select_related = "category"
+
+    class BadPathProductAdmin(ModelAdmin):
+        list_select_related = ("tags", "price", "missing")
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidProductAdmin)
+    valid_errors = valid_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E045", "django_ninja_admin.E046"})
+
+    bad_type_site = NinjaAdminSite(include_auth=False)
+    bad_type_site.register(Product, BadTypeProductAdmin)
+    bad_type_errors = bad_type_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    assert {error.id for error in bad_type_errors} == {"django_ninja_admin.E045"}
+
+    bad_path_site = NinjaAdminSite(include_auth=False)
+    bad_path_site.register(Product, BadPathProductAdmin)
+    bad_path_errors = bad_path_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    assert {error.id for error in bad_path_errors} == {"django_ninja_admin.E046"}
+    assert len(bad_path_errors) == 3
+
+
 def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db):
     class MissingFromFieldsProductAdmin(ModelAdmin):
         list_display = ("name", "stock_status")
