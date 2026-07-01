@@ -24,6 +24,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   site and model admin routes.
 - Added changelist page-result and row-range metadata for paginated,
   show-all, and empty result sets.
+- Added changelist first/previous/next/last page query-string metadata that
+  preserves active filters, search, page size, and ordering.
 
 ## 0.1.15 - 2026-07-02
 

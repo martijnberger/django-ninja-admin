@@ -1645,6 +1645,10 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert paginated_body["config"]["page_result_count"] == 1
     assert paginated_body["config"]["result_start_index"] == 2
     assert paginated_body["config"]["result_end_index"] == 2
+    assert paginated_body["config"]["first_page_query_string"] == "?pp=1"
+    assert paginated_body["config"]["previous_page_query_string"] == "?pp=1"
+    assert paginated_body["config"]["next_page_query_string"] == "?pp=1&p=3"
+    assert paginated_body["config"]["last_page_query_string"] == "?pp=1&p=3"
 
     generated_query_strings = []
     for filter_description in paginated_body["config"]["filters"]:
@@ -1662,11 +1666,21 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
         params = QueryDict(query_string.removeprefix("?"))
         assert "page" not in params
         assert "p" not in params
+    for query_string in (
+        paginated_body["config"]["first_page_query_string"],
+        paginated_body["config"]["previous_page_query_string"],
+        paginated_body["config"]["next_page_query_string"],
+        paginated_body["config"]["last_page_query_string"],
+    ):
+        params = QueryDict(query_string.removeprefix("?"))
+        assert "page" not in params
 
     prefixed_filter = admin_client.get("/admin-api/testapp/product?price__gte=1&pp=1&page=2&o=3")
     assert prefixed_filter.status_code == 200
     prefixed_body = prefixed_filter.json()
     prefixed_price_column = next(column for column in prefixed_body["columns"] if column["field"] == "price")
+    assert prefixed_body["config"]["previous_page_query_string"] == "?price__gte=1&pp=1&o=3"
+    assert prefixed_body["config"]["next_page_query_string"] == "?price__gte=1&pp=1&o=3&p=3"
     assert prefixed_price_column["descending_query_string"] == "?price__gte=1&pp=1&o=-3"
     assert prefixed_price_column["remove_sorting_query_string"] == "?price__gte=1&pp=1"
     prefixed_stock_filter = next(
@@ -1694,6 +1708,10 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert show_all_body["config"]["can_show_all"] is True
     assert show_all_body["config"]["pagination_required"] is False
     assert show_all_body["config"]["page_range"] == []
+    assert show_all_body["config"]["first_page_query_string"] is None
+    assert show_all_body["config"]["previous_page_query_string"] is None
+    assert show_all_body["config"]["next_page_query_string"] is None
+    assert show_all_body["config"]["last_page_query_string"] is None
     assert show_all_body["config"]["list_display_links"] == ["name"]
     assert show_all_body["config"]["actions_on_top"] is True
     assert show_all_body["config"]["actions_on_bottom"] is False

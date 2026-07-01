@@ -215,6 +215,10 @@ class ChangelistConfig(Schema):
     multi_page: bool = False
     pagination_required: bool = False
     page_range: list[int | str] = []
+    first_page_query_string: str | None = None
+    previous_page_query_string: str | None = None
+    next_page_query_string: str | None = None
+    last_page_query_string: str | None = None
     show_all: bool = False
     can_show_all: bool = False
     show_facets: bool = False

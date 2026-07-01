@@ -430,6 +430,32 @@ class ChangeList:
             return []
         return list(self.paginator.get_elided_page_range(self.page_num))
 
+    def page_query_string(self, page_number):
+        if page_number <= 1:
+            return self.get_query_string(remove=PAGE_PARAMS | {"all"})
+        return self.get_query_string({"p": page_number}, remove={"all"})
+
+    def pagination_query_strings(self):
+        if not self.pagination_required:
+            return {
+                "first_page_query_string": None,
+                "previous_page_query_string": None,
+                "next_page_query_string": None,
+                "last_page_query_string": None,
+            }
+        return {
+            "first_page_query_string": self.page_query_string(1) if self.page.has_previous() else None,
+            "previous_page_query_string": (
+                self.page_query_string(self.page.previous_page_number()) if self.page.has_previous() else None
+            ),
+            "next_page_query_string": (
+                self.page_query_string(self.page.next_page_number()) if self.page.has_next() else None
+            ),
+            "last_page_query_string": (
+                self.page_query_string(self.paginator.num_pages) if self.page.has_next() else None
+            ),
+        }
+
     def get_query_string(self, new_params=None, remove=None):
         new_params = new_params or {}
         remove = PAGE_PARAMS | set(remove or [])
