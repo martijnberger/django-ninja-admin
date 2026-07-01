@@ -1,7 +1,20 @@
 from django.urls import path
+from ninja import Schema
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite
 from tests.testapp.models import Category, Product
+
+
+class ProductStatsResponse(Schema):
+    count: int
+
+
+class SiteStatusResponse(Schema):
+    site: str
+
+
+class PublicStatusResponse(Schema):
+    public: str
 
 
 class CustomProductAdmin(ModelAdmin):
@@ -15,7 +28,7 @@ class CustomProductAdmin(ModelAdmin):
             self.route(
                 "/stats",
                 self.admin_view(self.stats),
-                response=dict[str, int],
+                response=ProductStatsResponse,
                 operation_id="custom_product_stats",
                 summary="Product stats",
                 description="Custom product statistics.",
@@ -39,14 +52,14 @@ class CustomAdminSite(NinjaAdminSite):
             self.route(
                 "/status",
                 self.admin_view(self.status),
-                response=dict[str, str],
+                response=SiteStatusResponse,
                 operation_id="custom_site_status",
                 tags=["custom.site"],
             ),
             self.route(
                 "/public-status",
                 self.public_status,
-                response=dict[str, str],
+                response=PublicStatusResponse,
                 operation_id="custom_public_status",
                 tags=["custom.public"],
                 auth=None,

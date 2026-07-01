@@ -425,13 +425,16 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     stats_operation = schema["paths"]["/custom-admin/testapp/product/stats"]["get"]
     assert status_operation["operationId"] == "custom_site_status"
     assert status_operation["tags"] == ["custom.site"]
+    assert _response_schema_ref(status_operation, "200") == "#/components/schemas/SiteStatusResponse"
     assert public_operation["operationId"] == "custom_public_status"
     assert public_operation["tags"] == ["custom.public"]
     assert "security" not in public_operation
+    assert _response_schema_ref(public_operation, "200") == "#/components/schemas/PublicStatusResponse"
     assert stats_operation["operationId"] == "custom_product_stats"
     assert stats_operation["tags"] == ["custom.product"]
     assert stats_operation["summary"] == "Product stats"
     assert stats_operation["description"] == "Custom product statistics."
+    assert _response_schema_ref(stats_operation, "200") == "#/components/schemas/ProductStatsResponse"
     assert "/custom-admin/hidden-status" not in schema["paths"]
 
 

@@ -25,6 +25,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   fields using the same endpoint contract.
 - Added mounted-route coverage for callable `view_on_site` hooks returning
   absolute and protocol-relative external URLs.
+- Added custom admin route coverage for named Ninja response schemas alongside
+  route-level auth overrides.
 - Added support for passing pytest selectors through `just test` and
   `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full
