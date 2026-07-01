@@ -434,6 +434,55 @@ def test_admin_checks_reject_reverse_relation_widget_fields(db):
     assert {error.id for error in raw_id_errors} == {"django_ninja_admin.E025"}
 
 
+def test_admin_checks_validate_prepopulated_fields(db):
+    class ValidPrepopulatedProductAdmin(ModelAdmin):
+        prepopulated_fields = {"description": ("name",)}
+
+    class BadShapeProductAdmin(ModelAdmin):
+        prepopulated_fields = [("description", ("name",))]
+
+    class BadTargetProductAdmin(ModelAdmin):
+        prepopulated_fields = {
+            123: ("name",),
+            "missing": ("name",),
+            "category": ("name",),
+            "created_at": ("name",),
+        }
+
+    class BadSourceProductAdmin(ModelAdmin):
+        prepopulated_fields = {
+            "description": "name",
+            "name": (123, "missing"),
+        }
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidPrepopulatedProductAdmin)
+    bad_shape_site = NinjaAdminSite(include_auth=False)
+    bad_shape_site.register(Product, BadShapeProductAdmin)
+    bad_target_site = NinjaAdminSite(include_auth=False)
+    bad_target_site.register(Product, BadTargetProductAdmin)
+    bad_source_site = NinjaAdminSite(include_auth=False)
+    bad_source_site.register(Product, BadSourceProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
+    bad_target_ids = {error.id for error in bad_target_site.get_model_admin(Product).check()}
+    bad_source_ids = {error.id for error in bad_source_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint(
+        {
+            "django_ninja_admin.E050",
+            "django_ninja_admin.E051",
+            "django_ninja_admin.E052",
+            "django_ninja_admin.E053",
+            "django_ninja_admin.E054",
+        }
+    )
+    assert bad_shape_ids == {"django_ninja_admin.E050"}
+    assert bad_target_ids == {"django_ninja_admin.E051", "django_ninja_admin.E052"}
+    assert bad_source_ids == {"django_ninja_admin.E053", "django_ninja_admin.E054"}
+
+
 def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db):
     class MissingFromFieldsProductAdmin(ModelAdmin):
         list_display = ("name", "stock_status")

@@ -33,6 +33,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_list_select_related(model_admin))
     errors.extend(_check_display_options(model_admin))
     errors.extend(_check_form_layout(model_admin))
+    errors.extend(_check_prepopulated_fields(model_admin))
     errors.extend(_check_list_filters(model_admin))
     errors.extend(_check_radio_fields(model_admin))
     errors.extend(_check_form_option_conflicts(model_admin))
@@ -258,6 +259,66 @@ def _check_form_option_items(model_admin, option, *, require_model_field=False):
             errors.append(
                 _error(model_admin.__class__, f"The value of '{option}' refers to unknown field '{item}'.", "E049")
             )
+    return errors
+
+
+def _check_prepopulated_fields(model_admin):
+    value = getattr(model_admin, "prepopulated_fields", {}) or {}
+    if not isinstance(value, dict):
+        return [_error(model_admin.__class__, "The value of 'prepopulated_fields' must be a dictionary.", "E050")]
+
+    errors = []
+    for field_name, source_fields in value.items():
+        if not isinstance(field_name, str):
+            errors.append(_error(model_admin.__class__, "Keys in 'prepopulated_fields' must be field names.", "E051"))
+            continue
+        field = _model_field(model_admin, field_name)
+        if field is None:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'prepopulated_fields' refers to unknown field '{field_name}'.",
+                    "E051",
+                )
+            )
+            continue
+        if isinstance(field, (models.DateTimeField, models.ForeignKey, models.ManyToManyField)):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'prepopulated_fields' refers to '{field_name}', which cannot be prepopulated.",
+                    "E052",
+                )
+            )
+
+        if not isinstance(source_fields, (list, tuple)):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'prepopulated_fields[{field_name!r}]' must be a list or tuple.",
+                    "E053",
+                )
+            )
+            continue
+        for source_field in source_fields:
+            if not isinstance(source_field, str):
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"Items in 'prepopulated_fields[{field_name!r}]' must be strings.",
+                        "E054",
+                    )
+                )
+                continue
+            if _model_field(model_admin, source_field) is None:
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The value of 'prepopulated_fields[{field_name!r}]' refers to unknown field "
+                        f"'{source_field}'.",
+                        "E054",
+                    )
+                )
     return errors
 
 

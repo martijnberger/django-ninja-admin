@@ -105,6 +105,7 @@ Completed or mostly complete:
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
 - Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, radio fields, widget-option conflicts, date hierarchy, actions, and inlines.
 - Relation widget checks now reject reverse relations in `autocomplete_fields` and `raw_id_fields`, preventing frontend metadata for unsupported admin widget targets.
+- `prepopulated_fields` system checks now validate dict shape, target field suitability, source-field list shape, and source-field existence.
 - Admin system checks now reject direct many-to-many fields in `list_display`, preventing raw related managers from leaking into changelist cells.
 - Admin system checks now reject `list_editable` fields removed from generated forms by `fields`, `fieldsets`, or `exclude`, preventing silent bulk-update no-ops.
 - Admin system checks now validate `list_select_related` types and relation paths before changelist runtime.
