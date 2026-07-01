@@ -46,6 +46,17 @@ def _validate_email_value(value):
     return value
 
 
+def _choice_membership_validator(choices):
+    allowed = tuple(choices)
+
+    def validate(value):
+        if value not in allowed:
+            raise ValueError(f"Input should be one of: {', '.join(str(choice) for choice in allowed)}")
+        return value
+
+    return validate
+
+
 class BaseAdmin:
     autocomplete_fields = ()
     raw_id_fields = ()
@@ -359,6 +370,13 @@ class BaseAdmin:
     def get_pydantic_type_for_typed_choice_field(self, field, *, choices_as_literal=True):
         coerce = getattr(field, "coerce", None)
         if coerce in {str, int, float, bool, Decimal, UUID}:
+            values = self.get_pydantic_choice_values(field.choices, coerce=coerce)
+            if choices_as_literal and values:
+                return Annotated[
+                    coerce,
+                    AfterValidator(_choice_membership_validator(values)),
+                    Field(json_schema_extra={"enum": list(values)}),
+                ]
             return coerce
         return self.get_pydantic_type_for_choices(field.choices, as_literal=choices_as_literal)
 
@@ -383,18 +401,29 @@ class BaseAdmin:
         return str
 
     def get_pydantic_literal_for_choices(self, choices):
+        values = self.get_pydantic_choice_values(choices)
+        if not values:
+            return None
+        return Literal.__getitem__(tuple(values))
+
+    def get_pydantic_choice_values(self, choices, *, coerce=None):
         values = []
         seen = set()
         for value in self.iter_choice_values(choices):
-            if value in ("", None) or not isinstance(value, str | int | bool):
+            if value in ("", None):
+                continue
+            if coerce is not None:
+                try:
+                    value = coerce(value)
+                except (TypeError, ValueError):
+                    continue
+            if not isinstance(value, str | int | bool):
                 continue
             key = (type(value), value)
             if key not in seen:
                 seen.add(key)
                 values.append(value)
-        if not values:
-            return None
-        return Literal.__getitem__(tuple(values))
+        return tuple(values)
 
     def iter_choice_values(self, choices):
         for value, label in choices:

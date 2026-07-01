@@ -2592,6 +2592,8 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
     assert json_schema["status_override"]["anyOf"][0]["enum"] == ["draft", "live"]
     assert json_schema["numeric_flags"]["anyOf"][0]["items"]["enum"] == [1, 2]
     assert json_schema["mixed_flags"]["anyOf"][0]["items"]["enum"] == [1, "two"]
+    assert json_schema["typed_number"]["anyOf"][0]["enum"] == [1, 2]
+    assert json_schema["typed_numbers"]["anyOf"][0]["items"]["enum"] == [1, 2]
 
     assert validated.status_override == "draft"
     assert validated.numeric_flags == [1, 2]
@@ -2611,6 +2613,36 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "mixed_flags": [1, "two"],
                 "typed_number": "1",
                 "typed_numbers": ["1", "2"],
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed choices",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "status_override": "draft",
+                "numeric_flags": [1, 2],
+                "mixed_flags": [1, "two"],
+                "typed_number": "3",
+                "typed_numbers": ["1", "2"],
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed choices",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "status_override": "draft",
+                "numeric_flags": [1, 2],
+                "mixed_flags": [1, "two"],
+                "typed_number": "1",
+                "typed_numbers": ["3"],
             }
         )
 

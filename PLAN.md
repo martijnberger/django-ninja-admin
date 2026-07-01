@@ -118,6 +118,8 @@ Completed or mostly complete:
   enum-style `Literal` schemas where possible.
 - Pydantic request schemas now infer Django typed choice fields from concrete
   `coerce` hooks such as `int`.
+- Pydantic request schemas now validate typed choice fields against declared
+  values after coercion while preserving OpenAPI enum metadata.
 - Pydantic request schemas now validate Django email form fields using Django's
   email validator.
 - Pydantic request schemas now use native URL validation for Django URL form
