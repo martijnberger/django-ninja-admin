@@ -90,6 +90,43 @@ def _relation_metadata(field):
     return attrs
 
 
+def _relation_selected_options(field, current_value):
+    if not isinstance(field, (ModelChoiceField, ModelMultipleChoiceField)):
+        return []
+    if current_value in (None, ""):
+        return []
+    values = current_value if isinstance(field, ModelMultipleChoiceField) else [current_value]
+    values = list(values)
+    if not values:
+        return []
+
+    model = field.queryset.model
+    lookup_field = field.to_field_name or model._meta.pk.name
+    objects_by_value = {}
+    unresolved = []
+    for value in values:
+        if hasattr(value, "_meta"):
+            option_value = getattr(value, lookup_field)
+            objects_by_value[str(option_value)] = value
+        else:
+            unresolved.append(value)
+    if unresolved:
+        objects_by_value.update(
+            {
+                str(getattr(obj, lookup_field)): obj
+                for obj in field.queryset.filter(**{f"{lookup_field}__in": unresolved})
+            }
+        )
+
+    selected = []
+    for value in values:
+        option_value = getattr(value, lookup_field) if hasattr(value, "_meta") else value
+        obj = objects_by_value.get(str(option_value))
+        if obj is not None:
+            selected.append({"id": str(option_value), "text": str(obj)})
+    return selected
+
+
 def _validator_names(field):
     return [validator.__class__.__name__ for validator in getattr(field, "validators", ())]
 
@@ -180,6 +217,9 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         if current_file is not None:
             attrs["current_file"] = current_file
     attrs.update(_relation_metadata(field))
+    selected_options = _relation_selected_options(field, current_value)
+    if selected_options:
+        attrs["selected_options"] = selected_options
     return {"name": name, "type": field.__class__.__name__, "attrs": attrs}
 
 

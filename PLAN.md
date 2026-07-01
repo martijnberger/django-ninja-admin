@@ -156,6 +156,7 @@ Completed or mostly complete:
 - Many-to-many fields now have Pydantic write schemas, JSON-safe change-form values, form relation metadata, output serialization, and create/update persistence coverage.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Relation form field descriptions now include structured related-model identity and autocomplete request parameters for frontend clients.
+- Relation form field descriptions now include selected option labels for existing foreign-key and many-to-many values.
 - Readonly form descriptions now expose display labels, values, boolean flags, and empty-value fallbacks for admin methods and model properties.
 - Custom `form_class` and generated-form `formfield_*` customization hooks are covered through mounted Ninja routes for write-schema generation, custom widget attributes, Django form validation, and mutation persistence.
 - History responses now include Django-style human-readable change-message text for parent and inline add/change/delete operations.

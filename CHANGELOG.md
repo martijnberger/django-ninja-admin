@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added selected relation labels to form field metadata for foreign-key and
+  many-to-many fields.
 - Added Django-style human-readable change-message text to history responses,
   including inline add/change/delete wording.
 - Added OpenAPI response maps for built-in site-route error responses.

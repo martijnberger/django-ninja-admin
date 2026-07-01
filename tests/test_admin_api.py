@@ -2377,7 +2377,14 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     change_form = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
     assert change_form.status_code == 200
     change_fields_by_name = {field["name"]: field for field in change_form.json()["form"]["fields"]}
+    assert change_fields_by_name["category"]["attrs"]["selected_options"] == [
+        {"id": str(sample.category_id), "text": "Cameras"}
+    ]
     assert set(change_fields_by_name["tags"]["attrs"]["value"]) == set(sample.tags.values_list("pk", flat=True))
+    assert {option["text"] for option in change_fields_by_name["tags"]["attrs"]["selected_options"]} == {
+        "Featured",
+        "Compact",
+    }
     assert change_fields_by_name["manual"]["attrs"]["current_file"] == {
         "name": "manuals/alpha.pdf",
         "url": "/media/manuals/alpha.pdf",
@@ -2589,10 +2596,10 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     assert bad_page.status_code == 404
 
 
-def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db):
+def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, sample):
     user = get_user_model().objects.create_user("widget-admin", password="pw", is_staff=True)
     user.user_permissions.set(Permission.objects.all())
-    request = RequestFactory().get("/admin-api/testapp/product/form")
+    request = RequestFactory().get(f"/admin-api/testapp/product/{sample.pk}/form")
     request.user = user
 
     class RawWidgetProductAdmin(ModelAdmin):
@@ -2600,11 +2607,18 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db):
         filter_vertical = ("tags",)
 
     model_admin = RawWidgetProductAdmin(Product, NinjaAdminSite(include_auth=False))
-    form = model_admin.get_form_description(request)["form"]
+    form = model_admin.get_form_description(request, sample)["form"]
     fields_by_name = {field["name"]: field for field in form["fields"]}
 
     assert fields_by_name["category"]["attrs"]["admin_widget"] == "raw_id"
+    assert fields_by_name["category"]["attrs"]["selected_options"] == [
+        {"id": str(sample.category_id), "text": "Cameras"}
+    ]
     assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_vertical"
+    assert {option["text"] for option in fields_by_name["tags"]["attrs"]["selected_options"]} == {
+        "Featured",
+        "Compact",
+    }
 
 
 def test_file_field_can_be_cleared_with_null_payload(admin_client, sample):
