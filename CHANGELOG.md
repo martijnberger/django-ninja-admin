@@ -27,6 +27,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   absolute and protocol-relative external URLs.
 - Added custom admin route coverage for named Ninja response schemas alongside
   route-level auth overrides.
+- Added an admin check that rejects direct many-to-many fields in
+  `list_display`, matching Django-admin semantics.
 - Added support for passing pytest selectors through `just test` and
   `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full

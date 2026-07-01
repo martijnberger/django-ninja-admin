@@ -101,6 +101,16 @@ def _check_display_options(model_admin):
                     "E004",
                 )
             )
+            continue
+        field = _model_field(model_admin, item)
+        if field is not None and getattr(field, "many_to_many", False):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_display' refers to '{item}', which is a many-to-many field.",
+                    "E043",
+                )
+            )
 
     list_display_links = model_admin.get_list_display_links(None, list_display)
     if list_display_links is not None:

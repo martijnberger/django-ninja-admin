@@ -228,7 +228,7 @@ def test_admin_checks_report_invalid_model_admin_configuration(db):
         model = Category
 
     class BadProductAdmin(ModelAdmin):
-        list_display = ("missing", "name")
+        list_display = ("missing", "name", "tags")
         list_display_links = ("name",)
         list_editable = ("name",)
         list_filter = ("missing_filter",)
@@ -254,6 +254,7 @@ def test_admin_checks_report_invalid_model_admin_configuration(db):
         "django_ninja_admin.E029",
         "django_ninja_admin.E030",
         "django_ninja_admin.E033",
+        "django_ninja_admin.E043",
     } <= error_ids
 
 
