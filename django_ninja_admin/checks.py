@@ -896,4 +896,12 @@ def _check_inlines(model_admin):
             _get_foreign_key(model_admin.model, inline_model, fk_name=getattr(inline_class, "fk_name", None))
         except ValueError as exc:
             errors.append(_error(inline_class, str(exc), "E033"))
+        if not isinstance(getattr(inline_class, "extra", None), int):
+            errors.append(_error(inline_class, "The value of 'extra' must be an integer.", "E073"))
+        min_num = getattr(inline_class, "min_num", None)
+        if min_num is not None and not isinstance(min_num, int):
+            errors.append(_error(inline_class, "The value of 'min_num' must be an integer or None.", "E074"))
+        max_num = getattr(inline_class, "max_num", None)
+        if max_num is not None and not isinstance(max_num, int):
+            errors.append(_error(inline_class, "The value of 'max_num' must be an integer or None.", "E075"))
     return errors

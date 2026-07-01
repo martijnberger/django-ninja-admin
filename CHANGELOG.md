@@ -25,6 +25,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   two-item `(field, FieldListFilter)` declarations.
 - Allowed Django ORM expression ordering entries in admin system checks while
   still validating `F("field")` references when possible.
+- Added inline admin system checks for invalid `extra`, `min_num`, and
+  `max_num` option types.
 
 ## 0.1.4 - 2026-07-01
 

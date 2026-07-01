@@ -425,6 +425,37 @@ def test_admin_checks_report_invalid_model_admin_configuration(db):
     } <= error_ids
 
 
+def test_admin_checks_validate_inline_count_options(db):
+    class ValidInline(TabularInline):
+        model = ProductImage
+        extra = 2
+        min_num = None
+        max_num = 5
+
+    class BadInline(TabularInline):
+        model = ProductImage
+        extra = "2"
+        min_num = "0"
+        max_num = "5"
+
+    class ValidInlineProductAdmin(ModelAdmin):
+        inlines = [ValidInline]
+
+    class BadInlineProductAdmin(ModelAdmin):
+        inlines = [BadInline]
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidInlineProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadInlineProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint({"django_ninja_admin.E073", "django_ninja_admin.E074", "django_ninja_admin.E075"})
+    assert bad_ids == {"django_ninja_admin.E073", "django_ninja_admin.E074", "django_ninja_admin.E075"}
+
+
 def test_admin_checks_reject_reverse_relation_in_list_display(db):
     class ReverseRelationProductAdmin(ModelAdmin):
         list_display = ("name", "reviews")
