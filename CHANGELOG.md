@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   guard.
 - Added admin system checks for non-integer `list_per_page` and
   `list_max_show_all` values.
+- Added admin system checks for invalid `save_as`, `save_on_top`, and
+  `view_on_site` option types.
 
 ## 0.1.4 - 2026-07-01
 

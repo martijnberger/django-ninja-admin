@@ -35,6 +35,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_sequence_option(model_admin, "filter_vertical"))
     errors.extend(_check_list_select_related(model_admin))
     errors.extend(_check_pagination_options(model_admin))
+    errors.extend(_check_boolean_options(model_admin))
     errors.extend(_check_display_options(model_admin))
     errors.extend(_check_sortable_by(model_admin))
     errors.extend(_check_form_class(model_admin))
@@ -231,6 +232,24 @@ def _check_pagination_options(model_admin):
         errors.append(_error(model_admin.__class__, "The value of 'list_per_page' must be an integer.", "E067"))
     if not isinstance(getattr(model_admin, "list_max_show_all", None), int):
         errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must be an integer.", "E068"))
+    return errors
+
+
+def _check_boolean_options(model_admin):
+    errors = []
+    if not isinstance(getattr(model_admin, "save_as", False), bool):
+        errors.append(_error(model_admin.__class__, "The value of 'save_as' must be a boolean.", "E069"))
+    if not isinstance(getattr(model_admin, "save_on_top", False), bool):
+        errors.append(_error(model_admin.__class__, "The value of 'save_on_top' must be a boolean.", "E070"))
+    view_on_site = getattr(model_admin, "view_on_site", True)
+    if not callable(view_on_site) and not isinstance(view_on_site, bool):
+        errors.append(
+            _error(
+                model_admin.__class__,
+                "The value of 'view_on_site' must be a callable or a boolean.",
+                "E071",
+            )
+        )
     return errors
 
 

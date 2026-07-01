@@ -559,6 +559,29 @@ def test_admin_checks_validate_pagination_options(db):
     assert bad_ids == {"django_ninja_admin.E067", "django_ninja_admin.E068"}
 
 
+def test_admin_checks_validate_boolean_options(db):
+    class CallableViewOnSiteProductAdmin(ModelAdmin):
+        save_as = True
+        save_on_top = False
+        view_on_site = staticmethod(lambda obj: f"/products/{obj.pk}/")
+
+    class BadBooleanOptionsProductAdmin(ModelAdmin):
+        save_as = "yes"
+        save_on_top = "no"
+        view_on_site = "/products/{pk}/"
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, CallableViewOnSiteProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadBooleanOptionsProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint({"django_ninja_admin.E069", "django_ninja_admin.E070", "django_ninja_admin.E071"})
+    assert bad_ids == {"django_ninja_admin.E069", "django_ninja_admin.E070", "django_ninja_admin.E071"}
+
+
 def test_admin_checks_validate_form_class(db):
     class ProductAdminForm(forms.ModelForm):
         class Meta:
