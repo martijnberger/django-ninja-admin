@@ -1063,15 +1063,6 @@ class NinjaAdminSite:
         add_rows = list(operations.get("add", []))
         change_rows = list(operations.get("change", []))
         delete_values = [str(pk) for pk in operations.get("delete", [])]
-        duplicate_delete_pks = sorted({pk for pk in delete_values if delete_values.count(pk) > 1})
-        if duplicate_delete_pks:
-            raise AdminValidationError(
-                {
-                    f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": {
-                        "delete": [{"message": "Duplicate inline delete pk.", "param": "pk"}]
-                    }
-                }
-            )
         delete_pks = set(delete_values)
         if add_rows and not inline.has_add_permission(request, obj):
             raise PermissionDenied
@@ -1092,9 +1083,20 @@ class NinjaAdminSite:
         editable_fields = set(formset_class.form.base_fields)
         pk_name = inline.model._meta.pk.name
         inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
-        self._validate_inline_row_fields(inline_id, add_rows, editable_fields, operation="add")
-        self._validate_inline_row_fields(
-            inline_id,
+        inline_errors = {}
+        duplicate_delete_pks = {pk for pk in delete_values if delete_values.count(pk) > 1}
+        for index, pk in enumerate(delete_values):
+            if pk in duplicate_delete_pks:
+                self._add_inline_row_error(
+                    inline_errors,
+                    "delete",
+                    index,
+                    message="Duplicate inline delete pk.",
+                    param="pk",
+                )
+        self._collect_inline_row_field_errors(inline_errors, add_rows, editable_fields, operation="add")
+        self._collect_inline_row_field_errors(
+            inline_errors,
             change_rows,
             editable_fields | {"pk", "id", pk_name},
             operation="change",
@@ -1104,38 +1106,61 @@ class NinjaAdminSite:
         existing_instances = list(queryset)
         existing_by_pk = {str(instance.pk): instance for instance in existing_instances}
         changes_by_pk = {}
-        for row in change_rows:
+        seen_change_pks = set()
+        for index, row in enumerate(change_rows):
             pk = row.get("pk") or row.get(inline.model._meta.pk.name)
+            has_row_error = False
             if pk is None:
-                raise AdminValidationError({inline_id: {"change": [{"message": "Missing pk.", "param": "pk"}]}})
+                self._add_inline_row_error(
+                    inline_errors,
+                    "change",
+                    index,
+                    message="Missing pk.",
+                    param="pk",
+                )
+                continue
             pk = str(pk)
-            if pk in changes_by_pk:
-                raise AdminValidationError(
-                    {inline_id: {"change": [{"message": "Duplicate inline change pk.", "param": "pk"}]}}
+            if pk in seen_change_pks:
+                self._add_inline_row_error(
+                    inline_errors,
+                    "change",
+                    index,
+                    message="Duplicate inline change pk.",
+                    param="pk",
                 )
+                has_row_error = True
+            seen_change_pks.add(pk)
             if pk not in existing_by_pk:
-                raise AdminValidationError(
-                    {inline_id: {"change": [{"message": "Unknown inline object.", "param": "pk"}]}}
+                self._add_inline_row_error(
+                    inline_errors,
+                    "change",
+                    index,
+                    message="Unknown inline object.",
+                    param="pk",
                 )
-            if pk in delete_pks:
-                raise AdminValidationError(
-                    {
-                        inline_id: {
-                            "change": [
-                                {
-                                    "message": "Inline object cannot be changed and deleted in the same request.",
-                                    "param": "pk",
-                                }
-                            ]
-                        }
-                    }
+                has_row_error = True
+            if pk in delete_pks and pk in existing_by_pk:
+                self._add_inline_row_error(
+                    inline_errors,
+                    "change",
+                    index,
+                    message="Inline object cannot be changed and deleted in the same request.",
+                    param="pk",
                 )
-            changes_by_pk[pk] = row
-        for pk in delete_pks:
+                has_row_error = True
+            if not has_row_error:
+                changes_by_pk[pk] = row
+        for index, pk in enumerate(delete_values):
             if pk not in existing_by_pk:
-                raise AdminValidationError(
-                    {inline_id: {"delete": [{"message": "Unknown inline object.", "param": "pk"}]}}
+                self._add_inline_row_error(
+                    inline_errors,
+                    "delete",
+                    index,
+                    message="Unknown inline object.",
+                    param="pk",
                 )
+        if inline_errors:
+            raise AdminValidationError({inline_id: inline_errors})
 
         formset_data = self._inline_formset_data(
             request,
@@ -1167,23 +1192,21 @@ class NinjaAdminSite:
             "_delete_objects": deleted_objects,
         }
 
-    def _validate_inline_row_fields(self, inline_id, rows, allowed_fields, *, operation):
-        for row in rows:
+    def _collect_inline_row_field_errors(self, inline_errors, rows, allowed_fields, *, operation):
+        for index, row in enumerate(rows):
             unknown_fields = sorted(set(row) - allowed_fields)
-            if unknown_fields:
-                raise AdminValidationError(
-                    {
-                        inline_id: {
-                            operation: [
-                                {
-                                    "message": "Unknown or readonly inline field.",
-                                    "param": field,
-                                }
-                                for field in unknown_fields
-                            ]
-                        }
-                    }
+            for field in unknown_fields:
+                self._add_inline_row_error(
+                    inline_errors,
+                    operation,
+                    index,
+                    message="Unknown or readonly inline field.",
+                    param=field,
                 )
+
+    def _add_inline_row_error(self, inline_errors, operation, index, *, message, param):
+        row_errors = inline_errors.setdefault(operation, {}).setdefault(index, [])
+        row_errors.append({"message": message, "param": param})
 
     def _inline_field_label(self, inline, field_name):
         try:

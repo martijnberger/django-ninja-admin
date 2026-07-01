@@ -1274,7 +1274,7 @@ def test_inline_mutations_reject_unknown_and_readonly_fields(admin_client, sampl
         content_type="application/json",
     )
     assert readonly_response.status_code == 400
-    assert readonly_response.json()["errors"]["testapp.productimage"]["change"] == [
+    assert readonly_response.json()["errors"]["testapp.productimage"]["change"]["0"] == [
         {"message": "Unknown or readonly inline field.", "param": "title"}
     ]
     image.refresh_from_db()
@@ -1413,6 +1413,49 @@ def test_inline_mutation_rejects_duplicate_and_conflicting_rows(admin_client, sa
     assert ProductImage.objects.filter(pk=image.pk).exists()
 
 
+def test_inline_mutation_aggregates_server_side_row_errors(admin_client, sample):
+    image = sample.images.get()
+    other = ProductImage.objects.create(product=sample, title="Back")
+
+    response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={
+            "data": {"price": "99.00"},
+            "inlines": {
+                "testapp.productimage": {
+                    "change": [
+                        {"pk": image.pk, "title": "Profile"},
+                        {"pk": other.pk, "title": "Back A"},
+                        {"pk": other.pk, "title": "Back B"},
+                        {"pk": 999999, "title": "Ghost"},
+                    ],
+                    "delete": [image.pk, 999999],
+                }
+            },
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    errors = response.json()["errors"]["testapp.productimage"]
+    assert errors["change"]["0"] == [
+        {
+            "message": "Inline object cannot be changed and deleted in the same request.",
+            "param": "pk",
+        }
+    ]
+    assert errors["change"]["2"] == [{"message": "Duplicate inline change pk.", "param": "pk"}]
+    assert errors["change"]["3"] == [{"message": "Unknown inline object.", "param": "pk"}]
+    assert errors["delete"]["1"] == [{"message": "Unknown inline object.", "param": "pk"}]
+    image.refresh_from_db()
+    other.refresh_from_db()
+    sample.refresh_from_db()
+    assert image.title == "Front"
+    assert other.title == "Back"
+    assert str(sample.price) == "12.50"
+    assert not LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).exists()
+
+
 def test_inline_mutation_rolls_back_parent_save_for_unknown_inline_object(admin_client, sample):
     response = admin_client.patch(
         f"/admin-api/testapp/product/{sample.pk}",
@@ -1424,7 +1467,7 @@ def test_inline_mutation_rolls_back_parent_save_for_unknown_inline_object(admin_
     )
 
     assert response.status_code == 400
-    assert response.json()["errors"]["testapp.productimage"]["change"][0]["message"] == "Unknown inline object."
+    assert response.json()["errors"]["testapp.productimage"]["change"]["0"][0]["message"] == "Unknown inline object."
     sample.refresh_from_db()
     assert str(sample.price) == "12.50"
     assert not LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).exists()

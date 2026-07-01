@@ -75,7 +75,7 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | Create/update/delete routes | partial | CRUD/history tests plus mounted save/delete/response hook and bad `_to_field` tests | More response hook edge cases |
-| Inline add/change/delete | partial | Formset implementation, typed inline schemas, max/delete/duplicate/conflict/unknown-object/rollback/permission/unknown-key/unknown-field/readonly-field tests | Per-row errors and deeper upstream formset edge cases |
+| Inline add/change/delete | partial | Formset implementation, typed inline schemas, row-indexed server errors, max/delete/duplicate/conflict/unknown-object/rollback/permission/unknown-key/unknown-field/readonly-field tests | Deeper upstream formset edge cases |
 | Bulk list-editable update | partial | Strict row schema, duplicate-PK rejection, unchanged-row skip, row-indexed server errors, and all-rows-before-write tests | Full changelist formset semantics |
 | Default delete action/actions | partial | `delete_selected`, custom return, empty-selection, select-across, and protected response tests | Additional permission edge coverage |
 | Protected delete | partial | Direct and action delete return protected/perms details | Exact Django protected-object presentation |

@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Improved inline mutations so server-side add/change/delete validation returns
+  row-indexed errors across the payload before any parent or inline writes occur.
+
 ## 0.1.1 - 2026-07-01
 
 - Added Pydantic-backed custom action input/response schemas through
