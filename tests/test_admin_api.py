@@ -268,6 +268,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert _response_schema_ref(paths["/admin-api/history"]["get"], "200") == "#/components/schemas/HistoryResponse"
     assert components["HistoryItem"]["properties"]["change_message_text"]["type"] == "string"
     assert components["HistoryItem"]["properties"]["model"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    assert components["HistoryItem"]["properties"]["detail_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert _response_schema_ref(paths["/admin-api/autocomplete"]["get"], "200") == (
         "#/components/schemas/AutocompleteResponse"
     )
@@ -4000,6 +4001,10 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
         )
         for item in global_history.json()["results"]
     } == {("testapp.product", "testapp", "product", "product", "products")}
+    assert {
+        (item["detail_url"], item["change_form_url"])
+        for item in global_history.json()["results"]
+    } == {(f"/admin-api/testapp/product/{sample.pk}", f"/admin-api/testapp/product/{sample.pk}/form")}
 
     paged = client.get("/admin-api/history", {"per_page": 1, "page": 2})
     assert paged.status_code == 200

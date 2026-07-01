@@ -288,6 +288,8 @@ class HistoryItem(Schema):
     model_verbose_name_plural: str | None = None
     object_id: str | None = None
     object_repr: str
+    detail_url: str | None = None
+    change_form_url: str | None = None
     action_flag: int
     change_message: Any
     change_message_text: str

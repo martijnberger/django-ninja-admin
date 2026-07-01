@@ -437,6 +437,24 @@ class NinjaAdminSite:
             ).values()
         ]
 
+    def _history_object_links(self, request, item, model_class, opts):
+        if model_class is None or opts is None or not item.object_id:
+            return {"detail_url": None, "change_form_url": None}
+        try:
+            model_admin = self.get_model_admin(model_class)
+            obj = model_admin.get_object(request, item.object_id)
+        except (LookupError, NotRegistered, ValidationError, ValueError):
+            return {"detail_url": None, "change_form_url": None}
+        if obj is None:
+            return {"detail_url": None, "change_form_url": None}
+        if not model_admin.has_view_permission(request, obj) and not model_admin.has_change_permission(request, obj):
+            return {"detail_url": None, "change_form_url": None}
+        admin_base_path = request.path.rstrip("/")
+        if admin_base_path.endswith("/history"):
+            admin_base_path = admin_base_path[: -len("/history")]
+        object_url = f"{admin_base_path}/{opts.app_label}/{opts.model_name}/{quote(item.object_id)}"
+        return {"detail_url": object_url, "change_form_url": f"{object_url}/form"}
+
     def _register_site_routes(self, router):
         site = self
 
@@ -524,6 +542,7 @@ class NinjaAdminSite:
                 content_type = item.content_type
                 model_class = content_type.model_class() if content_type is not None else None
                 opts = model_class._meta if model_class is not None else None
+                object_links = site._history_object_links(request, item, model_class, opts)
                 results.append(
                     {
                         "id": item.pk,
@@ -537,6 +556,7 @@ class NinjaAdminSite:
                         "model_verbose_name_plural": str(opts.verbose_name_plural) if opts is not None else None,
                         "object_id": item.object_id,
                         "object_repr": item.object_repr,
+                        **object_links,
                         "action_flag": item.action_flag,
                         "change_message": message,
                         "change_message_text": item.get_change_message(),
