@@ -38,6 +38,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_pagination_options(model_admin))
     errors.extend(_check_boolean_options(model_admin))
     errors.extend(_check_show_facets(model_admin))
+    errors.extend(_check_text_options(model_admin))
     errors.extend(_check_display_options(model_admin))
     errors.extend(_check_sortable_by(model_admin))
     errors.extend(_check_form_class(model_admin))
@@ -283,6 +284,13 @@ def _check_show_facets(model_admin):
 
     if not isinstance(getattr(model_admin, "show_facets", ShowFacets.ALLOW), ShowFacets):
         return [_error(model_admin.__class__, "The value of 'show_facets' must be a ShowFacets value.", "E088")]
+    return []
+
+
+def _check_text_options(model_admin):
+    search_help_text = getattr(model_admin, "search_help_text", None)
+    if search_help_text is not None and not isinstance(search_help_text, str):
+        return [_error(model_admin.__class__, "The value of 'search_help_text' must be a string or None.", "E089")]
     return []
 
 

@@ -128,6 +128,7 @@ Completed or mostly complete:
 - Admin system checks now validate `save_as`, `save_on_top`, and `view_on_site` option types before form/config metadata generation.
 - Admin system checks now validate `save_as_continue`, action placement/counter flags, and `show_full_result_count` option types before form/changelist metadata generation.
 - `ShowFacets` is exported from the package root and admin system checks now reject malformed `show_facets` values before changelist facet metadata generation.
+- Admin system checks now validate `search_help_text` before changelist metadata serialization.
 - Custom `form_class` system checks now validate `ModelForm` inheritance and catch forms whose declared `Meta.model` does not match the registered admin model.
 - `formfield_overrides` system checks now validate field-class keys, mapping-shaped overrides, and string formfield keyword names.
 - Admin system checks now reject direct many-to-many and reverse relation fields in `list_display`, preventing raw related managers from leaking into changelist cells.

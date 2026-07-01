@@ -21,6 +21,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   changelist metadata.
 - Exported `ShowFacets` from the package root and added an admin system check
   for malformed `show_facets` values.
+- Added an admin system check for malformed `search_help_text` values before
+  changelist metadata serialization.
 
 ## 0.1.5 - 2026-07-01
 
