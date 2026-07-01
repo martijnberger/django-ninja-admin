@@ -302,6 +302,10 @@ class BaseAdmin:
                 constraints["min_length"] = field.min_length
             if getattr(field, "max_length", None) is not None:
                 constraints["max_length"] = field.max_length
+            regex = getattr(field, "regex", None)
+            pattern = getattr(regex, "pattern", regex)
+            if pattern:
+                constraints["pattern"] = pattern
         if isinstance(field, (forms.DecimalField, forms.FloatField, forms.IntegerField)):
             if getattr(field, "min_value", None) is not None:
                 constraints["ge"] = field.min_value

@@ -2243,6 +2243,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
             max_digits=4,
             decimal_places=2,
         )
+        product_code = forms.RegexField(required=False, regex=r"^[A-Z]{3}$", min_length=3, max_length=3)
 
         class Meta:
             model = Product
@@ -2268,6 +2269,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
             "bounded_name": "Camera",
             "bounded_count": 3,
             "bounded_price": "4.50",
+            "product_code": "ABC",
         }
     )
 
@@ -2278,6 +2280,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert validated.bounded_name == "Camera"
     assert validated.bounded_count == 3
     assert validated.bounded_price == Decimal("4.50")
+    assert validated.product_code == "ABC"
 
     json_schema = schema.model_json_schema()["properties"]
     assert json_schema["bounded_name"]["anyOf"][0]["maxLength"] == 8
@@ -2287,6 +2290,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert json_schema["bounded_price"]["anyOf"][0]["maximum"] == 9.99
     assert json_schema["bounded_price"]["anyOf"][0]["minimum"] == 1.0
     assert json_schema["bounded_price"]["anyOf"][1]["pattern"]
+    assert json_schema["product_code"]["anyOf"][0]["pattern"] == "^[A-Z]{3}$"
 
     with pytest.raises(PydanticValidationError):
         schema.model_validate(
@@ -2302,6 +2306,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_name": "Camera",
                 "bounded_count": 3,
                 "bounded_price": "4.50",
+                "product_code": "ABC",
             }
         )
 
@@ -2319,6 +2324,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_name": "Camera",
                 "bounded_count": 3,
                 "bounded_price": "4.50",
+                "product_code": "ABC",
             }
         )
 
@@ -2336,6 +2342,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_name": "Camera",
                 "bounded_count": 3,
                 "bounded_price": "4.50",
+                "product_code": "ABC",
             }
         )
 
@@ -2353,6 +2360,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_name": "No",
                 "bounded_count": 3,
                 "bounded_price": "4.50",
+                "product_code": "ABC",
             }
         )
 
@@ -2370,6 +2378,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_name": "Camera",
                 "bounded_count": 6,
                 "bounded_price": "4.50",
+                "product_code": "ABC",
             }
         )
 
@@ -2387,6 +2396,25 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "bounded_name": "Camera",
                 "bounded_count": 3,
                 "bounded_price": "123.45",
+                "product_code": "ABC",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "abc",
             }
         )
 

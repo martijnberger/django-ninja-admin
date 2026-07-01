@@ -116,8 +116,9 @@ Completed or mostly complete:
   fields from declared choice values.
 - Pydantic request schemas now infer Django typed choice fields from concrete
   `coerce` hooks such as `int`.
-- Pydantic request schemas now carry Django form string length, numeric bound,
-  and decimal precision constraints into generated validation/OpenAPI schemas.
+- Pydantic request schemas now carry Django form string length, regex pattern,
+  numeric bound, and decimal precision constraints into generated
+  validation/OpenAPI schemas.
 - Form descriptions now expose widget template, fieldset, format, and
   `MultiWidget` subwidget metadata for richer frontend rendering.
 - Raw-id form field descriptions now include structured lookup request metadata.
