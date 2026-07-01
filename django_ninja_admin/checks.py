@@ -4,6 +4,7 @@ from collections.abc import Mapping
 
 from django.core import checks
 from django.core.exceptions import FieldDoesNotExist
+from django.core.paginator import Paginator
 from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.expressions import Combinable
@@ -36,6 +37,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_sequence_option(model_admin, "filter_vertical"))
     errors.extend(_check_list_select_related(model_admin))
     errors.extend(_check_pagination_options(model_admin))
+    errors.extend(_check_paginator(model_admin))
     errors.extend(_check_boolean_options(model_admin))
     errors.extend(_check_show_facets(model_admin))
     errors.extend(_check_text_options(model_admin))
@@ -247,6 +249,13 @@ def _check_pagination_options(model_admin):
     if not isinstance(getattr(model_admin, "list_max_show_all", None), int):
         errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must be an integer.", "E068"))
     return errors
+
+
+def _check_paginator(model_admin):
+    paginator = getattr(model_admin, "paginator", None)
+    if not isinstance(paginator, type) or not issubclass(paginator, Paginator):
+        return [_error(model_admin.__class__, "The value of 'paginator' must inherit from Paginator.", "E090")]
+    return []
 
 
 def _check_boolean_options(model_admin):

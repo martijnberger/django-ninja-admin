@@ -23,6 +23,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   for malformed `show_facets` values.
 - Added an admin system check for malformed `search_help_text` values before
   changelist metadata serialization.
+- Added an admin system check for malformed custom `paginator` classes before
+  changelist pagination runs.
 
 ## 0.1.5 - 2026-07-01
 

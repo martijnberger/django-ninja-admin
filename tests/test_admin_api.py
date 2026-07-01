@@ -10,6 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.paginator import Paginator
 from django.db import connection, models
 from django.forms.models import BaseInlineFormSet
 from django.test import Client, RequestFactory, override_settings
@@ -689,6 +690,28 @@ def test_admin_checks_validate_pagination_options(db):
 
     assert valid_ids.isdisjoint({"django_ninja_admin.E067", "django_ninja_admin.E068"})
     assert bad_ids == {"django_ninja_admin.E067", "django_ninja_admin.E068"}
+
+
+def test_admin_checks_validate_paginator_class(db):
+    class CustomPaginator(Paginator):
+        pass
+
+    class ValidPaginatorProductAdmin(ModelAdmin):
+        paginator = CustomPaginator
+
+    class BadPaginatorProductAdmin(ModelAdmin):
+        paginator = object()
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidPaginatorProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadPaginatorProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+
+    assert "django_ninja_admin.E090" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E090"}
 
 
 def test_admin_checks_validate_boolean_options(db):

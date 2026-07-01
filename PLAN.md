@@ -125,6 +125,7 @@ Completed or mostly complete:
 - Admin system checks now reject `ordering` configurations that combine random ordering (`"?"`) with other fields.
 - Admin system checks now allow Django ORM ordering expressions and validate `F("field")` references when possible.
 - Admin system checks now validate `list_per_page` and `list_max_show_all` types before changelist pagination runs.
+- Admin system checks now validate custom `paginator` classes before changelist pagination runs.
 - Admin system checks now validate `save_as`, `save_on_top`, and `view_on_site` option types before form/config metadata generation.
 - Admin system checks now validate `save_as_continue`, action placement/counter flags, and `show_full_result_count` option types before form/changelist metadata generation.
 - `ShowFacets` is exported from the package root and admin system checks now reject malformed `show_facets` values before changelist facet metadata generation.
