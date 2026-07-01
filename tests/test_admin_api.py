@@ -724,19 +724,40 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     assert {choice["display"]: choice["count"] for choice in stock_filter["choices"]}["Out of Stock"] == 1
     assert {choice["display"]: choice["count"] for choice in stock_filter["choices"]}["In Stock"] == 2
     assert body["config"]["date_hierarchy"]["level"] == "year"
+    assert body["config"]["date_hierarchy"]["clear_query_string"] == "?_facets=1"
+    assert body["config"]["date_hierarchy"]["back_query_string"] is None
     assert [choice["value"] for choice in body["config"]["date_hierarchy"]["choices"]] == [2024, 2025]
 
     by_year = admin_client.get("/admin-api/testapp/product?created_at__year=2024&_facets=1")
     assert by_year.status_code == 200
     assert by_year.json()["config"]["result_count"] == 2
     assert by_year.json()["config"]["date_hierarchy"]["level"] == "month"
+    assert by_year.json()["config"]["date_hierarchy"]["clear_query_string"] == "?_facets=1"
+    assert by_year.json()["config"]["date_hierarchy"]["back_query_string"] == "?_facets=1"
     assert [choice["value"] for choice in by_year.json()["config"]["date_hierarchy"]["choices"]] == [1, 2]
 
     by_month = admin_client.get("/admin-api/testapp/product?created_at__year=2024&created_at__month=1")
     assert by_month.status_code == 200
     assert by_month.json()["config"]["result_count"] == 1
     assert by_month.json()["config"]["date_hierarchy"]["level"] == "day"
+    assert by_month.json()["config"]["date_hierarchy"]["clear_query_string"] == "?"
+    assert by_month.json()["config"]["date_hierarchy"]["back_query_string"] == "?created_at__year=2024"
     assert by_month.json()["config"]["date_hierarchy"]["choices"][0]["value"] == 15
+
+    by_day = admin_client.get(
+        "/admin-api/testapp/product?created_at__year=2024&created_at__month=1&created_at__day=15"
+    )
+    assert by_day.status_code == 200
+    assert by_day.json()["config"]["date_hierarchy"]["back_query_string"] == (
+        "?created_at__year=2024&created_at__month=1"
+    )
+    assert by_day.json()["config"]["date_hierarchy"]["choices"][0]["selected"] is True
+
+    bad_day = admin_client.get(
+        "/admin-api/testapp/product?created_at__year=2024&created_at__month=2&created_at__day=31"
+    )
+    assert bad_day.status_code == 400
+    assert bad_day.json()["errors"] == [{"message": "Invalid day.", "param": "created_at__day"}]
 
 
 def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):

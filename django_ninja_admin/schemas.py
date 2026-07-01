@@ -173,6 +173,8 @@ class DateHierarchyDescription(Schema):
     title: str
     level: str
     params: dict[str, int]
+    clear_query_string: str
+    back_query_string: str | None = None
     choices: list[DateHierarchyChoice]
 
 

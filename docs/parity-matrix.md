@@ -55,7 +55,7 @@ Statuses:
 | List display links/display metadata | partial | Changelist column metadata | URL/action metadata for frontend rendering |
 | List filters | partial | Package-owned filter classes and tests | Semantic edge-case comparison against Django/upstream |
 | Facets | partial | `_facets=1`, `ShowFacets` support, tests | Query-count optimization and exact Django facet semantics |
-| `date_hierarchy` | partial | Date hierarchy metadata/filter tests | Navigation state and timezone edge cases |
+| `date_hierarchy` | partial | Date hierarchy metadata/filter tests, clear/back navigation query strings, selected day state, and invalid date validation | Timezone edge cases and deeper Django navigation parity |
 
 ## Forms, Fields, And Serialization
 

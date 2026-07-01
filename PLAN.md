@@ -89,6 +89,7 @@ Completed or mostly complete:
 - Changelist search now applies distinct results for duplicate-prone many-to-many search paths.
 - Package-owned list filter classes for simple, field, choices, related, related-only, boolean, date, all-values, and empty-value filters, with Pydantic-safe filter metadata.
 - Expanded changelist metadata for display links, sortable columns, sort query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
+- Date hierarchy metadata now includes clear/back navigation query strings and validates impossible year/month/day combinations.
 - Initial N+1 hardening through automatic `select_related()` for direct relation fields in `list_display`.
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
 - Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, radio fields, widget-option conflicts, date hierarchy, actions, and inlines.
@@ -118,7 +119,7 @@ Completed or mostly complete:
 
 Known non-parity areas:
 
-- Changelist behavior is still not fully equivalent to upstream `ChangeList`; deeper query-string behavior, result rendering metadata, list-editable formset parity, and broader N+1 hardening still need work.
+- Changelist behavior is still not fully equivalent to upstream `ChangeList`; deeper query-string behavior, result rendering metadata, list-editable formset parity, timezone-sensitive date hierarchy behavior, and broader N+1 hardening still need work.
 - Filter handling now covers common Django admin filter families plus initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_editable` form-layout conflicts, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas now advertise action names, discriminated per-action input payload variants, and optional custom response schema unions.

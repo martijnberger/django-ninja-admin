@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import calendar
+
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied
 from django.core.paginator import InvalidPage
 from django.db import models
@@ -174,6 +176,12 @@ class ChangeList:
             raise AdminValidationError(
                 [{"message": "A month requires a selected year.", "param": f"{self.date_hierarchy_field}__month"}]
             )
+        if {"year", "month", "day"} <= set(values):
+            max_day = calendar.monthrange(values["year"], values["month"])[1]
+            if values["day"] > max_day:
+                raise AdminValidationError(
+                    [{"message": "Invalid day.", "param": f"{self.date_hierarchy_field}__day"}]
+                )
         return values
 
     def apply_date_hierarchy(self, queryset, params):
@@ -355,8 +363,23 @@ class ChangeList:
             "title": str(field.verbose_name),
             "level": level,
             "params": values,
+            "clear_query_string": self.date_hierarchy_clear_query_string(),
+            "back_query_string": self.date_hierarchy_back_query_string(values),
             "choices": choices,
         }
+
+    def date_hierarchy_clear_query_string(self):
+        return self.get_query_string({}, remove=self.date_hierarchy_param_names)
+
+    def date_hierarchy_back_query_string(self, values):
+        year_param, month_param, day_param = self.date_hierarchy_param_names
+        if "day" in values:
+            return self.get_query_string({}, remove=[day_param])
+        if "month" in values:
+            return self.get_query_string({}, remove=[month_param, day_param])
+        if "year" in values:
+            return self.get_query_string({}, remove=[year_param, month_param, day_param])
+        return None
 
     def date_values(self, queryset, field, level):
         if isinstance(field, models.DateTimeField):
