@@ -32,6 +32,7 @@ from django_ninja_admin import (
 )
 from django_ninja_admin.changelist import ChangeList
 from django_ninja_admin.exceptions import AlreadyRegistered, NotRegistered
+from django_ninja_admin.filters import build_filter_spec
 from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
 from tests.testapp.models import Category, Product, ProductImage, ProductReview, Tag
 
@@ -613,6 +614,44 @@ def test_admin_checks_reject_mixed_random_ordering(db):
     assert "django_ninja_admin.E072" not in random_ids
     assert {error.id for error in mixed_errors} == {"django_ninja_admin.E072"}
     assert mixed_errors[0].hint == 'Either remove the "?", or remove the other fields.'
+
+
+def test_admin_checks_validate_field_based_list_filter_classes(db):
+    class TupleSimpleFilter(SimpleListFilter):
+        title = "tuple simple"
+        parameter_name = "tuple_simple"
+
+        def lookups(self, request, model_admin):
+            return (("yes", "Yes"),)
+
+    class ValidFieldFilterProductAdmin(ModelAdmin):
+        list_filter = (("description", EmptyFieldListFilter),)
+
+    class BadTupleShapeProductAdmin(ModelAdmin):
+        list_filter = (("description", EmptyFieldListFilter, "extra"),)
+
+    class BadTupleFilterProductAdmin(ModelAdmin):
+        list_filter = (("description", TupleSimpleFilter),)
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidFieldFilterProductAdmin)
+    bad_shape_site = NinjaAdminSite(include_auth=False)
+    bad_shape_site.register(Product, BadTupleShapeProductAdmin)
+    bad_filter_site = NinjaAdminSite(include_auth=False)
+    bad_filter_site.register(Product, BadTupleFilterProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
+    bad_filter_ids = {error.id for error in bad_filter_site.get_model_admin(Product).check()}
+
+    assert "django_ninja_admin.E017" not in valid_ids
+    assert bad_shape_ids == {"django_ninja_admin.E017"}
+    assert bad_filter_ids == {"django_ninja_admin.E017"}
+
+    model_admin = valid_site.get_model_admin(Product)
+    request = RequestFactory().get("/")
+    with pytest.raises(ImproperlyConfigured, match="must subclass FieldListFilter"):
+        build_filter_spec(("description", TupleSimpleFilter), request, request.GET, Product, model_admin)
 
 
 def test_admin_checks_validate_form_class(db):

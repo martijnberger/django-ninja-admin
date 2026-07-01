@@ -102,6 +102,7 @@ Completed or mostly complete:
 - Related list filters now expose many-to-many empty-relation choices and related-only filters preserve related-admin ordering while limiting choices to used relations.
 - Empty-value list filters now validate `__isempty` values and return typed lookup errors for invalid input.
 - Simple list filters now hide when `lookups()` returns no choices, matching Django admin.
+- Field-based `list_filter` tuple entries now validate as two-item `(field, FieldListFilter)` declarations at check and runtime boundaries.
 - Invalid changelist lookup values now return typed API errors for both declared filters and direct field lookups.
 - Expanded changelist metadata for display links, sortable columns, multi-column sort state/query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
 - Changelist rows now expose detail, change-form, delete, view-on-site, and object-permission metadata for frontend action rendering.

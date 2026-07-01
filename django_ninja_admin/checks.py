@@ -545,13 +545,22 @@ def _check_list_filters(model_admin):
                     _error(model_admin.__class__, f"The list filter {item.__name__!r} has no parameter_name.", "E016")
                 )
             continue
-        if isinstance(item, (tuple, list)) and len(item) == 2:
-            field_path, filter_class = item
-            if not isinstance(filter_class, type) or not issubclass(filter_class, (FieldListFilter, SimpleListFilter)):
+        if isinstance(item, (tuple, list)):
+            if len(item) != 2:
                 errors.append(
                     _error(
                         model_admin.__class__,
-                        f"The list filter for '{field_path}' does not use a supported filter class.",
+                        "Field-based 'list_filter' entries must be two-item tuples.",
+                        "E017",
+                    )
+                )
+                continue
+            field_path, filter_class = item
+            if not isinstance(filter_class, type) or not issubclass(filter_class, FieldListFilter):
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The list filter for '{field_path}' must use a FieldListFilter subclass.",
                         "E017",
                     )
                 )

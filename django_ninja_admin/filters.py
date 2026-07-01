@@ -478,6 +478,8 @@ def build_filter_spec(filter_entry, request, params, model, model_admin):
         return filter_entry(request, params, model, model_admin)
 
     if isinstance(filter_entry, (tuple, list)):
+        if len(filter_entry) != 2:
+            raise ImproperlyConfigured("Field-based list_filter entries must be two-item tuples.")
         field_path, filter_class = filter_entry
     else:
         field_path = filter_entry
@@ -493,8 +495,8 @@ def build_filter_spec(filter_entry, request, params, model, model_admin):
 
     if filter_class is None:
         return FieldListFilter.create(field, request, params, model, model_admin, field_path)
-    if issubclass(filter_class, SimpleListFilter):
-        return filter_class(request, params, model, model_admin)
+    if not isinstance(filter_class, type) or not issubclass(filter_class, FieldListFilter):
+        raise ImproperlyConfigured(f"The list_filter class for {field_path!r} must subclass FieldListFilter.")
     if issubclass(filter_class, FieldListFilter):
         return filter_class(field, request, params, model, model_admin, field_path)
     raise ImproperlyConfigured(f"Unsupported list_filter class for {field_path!r}: {filter_class!r}.")

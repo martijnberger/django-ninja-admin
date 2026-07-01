@@ -21,6 +21,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   addition to many-to-many fields.
 - Added an admin system check rejecting `ordering` configurations that combine
   random ordering (`"?"`) with other fields.
+- Tightened field-based `list_filter` validation so tuple entries must be
+  two-item `(field, FieldListFilter)` declarations.
 
 ## 0.1.4 - 2026-07-01
 
