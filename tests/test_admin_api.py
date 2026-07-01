@@ -962,6 +962,16 @@ def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):
     bad_lookup = admin_client.get("/admin-api/testapp/product?category__name=Cameras")
     assert bad_lookup.status_code == 400
 
+    bad_filter_value = admin_client.get("/admin-api/testapp/product?category__id__exact=not-an-id")
+    assert bad_filter_value.status_code == 400
+    assert bad_filter_value.json()["errors"] == [
+        {"message": "Invalid lookup value.", "param": "category__id__exact"}
+    ]
+
+    bad_direct_value = admin_client.get("/admin-api/testapp/product?price=not-a-decimal")
+    assert bad_direct_value.status_code == 400
+    assert bad_direct_value.json()["errors"] == [{"message": "Invalid lookup value.", "param": "price"}]
+
     bad_page = admin_client.get("/admin-api/testapp/product?page=0")
     assert bad_page.status_code == 404
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import calendar
 
-from django.core.exceptions import FieldDoesNotExist, PermissionDenied
+from django.core.exceptions import FieldDoesNotExist, FieldError, PermissionDenied, ValidationError
 from django.core.paginator import InvalidPage
 from django.db import models
 from django.http import Http404, QueryDict
@@ -73,7 +73,10 @@ class ChangeList:
         queryset = self.model_admin.get_queryset(self.request)
         queryset = self.apply_select_related(queryset)
         for filter_spec in filter_specs:
-            queryset = filter_spec.queryset(self.request, queryset)
+            try:
+                queryset = filter_spec.queryset(self.request, queryset)
+            except (FieldError, TypeError, ValueError, ValidationError) as exc:
+                raise self.lookup_value_error(filter_spec.used_parameters or {}, fallback_param="filters") from exc
         queryset = self.apply_remaining_lookup_params(queryset, params, filter_specs)
         if apply_date_hierarchy:
             queryset = self.apply_date_hierarchy(queryset, params)
@@ -111,8 +114,15 @@ class ChangeList:
                 continue
             if not self.model_admin.lookup_allowed(key, value, self.request):
                 raise DisallowedModelAdminLookup(f"Filtering by {key!r} is not allowed.")
-            queryset = queryset.filter(**{key: value})
+            try:
+                queryset = queryset.filter(**{key: value})
+            except (FieldError, TypeError, ValueError, ValidationError) as exc:
+                raise self.lookup_value_error({key: value}, fallback_param=key) from exc
         return queryset
+
+    def lookup_value_error(self, params, *, fallback_param):
+        param = next(iter(params), fallback_param)
+        return AdminValidationError([{"message": "Invalid lookup value.", "param": param}])
 
     def apply_search(self, queryset, params):
         search_term = params.get("q")

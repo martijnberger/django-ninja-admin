@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   relation paths.
 - Added `show_full_result_count` and `show_admin_actions` changelist metadata,
   with `full_count` omitted when full counts are disabled.
+- Normalized invalid changelist lookup values into typed 400 responses instead
+  of leaking Django ORM conversion errors.
 
 ## 0.1.2 - 2026-07-01
 
