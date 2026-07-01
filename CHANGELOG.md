@@ -7,6 +7,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added current page and page-size metadata to history pagination responses.
 - Added structured relation metadata and autocomplete request parameters to
   form field descriptions.
 - Added count, page, page-size, and next/previous metadata to autocomplete

@@ -85,7 +85,7 @@ Completed or mostly complete:
 - Collected-object delete permission checks now honor object-level delete hooks, including the default `delete_selected` action.
 - Direct delete now returns structured permission-needed details when object-level delete hooks deny the target row.
 - Model detail/form/delete routes now reject bad `_to_field` references with typed validation errors.
-- History listing now filters by caller-visible models before pagination and supports app/model/object/action filters with typed bad-param handling.
+- History listing now filters by caller-visible models before pagination and supports app/model/object/action filters plus current page/page-size metadata with typed bad-param handling.
 - Autocomplete now returns typed not-found responses for invalid pages, exposes richer pagination metadata, and has coverage for many-to-many source fields.
 - View-on-site route coverage now includes callable hooks that return absolute or protocol-relative external URLs.
 - View-on-site now returns absolute URLs from the configured Site domain and falls back to the request host when that Site row is missing.

@@ -522,6 +522,8 @@ class NinjaAdminSite:
                     "count": paginator.count,
                     "has_next": page_obj.has_next(),
                     "has_previous": page_obj.has_previous(),
+                    "page": page_obj.number,
+                    "per_page": paginator.per_page,
                 },
                 "results": results,
             }

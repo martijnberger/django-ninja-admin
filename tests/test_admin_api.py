@@ -2521,6 +2521,9 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     global_history = client.get("/admin-api/history")
     assert global_history.status_code == 200
     assert {item["content_type_id"] for item in global_history.json()["results"]} == {product_ct.pk}
+    assert global_history.json()["pagination"]["page"] == 1
+    assert global_history.json()["pagination"]["per_page"] == 20
+    assert global_history.json()["pagination"]["count"] == 2
 
     filtered = client.get(
         "/admin-api/history",

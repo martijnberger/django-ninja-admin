@@ -254,6 +254,8 @@ class Pagination(Schema):
     count: int
     has_next: bool
     has_previous: bool
+    page: int = 1
+    per_page: int = 20
 
 
 class HistoryItem(Schema):
