@@ -881,6 +881,21 @@ def test_actions_bulk_autocomplete_and_view_on_site(admin_client, sample):
     assert onsite.json()["url"].endswith(f"/products/{sample.pk}/")
 
 
+def test_view_on_site_supports_callable_external_urls(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    content_type = ContentType.objects.get_for_model(Product, for_concrete_model=False)
+
+    monkeypatch.setattr(product_admin, "view_on_site", lambda obj: f"https://example.test/products/{obj.pk}/")
+    absolute = admin_client.get(f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}")
+    assert absolute.status_code == 200
+    assert absolute.json() == {"url": f"https://example.test/products/{sample.pk}/"}
+
+    monkeypatch.setattr(product_admin, "view_on_site", lambda obj: f"//assets.example.test/products/{obj.pk}/")
+    protocol_relative = admin_client.get(f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}")
+    assert protocol_relative.status_code == 200
+    assert protocol_relative.json() == {"url": f"//assets.example.test/products/{sample.pk}/"}
+
+
 def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
     monkeypatch.setattr(product_admin, "autocomplete_fields", ("category", "tags"))

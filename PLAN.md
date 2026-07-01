@@ -75,6 +75,7 @@ Completed or mostly complete:
 - Model detail/form/delete routes now reject bad `_to_field` references with typed validation errors.
 - History listing now filters by caller-visible models before pagination and supports app/model/object/action filters with typed bad-param handling.
 - Autocomplete now returns typed not-found responses for invalid pages and has coverage for many-to-many source fields.
+- View-on-site route coverage now includes callable hooks that return absolute or protocol-relative external URLs.
 - Change messages include field labels and inline add/change/delete entries for history/log consumers.
 - Actions cover custom return values, empty-selection validation, and `select_across` behavior over filtered changelists.
 - Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, readonly, model `blank`/`null`, uniqueness/index, default, and upload metadata.
