@@ -136,6 +136,8 @@ Completed or mostly complete:
 - Pydantic request schemas now validate `ComboField` values through Django's
   stacked subfield cleaners while exposing representable string constraints,
   and form descriptions expose structured combo subfield metadata.
+- Form descriptions now expose grouped choice metadata while preserving
+  flattened choice values for simple clients.
 - Pydantic request schemas now validate numeric `step_size` constraints and
   expose OpenAPI `multipleOf` hints when they are not offset, while form
   descriptions include step size and offset metadata.
@@ -267,7 +269,7 @@ Known non-parity areas:
 - Filter handling now covers common Django admin filter families, bounded date filter ranges, and initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_editable` form-layout conflicts, `list_select_related` mistakes, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas now advertise action names, discriminated per-action input payload variants, and optional custom response schema unions.
-- Field metadata now covers common widget, custom widget attrs, relation, choice, structured validator details, error-message, localization, numeric, decimal, readonly display values, model `blank`/`null`/default/index/unique/editable attributes, initial file/image attributes, basic file clearing and multipart file uploads, generated-form `formfield_*` customizations, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but real image upload validation/storage edge cases, custom model fields, and advanced widget behavior still need deeper parity.
+- Field metadata now covers common widget, custom widget attrs, relation, flat/grouped choice, structured validator details, error-message, localization, numeric, decimal, readonly display values, model `blank`/`null`/default/index/unique/editable attributes, initial file/image attributes, basic file clearing and multipart file uploads, generated-form `formfield_*` customizations, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but real image upload validation/storage edge cases, custom model fields, and advanced widget behavior still need deeper parity.
 - Save/delete and response hooks, inline formsets, typed operation schemas, inline multivalue normalization, protected-delete details, history permission filtering, autocomplete pagination, `_to_field` validation, inline permission checks, readonly/unknown inline field rejection, richer inline delete messages, unchanged bulk-row handling, row-indexed inline/bulk errors, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works and now has semantic contract coverage for core site/model routes, custom action input/response schemas, and global action cache invalidation, but broader snapshots and example coverage are still needed before release.
 - Admin extensibility is still young: custom view routing, route metadata/auth overrides, named response-schema coverage, site/route-level multi-auth coverage, and display metadata exist, but deeper override-hook parity still needs work.

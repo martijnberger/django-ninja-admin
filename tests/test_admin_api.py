@@ -3097,6 +3097,25 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
     assert json_schema["typed_floats"]["anyOf"][0]["items"]["enum"] == [1.5, 2.5]
     assert json_schema["typed_uuid"]["anyOf"][0]["enum"] == [uuid_choice, other_uuid_choice]
 
+    fields_by_name = {
+        field["name"]: field
+        for field in model_admin.get_form_fields_description(RequestFactory().get("/"))
+    }
+    assert fields_by_name["status_override"]["attrs"]["choices"] == [("draft", "Draft"), ("live", "Live")]
+    assert "choice_groups" not in fields_by_name["status_override"]["attrs"]
+    assert fields_by_name["grouped_status"]["attrs"]["choices"] == [
+        ("draft", "Draft"),
+        ("live", "Live"),
+        ("archived", "Archived"),
+    ]
+    assert fields_by_name["grouped_status"]["attrs"]["choice_groups"] == [
+        {
+            "label": "Publishing",
+            "options": [{"value": "draft", "label": "Draft"}, {"value": "live", "label": "Live"}],
+        },
+        {"label": "Archive", "options": [{"value": "archived", "label": "Archived"}]},
+    ]
+
     assert validated.status_override == "draft"
     assert validated.grouped_status == "archived"
     assert validated.numeric_flags == [1, 2]

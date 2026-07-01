@@ -55,6 +55,41 @@ def _choice_value(value):
     return str(raw) if raw is not None else None
 
 
+def _choice_option(value, label):
+    return {"value": _choice_value(value), "label": str(label)}
+
+
+def _choice_metadata(choices):
+    flat_choices = []
+    choice_groups = []
+    ungrouped_options = []
+
+    def add_flat(option):
+        flat_choices.append((option["value"], option["label"]))
+
+    def flush_ungrouped():
+        nonlocal ungrouped_options
+        if ungrouped_options:
+            choice_groups.append({"label": None, "options": ungrouped_options})
+            ungrouped_options = []
+
+    for value, label in choices:
+        if isinstance(label, (list, tuple)):
+            flush_ungrouped()
+            options = [_choice_option(child_value, child_label) for child_value, child_label in label]
+            for option in options:
+                add_flat(option)
+            choice_groups.append({"label": str(value), "options": options})
+            continue
+        option = _choice_option(value, label)
+        add_flat(option)
+        ungrouped_options.append(option)
+    flush_ungrouped()
+    if len(choice_groups) > 1 or any(group["label"] for group in choice_groups):
+        return flat_choices, choice_groups
+    return flat_choices, []
+
+
 def _jsonish_value(value):
     if callable(value):
         return None
@@ -376,7 +411,10 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     if input_formats:
         attrs["input_formats"] = input_formats
     if getattr(field, "choices", None):
-        attrs["choices"] = [(_choice_value(value), str(label)) for value, label in field.choices]
+        choices, choice_groups = _choice_metadata(field.choices)
+        attrs["choices"] = choices
+        if choice_groups:
+            attrs["choice_groups"] = choice_groups
     attrs.update(_filepath_metadata(field))
     attrs.update(_combo_metadata(field))
     if getattr(field, "initial", None) not in (None, ""):
