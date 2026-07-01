@@ -140,7 +140,18 @@ def _check_display_options(model_admin):
     configured_list_display_links = getattr(model_admin, "list_display_links", ())
     list_display_links = model_admin.get_list_display_links(None, list_display)
     if list_display_links is not None:
+        seen_display_links = set()
         for item in list_display_links:
+            item_key = field_name_for_display(item)
+            if item_key in seen_display_links:
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The field '{item_key}' is duplicated in 'list_display_links'.",
+                        "E079",
+                    )
+                )
+            seen_display_links.add(item_key)
             if not _display_item_in(item, list_display):
                 errors.append(
                     _error(
@@ -476,10 +487,11 @@ def _check_form_option_items(model_admin, option, *, require_model_field=False):
         if not isinstance(item, str):
             errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E048"))
             continue
-        if option == "fields":
+        if option in {"fields", "exclude"}:
             if item in seen_fields:
+                code = "E065" if option == "fields" else "E080"
                 errors.append(
-                    _error(model_admin.__class__, f"The field '{item}' is duplicated in 'fields'.", "E065")
+                    _error(model_admin.__class__, f"The field '{item}' is duplicated in '{option}'.", code)
                 )
             seen_fields.add(item)
         if require_model_field and _model_field(model_admin, item) is None:

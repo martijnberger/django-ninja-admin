@@ -981,6 +981,19 @@ def test_admin_checks_reject_first_list_editable_without_explicit_display_link(d
     assert valid_ids.isdisjoint({"django_ninja_admin.E007", "django_ninja_admin.E066"})
 
 
+def test_admin_checks_reject_duplicate_list_display_links(db):
+    class DuplicateLinksProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        list_display_links = ("name", "name")
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, DuplicateLinksProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E079"}
+
+
 def test_admin_checks_validate_fields_and_exclude_items(db):
     class RowFieldsProductAdmin(ModelAdmin):
         fields = (("name", "price"), "category")
@@ -994,6 +1007,9 @@ def test_admin_checks_validate_fields_and_exclude_items(db):
     class BadExcludeProductAdmin(ModelAdmin):
         exclude = ("missing", 123)
 
+    class DuplicateExcludeProductAdmin(ModelAdmin):
+        exclude = ("name", "name")
+
     row_fields_site = NinjaAdminSite(include_auth=False)
     row_fields_site.register(Product, RowFieldsProductAdmin)
     fields_site = NinjaAdminSite(include_auth=False)
@@ -1002,11 +1018,14 @@ def test_admin_checks_validate_fields_and_exclude_items(db):
     duplicate_fields_site.register(Product, DuplicateFieldsProductAdmin)
     exclude_site = NinjaAdminSite(include_auth=False)
     exclude_site.register(Product, BadExcludeProductAdmin)
+    duplicate_exclude_site = NinjaAdminSite(include_auth=False)
+    duplicate_exclude_site.register(Product, DuplicateExcludeProductAdmin)
 
     row_fields_errors = row_fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
     fields_errors = fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
     duplicate_fields_errors = duplicate_fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
     exclude_errors = exclude_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    duplicate_exclude_errors = duplicate_exclude_site.check(app_configs=[django_apps.get_app_config("testapp")])
 
     assert row_fields_errors == []
     assert list(row_fields_site.get_model_admin(Product).get_form_class(None).base_fields) == [
@@ -1017,6 +1036,7 @@ def test_admin_checks_validate_fields_and_exclude_items(db):
     assert {error.id for error in fields_errors} == {"django_ninja_admin.E048"}
     assert {error.id for error in duplicate_fields_errors} == {"django_ninja_admin.E065"}
     assert {error.id for error in exclude_errors} == {"django_ninja_admin.E048", "django_ninja_admin.E049"}
+    assert {error.id for error in duplicate_exclude_errors} == {"django_ninja_admin.E080"}
 
 
 def test_admin_checks_validate_fieldsets_shape_and_duplicates(db):

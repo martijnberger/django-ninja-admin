@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.5 - 2026-07-01
+
 - Improved related list-filter parity: many-to-many filters now expose and apply
   the empty relation choice, and related-only filters preserve related-admin
   ordering while limiting choices to used relations.
@@ -33,6 +35,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   the parent foreign key field.
 - Added admin system checks rejecting manual-through many-to-many fields in
   explicit `fields` and `fieldsets` form layouts.
+- Added admin system checks for duplicate `list_display_links` and `exclude`
+  entries.
 
 ## 0.1.4 - 2026-07-01
 
