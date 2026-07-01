@@ -1,7 +1,7 @@
 import copy
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from django import forms
@@ -231,7 +231,11 @@ class BaseAdmin:
             row_fields = {"pk": (Any, ...)}
             for field_name in self.list_editable:
                 form_field = form_fields.get(field_name)
-                field_type = Any if form_field is None else self.get_pydantic_type_for_form_field(form_field)
+                field_type = (
+                    Any
+                    if form_field is None
+                    else self.get_pydantic_type_for_form_field(form_field, choices_as_literal=False)
+                )
                 row_fields[field_name] = (field_type | None, None)
             row_schema = create_model(
                 f"{self.model.__name__}AdminBulkRow",
@@ -259,14 +263,14 @@ class BaseAdmin:
             self._mutation_response_schema_cache = cache
         return cache[cache_key]
 
-    def get_pydantic_type_for_form_field(self, field):
-        field_type = self._get_pydantic_type_for_form_field(field)
+    def get_pydantic_type_for_form_field(self, field, *, choices_as_literal=True):
+        field_type = self._get_pydantic_type_for_form_field(field, choices_as_literal=choices_as_literal)
         constraints = self.get_pydantic_constraints_for_form_field(field, field_type)
         if constraints:
             return Annotated[field_type, Field(**constraints)]
         return field_type
 
-    def _get_pydantic_type_for_form_field(self, field):
+    def _get_pydantic_type_for_form_field(self, field, *, choices_as_literal=True):
         if isinstance(field, ModelMultipleChoiceField):
             return list[int | str]
         if isinstance(field, ModelChoiceField):
@@ -302,15 +306,15 @@ class BaseAdmin:
         if isinstance(field, forms.JSONField):
             return Any
         if isinstance(field, forms.TypedMultipleChoiceField):
-            return list[self.get_pydantic_type_for_typed_choice_field(field)]
+            return list[self.get_pydantic_type_for_typed_choice_field(field, choices_as_literal=choices_as_literal)]
         if isinstance(field, forms.MultipleChoiceField):
-            return list[self.get_pydantic_type_for_choices(field.choices)]
+            return list[self.get_pydantic_type_for_choices(field.choices, as_literal=choices_as_literal)]
         if isinstance(field, forms.FileField):
             return Any
         if isinstance(field, forms.TypedChoiceField):
-            return self.get_pydantic_type_for_typed_choice_field(field)
+            return self.get_pydantic_type_for_typed_choice_field(field, choices_as_literal=choices_as_literal)
         if getattr(field, "choices", None) and not isinstance(field.choices, str | bytes):
-            return self.get_pydantic_type_for_choices(field.choices)
+            return self.get_pydantic_type_for_choices(field.choices, as_literal=choices_as_literal)
         return str
 
     def get_pydantic_constraints_for_form_field(self, field, field_type=None):
@@ -352,18 +356,19 @@ class BaseAdmin:
             return None
         return pattern.replace(r"\A", "^").replace(r"\Z", r"\z")
 
-    def get_pydantic_type_for_typed_choice_field(self, field):
+    def get_pydantic_type_for_typed_choice_field(self, field, *, choices_as_literal=True):
         coerce = getattr(field, "coerce", None)
         if coerce in {str, int, float, bool, Decimal, UUID}:
             return coerce
-        return self.get_pydantic_type_for_choices(field.choices)
+        return self.get_pydantic_type_for_choices(field.choices, as_literal=choices_as_literal)
 
-    def get_pydantic_type_for_choices(self, choices):
+    def get_pydantic_type_for_choices(self, choices, *, as_literal=True):
+        literal_type = self.get_pydantic_literal_for_choices(choices) if as_literal else None
+        if literal_type is not None:
+            return literal_type
         value_types = set()
-        for value, label in choices:
-            if isinstance(label, (list, tuple)):
-                value_types.update(type(choice_value) for choice_value, _choice_label in label)
-            elif value not in ("", None):
+        for value in self.iter_choice_values(choices):
+            if value not in ("", None):
                 value_types.add(type(value))
         if not value_types:
             return str
@@ -376,6 +381,27 @@ class BaseAdmin:
         if value_types <= {bool}:
             return bool
         return str
+
+    def get_pydantic_literal_for_choices(self, choices):
+        values = []
+        seen = set()
+        for value in self.iter_choice_values(choices):
+            if value in ("", None) or not isinstance(value, str | int | bool):
+                continue
+            key = (type(value), value)
+            if key not in seen:
+                seen.add(key)
+                values.append(value)
+        if not values:
+            return None
+        return Literal.__getitem__(tuple(values))
+
+    def iter_choice_values(self, choices):
+        for value, label in choices:
+            if isinstance(label, (list, tuple)):
+                yield from self.iter_choice_values(label)
+            else:
+                yield value
 
     def _output_schema_for_fields(self, fields_key, custom_fields):
         from ninja.orm import create_schema

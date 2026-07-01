@@ -12,6 +12,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added structured form field validator metadata for frontend form rendering.
 - Added native Pydantic request schema typing for Django typed choice fields
   whose `coerce` hook uses a concrete Python type.
+- Added enum-style Pydantic request schema validation for concrete Django
+  choice values.
 - Added native Pydantic request schema validation for Django email form fields.
 - Added native Pydantic request schema typing for Django URL form fields.
 - Added Pydantic request schema constraints for Django form string lengths,

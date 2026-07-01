@@ -114,6 +114,8 @@ Completed or mostly complete:
   expose temporal input formats.
 - Pydantic request schemas now infer typed list entries for multiple-choice
   fields from declared choice values.
+- Pydantic request schemas now constrain concrete Django choice values with
+  enum-style `Literal` schemas where possible.
 - Pydantic request schemas now infer Django typed choice fields from concrete
   `coerce` hooks such as `int`.
 - Pydantic request schemas now validate Django email form fields using Django's
