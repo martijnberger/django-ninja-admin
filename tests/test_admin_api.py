@@ -1355,6 +1355,19 @@ def test_admin_checks_reject_duplicate_list_display_links(db):
     assert {error.id for error in errors} == {"django_ninja_admin.E079"}
 
 
+def test_admin_checks_reject_non_string_list_display_links(db):
+    class BadLinksProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        list_display_links = (123,)
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, BadLinksProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E095"}
+
+
 def test_admin_checks_validate_fields_and_exclude_items(db):
     class RowFieldsProductAdmin(ModelAdmin):
         fields = (("name", "price"), "category")

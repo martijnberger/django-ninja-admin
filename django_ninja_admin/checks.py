@@ -151,6 +151,15 @@ def _check_display_options(model_admin):
     if list_display_links is not None:
         seen_display_links = set()
         for item in list_display_links:
+            if not isinstance(item, str) and not callable(item):
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        "Items in 'list_display_links' must be strings or callables.",
+                        "E095",
+                    )
+                )
+                continue
             item_key = field_name_for_display(item)
             if item_key in seen_display_links:
                 errors.append(

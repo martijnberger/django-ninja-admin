@@ -32,6 +32,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added changelist show-all and clear-show-all query-string metadata.
 - Made changelist date hierarchy start at the lowest useful initial level when
   all filtered results share a year or month.
+- Added an admin system check for non-string, non-callable
+  `list_display_links` entries.
 
 ## 0.1.15 - 2026-07-02
 
