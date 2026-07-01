@@ -123,6 +123,8 @@ Completed or mostly complete:
 - Date hierarchy metadata now includes clear/back navigation query strings and validates impossible year/month/day combinations.
 - Date hierarchy checks and changelist metadata/filtering now support relation paths such as `product__created_at`.
 - Initial N+1 hardening through automatic `select_related()` for direct relation fields in `list_display`.
+- Changelist N+1 hardening now infers `select_related()` paths from single-valued
+  relation paths in `list_display`, independent of sortability.
 - Changelist N+1 hardening now also infers `select_related()` paths from display callables/methods whose `admin_order_field` traverses FK or one-to-one relations.
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
 - Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, radio fields, widget-option conflicts, date hierarchy, actions, and inlines.

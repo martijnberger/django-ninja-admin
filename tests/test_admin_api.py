@@ -1878,6 +1878,33 @@ def test_changelist_auto_selects_related_display_ordering_paths(db, sample):
     assert len(queries) == 0
 
 
+def test_changelist_auto_selects_relation_path_list_display_fields(db, sample):
+    class RelationPathProductAdmin(ModelAdmin):
+        list_display = ("name", "category__name")
+        sortable_by = ("name",)
+        ordering = ("name",)
+
+    Product.objects.create(name="Gamma", category=sample.category, price="8.00")
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, RelationPathProductAdmin)
+    user = get_user_model().objects.create_user("query-admin-relation-path", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+    model_admin = admin_site.get_model_admin(Product)
+
+    changelist = ChangeList(request, model_admin)
+
+    assert changelist.auto_select_related_fields() == ["category"]
+    assert "category" in changelist.queryset.query.select_related
+    with CaptureQueriesContext(connection) as queries:
+        rendered = [obj.category.name for obj in changelist.result_list]
+
+    assert rendered == ["Cameras", "Cameras", "Cameras"]
+    assert len(queries) == 0
+
+
 def test_changelist_route_uses_model_admin_hook(admin_client, sample, monkeypatch):
     class CustomChangeList(ChangeList):
         def filter_descriptions(self):

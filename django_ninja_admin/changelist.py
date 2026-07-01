@@ -122,6 +122,10 @@ class ChangeList:
             if isinstance(field, (models.ForeignKey, models.OneToOneField)) and field.name not in related_fields:
                 related_fields.append(field.name)
                 continue
+            related_path = self.select_related_path_for_ordering(field_name)
+            if related_path and related_path not in related_fields:
+                related_fields.append(related_path)
+                continue
             ordering_field = self.get_ordering_field(field_name)
             related_path = self.select_related_path_for_ordering(ordering_field)
             if related_path and related_path not in related_fields:
