@@ -18,6 +18,7 @@ from django_ninja_admin.utils.lookup import (
 )
 
 IGNORED_LOOKUP_PARAMS = {"q", "p", "page", "pp", "all", "o", "_facets"}
+PAGE_PARAMS = {"p", "page"}
 
 
 class ChangeList:
@@ -429,7 +430,7 @@ class ChangeList:
 
     def get_query_string(self, new_params=None, remove=None):
         new_params = new_params or {}
-        remove = set(remove or [])
+        remove = PAGE_PARAMS | set(remove or [])
         query = self.params.copy()
         for parameter in remove:
             for key in list(query):

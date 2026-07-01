@@ -197,6 +197,9 @@ Completed or mostly complete:
 - Invalid changelist lookup values now return typed API errors for both declared filters and direct field lookups.
 - `lookup_allowed()` now allows local field lookup suffixes and Django-style `limit_choices_to` reverse-FK lookup parameters while continuing to reject unapproved relational lookups.
 - Expanded changelist metadata for display links, sortable columns, multi-column sort state/query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
+- Generated changelist query strings now reset stale page parameters for
+  filter, ordering, and date hierarchy links while preserving explicit page-size
+  state.
 - Changelist rows now expose detail, change-form, delete, view-on-site, and object-permission metadata for frontend action rendering.
 - Changelist columns now support single-valued relation paths in `list_display`,
   including row values and ordering metadata.
@@ -260,7 +263,7 @@ Completed or mostly complete:
 
 Known non-parity areas:
 
-- Changelist behavior is still not fully equivalent to upstream `ChangeList`; deeper query-string behavior, result rendering metadata, remaining list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
+- Changelist behavior is still not fully equivalent to upstream `ChangeList`; remaining query-string edge cases, result rendering metadata, list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
 - Filter handling now covers common Django admin filter families, bounded date filter ranges, and initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_editable` form-layout conflicts, `list_select_related` mistakes, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas now advertise action names, discriminated per-action input payload variants, and optional custom response schema unions.

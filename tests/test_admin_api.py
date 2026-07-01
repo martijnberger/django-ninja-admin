@@ -16,6 +16,7 @@ from django.core.paginator import Paginator
 from django.core.validators import RegexValidator
 from django.db import connection, models
 from django.forms.models import BaseInlineFormSet
+from django.http import QueryDict
 from django.test import Client, RequestFactory, override_settings
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.test.utils import CaptureQueriesContext, isolate_apps
@@ -1479,14 +1480,32 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
 
     paginated = admin_client.get("/admin-api/testapp/product?pp=1&page=2")
     assert paginated.status_code == 200
-    assert paginated.json()["config"]["page"] == 2
-    assert paginated.json()["config"]["page_count"] == 3
-    assert paginated.json()["config"]["has_next"] is True
-    assert paginated.json()["config"]["has_previous"] is True
-    assert paginated.json()["config"]["multi_page"] is True
-    assert paginated.json()["config"]["pagination_required"] is True
-    assert paginated.json()["config"]["page_range"] == [1, 2, 3]
-    assert len(paginated.json()["rows"]) == 1
+    paginated_body = paginated.json()
+    assert paginated_body["config"]["page"] == 2
+    assert paginated_body["config"]["page_count"] == 3
+    assert paginated_body["config"]["has_next"] is True
+    assert paginated_body["config"]["has_previous"] is True
+    assert paginated_body["config"]["multi_page"] is True
+    assert paginated_body["config"]["pagination_required"] is True
+    assert paginated_body["config"]["page_range"] == [1, 2, 3]
+    assert len(paginated_body["rows"]) == 1
+
+    generated_query_strings = []
+    for filter_description in paginated_body["config"]["filters"]:
+        generated_query_strings.extend(choice["query_string"] for choice in filter_description["choices"])
+    generated_query_strings.extend(
+        column["ascending_query_string"]
+        for column in paginated_body["columns"]
+        if column["ascending_query_string"]
+    )
+    generated_query_strings.extend(
+        choice["query_string"] for choice in paginated_body["config"]["date_hierarchy"]["choices"]
+    )
+    generated_query_strings.append(paginated_body["config"]["date_hierarchy"]["clear_query_string"])
+    for query_string in generated_query_strings:
+        params = QueryDict(query_string.removeprefix("?"))
+        assert "page" not in params
+        assert "p" not in params
 
     show_all = admin_client.get("/admin-api/testapp/product?all=1")
     assert show_all.status_code == 200
