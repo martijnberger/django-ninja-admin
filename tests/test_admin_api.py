@@ -4437,6 +4437,45 @@ def test_inline_payload_uses_pydantic_request_validation(admin_client, sample):
     assert response.json()["errors"][0]["param"] == "inlines.testapp.productimage.add.0.title"
 
 
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_inline_multivalue_payload_uses_pydantic_and_formset_normalization(admin_client, sample):
+    product = Product.objects.create(
+        name="Inline coded",
+        category=sample.category,
+        price="4.00",
+        stock_status="in_stock",
+    )
+
+    invalid = admin_client.patch(
+        f"/inline-multivalue-admin/testapp/product/{product.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"add": [{"title": ["abc", 4]}]}}},
+        content_type="application/json",
+    )
+    assert invalid.status_code == 422
+    assert invalid.json()["errors"][0]["param"] == "inlines.testapp.productimage.add.0.title.0"
+    assert not ProductImage.objects.filter(product=product).exists()
+
+    created = admin_client.patch(
+        f"/inline-multivalue-admin/testapp/product/{product.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"add": [{"title": ["ABC", "4"]}]}}},
+        content_type="application/json",
+    )
+    assert created.status_code == 200, created.json()
+    image = ProductImage.objects.get(product=product)
+    assert image.title == "ABC:4"
+    assert created.json()["inlines"]["testapp.productimage"]["add"][0]["title"] == "ABC:4"
+
+    changed = admin_client.patch(
+        f"/inline-multivalue-admin/testapp/product/{product.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"change": [{"pk": image.pk, "title": ["XYZ", 9]}]}}},
+        content_type="application/json",
+    )
+    assert changed.status_code == 200, changed.json()
+    image.refresh_from_db()
+    assert image.title == "XYZ:9"
+    assert changed.json()["inlines"]["testapp.productimage"]["change"][0]["title"] == "XYZ:9"
+
+
 def test_actions_bulk_autocomplete_and_view_on_site(admin_client, sample):
     action = admin_client.post(
         "/admin-api/testapp/product/actions",

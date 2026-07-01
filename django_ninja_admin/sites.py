@@ -1406,7 +1406,8 @@ class NinjaAdminSite:
             )
 
         formset_class = inline.get_formset(request, obj, change=change)
-        editable_fields = set(formset_class.form.base_fields)
+        form_fields = formset_class.form.base_fields
+        editable_fields = set(form_fields)
         pk_name = inline.model._meta.pk.name
         inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
         inline_errors = {}
@@ -1561,26 +1562,38 @@ class NinjaAdminSite:
             f"{prefix}-MIN_NUM_FORMS": str(min_num),
             f"{prefix}-MAX_NUM_FORMS": "" if max_num is None else str(max_num),
         }
-        editable_fields = set(formset_class.form.base_fields)
+        form_fields = formset_class.form.base_fields
+        editable_fields = set(form_fields)
         pk_name = inline.model._meta.pk.name
         fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
         for index, instance in enumerate(existing_instances):
             pk = str(instance.pk)
             row = model_data_for_form(instance, list(editable_fields))
             row.update(changes_by_pk.get(pk, {}))
-            self._copy_inline_form_row(formset_data, prefix, index, row, editable_fields)
+            self._copy_inline_form_row(formset_data, prefix, index, row, form_fields)
             formset_data[f"{prefix}-{index}-{pk_name}"] = pk
             formset_data[f"{prefix}-{index}-{fk.name}"] = str(obj.pk)
             if pk in delete_pks:
                 formset_data[f"{prefix}-{index}-DELETE"] = "on"
         for offset, row in enumerate(add_rows, start=len(existing_instances)):
-            self._copy_inline_form_row(formset_data, prefix, offset, row, editable_fields)
+            self._copy_inline_form_row(formset_data, prefix, offset, row, form_fields)
             formset_data[f"{prefix}-{offset}-{fk.name}"] = str(obj.pk)
         return formset_data
 
-    def _copy_inline_form_row(self, formset_data, prefix, index, row, editable_fields):
+    def _copy_inline_form_row(self, formset_data, prefix, index, row, form_fields):
         for name, value in row.items():
-            if name in {"pk", "id"} or name not in editable_fields:
+            if name in {"pk", "id"} or name not in form_fields:
+                continue
+            field = form_fields[name]
+            value = self._normalize_form_value(field, value)
+            if isinstance(field, forms.FileField) and value is None:
+                formset_data[f"{prefix}-{index}-{name}-clear"] = "on"
+                continue
+            if isinstance(field, forms.MultiValueField):
+                expanded = {name: value}
+                self._expand_multivalue_form_data(expanded, name, field)
+                for expanded_name, expanded_value in expanded.items():
+                    formset_data[f"{prefix}-{index}-{expanded_name}"] = expanded_value
                 continue
             formset_data[f"{prefix}-{index}-{name}"] = value
 

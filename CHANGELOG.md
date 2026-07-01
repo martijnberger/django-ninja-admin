@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Normalized Pydantic-cleaned inline row values into Django formset data,
+  including `MultiValueField` expansion for custom inline forms.
 - Added structured `SelectDateWidget` form metadata for split date-select
   rendering, including part order, generated field names, choices, empty
   choices, and selected values.

@@ -78,6 +78,9 @@ Completed or mostly complete:
 - Admin system checks now validate inline `extra`, `min_num`, and `max_num` option types before formset construction.
 - Inline admins now support custom `formset` classes and validate that they inherit from Django's `BaseInlineFormSet`.
 - Inline admin checks now reject `exclude` entries that remove the parent foreign key field from inline forms.
+- Inline formset mutation rows now normalize Pydantic-cleaned values before
+  Django form binding, including `MultiValueField` expansion for custom inline
+  forms.
 - Bulk list-editable updates use strict row schemas, reject duplicate PKs, and validate all rows before writing.
 - Bulk list-editable updates now skip save hooks and empty change-log entries for unchanged rows while still returning validated row data.
 - Bulk list-editable updates now aggregate server-side row errors before writing.
@@ -250,7 +253,7 @@ Known non-parity areas:
 - System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_editable` form-layout conflicts, `list_select_related` mistakes, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas now advertise action names, discriminated per-action input payload variants, and optional custom response schema unions.
 - Field metadata now covers common widget, custom widget attrs, relation, choice, structured validator details, error-message, localization, numeric, decimal, readonly display values, model `blank`/`null`/default/index/unique/editable attributes, initial file/image attributes, basic file clearing and multipart file uploads, generated-form `formfield_*` customizations, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but real image upload validation/storage edge cases, custom model fields, and advanced widget behavior still need deeper parity.
-- Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, history permission filtering, autocomplete pagination, `_to_field` validation, inline permission checks, readonly/unknown inline field rejection, richer inline delete messages, unchanged bulk-row handling, row-indexed inline/bulk errors, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
+- Save/delete and response hooks, inline formsets, typed operation schemas, inline multivalue normalization, protected-delete details, history permission filtering, autocomplete pagination, `_to_field` validation, inline permission checks, readonly/unknown inline field rejection, richer inline delete messages, unchanged bulk-row handling, row-indexed inline/bulk errors, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works and now has semantic contract coverage for core site/model routes, custom action input/response schemas, and global action cache invalidation, but broader snapshots and example coverage are still needed before release.
 - Admin extensibility is still young: custom view routing, route metadata/auth overrides, named response-schema coverage, site/route-level multi-auth coverage, and display metadata exist, but deeper override-hook parity still needs work.
 - Release hardening has local/CI `just` gates, wheel import smoke, a clean sample-project smoke, initial PostgreSQL CI coverage, and an initial copyright audit; remaining work is to confirm CI results and repeat the audit before release candidates.

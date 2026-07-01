@@ -3,8 +3,8 @@ from django.db import models
 from django.urls import path
 from ninja import Status
 
-from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite
-from tests.testapp.models import Category, Product, Tag
+from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline
+from tests.testapp.models import Category, Product, ProductImage, Tag
 
 
 class ProductNameWidget(forms.TextInput):
@@ -242,6 +242,30 @@ scalar_site.register(Category, ModelAdmin)
 scalar_site.register(Product, ScalarProductAdmin)
 
 
+class InlineCodeProductImageForm(forms.ModelForm):
+    title = CodeCountField()
+
+    class Meta:
+        model = ProductImage
+        fields = ("title",)
+
+
+class InlineCodeProductImageInline(TabularInline):
+    model = ProductImage
+    form_class = InlineCodeProductImageForm
+    extra = 0
+
+
+class InlineMultiValueProductAdmin(ModelAdmin):
+    inlines = [InlineCodeProductImageInline]
+
+
+inline_multivalue_site = NinjaAdminSite(name="inline_multivalue_admin", include_auth=False)
+inline_multivalue_site.register(Category, ModelAdmin)
+inline_multivalue_site.register(ProductImage, ModelAdmin)
+inline_multivalue_site.register(Product, InlineMultiValueProductAdmin)
+
+
 urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
     path("custom-formfield-admin/", custom_formfield_site.urls),
@@ -249,4 +273,5 @@ urlpatterns = [
     path("multi-value-admin/", multi_value_site.urls),
     path("temporal-admin/", temporal_site.urls),
     path("scalar-admin/", scalar_site.urls),
+    path("inline-multivalue-admin/", inline_multivalue_site.urls),
 ]
