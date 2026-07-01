@@ -13,7 +13,11 @@ from django.forms.models import BaseInlineFormSet, BaseModelForm, _get_foreign_k
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.filters import FieldListFilter, SimpleListFilter
 from django_ninja_admin.utils.flatten import flatten
-from django_ninja_admin.utils.lookup import field_name_for_display, model_field_from_path
+from django_ninja_admin.utils.lookup import (
+    field_name_for_display,
+    model_field_from_path,
+    single_valued_model_field_from_path,
+)
 
 ERROR_PREFIX = "django_ninja_admin"
 
@@ -115,16 +119,16 @@ def _check_display_options(model_admin):
             continue
         if item == "__str__":
             continue
+        field = None
         if "__" in item:
-            errors.append(
-                _error(
-                    model_admin.__class__,
-                    f"The value of 'list_display' refers to '{item}', which must not contain '__'.",
-                    "E003",
-                )
-            )
-            continue
-        if not _field_or_attr_exists(model_admin, item):
+            try:
+                field = single_valued_model_field_from_path(model_admin.model, item)
+            except FieldDoesNotExist:
+                pass
+        elif _field_or_attr_exists(model_admin, item):
+            field = _model_field(model_admin, item)
+
+        if field is None and not _field_or_attr_exists(model_admin, item):
             errors.append(
                 _error(
                     model_admin.__class__,
@@ -133,7 +137,6 @@ def _check_display_options(model_admin):
                 )
             )
             continue
-        field = _model_field(model_admin, item)
         if field is not None and (getattr(field, "many_to_many", False) or getattr(field, "one_to_many", False)):
             errors.append(
                 _error(

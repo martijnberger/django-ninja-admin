@@ -10,7 +10,11 @@ from django.http import Http404, QueryDict
 from django_ninja_admin.constants import ShowFacets
 from django_ninja_admin.exceptions import AdminValidationError, DisallowedModelAdminLookup
 from django_ninja_admin.filters import build_filter_spec
-from django_ninja_admin.utils.lookup import field_name_for_display, model_field_from_path
+from django_ninja_admin.utils.lookup import (
+    field_name_for_display,
+    model_field_from_path,
+    single_valued_model_field_from_path,
+)
 
 IGNORED_LOOKUP_PARAMS = {"q", "p", "page", "pp", "all", "o", "_facets"}
 
@@ -291,10 +295,12 @@ class ChangeList:
         if not isinstance(field_name, str):
             return None
         try:
-            field = self.model._meta.get_field(field_name)
+            field = single_valued_model_field_from_path(self.model, field_name)
         except FieldDoesNotExist:
             return None
-        return field.name
+        if getattr(field, "many_to_many", False) or getattr(field, "one_to_many", False):
+            return None
+        return field_name
 
     def is_sortable_field(self, field_name):
         field_key = field_name_for_display(field_name)

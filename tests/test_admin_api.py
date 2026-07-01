@@ -598,6 +598,18 @@ def test_admin_checks_reject_reverse_relation_in_list_display(db):
     assert "many-to-many or reverse field" in errors[0].msg
 
 
+def test_admin_checks_allow_single_valued_relation_path_in_list_display(db):
+    class RelationPathProductAdmin(ModelAdmin):
+        list_display = ("name", "category__name")
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, RelationPathProductAdmin)
+
+    error_ids = {error.id for error in admin_site.get_model_admin(Product).check()}
+
+    assert error_ids.isdisjoint({"django_ninja_admin.E003", "django_ninja_admin.E004", "django_ninja_admin.E043"})
+
+
 def test_admin_checks_validate_action_permission_hooks(db):
     @action(permissions=["change"])
     def valid_action(model_admin, request, queryset):
@@ -1512,6 +1524,28 @@ def test_changelist_supports_callable_list_display(admin_client, sample, monkeyp
     assert body["rows"][0]["cells"]["stock_badge"] is False
     assert body["rows"][1]["cells"]["name"] == "Alpha"
     assert body["rows"][1]["cells"]["stock_badge"] is True
+
+
+def test_changelist_supports_relation_path_list_display(admin_client, sample, monkeypatch):
+    accessories = Category.objects.create(name="Accessories")
+    Product.objects.create(name="Omega", category=accessories, price="1.00")
+    product_admin = site.get_model_admin(Product)
+
+    monkeypatch.setattr(product_admin, "list_display", ("name", "category__name"))
+
+    response = admin_client.get("/admin-api/testapp/product?o=2")
+
+    assert response.status_code == 200
+    body = response.json()
+    category_column = next(column for column in body["columns"] if column["field"] == "category__name")
+    assert category_column["headerName"] == "Name"
+    assert category_column["sortable"] is True
+    assert category_column["ordering_field"] == "category__name"
+    assert category_column["ordering_index"] == "2"
+    assert body["config"]["ordering"] == ["category__name"]
+    assert body["config"]["ordering_field_columns"] == {"name": "1", "category__name": "2"}
+    assert body["rows"][0]["cells"] == {"name": "Omega", "category__name": "Accessories"}
+    assert body["rows"][1]["cells"]["category__name"] == "Cameras"
 
 
 def test_changelist_row_metadata_honors_object_permissions(staff_client, sample):

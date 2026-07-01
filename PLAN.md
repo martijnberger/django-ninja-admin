@@ -118,6 +118,8 @@ Completed or mostly complete:
 - `lookup_allowed()` now allows local field lookup suffixes and Django-style `limit_choices_to` reverse-FK lookup parameters while continuing to reject unapproved relational lookups.
 - Expanded changelist metadata for display links, sortable columns, multi-column sort state/query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
 - Changelist rows now expose detail, change-form, delete, view-on-site, and object-permission metadata for frontend action rendering.
+- Changelist columns now support single-valued relation paths in `list_display`,
+  including row values and ordering metadata.
 - Date hierarchy metadata now includes clear/back navigation query strings and validates impossible year/month/day combinations.
 - Date hierarchy checks and changelist metadata/filtering now support relation paths such as `product__created_at`.
 - Initial N+1 hardening through automatic `select_related()` for direct relation fields in `list_display`.
