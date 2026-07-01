@@ -47,6 +47,16 @@ class CustomProductAdmin(ModelAdmin):
         return {"count": Product.objects.count()}
 
     def get_urls(self):
+        @self.route(
+            "/decorated-stats",
+            response=ProductStatsResponse,
+            operation_id="custom_product_decorated_stats",
+            tags=["custom.product"],
+        )
+        @self.admin_view
+        def decorated_stats(request):
+            return {"count": Product.objects.count()}
+
         return [
             self.route(
                 "/stats",
@@ -56,7 +66,8 @@ class CustomProductAdmin(ModelAdmin):
                 summary="Product stats",
                 description="Custom product statistics.",
                 tags=["custom.product"],
-            )
+            ),
+            decorated_stats,
         ]
 
 
@@ -84,6 +95,16 @@ class CustomAdminSite(NinjaAdminSite):
         return {"hidden": "ok"}
 
     def get_urls(self):
+        @self.route(
+            "/decorated-status",
+            response=SiteStatusResponse,
+            operation_id="custom_site_decorated_status",
+            tags=["custom.site"],
+        )
+        @self.admin_view
+        def decorated_status(request):
+            return {"site": "decorated"}
+
         return [
             self.route(
                 "/status",
@@ -115,6 +136,7 @@ class CustomAdminSite(NinjaAdminSite):
                 operation_id="custom_hidden_status",
                 include_in_schema=False,
             ),
+            decorated_status,
         ]
 
 

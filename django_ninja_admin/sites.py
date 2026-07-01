@@ -164,7 +164,7 @@ class NinjaAdminSite:
     def route(
         self,
         path,
-        view_func,
+        view_func=None,
         *,
         methods=("GET",),
         response=dict[str, Any],
@@ -175,19 +175,24 @@ class NinjaAdminSite:
         auth=DEFAULT_AUTH,
         include_in_schema=True,
     ):
-        route_auth = self.auth if auth is DEFAULT_AUTH else auth
-        return AdminRoute(
-            path=path,
-            view_func=view_func,
-            methods=tuple(method.upper() for method in methods),
-            response=response,
-            operation_id=operation_id,
-            summary=summary,
-            description=description,
-            tags=tags,
-            auth=route_auth,
-            include_in_schema=include_in_schema,
-        )
+        def build_route(func):
+            route_auth = self.auth if auth is DEFAULT_AUTH else auth
+            return AdminRoute(
+                path=path,
+                view_func=func,
+                methods=tuple(method.upper() for method in methods),
+                response=response,
+                operation_id=operation_id,
+                summary=summary,
+                description=description,
+                tags=tags,
+                auth=route_auth,
+                include_in_schema=include_in_schema,
+            )
+
+        if view_func is None:
+            return build_route
+        return build_route(view_func)
 
     def get_urls(self):
         return []
