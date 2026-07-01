@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 import pytest
 from django import forms
@@ -2188,8 +2189,8 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
         },
         content_type="application/json",
     )
-    assert invalid_name.status_code == 400
-    assert invalid_name.json()["errors"]["form"][0]["param"] == "name"
+    assert invalid_name.status_code == 422
+    assert invalid_name.json()["errors"][0]["param"] == "data.name"
 
     invalid_category = admin_client.post(
         "/custom-formfield-admin/testapp/product",
@@ -2233,6 +2234,15 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
         tracking_id = forms.UUIDField(required=False)
         host = forms.GenericIPAddressField(required=False)
         duration = forms.DurationField(required=False)
+        bounded_name = forms.CharField(required=False, min_length=3, max_length=8)
+        bounded_count = forms.IntegerField(required=False, min_value=2, max_value=5)
+        bounded_price = forms.DecimalField(
+            required=False,
+            min_value=Decimal("1.00"),
+            max_value=Decimal("9.99"),
+            max_digits=4,
+            decimal_places=2,
+        )
 
         class Meta:
             model = Product
@@ -2255,6 +2265,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
             "tracking_id": tracking_id,
             "host": "2001:db8::1",
             "duration": "1 02:03:04",
+            "bounded_name": "Camera",
+            "bounded_count": 3,
+            "bounded_price": "4.50",
         }
     )
 
@@ -2262,6 +2275,18 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert validated.tracking_id.hex == "550e8400e29b41d4a716446655440000"
     assert str(validated.host) == "2001:db8::1"
     assert validated.duration == timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert validated.bounded_name == "Camera"
+    assert validated.bounded_count == 3
+    assert validated.bounded_price == Decimal("4.50")
+
+    json_schema = schema.model_json_schema()["properties"]
+    assert json_schema["bounded_name"]["anyOf"][0]["maxLength"] == 8
+    assert json_schema["bounded_name"]["anyOf"][0]["minLength"] == 3
+    assert json_schema["bounded_count"]["anyOf"][0]["maximum"] == 5
+    assert json_schema["bounded_count"]["anyOf"][0]["minimum"] == 2
+    assert json_schema["bounded_price"]["anyOf"][0]["maximum"] == 9.99
+    assert json_schema["bounded_price"]["anyOf"][0]["minimum"] == 1.0
+    assert json_schema["bounded_price"]["anyOf"][1]["pattern"]
 
     with pytest.raises(PydanticValidationError):
         schema.model_validate(
@@ -2274,6 +2299,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "tracking_id": "not-a-uuid",
                 "host": "2001:db8::1",
                 "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
             }
         )
 
@@ -2288,6 +2316,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "tracking_id": tracking_id,
                 "host": "not-an-ip",
                 "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
             }
         )
 
@@ -2302,6 +2333,60 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "tracking_id": tracking_id,
                 "host": "2001:db8::1",
                 "duration": "not-a-duration",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "No",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 6,
+                "bounded_price": "4.50",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "123.45",
             }
         )
 

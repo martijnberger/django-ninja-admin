@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.utils.dateparse import parse_duration
 from django.utils.safestring import mark_safe
 from ninja import Schema
-from pydantic import BeforeValidator, ConfigDict, IPvAnyAddress, create_model
+from pydantic import BeforeValidator, ConfigDict, Field, IPvAnyAddress, create_model
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
@@ -250,6 +250,13 @@ class BaseAdmin:
         return cache[cache_key]
 
     def get_pydantic_type_for_form_field(self, field):
+        field_type = self._get_pydantic_type_for_form_field(field)
+        constraints = self.get_pydantic_constraints_for_form_field(field, field_type)
+        if constraints:
+            return Annotated[field_type, Field(**constraints)]
+        return field_type
+
+    def _get_pydantic_type_for_form_field(self, field):
         if isinstance(field, ModelMultipleChoiceField):
             return list[int | str]
         if isinstance(field, ModelChoiceField):
@@ -287,6 +294,25 @@ class BaseAdmin:
         if getattr(field, "choices", None) and not isinstance(field.choices, str | bytes):
             return self.get_pydantic_type_for_choices(field.choices)
         return str
+
+    def get_pydantic_constraints_for_form_field(self, field, field_type=None):
+        constraints = {}
+        if field_type is str and isinstance(field, forms.CharField):
+            if getattr(field, "min_length", None) is not None:
+                constraints["min_length"] = field.min_length
+            if getattr(field, "max_length", None) is not None:
+                constraints["max_length"] = field.max_length
+        if isinstance(field, (forms.DecimalField, forms.FloatField, forms.IntegerField)):
+            if getattr(field, "min_value", None) is not None:
+                constraints["ge"] = field.min_value
+            if getattr(field, "max_value", None) is not None:
+                constraints["le"] = field.max_value
+        if isinstance(field, forms.DecimalField):
+            if getattr(field, "max_digits", None) is not None:
+                constraints["max_digits"] = field.max_digits
+            if getattr(field, "decimal_places", None) is not None:
+                constraints["decimal_places"] = field.decimal_places
+        return constraints
 
     def get_pydantic_type_for_typed_choice_field(self, field):
         coerce = getattr(field, "coerce", None)
