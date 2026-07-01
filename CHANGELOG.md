@@ -15,4 +15,5 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added a sample-project smoke script that installs the wheel into a temporary
   Django project and exercises docs, OpenAPI, app discovery, and a model
   changelist.
+- Added env-driven PostgreSQL test settings and a CI PostgreSQL lane.
 - Added a release checklist with alpha, beta, and stable readiness criteria.

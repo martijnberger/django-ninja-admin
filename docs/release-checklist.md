@@ -21,6 +21,9 @@ just check
 - `just sample-project-smoke` to install the built wheel into a temporary
   Django project, register a model, mount `site.urls`, open docs/OpenAPI, and
   exercise authenticated model discovery.
+- CI also runs `just postgres-test` against PostgreSQL; local use requires
+  `DJANGO_NINJA_ADMIN_TEST_DATABASE=postgres` and the `POSTGRES_*` connection
+  environment variables.
 
 ## Alpha Criteria
 

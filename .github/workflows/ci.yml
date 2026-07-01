@@ -69,3 +69,54 @@ jobs:
 
       - name: Sample project smoke
         run: just sample-project-smoke
+
+  postgres:
+    name: PostgreSQL / Django 5.2 / Python 3.12
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: django_ninja_admin
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U postgres -d django_ninja_admin"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DJANGO_NINJA_ADMIN_TEST_DATABASE: postgres
+      POSTGRES_DB: django_ninja_admin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Select Django and PostgreSQL driver
+        run: uv pip install "django>=5.2,<5.3" "psycopg[binary]>=3.2"
+
+      - name: Test PostgreSQL
+        run: just postgres-test

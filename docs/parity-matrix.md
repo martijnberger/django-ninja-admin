@@ -98,6 +98,6 @@ Statuses:
 | Ruff/pytest local gates | implemented | `just lint`, `just test`, `just check`, `.github/workflows/ci.yml` | Keep CI and local gates aligned |
 | Package build/install smoke | implemented | `scripts/package_smoke.py`, `scripts/sample_project_smoke.py`, `just package-smoke`, `just sample-project-smoke` | Expand sample project scenarios as parity grows |
 | Django version matrix | partial | `.github/workflows/ci.yml` covers Django 4.2, 5.0, 5.1, 5.2, and experimental 6.0 | Confirm CI results and expand Python versions when supported |
-| PostgreSQL coverage | missing | SQLite-only tests | Phase 7 |
+| PostgreSQL coverage | partial | Env-driven `tests/settings.py`, `just postgres-test`, PostgreSQL CI job | Confirm CI results and broaden database-specific edge cases |
 | Copyright/license audit | partial | MIT and Django BSD license files | Audit any newly ported code |
 | Changelog/release checklist | implemented | `CHANGELOG.md`, `docs/release-checklist.md` | Expand release notes before each tag |

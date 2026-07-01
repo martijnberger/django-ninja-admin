@@ -33,6 +33,7 @@ This repository uses `just` for local workflow commands:
 ```bash
 just lint
 just test
+just postgres-test
 just package-smoke
 just sample-project-smoke
 just check
@@ -43,7 +44,9 @@ just ci
 imports the public API, and confirms the wheel metadata does not depend on DRF
 or drf-spectacular. `just sample-project-smoke` installs the built wheel into a
 temporary Django project, mounts `site.urls`, opens docs/OpenAPI, and exercises
-the registered model app list. `just ci` is an alias for the full local gate.
+the registered model app list. `just postgres-test` expects PostgreSQL
+connection env vars and is used by CI. `just ci` is an alias for the full local
+gate.
 
 See [Migration And Authentication](docs/migration-and-auth.md) for guidance on
 moving DRF serializer customizations to `form_class`, `output_schema`, and
