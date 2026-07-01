@@ -230,6 +230,42 @@ def test_admin_checks_report_invalid_model_admin_configuration(db):
     } <= error_ids
 
 
+def test_admin_checks_report_form_widget_option_conflicts(db):
+    class ConflictProductAdmin(ModelAdmin):
+        autocomplete_fields = ("category",)
+        raw_id_fields = ("category",)
+        filter_horizontal = ("tags",)
+        filter_vertical = ("tags",)
+        radio_fields = {"category": 999, "price": VERTICAL}
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, ConflictProductAdmin)
+
+    errors = admin_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    error_ids = {error.id for error in errors}
+
+    assert {
+        "django_ninja_admin.E037",
+        "django_ninja_admin.E038",
+        "django_ninja_admin.E039",
+        "django_ninja_admin.E040",
+        "django_ninja_admin.E041",
+        "django_ninja_admin.E042",
+    } <= error_ids
+
+
+def test_admin_checks_validate_radio_fields_shape(db):
+    class BadRadioShapeAdmin(ModelAdmin):
+        radio_fields = ("stock_status",)
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, BadRadioShapeAdmin)
+
+    errors = admin_site.check(app_configs=[django_apps.get_app_config("testapp")])
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E034"}
+
+
 def test_changelist_search_filter_and_detail(admin_client, sample):
     response = admin_client.get("/admin-api/testapp/product?q=Alpha")
     assert response.status_code == 200

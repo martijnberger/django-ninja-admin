@@ -33,6 +33,8 @@ def check_model_admin(model_admin):
     errors.extend(_check_display_options(model_admin))
     errors.extend(_check_form_layout(model_admin))
     errors.extend(_check_list_filters(model_admin))
+    errors.extend(_check_radio_fields(model_admin))
+    errors.extend(_check_form_option_conflicts(model_admin))
     errors.extend(_check_lookup_fields(model_admin, "search_fields", allow_search_prefixes=True))
     errors.extend(_check_lookup_fields(model_admin, "ordering", allow_descending=True, allow_random=True))
     errors.extend(_check_relation_fields(model_admin, "autocomplete_fields", require_registered_remote=True))
@@ -79,6 +81,8 @@ def _check_display_options(model_admin):
     for item in list_display:
         if not isinstance(item, str):
             errors.append(_error(model_admin.__class__, "Items in 'list_display' must be strings.", "E002"))
+            continue
+        if item == "__str__":
             continue
         if "__" in item:
             errors.append(
@@ -339,6 +343,78 @@ def _check_date_hierarchy(model_admin):
     if not isinstance(field, (models.DateField, models.DateTimeField)):
         return [_error(model_admin.__class__, f"The field '{field_name}' is not a date or datetime field.", "E029")]
     return []
+
+
+def _check_radio_fields(model_admin):
+    from django_ninja_admin.admins.model import HORIZONTAL, VERTICAL
+
+    value = getattr(model_admin, "radio_fields", {}) or {}
+    if not isinstance(value, dict):
+        return [_error(model_admin.__class__, "The value of 'radio_fields' must be a dictionary.", "E034")]
+
+    errors = []
+    for field_name, orientation in value.items():
+        if not isinstance(field_name, str):
+            errors.append(_error(model_admin.__class__, "Keys in 'radio_fields' must be field names.", "E035"))
+            continue
+        field = _model_field(model_admin, field_name)
+        if field is None:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'radio_fields' refers to unknown field '{field_name}'.",
+                    "E036",
+                )
+            )
+            continue
+        if not getattr(field, "remote_field", None) and not getattr(field, "choices", None):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The field '{field_name}' must be a relation field or define choices for 'radio_fields'.",
+                    "E037",
+                )
+            )
+        if orientation not in {HORIZONTAL, VERTICAL}:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'radio_fields[{field_name!r}]' must be HORIZONTAL or VERTICAL.",
+                    "E038",
+                )
+            )
+    return errors
+
+
+def _check_form_option_conflicts(model_admin):
+    conflicts = [
+        ("autocomplete_fields", "raw_id_fields", "E039"),
+        ("autocomplete_fields", "radio_fields", "E040"),
+        ("raw_id_fields", "radio_fields", "E041"),
+        ("filter_horizontal", "filter_vertical", "E042"),
+    ]
+    errors = []
+    for left, right, code in conflicts:
+        left_fields = _option_field_names(model_admin, left)
+        right_fields = _option_field_names(model_admin, right)
+        for field_name in sorted(left_fields & right_fields):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The field '{field_name}' cannot be in both '{left}' and '{right}'.",
+                    code,
+                )
+            )
+    return errors
+
+
+def _option_field_names(model_admin, option):
+    value = getattr(model_admin, option, None) or ()
+    if isinstance(value, dict):
+        return {field_name for field_name in value if isinstance(field_name, str)}
+    if isinstance(value, (list, tuple)):
+        return {field_name for field_name in value if isinstance(field_name, str)}
+    return set()
 
 
 def _check_actions(model_admin):

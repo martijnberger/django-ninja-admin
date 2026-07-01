@@ -76,7 +76,7 @@ Completed or mostly complete:
 - Expanded changelist metadata for display links, sortable columns, sort query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
 - Initial N+1 hardening through automatic `select_related()` for direct relation fields in `list_display`.
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
-- Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, date hierarchy, actions, and inlines.
+- Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, radio fields, widget-option conflicts, date hierarchy, actions, and inlines.
 - `get_changelist()` and `get_changelist_instance()` hooks for changelist customization.
 - Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration.
 - Display decorator metadata for descriptions, ordering, booleans, and per-field empty values is reflected in changelist columns/results.
@@ -93,7 +93,7 @@ Known non-parity areas:
 
 - Changelist behavior is still not fully equivalent to upstream `ChangeList`; deeper query-string behavior, result rendering metadata, list-editable formset parity, and broader N+1 hardening still need work.
 - Filter handling now covers common Django admin filter families plus initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
-- System checks now cover common invalid configurations, but they do not yet match Django's complete check coverage or IDs.
+- System checks now cover common invalid configurations and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas advertise action names, but custom action-specific extra payload contracts are not yet modeled.
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
 - Inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.

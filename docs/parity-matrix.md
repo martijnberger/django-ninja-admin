@@ -37,7 +37,7 @@ Statuses:
 | Model registration/unregistration | implemented | `NinjaAdminSite.register`, `unregister` | More duplicate/swapped/abstract tests |
 | Default site/autodiscover | partial | Lazy `site`, `autodiscover()` | Project-level smoke test |
 | Permission hooks | partial | `BaseAdmin.has_*_permission`, API tests | More object-level and custom hook coverage |
-| Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin tests | Match Django check IDs/coverage more closely |
+| Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin and widget-conflict tests | Match Django check IDs/coverage more closely |
 | `get_changelist()` hooks | implemented | `ModelAdmin.get_changelist*`, route hook test | More subclassing examples/docs |
 | Custom site/model views | partial | `admin_view()`, `get_urls()`, `route()`, custom route tests | More auth/tag/response-schema override coverage |
 | Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values in changelist tests | More model-method/property and readonly-field display variants |
@@ -68,7 +68,7 @@ Statuses:
 | Form descriptions | partial | Widget, custom-widget, validator, relation, numeric, decimal, choice, readonly, model-field, file, m2m, and admin-widget metadata tests | Image metadata, custom field metadata, and advanced widget details |
 | File/image fields | partial | FileField output schema/serialization, current-file form metadata, and JSON clear tests | Multipart create/update upload handling and image-specific behavior |
 | Many-to-many fields | partial | Pydantic write schema, form value metadata, output serialization, create/update tests | Through models, permissions, and richer dual-select widget semantics |
-| Raw ID/radio/filter-horizontal/prepopulated | partial | Per-field `admin_widget`, radio orientation, prepopulated source, raw-id, filter-horizontal, and filter-vertical tests | Full Django widget rendering semantics and conflict checks |
+| Raw ID/radio/filter-horizontal/prepopulated | partial | Per-field `admin_widget`, radio orientation, prepopulated source, raw-id, filter-horizontal/filter-vertical, and conflict-check tests | Full Django widget rendering semantics and more edge cases |
 
 ## Mutations, Inlines, Delete, And Logs
 
