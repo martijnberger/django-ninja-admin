@@ -4825,6 +4825,27 @@ def test_bulk_update_validates_all_rows_before_saving(admin_client, sample):
     assert str(beta.price) == "3.00"
 
 
+def test_bulk_update_is_limited_to_filtered_changelist_queryset(admin_client, sample):
+    beta = Product.objects.get(name="Beta")
+    response = admin_client.put(
+        "/admin-api/testapp/product/bulk?stock_status__exact=out_of_stock",
+        data={
+            "data": [
+                {"pk": sample.pk, "stock_status": "out_of_stock"},
+                {"pk": beta.pk, "stock_status": "in_stock"},
+            ]
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["errors"]["0"] == [{"message": "Object not found.", "param": "pk"}]
+    sample.refresh_from_db()
+    beta.refresh_from_db()
+    assert sample.stock_status == "in_stock"
+    assert beta.stock_status == "out_of_stock"
+
+
 def test_bulk_update_returns_all_server_side_row_errors(admin_client, sample):
     response = admin_client.put(
         "/admin-api/testapp/product/bulk",

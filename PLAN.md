@@ -82,6 +82,9 @@ Completed or mostly complete:
   Django form binding, including `MultiValueField` expansion for custom inline
   forms.
 - Bulk list-editable updates use strict row schemas, reject duplicate PKs, and validate all rows before writing.
+- Bulk list-editable updates now resolve target rows through the filtered
+  changelist queryset so active filters/search constrain editable rows before
+  any writes occur.
 - Bulk list-editable updates now skip save hooks and empty change-log entries for unchanged rows while still returning validated row data.
 - Bulk list-editable updates now aggregate server-side row errors before writing.
 - Direct delete and default `delete_selected` return structured protected-object and permission-needed details.
@@ -251,7 +254,7 @@ Completed or mostly complete:
 
 Known non-parity areas:
 
-- Changelist behavior is still not fully equivalent to upstream `ChangeList`; deeper query-string behavior, result rendering metadata, list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
+- Changelist behavior is still not fully equivalent to upstream `ChangeList`; deeper query-string behavior, result rendering metadata, remaining list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
 - Filter handling now covers common Django admin filter families, bounded date filter ranges, and initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_editable` form-layout conflicts, `list_select_related` mistakes, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas now advertise action names, discriminated per-action input payload variants, and optional custom response schema unions.

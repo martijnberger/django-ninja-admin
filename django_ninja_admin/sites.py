@@ -743,7 +743,8 @@ class NinjaAdminSite:
         def bulk_update(request, payload: bulk_payload_schema):
             if not model_admin.has_change_permission(request):
                 raise PermissionDenied
-            return site._bulk_update(request, model_admin, payload)
+            cl_queryset = site._filtered_queryset(request, model_admin)
+            return site._bulk_update(request, model_admin, payload, queryset=cl_queryset)
 
         self._register_custom_routes(
             router,
@@ -1597,13 +1598,14 @@ class NinjaAdminSite:
                 continue
             formset_data[f"{prefix}-{index}-{name}"] = value
 
-    def _bulk_update(self, request, model_admin, payload):
+    def _bulk_update(self, request, model_admin, payload, *, queryset=None):
         payload_data = [
             item.model_dump(mode="python", exclude_unset=True) if hasattr(item, "model_dump") else item
             for item in payload.data
         ]
         if not payload_data:
             raise AdminValidationError([{"message": "Change data cannot be empty.", "param": "data"}])
+        queryset = queryset if queryset is not None else model_admin.get_queryset(request)
         validated_rows = []
         row_errors = {}
         seen_pks = set()
@@ -1627,7 +1629,7 @@ class NinjaAdminSite:
                     }
                 ]
                 continue
-            obj = model_admin.get_object(request, pk)
+            obj = self._bulk_object_from_queryset(queryset, pk)
             if obj is None:
                 row_errors[idx] = [{"message": "Object not found.", "param": "pk"}]
                 continue
@@ -1656,6 +1658,14 @@ class NinjaAdminSite:
                     obj = updated
                 results[str(idx)] = model_admin.serialize_object(obj, request)
         return {"data": results}
+
+    def _bulk_object_from_queryset(self, queryset, pk):
+        field = queryset.model._meta.pk
+        try:
+            object_id = field.to_python(pk)
+            return queryset.get(**{field.name: object_id})
+        except (queryset.model.DoesNotExist, ValidationError, ValueError):
+            return None
 
 
 def router_db_for_write(model):
