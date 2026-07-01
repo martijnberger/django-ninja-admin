@@ -1,0 +1,133 @@
+import json
+
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.db import models
+from django.urls import NoReverseMatch, reverse
+from django.utils import timezone
+from django.utils.text import get_text_list
+from django.utils.translation import gettext
+from django.utils.translation import gettext_lazy as _
+
+from django_ninja_admin.utils.quote import quote
+
+ADDITION = 1
+CHANGE = 2
+DELETION = 3
+
+ACTION_FLAG_CHOICES = [
+    (ADDITION, _("Addition")),
+    (CHANGE, _("Change")),
+    (DELETION, _("Deletion")),
+]
+
+
+class LogEntryManager(models.Manager):
+    use_in_migrations = True
+
+    def log_actions(self, user_id, queryset, action_flag, change_message="", *, single_object=False):
+        if isinstance(change_message, list):
+            change_message = json.dumps(change_message)
+
+        entries = [
+            self.model(
+                user_id=user_id,
+                content_type_id=ContentType.objects.get_for_model(obj, for_concrete_model=False).id,
+                object_id=obj.pk,
+                object_repr=str(obj)[:200],
+                action_flag=action_flag,
+                change_message=change_message,
+            )
+            for obj in queryset
+        ]
+        if len(entries) == 1:
+            entries[0].save()
+            return entries[0] if single_object else entries
+        return self.model.objects.bulk_create(entries)
+
+
+class LogEntry(models.Model):
+    action_time = models.DateTimeField(_("action time"), default=timezone.now, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        models.CASCADE,
+        verbose_name=_("user"),
+        related_name="django_ninja_admin_logentry_user",
+    )
+    content_type = models.ForeignKey(
+        ContentType,
+        models.SET_NULL,
+        verbose_name=_("content type"),
+        blank=True,
+        null=True,
+        related_name="django_ninja_admin_logentry_logentries",
+    )
+    object_id = models.TextField(_("object id"), blank=True, null=True)
+    object_repr = models.CharField(_("object repr"), max_length=200)
+    action_flag = models.PositiveSmallIntegerField(_("action flag"), choices=ACTION_FLAG_CHOICES)
+    change_message = models.TextField(_("change message"), blank=True)
+
+    objects = LogEntryManager()
+
+    class Meta:
+        db_table = "django_ninja_admin_log"
+        ordering = ["-action_time"]
+        verbose_name = _("log entry")
+        verbose_name_plural = _("log entries")
+
+    def __str__(self):
+        if self.is_addition():
+            return gettext("Added %(object)s.") % {"object": self.object_repr}
+        if self.is_change():
+            return gettext("Changed %(object)s - %(changes)s") % {
+                "object": self.object_repr,
+                "changes": self.get_change_message(),
+            }
+        if self.is_deletion():
+            return gettext("Deleted %(object)s.") % {"object": self.object_repr}
+        return gettext("LogEntry Object")
+
+    def is_addition(self):
+        return self.action_flag == ADDITION
+
+    def is_change(self):
+        return self.action_flag == CHANGE
+
+    def is_deletion(self):
+        return self.action_flag == DELETION
+
+    def get_change_message(self):
+        if self.change_message and self.change_message[0] == "[":
+            try:
+                change_message = json.loads(self.change_message)
+            except json.JSONDecodeError:
+                return self.change_message
+            messages = []
+            for sub_message in change_message:
+                if "added" in sub_message:
+                    added = sub_message["added"]
+                    if added:
+                        messages.append(gettext('Added {name} "{object}".').format(**added))
+                    else:
+                        messages.append(gettext("Added."))
+                elif "changed" in sub_message:
+                    changed = sub_message["changed"]
+                    changed["fields"] = get_text_list([gettext(field) for field in changed["fields"]], gettext("and"))
+                    messages.append(gettext("Changed {fields}.").format(**changed))
+                elif "deleted" in sub_message:
+                    deleted = sub_message["deleted"]
+                    messages.append(gettext("Deleted {name} \"{object}\".").format(**deleted))
+            return " ".join(messages) or gettext("No fields changed.")
+        return self.change_message
+
+    def get_edited_object(self):
+        return self.content_type.get_object_for_this_type(pk=self.object_id)
+
+    def get_admin_url(self):
+        if self.content_type and self.object_id:
+            url_name = f"admin:{self.content_type.app_label}_{self.content_type.model}_change"
+            try:
+                return reverse(url_name, args=(quote(self.object_id),))
+            except NoReverseMatch:
+                return None
+        return None
