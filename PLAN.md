@@ -273,7 +273,7 @@ Acceptance:
 
 Goal: reach the original "no public release until full parity" bar.
 
-- Run the full local test suite across Django 5.0, 5.1, 5.2, and the latest supported 6.0 pre-release when practical.
+- Run the full local test suite across Django 5.0, 5.1, 5.2, and supported Django 6.0.x when practical.
 - Test against SQLite and PostgreSQL.
 - Add package build checks and install smoke tests in a clean sample Django project.
 - Audit copyright notices for Django-derived and upstream-derived code.
