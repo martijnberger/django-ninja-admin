@@ -697,6 +697,25 @@ class NinjaAdminSite:
         action_response_schema = model_admin.get_action_response_schema(None)
         create_file_fields = site._file_form_field_names(model_admin, change=False)
         change_file_fields = site._file_form_field_names(model_admin, change=True)
+        create_response = {
+            200: dict[str, Any],
+            201: mutation_response_schema,
+            202: dict[str, Any],
+            204: None,
+            400: ErrorResponse,
+            403: ErrorResponse,
+            422: ErrorResponse,
+        }
+        change_response = {
+            200: mutation_response_schema,
+            201: dict[str, Any],
+            202: dict[str, Any],
+            204: None,
+            400: ErrorResponse,
+            403: ErrorResponse,
+            404: ErrorResponse,
+            422: ErrorResponse,
+        }
 
         @router.get(
             prefix,
@@ -720,7 +739,7 @@ class NinjaAdminSite:
 
         @router.post(
             prefix,
-            response={201: mutation_response_schema, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
+            response=create_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_create",
         )
@@ -731,7 +750,7 @@ class NinjaAdminSite:
 
             @router.post(
                 f"{prefix}/multipart",
-                response={201: mutation_response_schema, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
+                response=create_response,
                 tags=tags,
                 operation_id=f"{app_label}_{model_name}_create_multipart",
                 openapi_extra=site._multipart_openapi_extra(
@@ -818,13 +837,7 @@ class NinjaAdminSite:
 
         @router.patch(
             f"{prefix}/{{object_id}}",
-            response={
-                200: mutation_response_schema,
-                400: ErrorResponse,
-                403: ErrorResponse,
-                404: ErrorResponse,
-                422: ErrorResponse,
-            },
+            response=change_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_partial_update",
         )
@@ -838,13 +851,7 @@ class NinjaAdminSite:
 
         @router.put(
             f"{prefix}/{{object_id}}",
-            response={
-                200: mutation_response_schema,
-                400: ErrorResponse,
-                403: ErrorResponse,
-                404: ErrorResponse,
-                422: ErrorResponse,
-            },
+            response=change_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_update",
         )
@@ -860,13 +867,7 @@ class NinjaAdminSite:
 
             @router.patch(
                 f"{prefix}/{{object_id}}/multipart",
-                response={
-                    200: mutation_response_schema,
-                    400: ErrorResponse,
-                    403: ErrorResponse,
-                    404: ErrorResponse,
-                    422: ErrorResponse,
-                },
+                response=change_response,
                 tags=tags,
                 operation_id=f"{app_label}_{model_name}_partial_update_multipart",
                 openapi_extra=site._multipart_openapi_extra(
@@ -895,13 +896,7 @@ class NinjaAdminSite:
 
             @router.put(
                 f"{prefix}/{{object_id}}/multipart",
-                response={
-                    200: mutation_response_schema,
-                    400: ErrorResponse,
-                    403: ErrorResponse,
-                    404: ErrorResponse,
-                    422: ErrorResponse,
-                },
+                response=change_response,
                 tags=tags,
                 operation_id=f"{app_label}_{model_name}_update_multipart",
                 openapi_extra=site._multipart_openapi_extra(
@@ -1265,7 +1260,10 @@ class NinjaAdminSite:
             model_admin.save_related(request, form, inline_results, change=False)
             change_message = model_admin.construct_change_message(request, form, inline_results, add=True)
             model_admin.log_addition(request, obj, change_message)
-            return Status(201, model_admin.response_add(request, obj, form, inline_results))
+            response = model_admin.response_add(request, obj, form, inline_results)
+            if isinstance(response, Status):
+                return response
+            return Status(201, response)
 
     def _file_form_field_names(self, model_admin, request=None, obj=None, *, change):
         form_class = model_admin.get_form_class(request, obj, change=change)

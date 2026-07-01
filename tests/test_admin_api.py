@@ -21,6 +21,7 @@ from django.test import Client, RequestFactory, override_settings
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.test.utils import CaptureQueriesContext, isolate_apps
 from django.utils import timezone
+from ninja import Status
 from ninja.security import SessionAuthIsStaff
 from pydantic import ValidationError as PydanticValidationError
 
@@ -140,9 +141,19 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert schema_body["paths"]["/admin-api/testapp/product"]["post"]["responses"]["201"]["content"][
         "application/json"
     ]["schema"] == {"$ref": "#/components/schemas/ProductAdminMutationResponse"}
+    create_accepted_schema = schema_body["paths"]["/admin-api/testapp/product"]["post"]["responses"]["202"]["content"][
+        "application/json"
+    ]["schema"]
+    assert create_accepted_schema["type"] == "object"
+    assert create_accepted_schema["additionalProperties"] is True
     assert schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["patch"]["responses"]["200"]["content"][
         "application/json"
     ]["schema"] == {"$ref": "#/components/schemas/ProductAdminMutationResponse"}
+    update_accepted_schema = schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["patch"]["responses"][
+        "202"
+    ]["content"]["application/json"]["schema"]
+    assert update_accepted_schema["type"] == "object"
+    assert update_accepted_schema["additionalProperties"] is True
     assert set(components["ProductAdminCreateData"]["required"]) == {"name", "category", "price", "stock_status"}
     assert "required" not in components["ProductAdminPartialUpdateData"]
     assert components["ProductAdminCreateData"]["properties"]["stock_status"]["type"] == "string"
@@ -2261,6 +2272,52 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
     assert bulk_deleted.status_code == 200
     assert Tag.objects.filter(name="delete_queryset:Bulk Hooked").exists()
     assert not Product.objects.filter(pk=bulk_product.pk).exists()
+
+
+def test_response_hooks_can_return_custom_status(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    def response_add(request, obj, form, inline_results):
+        return Status(202, {"hook": "add", "id": obj.pk, "name": obj.name})
+
+    def response_change(request, obj, form, inline_results):
+        return Status(202, {"hook": "change", "id": obj.pk, "description": obj.description})
+
+    monkeypatch.setattr(product_admin, "response_add", response_add)
+    monkeypatch.setattr(product_admin, "response_change", response_change)
+
+    created = admin_client.post(
+        "/admin-api/testapp/product",
+        data={
+            "data": {
+                "name": "Status Hook",
+                "category": sample.category_id,
+                "price": "8.00",
+                "stock_status": "in_stock",
+            }
+        },
+        content_type="application/json",
+    )
+
+    assert created.status_code == 202
+    created_body = created.json()
+    assert created_body["hook"] == "add"
+    created_id = created_body["id"]
+    assert Product.objects.filter(pk=created_id, name="Status Hook").exists()
+
+    changed = admin_client.patch(
+        f"/admin-api/testapp/product/{created_id}",
+        data={"data": {"description": "Custom status response"}},
+        content_type="application/json",
+    )
+
+    assert changed.status_code == 202
+    assert changed.json() == {
+        "hook": "change",
+        "id": created_id,
+        "description": "Custom status response",
+    }
+    assert Product.objects.get(pk=created_id).description == "Custom status response"
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
