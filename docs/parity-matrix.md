@@ -64,7 +64,7 @@ Statuses:
 | Dynamic output schemas | partial | `BaseAdmin.get_output_schema`, schema override test | Stable component names and richer custom fields |
 | Pydantic request envelopes | partial | Per-model create/update/bulk, per-inline operation, discriminated action payload variants, and custom action input schemas with OpenAPI tests | Broader edge-case schemas and snapshots |
 | Django ModelForm validation | implemented | Create/update tests | More field/widget variants |
-| Custom `form_class` | partial | Mounted custom-form route test covers schema fields, custom widget attrs, form validation, and persistence | More custom formfield callbacks, media, and field override edge cases |
+| Custom `form_class` and formfield hooks | partial | Mounted custom-form and custom-formfield route tests cover schema fields, custom widget attrs, `formfield_overrides`, `formfield_for_dbfield`, relation/choice hooks, form validation, and persistence | More media and field override edge cases |
 | Form descriptions | partial | Widget, custom-widget, validator, relation, numeric, decimal, choice, readonly, model-field, file, m2m, and admin-widget metadata tests | Image metadata, custom field metadata, and advanced widget details |
 | File/image fields | partial | FileField output schema/serialization, current-file form metadata, JSON clear tests, multipart create/update routes, and Pydantic validation for multipart JSON parts | Image-specific behavior and deeper storage/widget edge cases |
 | Many-to-many fields | partial | Pydantic write schema, form value metadata, output serialization, create/update tests | Through models, permissions, and richer dual-select widget semantics |

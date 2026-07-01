@@ -1,3 +1,4 @@
+import copy
 from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Any
@@ -26,6 +27,7 @@ class BaseAdmin:
     exclude = None
     fieldsets = None
     form_class = None
+    formfield_overrides = {}
     output_schema = None
     schema_field_overrides = {}
     filter_vertical = ()
@@ -85,7 +87,52 @@ class BaseAdmin:
             form=forms.ModelForm,
             fields=form_fields or None,
             exclude=exclude or None,
+            formfield_callback=lambda db_field, **kwargs: self.formfield_for_dbfield(db_field, request, **kwargs),
         )
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.choices:
+            return self.formfield_for_choice_field(db_field, request, **kwargs)
+        if isinstance(db_field, models.ForeignKey):
+            if db_field.__class__ in self.formfield_overrides:
+                kwargs = {**copy.deepcopy(self.formfield_overrides[db_field.__class__]), **kwargs}
+            return self.formfield_for_foreignkey(db_field, request, **kwargs)
+        if isinstance(db_field, models.ManyToManyField):
+            if db_field.__class__ in self.formfield_overrides:
+                kwargs = {**copy.deepcopy(self.formfield_overrides[db_field.__class__]), **kwargs}
+            return self.formfield_for_manytomany(db_field, request, **kwargs)
+        for klass in db_field.__class__.mro():
+            if klass in self.formfield_overrides:
+                kwargs = {**copy.deepcopy(self.formfield_overrides[klass]), **kwargs}
+                return db_field.formfield(**kwargs)
+        return db_field.formfield(**kwargs)
+
+    def formfield_for_choice_field(self, db_field, request, **kwargs):
+        if db_field.name in self.radio_fields:
+            kwargs.setdefault("widget", forms.RadioSelect)
+            kwargs.setdefault(
+                "choices",
+                db_field.get_choices(include_blank=db_field.blank, blank_choice=[("", "None")]),
+            )
+        return db_field.formfield(**kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        db = kwargs.get("using")
+        if "queryset" not in kwargs:
+            queryset = self.get_field_queryset(db, db_field, request)
+            if queryset is not None:
+                kwargs["queryset"] = queryset
+        return db_field.formfield(**kwargs)
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if not db_field.remote_field.through._meta.auto_created:
+            return None
+        db = kwargs.get("using")
+        if "queryset" not in kwargs:
+            queryset = self.get_field_queryset(db, db_field, request)
+            if queryset is not None:
+                kwargs["queryset"] = queryset
+        return db_field.formfield(**kwargs)
 
     def get_schema_field_overrides(self, request=None):
         return self.schema_field_overrides

@@ -602,6 +602,82 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
     assert not Product.objects.filter(pk=bulk_product.pk).exists()
 
 
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_client, sample):
+    allowed_category = Category.objects.create(name="Allowed Cameras")
+
+    schema = admin_client.get("/custom-formfield-admin/openapi.json").json()
+    create_data_schema = schema["components"]["schemas"]["ProductAdminCreateData"]
+    assert set(create_data_schema["required"]) == {"name", "category", "price", "stock_status"}
+
+    form = admin_client.get("/custom-formfield-admin/testapp/product/form")
+    assert form.status_code == 200
+    fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
+    assert fields_by_name["name"]["attrs"]["help_text"] == "Name from formfield_for_dbfield."
+    assert fields_by_name["name"]["attrs"]["min_length"] == 3
+    assert fields_by_name["description"]["attrs"]["help_text"] == "Describe the product carefully."
+    assert fields_by_name["description"]["attrs"]["widget"] == "Textarea"
+    assert fields_by_name["description"]["attrs"]["widget_attrs"]["data-hook"] == "override"
+    assert fields_by_name["description"]["attrs"]["widget_attrs"]["rows"] == 4
+    assert fields_by_name["stock_status"]["attrs"]["choices"] == [["in_stock", "Available"]]
+    assert fields_by_name["stock_status"]["attrs"]["widget"] == "RadioSelect"
+    assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
+    assert fields_by_name["stock_status"]["attrs"]["radio_orientation"] == VERTICAL
+    category_choices = fields_by_name["category"]["attrs"]["choices"]
+    assert [str(allowed_category.pk), "Allowed Cameras"] in category_choices
+    assert [str(sample.category_id), "Cameras"] not in category_choices
+
+    invalid_name = admin_client.post(
+        "/custom-formfield-admin/testapp/product",
+        data={
+            "data": {
+                "name": "No",
+                "category": allowed_category.pk,
+                "price": "9.00",
+                "stock_status": "in_stock",
+            }
+        },
+        content_type="application/json",
+    )
+    assert invalid_name.status_code == 400
+    assert invalid_name.json()["errors"]["form"][0]["param"] == "name"
+
+    invalid_category = admin_client.post(
+        "/custom-formfield-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Allowed Product",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+            }
+        },
+        content_type="application/json",
+    )
+    assert invalid_category.status_code == 400
+    assert invalid_category.json()["errors"]["form"][0]["param"] == "category"
+
+    created = admin_client.post(
+        "/custom-formfield-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Allowed Product",
+                "category": allowed_category.pk,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "description": "Hooked description",
+            }
+        },
+        content_type="application/json",
+    )
+
+    assert created.status_code == 201
+    created_id = created.json()["data"]["id"]
+    product = Product.objects.get(pk=created_id)
+    assert product.category == allowed_category
+    assert product.description == "Hooked description"
+
+
 def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     alpha_date = timezone.make_aware(datetime(2024, 1, 15, 10, 0))
     beta = Product.objects.get(name="Beta")

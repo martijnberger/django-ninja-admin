@@ -14,6 +14,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
   uploads to Django `ModelForm` file handling.
 - Hardened view-on-site URL resolution so relative model URLs fall back to the
   request host when the configured `Site` row is missing.
+- Added Django-admin-style formfield customization hooks for generated forms,
+  including `formfield_overrides`, `formfield_for_dbfield()`,
+  `formfield_for_foreignkey()`, `formfield_for_manytomany()`, and
+  `formfield_for_choice_field()`.
 
 ## 0.1.1 - 2026-07-01
 

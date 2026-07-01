@@ -1,8 +1,9 @@
 from django import forms
+from django.db import models
 from django.urls import path
 from ninja import Status
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite
+from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite
 from tests.testapp.models import Category, Product, Tag
 
 
@@ -70,6 +71,41 @@ custom_form_site.register(Category, ModelAdmin)
 custom_form_site.register(Tag, ModelAdmin)
 custom_form_site.register(Product, CustomFormProductAdmin)
 
+
+class FormfieldHookProductAdmin(ModelAdmin):
+    formfield_overrides = {
+        models.TextField: {
+            "widget": forms.Textarea(attrs={"rows": 4, "data-hook": "override"}),
+            "help_text": "Describe the product carefully.",
+        }
+    }
+    radio_fields = {"stock_status": VERTICAL}
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == "name":
+            kwargs["help_text"] = "Name from formfield_for_dbfield."
+            kwargs["min_length"] = 3
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        return formfield
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "category":
+            kwargs["queryset"] = Category.objects.filter(name__startswith="Allowed")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def formfield_for_choice_field(self, db_field, request, **kwargs):
+        if db_field.name == "stock_status":
+            kwargs["choices"] = [("in_stock", "Available")]
+        return super().formfield_for_choice_field(db_field, request, **kwargs)
+
+
+custom_formfield_site = NinjaAdminSite(name="custom_formfield_admin", include_auth=False)
+custom_formfield_site.register(Category, ModelAdmin)
+custom_formfield_site.register(Tag, ModelAdmin)
+custom_formfield_site.register(Product, FormfieldHookProductAdmin)
+
+
 urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
+    path("custom-formfield-admin/", custom_formfield_site.urls),
 ]
