@@ -83,6 +83,7 @@ Completed or mostly complete:
 - Existing file fields can be cleared in JSON mutations by sending explicit `null`, using Django's form clear semantics and recording change messages.
 - Many-to-many fields now have Pydantic write schemas, JSON-safe change-form values, form relation metadata, output serialization, and create/update persistence coverage.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
+- Custom `form_class` is covered through mounted Ninja routes for write-schema generation, custom widget attributes, Django form validation, and mutation persistence.
 - Initial behavioral tests and no DRF/drf-spectacular runtime dependency.
 
 Known non-parity areas:
@@ -91,7 +92,7 @@ Known non-parity areas:
 - Filter handling now covers common Django admin filter families plus initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas advertise action names, but custom action-specific extra payload contracts are not yet modeled.
-- Field metadata now covers common widget, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
+- Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
 - Inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works, but it does not yet expose full per-model request/response contracts or the same richness upstream provided through drf-spectacular hooks.
 - Admin extensibility is still young: custom view routing and display metadata exist, but deeper auth/tag/response-schema coverage and override-hook parity need work.

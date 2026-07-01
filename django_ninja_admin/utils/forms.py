@@ -108,6 +108,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         "read_only": read_only,
         "disabled": getattr(field, "disabled", False),
         "widget": widget.__class__.__name__,
+        "widget_attrs": _jsonish_value(getattr(widget, "attrs", {})),
         "is_hidden": widget.is_hidden,
         "multiple": getattr(widget, "allow_multiple_selected", False),
         "validators": _validator_names(field),

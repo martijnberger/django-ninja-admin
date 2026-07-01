@@ -272,6 +272,60 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert schema["paths"]["/custom-admin/testapp/product/stats"]["get"]["operationId"] == "custom_product_stats"
 
 
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, sample):
+    schema = admin_client.get("/custom-form-admin/openapi.json").json()
+    create_data_schema = schema["components"]["schemas"]["ProductAdminCreateData"]
+
+    assert "manual" not in create_data_schema["properties"]
+    assert set(create_data_schema["required"]) == {"name", "category", "price", "stock_status"}
+
+    form = admin_client.get("/custom-form-admin/testapp/product/form")
+    assert form.status_code == 200
+    fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
+    assert fields_by_name["name"]["attrs"]["widget_attrs"]["data-admin"] == "custom"
+    assert fields_by_name["description"]["attrs"]["widget"] == "Textarea"
+    assert fields_by_name["description"]["attrs"]["widget_attrs"]["rows"] == 2
+    assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_horizontal"
+
+    tag_ids = list(sample.tags.values_list("pk", flat=True))
+    invalid = admin_client.post(
+        "/custom-form-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Forbidden",
+                "category": sample.category_id,
+                "tags": tag_ids,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "description": "Blocked",
+            }
+        },
+        content_type="application/json",
+    )
+    assert invalid.status_code == 400
+    assert invalid.json()["errors"]["form"][0]["param"] == "name"
+    assert invalid.json()["errors"]["form"][0]["message"] == ["Forbidden product name."]
+
+    created = admin_client.post(
+        "/custom-form-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Allowed",
+                "category": sample.category_id,
+                "tags": tag_ids,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "description": "Created through custom form",
+            }
+        },
+        content_type="application/json",
+    )
+    assert created.status_code == 201
+    assert created.json()["data"]["name"] == "Allowed"
+    assert set(created.json()["data"]["tags"]) == set(tag_ids)
+
+
 def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     alpha_date = timezone.make_aware(datetime(2024, 1, 15, 10, 0))
     beta = Product.objects.get(name="Beta")
