@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   return permission errors instead of unknown-inline validation errors.
 - Hardened inline mutations so unknown or readonly inline row fields return
   validation errors instead of being silently ignored.
+- Improved bulk list-editable updates so unchanged rows are validated and
+  returned without invoking save hooks or writing empty change-log entries.
 - Added support for passing pytest selectors through `just test` and
   `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full

@@ -1236,10 +1236,12 @@ class NinjaAdminSite:
         results = {}
         with transaction.atomic(using=router_db_for_write(model_admin.model)):
             for idx, obj, form in validated_rows:
-                updated = model_admin.save_form(request, form, change=True)
-                model_admin.save_model(request, updated, form, change=True)
-                model_admin.save_related(request, form, {}, change=True)
-                model_admin.log_change(request, updated, model_admin.construct_change_message(request, form))
+                if form.has_changed():
+                    updated = model_admin.save_form(request, form, change=True)
+                    model_admin.save_model(request, updated, form, change=True)
+                    model_admin.save_related(request, form, {}, change=True)
+                    model_admin.log_change(request, updated, model_admin.construct_change_message(request, form))
+                    obj = updated
                 results[idx] = model_admin.serialize_object(obj, request)
         return {"data": results}
 

@@ -972,6 +972,39 @@ def test_bulk_update_validates_all_rows_before_saving(admin_client, sample):
     assert str(beta.price) == "3.00"
 
 
+def test_bulk_update_skips_unchanged_rows(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    beta = Product.objects.get(name="Beta")
+    save_calls = []
+    original_save_model = product_admin.save_model
+
+    def save_model(request, obj, form, change):
+        save_calls.append(obj.pk)
+        return original_save_model(request, obj, form, change)
+
+    monkeypatch.setattr(product_admin, "save_model", save_model)
+    response = admin_client.put(
+        "/admin-api/testapp/product/bulk",
+        data={
+            "data": [
+                {"pk": sample.pk, "stock_status": "out_of_stock"},
+                {"pk": beta.pk},
+            ]
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert set(response.json()["data"]) == {"0", "1"}
+    assert save_calls == [sample.pk]
+    assert LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).count() == 1
+    assert not LogEntry.objects.filter(object_id=str(beta.pk), action_flag=CHANGE).exists()
+    sample.refresh_from_db()
+    beta.refresh_from_db()
+    assert sample.stock_status == "out_of_stock"
+    assert beta.stock_status == "out_of_stock"
+
+
 def test_inline_mutations_check_inline_permissions(staff_client, sample):
     client = staff_client("change_product")
     image = ProductImage.objects.get(product=sample)

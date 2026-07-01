@@ -70,6 +70,7 @@ Completed or mostly complete:
 - Inline mutations now distinguish unknown inline IDs from configured-but-forbidden inline operations, returning permission errors for forbidden add/change/delete attempts.
 - Inline mutations reject unknown or readonly row fields before formset save so ignored client input cannot silently pass.
 - Bulk list-editable updates use strict row schemas, reject duplicate PKs, and validate all rows before writing.
+- Bulk list-editable updates now skip save hooks and empty change-log entries for unchanged rows while still returning validated row data.
 - Direct delete and default `delete_selected` return structured protected-object and permission-needed details.
 - Change messages include field labels and inline add/change/delete entries for history/log consumers.
 - Actions cover custom return values, empty-selection validation, and `select_across` behavior over filtered changelists.
@@ -107,7 +108,7 @@ Known non-parity areas:
 - System checks now cover common invalid configurations and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas now advertise action names, discriminated per-action input payload variants, and optional custom response schema unions.
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
-- Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, inline permission checks, readonly/unknown inline field rejection, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
+- Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, inline permission checks, readonly/unknown inline field rejection, unchanged bulk-row handling, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works and now has semantic contract coverage for core model routes and custom action input/response schemas, but broader snapshots and example coverage are still needed before release.
 - Admin extensibility is still young: custom view routing, route metadata/auth overrides, and display metadata exist, but deeper multi-auth/response-schema coverage and override-hook parity need work.
 - Release hardening has local/CI `just` gates, wheel import smoke, a clean sample-project smoke, initial PostgreSQL CI coverage, and an initial copyright audit; remaining work is to confirm CI results and repeat the audit before release candidates.
