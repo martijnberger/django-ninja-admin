@@ -6,6 +6,7 @@ from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 
 from django_ninja_admin.utils.format_error import format_error
+from django_ninja_admin.utils.lookup import display_metadata_for_field, label_for_field, lookup_field
 
 
 def file_value_metadata(value):
@@ -174,6 +175,8 @@ def form_field_descriptions(
     *,
     readonly_fields=(),
     instance=None,
+    model_admin=None,
+    empty_value_display="-",
     autocomplete_fields=(),
     raw_id_fields=(),
     filter_horizontal=(),
@@ -213,16 +216,23 @@ def form_field_descriptions(
     for name in readonly_fields:
         if name not in form.fields:
             model_field = _model_field_for_name(model, name)
+            display_metadata = display_metadata_for_field(name, model, model_admin)
+            readonly_attrs = {
+                "required": False,
+                "label": label_for_field(name, model, model_admin),
+                "help_text": "",
+                "read_only": True,
+                **_model_field_metadata(model_field),
+                **display_metadata,
+            }
+            if instance is not None:
+                value = _readonly_value(name, instance, model_admin, model_field)
+                field_empty_value = display_metadata["empty_value_display"] or empty_value_display
+                readonly_attrs["value"] = field_empty_value if value in (None, "") else value
             description = {
                 "name": name,
                 "type": "ReadonlyField",
-                "attrs": {
-                    "required": False,
-                    "label": name.replace("_", " ").title(),
-                    "help_text": "",
-                    "read_only": True,
-                    **_model_field_metadata(model_field),
-                },
+                "attrs": readonly_attrs,
             }
             _apply_admin_field_metadata(
                 description,
@@ -236,6 +246,14 @@ def form_field_descriptions(
             )
             descriptions.append(description)
     return descriptions
+
+
+def _readonly_value(name, instance, model_admin, model_field):
+    if model_field is not None and isinstance(model_field, models.ImageField):
+        return image_value_metadata(getattr(instance, name))
+    if model_field is not None and isinstance(model_field, models.FileField):
+        return file_value_metadata(getattr(instance, name))
+    return _jsonish_value(lookup_field(name, instance, model_admin))
 
 
 def _apply_admin_field_metadata(

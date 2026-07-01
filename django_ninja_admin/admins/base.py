@@ -306,6 +306,8 @@ class BaseAdmin:
             self.get_form_class(request, obj, change=obj is not None),
             readonly_fields=self.get_readonly_fields(request, obj),
             instance=obj,
+            model_admin=self,
+            empty_value_display=self.get_empty_value_display(),
             autocomplete_fields=self.get_autocomplete_fields(request),
             raw_id_fields=self.raw_id_fields,
             filter_horizontal=self.filter_horizontal,

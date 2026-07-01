@@ -1250,6 +1250,30 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert deleted.status_code == 204
 
 
+def test_readonly_display_fields_include_values_and_display_metadata(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "readonly_fields", ("upper_name", "has_description", "subtitle"))
+
+    response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+
+    assert response.status_code == 200
+    fields_by_name = {field["name"]: field for field in response.json()["form"]["fields"]}
+    assert fields_by_name["upper_name"]["attrs"]["label"] == "Upper name"
+    assert fields_by_name["upper_name"]["attrs"]["value"] == "ALPHA"
+    assert fields_by_name["upper_name"]["attrs"]["read_only"] is True
+    assert fields_by_name["has_description"]["attrs"]["label"] == "Has description"
+    assert fields_by_name["has_description"]["attrs"]["value"] is True
+    assert fields_by_name["has_description"]["attrs"]["boolean"] is True
+    assert fields_by_name["subtitle"]["attrs"]["label"] == "Subtitle"
+    assert fields_by_name["subtitle"]["attrs"]["value"] == "Nice camera"
+    assert fields_by_name["subtitle"]["attrs"]["empty_value_display"] == "No subtitle"
+
+    empty_product = Product.objects.get(name="Beta")
+    empty_response = admin_client.get(f"/admin-api/testapp/product/{empty_product.pk}/form")
+    empty_fields_by_name = {field["name"]: field for field in empty_response.json()["form"]["fields"]}
+    assert empty_fields_by_name["subtitle"]["attrs"]["value"] == "No subtitle"
+
+
 def test_history_filters_by_permission_and_params(staff_client, sample):
     actor = get_user_model().objects.create_user("history-actor", password="pw", is_staff=True)
     product_ct = ContentType.objects.get_for_model(Product, for_concrete_model=False)

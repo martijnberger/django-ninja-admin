@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   including OpenAPI security metadata for multiple Ninja auth callables.
 - Added route-level auth-sequence override coverage for custom admin routes,
   preserving per-route OpenAPI security metadata.
+- Added readonly form-field display values and metadata for admin methods and
+  model properties, including boolean flags and empty-value fallbacks.
 
 ## 0.1.2 - 2026-07-01
 
