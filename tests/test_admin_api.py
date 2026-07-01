@@ -519,6 +519,18 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert columns_by_field["subtitle"]["headerName"] == "Subtitle"
     assert columns_by_field["subtitle"]["empty_value_display"] == "No subtitle"
     rows_by_name = {row["cells"]["name"]: row for row in show_all_body["rows"]}
+    alpha_row = rows_by_name["Alpha"]
+    content_type = ContentType.objects.get_for_model(Product)
+    assert alpha_row["detail_url"] == f"/admin-api/testapp/product/{sample.pk}"
+    assert alpha_row["change_form_url"] == f"/admin-api/testapp/product/{sample.pk}/form"
+    assert alpha_row["delete_url"] == f"/admin-api/testapp/product/{sample.pk}"
+    assert alpha_row["view_on_site_url"] == f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}"
+    assert alpha_row["permissions"] == {
+        "has_add_permission": True,
+        "has_change_permission": True,
+        "has_delete_permission": True,
+        "has_view_permission": True,
+    }
     assert rows_by_name["Alpha"]["cells"]["has_description"] is True
     assert rows_by_name["Alpha"]["cells"]["tagline"] == "Nice camera"
     assert rows_by_name["Alpha"]["cells"]["is_expensive"] is True
@@ -527,6 +539,22 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert rows_by_name["Beta"]["cells"]["tagline"] == "No description"
     assert rows_by_name["Beta"]["cells"]["is_expensive"] is False
     assert rows_by_name["Beta"]["cells"]["subtitle"] == "No subtitle"
+
+
+def test_changelist_row_metadata_honors_object_permissions(staff_client, sample):
+    response = staff_client("view_product").get("/admin-api/testapp/product?q=Alpha")
+
+    assert response.status_code == 200
+    row = response.json()["rows"][0]
+    assert row["detail_url"] == f"/admin-api/testapp/product/{sample.pk}"
+    assert row["change_form_url"] == f"/admin-api/testapp/product/{sample.pk}/form"
+    assert row["delete_url"] is None
+    assert row["permissions"] == {
+        "has_add_permission": False,
+        "has_change_permission": False,
+        "has_delete_permission": False,
+        "has_view_permission": True,
+    }
 
 
 def test_changelist_action_ui_metadata_follows_model_admin(admin_client, sample, monkeypatch):

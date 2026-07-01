@@ -58,7 +58,7 @@ from django_ninja_admin.utils.deletion import deletion_error_payload
 from django_ninja_admin.utils.format_error import format_error
 from django_ninja_admin.utils.forms import form_errors, formset_errors, model_data_for_form
 from django_ninja_admin.utils.lookup import display_metadata_for_field, label_for_field, lookup_field
-from django_ninja_admin.utils.quote import unquote
+from django_ninja_admin.utils.quote import quote, unquote
 
 all_sites = WeakSet()
 DEFAULT_AUTH = object()
@@ -912,7 +912,7 @@ class NinjaAdminSite:
                 display_metadata = display_metadata_for_field(field, model_admin.model, model_admin)
                 field_empty_value = display_metadata["empty_value_display"] or empty_value
                 cells[field] = field_empty_value if value in (None, "") else value
-            rows.append({"id": obj.pk, "cells": cells})
+            rows.append({"id": obj.pk, "cells": cells, **self._changelist_row_metadata(request, model_admin, obj)})
         action_form = [
             {
                 "name": "action",
@@ -971,6 +971,26 @@ class NinjaAdminSite:
             "list_editing_formset": list_editing_formset,
         }
         return ChangelistResponse.model_validate(payload).model_dump(mode="json")
+
+    def _changelist_row_metadata(self, request, model_admin, obj):
+        object_id = quote(obj.pk)
+        detail_url = f"{request.path.rstrip('/')}/{object_id}"
+        has_view_permission = model_admin.has_view_permission(request, obj)
+        has_change_permission = model_admin.has_change_permission(request, obj)
+        has_delete_permission = model_admin.has_delete_permission(request, obj)
+        can_open_object = has_view_permission or has_change_permission
+        return {
+            "detail_url": detail_url if can_open_object else None,
+            "change_form_url": f"{detail_url}/form" if can_open_object else None,
+            "delete_url": detail_url if has_delete_permission else None,
+            "view_on_site_url": model_admin.get_view_on_site_url(obj) if can_open_object else None,
+            "permissions": {
+                "has_add_permission": model_admin.has_add_permission(request),
+                "has_change_permission": has_change_permission,
+                "has_delete_permission": has_delete_permission,
+                "has_view_permission": has_view_permission,
+            },
+        }
 
     def _model_has_field(self, model, field):
         try:

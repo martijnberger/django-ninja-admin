@@ -142,6 +142,11 @@ class Column(Schema):
 class Row(Schema):
     id: Any
     cells: dict[str, Any]
+    detail_url: str | None = None
+    change_form_url: str | None = None
+    delete_url: str | None = None
+    view_on_site_url: str | None = None
+    permissions: PermissionMap | None = None
 
 
 class ActionChoice(Schema):

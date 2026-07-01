@@ -7,7 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
-Nothing yet.
+- Added changelist row URL and object-permission metadata for detail, change
+  form, delete, and view-on-site frontend actions.
 
 ## 0.1.2 - 2026-07-01
 

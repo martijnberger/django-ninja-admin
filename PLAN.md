@@ -99,6 +99,7 @@ Completed or mostly complete:
 - Simple list filters now hide when `lookups()` returns no choices, matching Django admin.
 - Invalid changelist lookup values now return typed API errors for both declared filters and direct field lookups.
 - Expanded changelist metadata for display links, sortable columns, multi-column sort state/query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
+- Changelist rows now expose detail, change-form, delete, view-on-site, and object-permission metadata for frontend action rendering.
 - Date hierarchy metadata now includes clear/back navigation query strings and validates impossible year/month/day combinations.
 - Initial N+1 hardening through automatic `select_related()` for direct relation fields in `list_display`.
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
