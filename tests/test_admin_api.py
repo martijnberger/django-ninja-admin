@@ -1627,7 +1627,7 @@ def test_changelist_row_metadata_honors_object_permissions(staff_client, sample)
     }
 
 
-def test_changelist_action_ui_metadata_follows_model_admin(admin_client, sample, monkeypatch):
+def test_changelist_action_ui_metadata_follows_model_admin(admin_client, staff_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
     monkeypatch.setattr(product_admin, "actions_on_top", False)
     monkeypatch.setattr(product_admin, "actions_on_bottom", True)
@@ -1640,7 +1640,20 @@ def test_changelist_action_ui_metadata_follows_model_admin(admin_client, sample,
     assert config["actions_on_top"] is False
     assert config["actions_on_bottom"] is True
     assert config["actions_selection_counter"] is False
+    choices_by_action = {choice["action"]: choice for choice in config["action_choices"]}
+    assert choices_by_action["delete_selected"]["permissions"] == ["delete"]
+    assert choices_by_action["mark_out_of_stock"]["permissions"] == ["change"]
+    assert choices_by_action["report_names"]["permissions"] == ["view"]
+    assert choices_by_action["set_stock_status"]["permissions"] == ["change"]
     assert {field["name"] for field in response.json()["action_form"]} == {"action", "selected_ids", "select_across"}
+
+    view_only = staff_client("view_product").get("/admin-api/testapp/product")
+    assert view_only.status_code == 200
+    assert view_only.json()["config"]["action_choices"] == [
+        {"action": "report_names", "description": "Report names", "permissions": ["view"]}
+    ]
+    action_field = next(field for field in view_only.json()["action_form"] if field["name"] == "action")
+    assert action_field["attrs"]["choices"] == [["report_names", "Report names"]]
 
 
 def test_changelist_exposes_list_editing_row_metadata(admin_client, sample):

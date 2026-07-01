@@ -316,8 +316,12 @@ class ModelAdmin(BaseAdmin):
 
     def get_action_choices(self, request, default_choices=()):
         choices = [
-            {"action": name, "description": str(desc)}
-            for _, name, desc in self.get_actions(request).values()
+            {
+                "action": name,
+                "description": str(desc),
+                "permissions": list(getattr(func, "allowed_permissions", ())),
+            }
+            for func, name, desc in self.get_actions(request).values()
         ]
         return [*default_choices, *choices]
 

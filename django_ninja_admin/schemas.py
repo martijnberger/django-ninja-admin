@@ -164,6 +164,7 @@ class Row(Schema):
 class ActionChoice(Schema):
     action: str
     description: str
+    permissions: list[str] = []
 
 
 class FilterChoice(Schema):
