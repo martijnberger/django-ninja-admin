@@ -215,6 +215,7 @@ Goal: match Django admin and upstream mutation behavior under real-world edge ca
 - Improve list-editable bulk updates to follow changelist formset semantics, including per-row errors and unchanged rows.
 - Finish protected-delete semantics for direct delete and `delete_selected`, including returned protected object descriptions and permission-needed details.
 - Improve change-message construction to include field labels and inline additions/changes/deletions.
+- Align direct update logging with Django admin by skipping empty change-log entries while preserving save hooks.
 - Add tests for bad `_to_field`, protected delete, invalid actions, `select_across`, empty selections, and custom action return values.
 
 Acceptance:

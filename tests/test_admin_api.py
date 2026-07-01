@@ -1582,6 +1582,30 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert deleted.status_code == 204
 
 
+def test_direct_update_skips_empty_change_log(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    save_calls = []
+    original_save_model = product_admin.save_model
+
+    def save_model(request, obj, form, change):
+        save_calls.append(obj.pk)
+        return original_save_model(request, obj, form, change)
+
+    monkeypatch.setattr(product_admin, "save_model", save_model)
+    before = LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).count()
+    response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {"name": sample.name}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert save_calls == [sample.pk]
+    assert LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).count() == before
+    sample.refresh_from_db()
+    assert sample.name == "Alpha"
+
+
 def test_readonly_display_fields_include_values_and_display_metadata(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
 

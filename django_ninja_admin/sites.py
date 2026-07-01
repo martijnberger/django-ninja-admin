@@ -1263,7 +1263,8 @@ class NinjaAdminSite:
             )
             model_admin.save_related(request, form, inline_results, change=True)
             change_message = model_admin.construct_change_message(request, form, inline_results)
-            model_admin.log_change(request, updated_object, change_message)
+            if change_message:
+                model_admin.log_change(request, updated_object, change_message)
             return model_admin.response_change(request, updated_object, form, inline_results)
 
     def _process_inlines(self, request, model_admin, obj, inline_payload, *, change):

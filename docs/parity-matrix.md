@@ -79,7 +79,7 @@ Statuses:
 | Bulk list-editable update | partial | Strict row schema, duplicate-PK rejection, unchanged-row skip, row-indexed server errors, and all-rows-before-write tests | Full changelist formset semantics |
 | Default delete action/actions | partial | `delete_selected`, custom return, empty-selection, select-across, action permission-hook checks, and protected response tests | Additional permission edge coverage |
 | Protected delete | partial | Direct and action delete return protected/perms details | Exact Django protected-object presentation |
-| Log entries/change messages | partial | Field-label and inline add/change/delete tests, including deleted inline object text | Exact Django-admin message format parity |
+| Log entries/change messages | partial | Field-label, no-op direct update skip, and inline add/change/delete tests, including deleted inline object text | Exact Django-admin message format parity |
 
 ## Errors, Auth, And OpenAPI
 
