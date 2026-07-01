@@ -2381,6 +2381,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
         )
         bounded_name = forms.CharField(required=False, min_length=3, max_length=8)
         bounded_count = forms.IntegerField(required=False, min_value=2, max_value=5)
+        stepped_count = forms.IntegerField(required=False, step_size=2)
+        offset_count = forms.IntegerField(required=False, min_value=1, step_size=2)
         bounded_price = forms.DecimalField(
             required=False,
             min_value=Decimal("1.00"),
@@ -2388,6 +2390,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             max_digits=4,
             decimal_places=2,
         )
+        stepped_price = forms.DecimalField(required=False, step_size=Decimal("0.25"), max_digits=4, decimal_places=2)
         product_code = forms.RegexField(required=False, regex=r"^[A-Z]{3}$", min_length=3, max_length=3)
         sku = forms.CharField(required=False, validators=[RegexValidator(r"^SKU-[0-9]+$")])
         slug = forms.SlugField(required=False)
@@ -2420,7 +2423,10 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             "release_window": ["2026-07-01", "09:30"],
             "bounded_name": "Camera",
             "bounded_count": 3,
+            "stepped_count": 4,
+            "offset_count": 3,
             "bounded_price": "4.50",
+            "stepped_price": "1.25",
             "product_code": "ABC",
             "sku": "SKU-123",
             "slug": "camera-case",
@@ -2438,7 +2444,10 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert validated.release_window == (date(2026, 7, 1), time(9, 30))
     assert validated.bounded_name == "Camera"
     assert validated.bounded_count == 3
+    assert validated.stepped_count == 4
+    assert validated.offset_count == 3
     assert validated.bounded_price == Decimal("4.50")
+    assert validated.stepped_price == Decimal("1.25")
     assert validated.product_code == "ABC"
     assert validated.sku == "SKU-123"
     assert validated.slug == "camera-case"
@@ -2448,6 +2457,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert json_schema["bounded_name"]["anyOf"][0]["minLength"] == 3
     assert json_schema["bounded_count"]["anyOf"][0]["maximum"] == 5
     assert json_schema["bounded_count"]["anyOf"][0]["minimum"] == 2
+    assert json_schema["stepped_count"]["anyOf"][0]["multipleOf"] == 2
+    assert json_schema["offset_count"]["anyOf"][0]["minimum"] == 1
+    assert "multipleOf" not in json_schema["offset_count"]["anyOf"][0]
     assert json_schema["contact_email"]["anyOf"][0]["format"] == "email"
     assert json_schema["homepage"]["anyOf"][0]["format"] == "uri"
     assert json_schema["file_path"]["anyOf"][0]["const"] == str(fixture_file)
@@ -2460,6 +2472,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert json_schema["bounded_price"]["anyOf"][0]["maximum"] == 9.99
     assert json_schema["bounded_price"]["anyOf"][0]["minimum"] == 1.0
     assert json_schema["bounded_price"]["anyOf"][1]["pattern"]
+    assert json_schema["stepped_price"]["anyOf"][0]["multipleOf"] == 0.25
     assert json_schema["product_code"]["anyOf"][0]["pattern"] == "^[A-Z]{3}$"
     assert json_schema["sku"]["anyOf"][0]["pattern"] == "^SKU-[0-9]+$"
     assert json_schema["slug"]["anyOf"][0]["pattern"].endswith(r"\z")
@@ -2494,11 +2507,74 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
                 "metadata": {},
                 "tracking_id": tracking_id,
                 "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "stepped_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "offset_count": 4,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
                 "combo_code": "abc",
                 "duration": "1 02:03:04",
                 "bounded_name": "Camera",
                 "bounded_count": 3,
                 "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "stepped_price": "1.30",
                 "product_code": "ABC",
                 "sku": "SKU-123",
                 "slug": "camera-case",
@@ -3822,6 +3898,33 @@ def test_form_description_exposes_combo_field_metadata(db):
         detail.get("pattern") == "^[A-Z]+$"
         for detail in attrs["combo_fields"][1]["attrs"]["validator_details"]
     )
+
+
+def test_form_description_exposes_numeric_step_metadata(db):
+    class StepProductForm(forms.ModelForm):
+        stepped_count = forms.IntegerField(required=False, step_size=2)
+        offset_count = forms.IntegerField(required=False, min_value=1, step_size=2)
+        stepped_price = forms.DecimalField(required=False, step_size=Decimal("0.25"), max_digits=4, decimal_places=2)
+
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status")
+
+    class StepProductAdmin(ModelAdmin):
+        form_class = StepProductForm
+
+    model_admin = StepProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    request = RequestFactory().get("/")
+    fields_by_name = {
+        item["name"]: item
+        for item in model_admin.get_form_fields_description(request)
+    }
+
+    assert fields_by_name["stepped_count"]["attrs"]["step_size"] == 2
+    assert "step_offset" not in fields_by_name["stepped_count"]["attrs"]
+    assert fields_by_name["offset_count"]["attrs"]["step_size"] == 2
+    assert fields_by_name["offset_count"]["attrs"]["step_offset"] == 1
+    assert fields_by_name["stepped_price"]["attrs"]["step_size"] == "0.25"
 
 
 @pytest.mark.parametrize(

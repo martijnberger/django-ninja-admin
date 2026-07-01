@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   match, recursion, and allowed target kinds.
 - Added `ComboField` request validation/schema hints and subfield metadata for
   stacked Django form validators.
+- Added numeric `step_size` request validation/OpenAPI hints and form metadata,
+  including offset step validation through Django form cleaners.
 
 ## 0.1.12 - 2026-07-01
 

@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import FieldDoesNotExist
+from django.core.validators import StepValueValidator
 from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 
@@ -303,6 +304,17 @@ def _combo_metadata(field):
     }
 
 
+def _step_metadata(field):
+    if getattr(field, "step_size", None) is None:
+        return {}
+    attrs = {"step_size": _jsonish_value(field.step_size)}
+    for validator in getattr(field, "validators", ()):
+        if isinstance(validator, StepValueValidator) and getattr(validator, "offset", None) is not None:
+            attrs["step_offset"] = _jsonish_value(validator.offset)
+            break
+    return attrs
+
+
 def field_description(name, field, *, read_only=False, current_value=None, model_field=None):
     widget = field.widget
     attrs = {
@@ -346,6 +358,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         attrs["min_value"] = _jsonish_value(field.min_value)
     if getattr(field, "max_value", None) is not None:
         attrs["max_value"] = _jsonish_value(field.max_value)
+    attrs.update(_step_metadata(field))
     if getattr(field, "max_digits", None) is not None:
         attrs["max_digits"] = field.max_digits
     if getattr(field, "decimal_places", None) is not None:

@@ -8,7 +8,7 @@ from django import forms
 from django.contrib.auth import get_permission_codename
 from django.core.exceptions import FieldDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import RegexValidator, validate_email
+from django.core.validators import RegexValidator, StepValueValidator, validate_email
 from django.db import models
 from django.forms import modelform_factory
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
@@ -287,8 +287,13 @@ class BaseAdmin:
     def get_pydantic_type_for_form_field(self, field, *, choices_as_literal=True):
         field_type = self._get_pydantic_type_for_form_field(field, choices_as_literal=choices_as_literal)
         constraints = self.get_pydantic_constraints_for_form_field(field, field_type)
+        metadata = []
         if constraints:
-            return Annotated[field_type, Field(**constraints)]
+            metadata.append(Field(**constraints))
+        if self.should_clean_with_pydantic(field):
+            metadata.append(AfterValidator(_form_field_clean_validator(field)))
+        if metadata:
+            return Annotated[field_type, *metadata]
         return field_type
 
     def _get_pydantic_type_for_form_field(self, field, *, choices_as_literal=True):
@@ -364,7 +369,37 @@ class BaseAdmin:
                 constraints["max_digits"] = field.max_digits
             if getattr(field, "decimal_places", None) is not None:
                 constraints["decimal_places"] = field.decimal_places
+        step_validator = self.get_step_value_validator(field)
+        if step_validator is not None and self.step_validator_has_zero_offset(step_validator):
+            constraints["multiple_of"] = self.pydantic_step_value(field, step_validator.limit_value)
         return constraints
+
+    def should_clean_with_pydantic(self, field):
+        return self.get_step_value_validator(field) is not None
+
+    def get_step_value_validator(self, field):
+        for validator in getattr(field, "validators", ()):
+            if isinstance(validator, StepValueValidator):
+                return validator
+        return None
+
+    def step_validator_has_zero_offset(self, validator):
+        offset = getattr(validator, "offset", None)
+        if offset is None:
+            return True
+        try:
+            return Decimal(str(offset)) == 0
+        except Exception:
+            return False
+
+    def pydantic_step_value(self, field, value):
+        if isinstance(field, forms.DecimalField):
+            return Decimal(str(value))
+        if isinstance(field, forms.IntegerField):
+            return int(value)
+        if isinstance(field, forms.FloatField):
+            return float(value)
+        return value
 
     def get_pydantic_pattern_for_form_field(self, field):
         pattern = self.normalize_pydantic_pattern(getattr(field, "regex", None))
