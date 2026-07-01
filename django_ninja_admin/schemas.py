@@ -234,6 +234,9 @@ class ChangelistConfig(Schema):
     show_all: bool = False
     can_show_all: bool = False
     show_facets: bool = False
+    facets_optional: bool = False
+    add_facets_query_string: str | None = None
+    remove_facets_query_string: str | None = None
     has_filters: bool = False
     has_active_filters: bool = False
     clear_all_filters_query_string: str | None = None

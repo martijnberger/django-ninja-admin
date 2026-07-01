@@ -1164,6 +1164,7 @@ class NinjaAdminSite:
                 "show_all": changelist.show_all,
                 "can_show_all": changelist.can_show_all_results,
                 "show_facets": changelist.show_facets,
+                **changelist.facet_query_strings(),
                 "has_filters": changelist.has_filters,
                 "has_active_filters": changelist.has_active_filters(),
                 "clear_all_filters_query_string": changelist.clear_all_filters_query_string(),

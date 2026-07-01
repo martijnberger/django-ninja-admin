@@ -1619,6 +1619,9 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert initial.json()["config"]["has_filters"] is True
     assert initial.json()["config"]["has_active_filters"] is False
     assert initial.json()["config"]["clear_all_filters_query_string"] is None
+    assert initial.json()["config"]["facets_optional"] is True
+    assert initial.json()["config"]["add_facets_query_string"] == "?_facets=1"
+    assert initial.json()["config"]["remove_facets_query_string"] is None
 
     accessories = Category.objects.create(name="Accessories")
     Product.objects.create(name="Tripod", category=accessories, price="6.00", description="Stable")
@@ -1637,6 +1640,7 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     choice_filtered = admin_client.get("/admin-api/testapp/product?stock_status__exact=out_of_stock")
     assert choice_filtered.json()["config"]["has_active_filters"] is True
     assert choice_filtered.json()["config"]["clear_all_filters_query_string"] == "?"
+    assert choice_filtered.json()["config"]["add_facets_query_string"] == "?stock_status__exact=out_of_stock&_facets=1"
     stock_filter = next(
         item for item in choice_filtered.json()["config"]["filters"] if item["parameter_name"] == "stock_status__exact"
     )
@@ -3788,6 +3792,9 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     assert response.status_code == 200
     body = response.json()
     assert body["config"]["show_facets"] is True
+    assert body["config"]["facets_optional"] is True
+    assert body["config"]["add_facets_query_string"] is None
+    assert body["config"]["remove_facets_query_string"] == "?"
     assert body["config"]["has_filters"] is True
     assert body["config"]["has_active_filters"] is False
     assert body["config"]["clear_all_filters_query_string"] is None
@@ -3806,6 +3813,7 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     assert by_year.json()["config"]["result_count"] == 2
     assert by_year.json()["config"]["has_active_filters"] is True
     assert by_year.json()["config"]["clear_all_filters_query_string"] == "?_facets=1"
+    assert by_year.json()["config"]["remove_facets_query_string"] == "?created_at__year=2024"
     assert by_year.json()["config"]["date_hierarchy"]["level"] == "month"
     assert by_year.json()["config"]["date_hierarchy"]["clear_query_string"] == "?_facets=1"
     assert by_year.json()["config"]["date_hierarchy"]["back_query_string"] == "?_facets=1"
@@ -3903,6 +3911,9 @@ def test_changelist_show_facets_modes(admin_client, sample, monkeypatch):
     never = admin_client.get("/admin-api/testapp/product?_facets=1")
     assert never.status_code == 200
     assert never.json()["config"]["show_facets"] is False
+    assert never.json()["config"]["facets_optional"] is False
+    assert never.json()["config"]["add_facets_query_string"] is None
+    assert never.json()["config"]["remove_facets_query_string"] is None
     stock_filter = next(
         item for item in never.json()["config"]["filters"] if item["parameter_name"] == "stock_status__exact"
     )
@@ -3912,6 +3923,9 @@ def test_changelist_show_facets_modes(admin_client, sample, monkeypatch):
     always = admin_client.get("/admin-api/testapp/product")
     assert always.status_code == 200
     assert always.json()["config"]["show_facets"] is True
+    assert always.json()["config"]["facets_optional"] is False
+    assert always.json()["config"]["add_facets_query_string"] is None
+    assert always.json()["config"]["remove_facets_query_string"] is None
     stock_filter = next(
         item for item in always.json()["config"]["filters"] if item["parameter_name"] == "stock_status__exact"
     )

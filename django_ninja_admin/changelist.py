@@ -408,6 +408,9 @@ class ChangeList:
             return False
         return self.params.get("_facets") in {"1", "true", "True"}
 
+    def facets_optional(self):
+        return getattr(self.model_admin, "show_facets", ShowFacets.ALLOW) is ShowFacets.ALLOW
+
     def get_page_number(self):
         value = self.params.get("p") or self.params.get("page") or 1
         if value == "last":
@@ -499,6 +502,19 @@ class ChangeList:
         if not self.has_active_filters():
             return None
         return self.get_query_string(remove=self.active_filter_params())
+
+    def facet_query_strings(self):
+        if not self.facets_optional():
+            return {
+                "facets_optional": False,
+                "add_facets_query_string": None,
+                "remove_facets_query_string": None,
+            }
+        return {
+            "facets_optional": True,
+            "add_facets_query_string": None if self.show_facets else self.get_query_string({"_facets": "1"}),
+            "remove_facets_query_string": self.get_query_string(remove={"_facets"}) if self.show_facets else None,
+        }
 
     def get_query_string(self, new_params=None, remove=None):
         new_params = new_params or {}
