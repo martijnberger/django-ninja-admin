@@ -155,6 +155,7 @@ Completed or mostly complete:
 - File fields can now be written through multipart create/update routes whose JSON form parts are validated by the generated Pydantic mutation schemas before Django `ModelForm` file handling runs.
 - Many-to-many fields now have Pydantic write schemas, JSON-safe change-form values, form relation metadata, output serialization, and create/update persistence coverage.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
+- Relation form field descriptions now include structured related-model identity and autocomplete request parameters for frontend clients.
 - Readonly form descriptions now expose display labels, values, boolean flags, and empty-value fallbacks for admin methods and model properties.
 - Custom `form_class` and generated-form `formfield_*` customization hooks are covered through mounted Ninja routes for write-schema generation, custom widget attributes, Django form validation, and mutation persistence.
 - Semantic OpenAPI contract tests now cover model-route operation IDs, tags, security, request body schemas, success response schemas, and typed error response maps.

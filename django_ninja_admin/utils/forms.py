@@ -74,8 +74,14 @@ def _relation_metadata(field):
     if not isinstance(field, (ModelChoiceField, ModelMultipleChoiceField)):
         return {}
     model = field.queryset.model
+    opts = model._meta
     attrs = {
-        "related_model": f"{model._meta.app_label}.{model._meta.model_name}",
+        "related_model": f"{opts.app_label}.{opts.model_name}",
+        "related_app_label": opts.app_label,
+        "related_model_name": opts.model_name,
+        "related_object_name": opts.object_name,
+        "related_verbose_name": str(opts.verbose_name),
+        "related_verbose_name_plural": str(opts.verbose_name_plural),
         "to_field_name": field.to_field_name or model._meta.pk.name,
         "multiple": isinstance(field, ModelMultipleChoiceField),
     }
@@ -219,6 +225,7 @@ def form_field_descriptions(
             filter_vertical=filter_vertical,
             radio_fields=radio_fields,
             prepopulated_fields=prepopulated_fields,
+            source_model=model,
         )
         descriptions.append(description)
     for readonly_field in readonly_fields:
@@ -252,6 +259,7 @@ def form_field_descriptions(
                 filter_vertical=filter_vertical,
                 radio_fields=radio_fields,
                 prepopulated_fields=prepopulated_fields,
+                source_model=model,
             )
             descriptions.append(description)
     return descriptions
@@ -275,10 +283,17 @@ def _apply_admin_field_metadata(
     filter_vertical,
     radio_fields,
     prepopulated_fields,
+    source_model=None,
 ):
     attrs = description["attrs"]
     if name in autocomplete_fields:
         attrs["admin_widget"] = "autocomplete"
+        if source_model is not None:
+            attrs["autocomplete"] = {
+                "app_label": source_model._meta.app_label,
+                "model_name": source_model._meta.model_name,
+                "field_name": name,
+            }
     if name in raw_id_fields:
         attrs["admin_widget"] = "raw_id"
     if name in filter_horizontal:

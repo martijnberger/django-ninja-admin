@@ -2293,6 +2293,10 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert form.json()["form"]["model"] == "testapp.product"
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
     assert fields_by_name["category"]["attrs"]["related_model"] == "testapp.category"
+    assert fields_by_name["category"]["attrs"]["related_app_label"] == "testapp"
+    assert fields_by_name["category"]["attrs"]["related_model_name"] == "category"
+    assert fields_by_name["category"]["attrs"]["related_object_name"] == "Category"
+    assert fields_by_name["category"]["attrs"]["related_verbose_name"] == "category"
     assert fields_by_name["category"]["attrs"]["to_field_name"] == "id"
     assert fields_by_name["category"]["attrs"]["blank"] is False
     assert fields_by_name["category"]["attrs"]["null"] is False
@@ -2309,6 +2313,11 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
     assert fields_by_name["stock_status"]["attrs"]["radio_orientation"] == VERTICAL
     assert fields_by_name["category"]["attrs"]["admin_widget"] == "autocomplete"
+    assert fields_by_name["category"]["attrs"]["autocomplete"] == {
+        "app_label": "testapp",
+        "model_name": "product",
+        "field_name": "category",
+    }
     assert fields_by_name["description"]["attrs"]["blank"] is True
     assert fields_by_name["description"]["attrs"]["null"] is False
     assert fields_by_name["description"]["attrs"]["prepopulated_from"] == ["name"]
@@ -2318,6 +2327,9 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["manual"]["attrs"]["upload_to"] == "manuals"
     assert fields_by_name["tags"]["type"] == "ModelMultipleChoiceField"
     assert fields_by_name["tags"]["attrs"]["related_model"] == "testapp.tag"
+    assert fields_by_name["tags"]["attrs"]["related_app_label"] == "testapp"
+    assert fields_by_name["tags"]["attrs"]["related_model_name"] == "tag"
+    assert fields_by_name["tags"]["attrs"]["related_object_name"] == "Tag"
     assert fields_by_name["tags"]["attrs"]["multiple"] is True
     assert fields_by_name["tags"]["attrs"]["blank"] is True
     assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_horizontal"
