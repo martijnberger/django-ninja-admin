@@ -50,7 +50,6 @@ from django_ninja_admin.schemas import (
     ErrorResponse,
     FormResponse,
     HistoryResponse,
-    MutationResponse,
     SiteContext,
     ViewOnSiteResponse,
 )
@@ -616,6 +615,7 @@ class NinjaAdminSite:
         create_payload_schema = model_admin.get_mutation_payload_schema(None, change=False, partial=False)
         update_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=True)
         replace_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=False)
+        mutation_response_schema = model_admin.get_mutation_response_schema(None)
         bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
         bulk_response_schema = model_admin.get_bulk_response_schema(None)
         action_payload_schema = model_admin.get_action_payload_schema(None)
@@ -645,7 +645,7 @@ class NinjaAdminSite:
 
         @router.post(
             prefix,
-            response={201: MutationResponse, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
+            response={201: mutation_response_schema, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
             tags=tags,
             operation_id=f"{app_label}_{model_name}_create",
         )
@@ -656,7 +656,7 @@ class NinjaAdminSite:
 
             @router.post(
                 f"{prefix}/multipart",
-                response={201: MutationResponse, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
+                response={201: mutation_response_schema, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
                 tags=tags,
                 operation_id=f"{app_label}_{model_name}_create_multipart",
                 openapi_extra=site._multipart_openapi_extra(
@@ -743,7 +743,7 @@ class NinjaAdminSite:
         @router.patch(
             f"{prefix}/{{object_id}}",
             response={
-                200: MutationResponse,
+                200: mutation_response_schema,
                 400: ErrorResponse,
                 403: ErrorResponse,
                 404: ErrorResponse,
@@ -758,7 +758,7 @@ class NinjaAdminSite:
         @router.put(
             f"{prefix}/{{object_id}}",
             response={
-                200: MutationResponse,
+                200: mutation_response_schema,
                 400: ErrorResponse,
                 403: ErrorResponse,
                 404: ErrorResponse,
@@ -775,7 +775,7 @@ class NinjaAdminSite:
             @router.patch(
                 f"{prefix}/{{object_id}}/multipart",
                 response={
-                    200: MutationResponse,
+                    200: mutation_response_schema,
                     400: ErrorResponse,
                     403: ErrorResponse,
                     404: ErrorResponse,
@@ -806,7 +806,7 @@ class NinjaAdminSite:
             @router.put(
                 f"{prefix}/{{object_id}}/multipart",
                 response={
-                    200: MutationResponse,
+                    200: mutation_response_schema,
                     400: ErrorResponse,
                     403: ErrorResponse,
                     404: ErrorResponse,

@@ -99,6 +99,8 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert {
         "ProductAdminCreateData",
         "ProductAdminCreatePayload",
+        "ProductAdminMutationData",
+        "ProductAdminMutationResponse",
         "ProductAdminPartialUpdateData",
         "ProductAdminPartialUpdatePayload",
         "ProductAdminBulkPayload",
@@ -114,6 +116,21 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductAdminOut"]["properties"]["manual"] == {
         "anyOf": [{"$ref": "#/components/schemas/FileFieldValue"}, {"type": "null"}]
     }
+    mutation_response_schema = components["ProductAdminMutationResponse"]
+    assert mutation_response_schema["required"] == ["data"]
+    mutation_data_options = mutation_response_schema["properties"]["data"]["anyOf"]
+    assert {"$ref": "#/components/schemas/ProductAdminMutationData"} in mutation_data_options
+    assert any(option.get("type") == "object" for option in mutation_data_options)
+    assert components["ProductAdminMutationData"]["properties"]["name"] == components["ProductAdminOut"]["properties"][
+        "name"
+    ]
+    assert components["ProductAdminMutationData"].get("additionalProperties") is True
+    assert schema_body["paths"]["/admin-api/testapp/product"]["post"]["responses"]["201"]["content"][
+        "application/json"
+    ]["schema"] == {"$ref": "#/components/schemas/ProductAdminMutationResponse"}
+    assert schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["patch"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"] == {"$ref": "#/components/schemas/ProductAdminMutationResponse"}
     assert set(components["ProductAdminCreateData"]["required"]) == {"name", "category", "price", "stock_status"}
     assert "required" not in components["ProductAdminPartialUpdateData"]
     assert components["ProductAdminCreateData"]["properties"]["stock_status"]["type"] == "string"

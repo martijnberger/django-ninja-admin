@@ -12,7 +12,7 @@ from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from ninja import Schema
-from pydantic import create_model
+from pydantic import ConfigDict, create_model
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
@@ -176,6 +176,25 @@ class BaseAdmin:
                 inlines=(dict[str, Any] | None, None),
             )
             self._mutation_payload_schema_cache = cache
+        return cache[cache_key]
+
+    def get_mutation_response_schema(self, request=None):
+        cache = getattr(self, "_mutation_response_schema_cache", {})
+        output_schema = self.get_output_schema(request)
+        cache_key = ("mutation-response", output_schema)
+        if cache_key not in cache:
+            data_schema = create_model(
+                f"{self.model.__name__}AdminMutationData",
+                __base__=output_schema,
+                __config__=ConfigDict(extra="allow"),
+            )
+            cache[cache_key] = create_model(
+                f"{self.model.__name__}AdminMutationResponse",
+                __base__=Schema,
+                data=(dict[str, Any] | data_schema, ...),
+                inlines=(dict[str, Any] | None, None),
+            )
+            self._mutation_response_schema_cache = cache
         return cache[cache_key]
 
     def get_bulk_payload_schema(self, request=None):
