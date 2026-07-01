@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.7 - 2026-07-01
+
 - Added current page and page-size metadata to history pagination responses.
 - Added structured relation metadata and autocomplete request parameters to
   form field descriptions.
