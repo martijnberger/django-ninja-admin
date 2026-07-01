@@ -21,6 +21,7 @@ from ninja.security import SessionAuthIsStaff
 
 from django_ninja_admin import (
     VERTICAL,
+    AllValuesFieldListFilter,
     EmptyFieldListFilter,
     ModelAdmin,
     NinjaAdminSite,
@@ -1529,6 +1530,29 @@ def test_choices_list_filter_supports_null_choice(admin_client, sample, monkeypa
     assert concrete.status_code == 200
     assert concrete.json()["config"]["result_count"] == 1
     assert concrete.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+
+def test_all_values_list_filter_supports_null_choice(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", (("condition", AllValuesFieldListFilter),))
+    Product.objects.filter(pk=sample.pk).update(condition="used")
+    Product.objects.create(name="Tripod", category=sample.category, price="6.00", condition="new")
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    condition_filter = next(item for item in response.json()["config"]["filters"] if item["title"] == "condition")
+    choices_by_display = {choice["display"]: choice for choice in condition_filter["choices"]}
+    assert choices_by_display["-"]["query_string"] == "?condition__isnull=1"
+    assert choices_by_display["-"]["query_string"] != choices_by_display["All"]["query_string"]
+
+    null_response = admin_client.get(f"/admin-api/testapp/product{choices_by_display['-']['query_string']}")
+
+    assert null_response.status_code == 200
+    assert null_response.json()["config"]["result_count"] == 1
+    condition_filter = next(item for item in null_response.json()["config"]["filters"] if item["title"] == "condition")
+    null_choice = next(choice for choice in condition_filter["choices"] if choice["display"] == "-")
+    assert null_choice["selected"] is True
 
 
 def test_empty_field_list_filter_validates_values(admin_client, sample, monkeypatch):

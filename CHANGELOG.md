@@ -27,6 +27,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   changelist pagination runs.
 - Added explicit changelist coverage for `ShowFacets.NEVER` and
   `ShowFacets.ALWAYS` behavior.
+- Aligned all-values list filters with Django-admin null-choice behavior by
+  using `__isnull` query strings for `NULL` values.
 
 ## 0.1.5 - 2026-07-01
 

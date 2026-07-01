@@ -326,6 +326,15 @@ class RelatedOnlyFieldListFilter(RelatedFieldListFilter):
 
 
 class AllValuesFieldListFilter(FieldListFilter):
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        self.lookup_kwarg_isnull = f"{field_path}__isnull"
+        if self.lookup_kwarg_isnull in params:
+            self.used_parameters = {self.lookup_kwarg_isnull: _bool_value(params.get(self.lookup_kwarg_isnull))}
+
+    def expected_parameters(self):
+        return [*super().expected_parameters(), self.lookup_kwarg_isnull]
+
     def field_choices(self, changelist):
         queryset = self.model_admin.get_queryset(self.request)
         values = queryset.order_by(self.field_path).values_list(self.field_path, flat=True).distinct()
@@ -333,6 +342,38 @@ class AllValuesFieldListFilter(FieldListFilter):
 
     def field_display(self, value):
         return self.model_admin.get_empty_value_display() if value in (None, "") else value
+
+    def choices(self, changelist):
+        current_value = self.used_parameters.get(self.lookup_kwarg)
+        selected_isnull = self.used_parameters.get(self.lookup_kwarg_isnull)
+        yield {
+            "selected": not self.used_parameters,
+            "query_string": changelist.get_query_string(remove=self.expected_parameters()),
+            "display": _display(_("All")),
+        }
+        none_label = None
+        for value, label in self.field_choices(changelist):
+            if value is None:
+                none_label = label
+                continue
+            value = _lookup_value(value)
+            yield {
+                "selected": str(current_value) == str(value),
+                "query_string": changelist.get_query_string(
+                    {self.lookup_kwarg: value},
+                    remove=[self.lookup_kwarg_isnull, self.legacy_lookup_kwarg],
+                ),
+                "display": _display(label),
+            }
+        if none_label is not None:
+            yield {
+                "selected": selected_isnull is True,
+                "query_string": changelist.get_query_string(
+                    {self.lookup_kwarg_isnull: "1"},
+                    remove=[self.lookup_kwarg, self.legacy_lookup_kwarg],
+                ),
+                "display": _display(none_label),
+            }
 
 
 class EmptyFieldListFilter(FieldListFilter):
