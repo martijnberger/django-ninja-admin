@@ -16,6 +16,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   while preserving explicit response-map entries.
 - Made `/context` permission metadata honor `NinjaAdminSite.has_permission()`
   overrides and added custom site metadata coverage.
+- Added typed OpenAPI auth-error response maps for built-in apps, context,
+  and permissions site routes.
 
 ## 0.1.15 - 2026-07-02
 

@@ -489,23 +489,35 @@ class NinjaAdminSite:
     def _register_site_routes(self, router):
         site = self
 
-        @router.get("/apps", response=list[AppSummary], operation_id="admin_list_apps")
+        @router.get(
+            "/apps",
+            response={200: list[AppSummary], 401: ErrorResponse, 403: ErrorResponse},
+            operation_id="admin_list_apps",
+        )
         def list_apps(request):
             return site.get_app_list(request)
 
         @router.get(
             "/apps/{app_label}",
-            response={200: AppSummary, 404: ErrorResponse},
+            response={200: AppSummary, 401: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse},
             operation_id="admin_get_app",
         )
         def get_app(request, app_label: str):
             return site.get_app_list(request, app_label)
 
-        @router.get("/context", response=SiteContext, operation_id="admin_context")
+        @router.get(
+            "/context",
+            response={200: SiteContext, 401: ErrorResponse, 403: ErrorResponse},
+            operation_id="admin_context",
+        )
         def context(request):
             return site.each_context(request)
 
-        @router.get("/permissions", response=dict[str, bool], operation_id="admin_permissions")
+        @router.get(
+            "/permissions",
+            response={200: dict[str, bool], 401: ErrorResponse, 403: ErrorResponse},
+            operation_id="admin_permissions",
+        )
         def permissions(request):
             user = request.user
             return {

@@ -202,6 +202,15 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert {"$ref": "#/components/schemas/StockStatusActionResult"} in action_response_schema["anyOf"]
 
 
+def test_site_routes_return_typed_auth_errors(db):
+    response = Client().get("/admin-api/apps")
+
+    assert response.status_code in {401, 403}
+    body = response.json()
+    assert set(body) == {"errors"}
+    assert body["errors"][0]["param"] == "non_field_errors"
+
+
 def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):
     schema = admin_client.get("/admin-api/openapi.json").json()
     paths = schema["paths"]
@@ -275,7 +284,15 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert _response_schema_ref(paths["/admin-api/apps/{app_label}"]["get"], "200") == (
         "#/components/schemas/AppSummary"
     )
+    apps_schema = paths["/admin-api/apps"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert apps_schema["type"] == "array"
+    assert apps_schema["items"] == {"$ref": "#/components/schemas/AppSummary"}
     assert _response_schema_ref(paths["/admin-api/context"]["get"], "200") == "#/components/schemas/SiteContext"
+    permissions_schema = paths["/admin-api/permissions"]["get"]["responses"]["200"]["content"]["application/json"][
+        "schema"
+    ]
+    assert permissions_schema["type"] == "object"
+    assert permissions_schema["additionalProperties"] == {"type": "boolean"}
     assert _response_schema_ref(paths["/admin-api/history"]["get"], "200") == "#/components/schemas/HistoryResponse"
     assert components["HistoryItem"]["properties"]["change_message_text"]["type"] == "string"
     assert components["HistoryItem"]["properties"]["model"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
@@ -288,7 +305,10 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     )
 
     for path, method, statuses in [
-        ("/admin-api/apps/{app_label}", "get", {"404"}),
+        ("/admin-api/apps", "get", {"401", "403"}),
+        ("/admin-api/apps/{app_label}", "get", {"401", "403", "404"}),
+        ("/admin-api/context", "get", {"401", "403"}),
+        ("/admin-api/permissions", "get", {"401", "403"}),
         ("/admin-api/history", "get", {"400", "403", "404", "422"}),
         ("/admin-api/autocomplete", "get", {"403", "404", "409", "422"}),
         ("/admin-api/view-on-site/{content_type_id}/{object_id}", "get", {"403", "404", "409", "422"}),

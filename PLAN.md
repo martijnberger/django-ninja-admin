@@ -67,6 +67,7 @@ Completed or mostly complete:
 - Custom actions can now declare Pydantic/Ninja input and response schemas through `@action(input_schema=..., response_schema=...)`; input schemas are validated before dispatch and exposed as discriminated per-action OpenAPI payload variants.
 - Action system checks now validate `allowed_permissions` entries while preserving custom `has_<permission>_permission()` hooks.
 - Global action changes now invalidate the lazy Ninja API/OpenAPI cache so action payload schemas stay current after initial API construction.
+- Built-in apps, context, and permissions site routes now advertise typed OpenAPI auth-error responses.
 - Model routes now advertise richer OpenAPI response maps for typed error bodies, including normalized `422` request-validation responses.
 - Pydantic/Ninja request validation errors are normalized into typed API error bodies.
 - Django `ModelForm` and inline formset validation for create/update/inline mutations.
