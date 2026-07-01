@@ -2148,6 +2148,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert auto_site_response.status_code == 200
     assert auto_site_response.json() == {"site": "auto"}
 
+    mapped_site_response = admin_client.get("/custom-admin/mapped-status")
+    assert mapped_site_response.status_code == 200
+    assert mapped_site_response.json() == {"site": "mapped"}
+
     decorated_auto_site_response = admin_client.get("/custom-admin/decorated-auto-status")
     assert decorated_auto_site_response.status_code == 200
     assert decorated_auto_site_response.json() == {"site": "decorated-auto"}
@@ -2198,6 +2202,7 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     status_operation = schema["paths"]["/custom-admin/status"]["get"]
     decorated_status_operation = schema["paths"]["/custom-admin/decorated-status"]["get"]
     auto_status_operation = schema["paths"]["/custom-admin/auto-status"]["get"]
+    mapped_status_operation = schema["paths"]["/custom-admin/mapped-status"]["get"]
     decorated_auto_status_operation = schema["paths"]["/custom-admin/decorated-auto-status"]["get"]
     token_operation = schema["paths"]["/custom-admin/token-status"]["get"]
     public_operation = schema["paths"]["/custom-admin/public-status"]["get"]
@@ -2206,45 +2211,70 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     auto_stats_operation = schema["paths"]["/custom-admin/testapp/product/auto-stats"]["get"]
     auto_multi_get_operation = schema["paths"]["/custom-admin/testapp/product/auto-multi-stats"]["get"]
     auto_multi_post_operation = schema["paths"]["/custom-admin/testapp/product/auto-multi-stats"]["post"]
+
+    def assert_custom_route_error_responses(operation, *, include_401=True):
+        expected_statuses = {"400", "403", "404", "422"}
+        if include_401:
+            expected_statuses.add("401")
+        for status in expected_statuses:
+            assert _response_schema_ref(operation, status) == "#/components/schemas/ErrorResponse"
+
     assert status_operation["operationId"] == "custom_site_status"
     assert status_operation["tags"] == ["custom.site"]
     assert status_operation["security"] == [{"SessionAuthIsStaff": []}]
     assert _response_schema_ref(status_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert_custom_route_error_responses(status_operation)
     assert decorated_status_operation["operationId"] == "custom_site_decorated_status"
     assert decorated_status_operation["tags"] == ["custom.site"]
     assert _response_schema_ref(decorated_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert_custom_route_error_responses(decorated_status_operation)
     assert auto_status_operation["operationId"] == "custom_get_auto_status"
     assert auto_status_operation["tags"] == ["custom.site"]
     assert _response_schema_ref(auto_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert_custom_route_error_responses(auto_status_operation)
+    assert mapped_status_operation["operationId"] == "custom_mapped_status"
+    assert mapped_status_operation["tags"] == ["custom.site"]
+    assert _response_schema_ref(mapped_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert _response_schema_ref(mapped_status_operation, "418") == "#/components/schemas/ErrorResponse"
+    assert_custom_route_error_responses(mapped_status_operation)
     assert decorated_auto_status_operation["operationId"] == "custom_get_decorated_auto_status"
     assert decorated_auto_status_operation["tags"] == ["custom.site"]
     assert _response_schema_ref(decorated_auto_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert_custom_route_error_responses(decorated_auto_status_operation)
     assert token_operation["operationId"] == "custom_token_status"
     assert token_operation["tags"] == ["custom.auth"]
     assert {"PrimaryTokenAuth": []} in token_operation["security"]
     assert {"SecondaryTokenAuth": []} in token_operation["security"]
     assert _response_schema_ref(token_operation, "200") == "#/components/schemas/AuthStatusResponse"
+    assert_custom_route_error_responses(token_operation)
     assert public_operation["operationId"] == "custom_public_status"
     assert public_operation["tags"] == ["custom.public"]
     assert "security" not in public_operation
     assert _response_schema_ref(public_operation, "200") == "#/components/schemas/PublicStatusResponse"
+    assert "401" not in public_operation["responses"]
+    assert_custom_route_error_responses(public_operation, include_401=False)
     assert stats_operation["operationId"] == "custom_product_stats"
     assert stats_operation["tags"] == ["custom.product"]
     assert stats_operation["summary"] == "Product stats"
     assert stats_operation["description"] == "Custom product statistics."
     assert _response_schema_ref(stats_operation, "200") == "#/components/schemas/ProductStatsResponse"
+    assert_custom_route_error_responses(stats_operation)
     assert decorated_stats_operation["operationId"] == "custom_product_decorated_stats"
     assert decorated_stats_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(decorated_stats_operation, "200") == "#/components/schemas/ProductStatsResponse"
+    assert_custom_route_error_responses(decorated_stats_operation)
     assert auto_stats_operation["operationId"] == "custom_get_testapp_product_auto_stats"
     assert auto_stats_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(auto_stats_operation, "200") == "#/components/schemas/ProductStatsResponse"
+    assert_custom_route_error_responses(auto_stats_operation)
     assert auto_multi_get_operation["operationId"] == "custom_get_testapp_product_auto_multi_stats"
     assert auto_multi_get_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(auto_multi_get_operation, "200") == "#/components/schemas/ProductStatsResponse"
+    assert_custom_route_error_responses(auto_multi_get_operation)
     assert auto_multi_post_operation["operationId"] == "custom_post_testapp_product_auto_multi_stats"
     assert auto_multi_post_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(auto_multi_post_operation, "200") == "#/components/schemas/ProductStatsResponse"
+    assert_custom_route_error_responses(auto_multi_post_operation)
     assert "/custom-admin/hidden-status" not in schema["paths"]
 
 

@@ -312,13 +312,14 @@ class NinjaAdminSite:
             path = self._join_route_path(prefix, route.path)
             view_func = self._custom_route_view_func(route.view_func)
             tags = route.tags or default_tags
+            response = self._custom_route_response(route.response, auth=route.auth)
             if route.operation_id is not None:
                 router.add_api_operation(
                     path,
                     list(route.methods),
                     view_func,
                     auth=route.auth,
-                    response=route.response,
+                    response=response,
                     operation_id=route.operation_id,
                     summary=route.summary,
                     description=route.description,
@@ -332,7 +333,7 @@ class NinjaAdminSite:
                     [method],
                     view_func,
                     auth=route.auth,
-                    response=route.response,
+                    response=response,
                     operation_id=self._custom_route_operation_id(path, method),
                     summary=route.summary,
                     description=route.description,
@@ -344,6 +345,14 @@ class NinjaAdminSite:
         normalized_path = path.strip("/").replace("{", "").replace("}", "") or "root"
         normalized_path = CUSTOM_OPERATION_ID_CHARS_RE.sub("_", normalized_path).strip("_").lower()
         return f"custom_{method.lower()}_{normalized_path}"
+
+    def _custom_route_response(self, response, *, auth):
+        response_map = response.copy() if isinstance(response, dict) else {200: response}
+        if auth is not None:
+            response_map.setdefault(401, ErrorResponse)
+        for status_code in (400, 403, 404, 422):
+            response_map.setdefault(status_code, ErrorResponse)
+        return response_map
 
     def _custom_route_view_func(self, view_func):
         if not (hasattr(view_func, "__self__") and hasattr(view_func, "__func__")):

@@ -3,6 +3,7 @@ from ninja import Schema
 from ninja.security import APIKeyHeader
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite
+from django_ninja_admin.schemas import ErrorResponse
 from tests.testapp.models import Category, CategorySlugLink, Product
 
 
@@ -104,6 +105,9 @@ class CustomAdminSite(NinjaAdminSite):
     def auto_status(self, request):
         return {"site": "auto"}
 
+    def mapped_status(self, request):
+        return {"site": "mapped"}
+
     def token_status(self, request):
         return {"auth": request.auth}
 
@@ -145,6 +149,13 @@ class CustomAdminSite(NinjaAdminSite):
                 "/auto-status",
                 self.admin_view(self.auto_status),
                 response=SiteStatusResponse,
+                tags=["custom.site"],
+            ),
+            self.route(
+                "/mapped-status",
+                self.admin_view(self.mapped_status),
+                response={200: SiteStatusResponse, 418: ErrorResponse},
+                operation_id="custom_mapped_status",
                 tags=["custom.site"],
             ),
             self.route(
