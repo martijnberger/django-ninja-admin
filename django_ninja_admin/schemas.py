@@ -73,6 +73,11 @@ class FieldDescription(Schema):
     attrs: dict[str, Any]
 
 
+class FileFieldValue(Schema):
+    name: str
+    url: str | None = None
+
+
 class FormDescription(Schema):
     model: str
     readonly_fields: list[str]

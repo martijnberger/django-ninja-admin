@@ -44,7 +44,13 @@ def staff_client(db):
 @pytest.fixture
 def sample(db):
     category = Category.objects.create(name="Cameras")
-    product = Product.objects.create(name="Alpha", category=category, price="12.50", description="Nice camera")
+    product = Product.objects.create(
+        name="Alpha",
+        category=category,
+        price="12.50",
+        description="Nice camera",
+        manual="manuals/alpha.pdf",
+    )
     Product.objects.create(name="Beta", category=category, price="3.00", stock_status="out_of_stock")
     ProductImage.objects.create(product=product, title="Front")
     return product
@@ -75,7 +81,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "ProductImageInlineAddRow",
         "ProductImageInlineChangeRow",
         "ProductAdminActionPayload",
+        "FileFieldValue",
     } <= set(components)
+    assert components["ProductAdminOut"]["properties"]["manual"] == {
+        "anyOf": [{"$ref": "#/components/schemas/FileFieldValue"}, {"type": "null"}]
+    }
     assert set(components["ProductAdminCreateData"]["required"]) == {"name", "category", "price", "stock_status"}
     assert "required" not in components["ProductAdminPartialUpdateData"]
     assert components["ProductAdminCreateData"]["properties"]["stock_status"]["type"] == "string"
@@ -151,6 +161,10 @@ def test_changelist_search_filter_and_detail(admin_client, sample):
     assert detail.status_code == 200
     assert detail.json()["name"] == "Alpha"
     assert detail.json()["category_label"] == "Cameras"
+    assert detail.json()["manual"] == {
+        "name": "manuals/alpha.pdf",
+        "url": "/media/manuals/alpha.pdf",
+    }
 
 
 def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sample):
@@ -315,6 +329,16 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
         ["in_stock", "In Stock"],
         ["out_of_stock", "Out of Stock"],
     ]
+    assert fields_by_name["manual"]["type"] == "FileField"
+    assert fields_by_name["manual"]["attrs"]["needs_multipart_form"] is True
+
+    change_form = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+    assert change_form.status_code == 200
+    change_fields_by_name = {field["name"]: field for field in change_form.json()["form"]["fields"]}
+    assert change_fields_by_name["manual"]["attrs"]["current_file"] == {
+        "name": "manuals/alpha.pdf",
+        "url": "/media/manuals/alpha.pdf",
+    }
     assert fields_by_name["upper_name"]["attrs"]["read_only"] is True
 
     created = admin_client.post(

@@ -4,6 +4,7 @@ ROOT_URLCONF = "tests.urls"
 USE_TZ = True
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SITE_ID = 1
+MEDIA_URL = "/media/"
 
 INSTALLED_APPS = [
     "django.contrib.auth",

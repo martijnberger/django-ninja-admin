@@ -24,6 +24,7 @@ class Product(models.Model):
         default="in_stock",
     )
     description = models.TextField(blank=True)
+    manual = models.FileField(upload_to="manuals", blank=True)
 
     def __str__(self):
         return self.name

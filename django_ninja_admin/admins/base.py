@@ -5,6 +5,7 @@ from typing import Any
 from django import forms
 from django.contrib.auth import get_permission_codename
 from django.core.exceptions import FieldDoesNotExist
+from django.db import models
 from django.forms import modelform_factory
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
 from django.urls import reverse
@@ -13,9 +14,9 @@ from ninja import Schema
 from pydantic import create_model
 
 from django_ninja_admin.exceptions import NotRegistered
-from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema
+from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
-from django_ninja_admin.utils.forms import form_field_descriptions
+from django_ninja_admin.utils.forms import file_value_metadata, form_field_descriptions
 
 
 class BaseAdmin:
@@ -223,12 +224,14 @@ class BaseAdmin:
             return self.output_schema
         overrides = self.get_schema_field_overrides(request) or {}
         fields = [self.model._meta.pk.name]
-        fields.extend(
-            field.name
-            for field in self.model._meta.fields
-            if field.name != self.model._meta.pk.name and field.name != "password"
-        )
         custom_fields = []
+        for field in self.model._meta.fields:
+            if field.name == self.model._meta.pk.name or field.name == "password":
+                continue
+            if isinstance(field, models.FileField):
+                custom_fields.append((field.name, FileFieldValue | None, None))
+            else:
+                fields.append(field.name)
         for field in self.model._meta.fields:
             if field.remote_field and field.name != "password":
                 custom_fields.append((f"{field.name}_label", str, None))
@@ -258,20 +261,26 @@ class BaseAdmin:
 
     def serialize_object(self, obj, request=None):
         schema = self.get_output_schema(request)
-        data = schema.model_validate(obj, from_attributes=True).model_dump(mode="json", by_alias=True)
+        data = {}
         for field in obj._meta.fields:
             if field.name == "password":
-                data.pop(field.name, None)
-                data.pop(f"{field.name}_id", None)
                 continue
             value = getattr(obj, field.name)
-            alias = f"{field.name}_id" if field.remote_field else field.name
-            if field.remote_field and value is not None and alias in data:
+            if isinstance(field, models.FileField):
+                data[field.name] = file_value_metadata(value)
+                continue
+            field_key = field.attname if field.remote_field else field.name
+            data[field_key] = field.value_from_object(obj)
+            if field.remote_field and value is not None:
                 data[f"{field.name}_label"] = str(value)
         for field in obj._meta.many_to_many:
-            if obj.pk and field.name not in data:
-                data[field.name] = list(getattr(obj, field.name).values_list("pk", flat=True))
-        return data
+            data[field.name] = list(getattr(obj, field.name).values_list("pk", flat=True)) if obj.pk else []
+        for name in self.get_schema_field_overrides(request) or {}:
+            if name in data:
+                continue
+            value = getattr(obj, name, None)
+            data[name] = value() if callable(value) else value
+        return schema.model_validate(data).model_dump(mode="json", by_alias=True)
 
     def get_form_description(self, request, obj=None, **kwargs):
         permissions = {

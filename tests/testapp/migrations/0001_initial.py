@@ -32,6 +32,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("description", models.TextField(blank=True)),
+                ("manual", models.FileField(blank=True, upload_to="manuals")),
                 (
                     "category",
                     models.ForeignKey(

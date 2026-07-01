@@ -1,8 +1,20 @@
 from decimal import Decimal
 
+from django import forms
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 
 from django_ninja_admin.utils.format_error import format_error
+
+
+def file_value_metadata(value):
+    name = getattr(value, "name", "") or ""
+    if not name:
+        return None
+    try:
+        url = value.url
+    except (OSError, ValueError):
+        url = None
+    return {"name": name, "url": url}
 
 
 def model_data_for_form(instance, fields):
@@ -10,6 +22,8 @@ def model_data_for_form(instance, fields):
     for key, value in list(data.items()):
         if isinstance(value, Decimal):
             data[key] = str(value)
+        elif hasattr(value, "name") and hasattr(value, "storage"):
+            data[key] = value.name or ""
     return data
 
 
@@ -50,7 +64,7 @@ def _validator_names(field):
     return [validator.__class__.__name__ for validator in getattr(field, "validators", ())]
 
 
-def field_description(name, field, *, read_only=False):
+def field_description(name, field, *, read_only=False, current_value=None):
     widget = field.widget
     attrs = {
         "required": field.required,
@@ -85,6 +99,11 @@ def field_description(name, field, *, read_only=False):
         attrs["max_digits"] = field.max_digits
     if getattr(field, "decimal_places", None) is not None:
         attrs["decimal_places"] = field.decimal_places
+    if isinstance(field, forms.FileField):
+        attrs["allow_empty_file"] = getattr(field, "allow_empty_file", False)
+        current_file = file_value_metadata(current_value)
+        if current_file is not None:
+            attrs["current_file"] = current_file
     attrs.update(_relation_metadata(field))
     return {"name": name, "type": field.__class__.__name__, "attrs": attrs}
 
@@ -93,7 +112,10 @@ def form_field_descriptions(form_class, *, readonly_fields=(), instance=None):
     form = form_class(instance=instance)
     descriptions = []
     for name, field in form.fields.items():
-        descriptions.append(field_description(name, field, read_only=name in readonly_fields))
+        current_value = getattr(instance, name, None) if instance is not None else None
+        descriptions.append(
+            field_description(name, field, read_only=name in readonly_fields, current_value=current_value)
+        )
     for name in readonly_fields:
         if name not in form.fields:
             descriptions.append(
