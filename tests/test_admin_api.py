@@ -2276,6 +2276,39 @@ def test_changelist_route_uses_model_admin_hook(admin_client, sample, monkeypatc
     assert response.json()["config"]["filters"] == []
 
 
+def test_changelist_route_uses_model_admin_paginator_hook(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    Product.objects.create(name="Gamma", category=sample.category, price="8.00")
+    calls = {}
+
+    def get_paginator(request, queryset, per_page, orphans=0, allow_empty_first_page=True):
+        calls["path"] = request.path
+        calls["model"] = queryset.model
+        calls["per_page"] = per_page
+        calls["orphans"] = orphans
+        calls["allow_empty_first_page"] = allow_empty_first_page
+        return Paginator(
+            queryset,
+            per_page,
+            orphans=orphans,
+            allow_empty_first_page=allow_empty_first_page,
+        )
+
+    monkeypatch.setattr(product_admin, "get_paginator", get_paginator)
+
+    response = admin_client.get("/admin-api/testapp/product?pp=1")
+
+    assert response.status_code == 200
+    assert response.json()["config"]["page_count"] == 3
+    assert calls == {
+        "path": "/admin-api/testapp/product",
+        "model": Product,
+        "per_page": 1,
+        "orphans": 0,
+        "allow_empty_first_page": True,
+    }
+
+
 @override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin_client, staff_client, sample):
     site_response = admin_client.get("/custom-admin/status")

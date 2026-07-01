@@ -220,6 +220,14 @@ class ModelAdmin(BaseAdmin):
     def get_changelist_instance(self, request, **kwargs):
         return self.get_changelist(request, **kwargs)(request, self)
 
+    def get_paginator(self, request, queryset, per_page, orphans=0, allow_empty_first_page=True):
+        return self.paginator(
+            queryset,
+            per_page,
+            orphans=orphans,
+            allow_empty_first_page=allow_empty_first_page,
+        )
+
     def get_search_fields(self, request):
         return self.search_fields
 

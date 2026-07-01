@@ -50,7 +50,7 @@ class ChangeList:
         self.pagination_required = self.multi_page and not self.show_all
         self.show_facets = self.should_show_facets()
         page_size = (self.result_count or 1) if self.show_all else self.per_page
-        self.paginator = model_admin.paginator(self.queryset, page_size)
+        self.paginator = model_admin.get_paginator(request, self.queryset, page_size)
         self.page_num = 1 if self.show_all else self.get_page_number()
         self.page = self.get_page()
         self.result_list = list(self.page.object_list)

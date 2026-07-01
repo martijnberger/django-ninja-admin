@@ -39,6 +39,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added changelist active search metadata and clear-search query strings.
 - Added changelist `_to_field` validation plus alternate row IDs and object
   links when an allowed object field is requested.
+- Added a Django-admin-style `ModelAdmin.get_paginator()` hook and made
+  changelists use it.
 
 ## 0.1.15 - 2026-07-02
 

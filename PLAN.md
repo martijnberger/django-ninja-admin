@@ -122,6 +122,8 @@ Completed or mostly complete:
   metadata for frontend search controls.
 - Changelist responses now honor `show_full_result_count` and expose `show_admin_actions` metadata.
 - Changelist responses now expose admin-style pagination state with `multi_page`, `pagination_required`, and an elided `page_range`.
+- Changelist pagination now honors `ModelAdmin.get_paginator()` overrides in
+  addition to custom `paginator` classes.
 - Changelist responses now support callable `list_display` entries with stable response keys, labels, display metadata, admin checks, and `admin_order_field` sorting.
 - Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, readonly, model `blank`/`null`, uniqueness/index, default, and upload metadata.
 - Form descriptions now expose structured `SelectDateWidget` metadata for
@@ -290,7 +292,7 @@ Completed or mostly complete:
 
 Known non-parity areas:
 
-- Changelist behavior now supports `_to_field` validation/row identity, last-page pagination, row/result indexes, page-result/range metadata, page-choice metadata, pagination/show-all query strings, search/filter-state clear metadata, facet toggle links, lowest-useful initial date hierarchy levels, and preservation of unrelated lookup params when resetting stale page/order links, but is still not fully equivalent to upstream `ChangeList`; remaining query-string edge cases, richer result rendering metadata, list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
+- Changelist behavior now supports `_to_field` validation/row identity, custom paginator hooks, last-page pagination, row/result indexes, page-result/range metadata, page-choice metadata, pagination/show-all query strings, search/filter-state clear metadata, facet toggle links, lowest-useful initial date hierarchy levels, and preservation of unrelated lookup params when resetting stale page/order links, but is still not fully equivalent to upstream `ChangeList`; remaining query-string edge cases, richer result rendering metadata, list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
 - Filter handling now covers common Django admin filter families, bounded date filter ranges, and initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_display_links` item-type conflicts, `list_editable` item-type/form-layout conflicts, duplicate `list_editable`/`readonly_fields`, `list_select_related` mistakes, autocomplete target registration/searchability, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action metadata and payload schemas now advertise action names, permission requirements, discriminated per-action input payload variants, and optional custom response schema unions.
