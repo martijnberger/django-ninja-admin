@@ -192,6 +192,9 @@ class ChangelistConfig(Schema):
     show_all: bool = False
     can_show_all: bool = False
     show_facets: bool = False
+    actions_on_top: bool = True
+    actions_on_bottom: bool = False
+    actions_selection_counter: bool = True
     action_choices: list[ActionChoice]
     filters: list[FilterDescription]
     date_hierarchy: DateHierarchyDescription | None = None

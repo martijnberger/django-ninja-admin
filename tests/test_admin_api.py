@@ -453,6 +453,9 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert show_all_body["config"]["show_all"] is True
     assert show_all_body["config"]["can_show_all"] is True
     assert show_all_body["config"]["list_display_links"] == ["name"]
+    assert show_all_body["config"]["actions_on_top"] is True
+    assert show_all_body["config"]["actions_on_bottom"] is False
+    assert show_all_body["config"]["actions_selection_counter"] is True
     assert show_all_body["columns"][0]["display_link"] is True
     assert show_all_body["columns"][2]["sortable"] is True
     assert show_all_body["config"]["search_fields"] == ["name", "description", "category__name"]
@@ -476,6 +479,22 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert rows_by_name["Beta"]["cells"]["tagline"] == "No description"
     assert rows_by_name["Beta"]["cells"]["is_expensive"] is False
     assert rows_by_name["Beta"]["cells"]["subtitle"] == "No subtitle"
+
+
+def test_changelist_action_ui_metadata_follows_model_admin(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "actions_on_top", False)
+    monkeypatch.setattr(product_admin, "actions_on_bottom", True)
+    monkeypatch.setattr(product_admin, "actions_selection_counter", False)
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    config = response.json()["config"]
+    assert config["actions_on_top"] is False
+    assert config["actions_on_bottom"] is True
+    assert config["actions_selection_counter"] is False
+    assert {field["name"] for field in response.json()["action_form"]} == {"action", "selected_ids", "select_across"}
 
 
 def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client, sample, monkeypatch):

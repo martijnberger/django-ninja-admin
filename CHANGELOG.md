@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   date-time choices and clearing stale date filter params when switching ranges.
 - Invalidated the lazy Ninja API/OpenAPI cache when global admin actions are
   added or disabled after initial API construction.
+- Exposed changelist action placement and selection-counter metadata in the
+  typed response config for frontend parity with Django admin action controls.
 
 ## 0.1.2 - 2026-07-01
 
