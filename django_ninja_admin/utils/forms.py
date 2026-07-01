@@ -59,6 +59,12 @@ def _jsonish_value(value):
         return None
     if isinstance(value, Decimal):
         return str(value)
+    if isinstance(value, models.Q):
+        return {
+            "connector": value.connector,
+            "negated": value.negated,
+            "children": [_jsonish_q_child(child) for child in value.children],
+        }
     if hasattr(value, "pk"):
         return value.pk
     if isinstance(value, str | int | float | bool) or value is None:
@@ -68,6 +74,12 @@ def _jsonish_value(value):
     if isinstance(value, dict):
         return {str(key): _jsonish_value(item) for key, item in value.items()}
     return str(value)
+
+
+def _jsonish_q_child(child):
+    if isinstance(child, tuple) and len(child) == 2 and isinstance(child[0], str):
+        return {"lookup": child[0], "value": _jsonish_value(child[1])}
+    return _jsonish_value(child)
 
 
 def _relation_metadata(field):
@@ -163,6 +175,10 @@ def _model_field_metadata(field):
         attrs["image"] = True
         attrs["width_field"] = getattr(field, "width_field", None) or None
         attrs["height_field"] = getattr(field, "height_field", None) or None
+    if hasattr(field, "get_limit_choices_to"):
+        limit_choices_to = _jsonish_value(field.get_limit_choices_to())
+        if limit_choices_to not in (None, {}, []):
+            attrs["limit_choices_to"] = limit_choices_to
     return attrs
 
 

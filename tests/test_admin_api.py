@@ -2695,6 +2695,37 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
     }
 
 
+@pytest.mark.parametrize(
+    ("limit_choices_to", "expected"),
+    [
+        ({"name__startswith": "Cam"}, {"name__startswith": "Cam"}),
+        (lambda: {"name__startswith": "Cam"}, {"name__startswith": "Cam"}),
+        (
+            models.Q(name__startswith="Cam"),
+            {
+                "connector": "AND",
+                "negated": False,
+                "children": [{"lookup": "name__startswith", "value": "Cam"}],
+            },
+        ),
+    ],
+    ids=["dict", "callable", "q"],
+)
+def test_form_description_exposes_relation_limit_choices_to(db, sample, monkeypatch, limit_choices_to, expected):
+    user = get_user_model().objects.create_user("limit-admin", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product/form")
+    request.user = user
+    category_field = Product._meta.get_field("category")
+    monkeypatch.setattr(category_field.remote_field, "limit_choices_to", limit_choices_to)
+
+    model_admin = ModelAdmin(Product, NinjaAdminSite(include_auth=False))
+    form = model_admin.get_form_description(request)["form"]
+    fields_by_name = {field["name"]: field for field in form["fields"]}
+
+    assert fields_by_name["category"]["attrs"]["limit_choices_to"] == expected
+
+
 def test_file_field_can_be_cleared_with_null_payload(admin_client, sample):
     response = admin_client.patch(
         f"/admin-api/testapp/product/{sample.pk}",

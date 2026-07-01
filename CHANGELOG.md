@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added relation `limit_choices_to` metadata to form field descriptions,
+  including callable and structured `Q` object constraints.
+
 ## 0.1.8 - 2026-07-01
 
 - Added automatic `select_related()` inference for relation-path fields in
