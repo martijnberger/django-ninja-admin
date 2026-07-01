@@ -24,6 +24,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added admin system checks for invalid `formfield_overrides` mappings.
 - Added form-description support for callable entries in `readonly_fields`,
   including stable string names, labels, values, and display metadata.
+- Used inline `get_extra()`, `get_min_num()`, and `get_max_num()` hooks when
+  emitting form-description metadata.
 - Added changelist support for callable entries in `list_display`, including
   stable response keys, display metadata, and `admin_order_field` sorting.
 - Improved `schema_field_overrides` serialization so computed `ModelAdmin`

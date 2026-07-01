@@ -247,6 +247,7 @@ Goal: make forms rich enough for a frontend to render a serious admin UI.
 - Add file and image field handling for reads, writes, clear/delete behavior, existing file URLs, storage errors, and multipart request support where Ninja supports it.
 - Support many-to-many, raw ID, radio fields, filter-horizontal/filter-vertical, prepopulated fields, autocomplete fields, and readonly/display values in form descriptions.
 - Add support for custom `form_class`, custom field widgets, and per-field schema overrides in both forms and OpenAPI.
+- Ensure form descriptions use dynamic inline hooks such as `get_extra()`, `get_min_num()`, and `get_max_num()`.
 
 Acceptance:
 

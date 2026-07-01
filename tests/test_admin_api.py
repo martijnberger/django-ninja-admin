@@ -1606,6 +1606,31 @@ def test_direct_update_skips_empty_change_log(admin_client, sample, monkeypatch)
     assert sample.name == "Alpha"
 
 
+def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypatch):
+    from tests.testapp.admin import ProductImageInline
+
+    def get_extra(self, request, obj=None, **kwargs):
+        return 2 if obj is not None else 4
+
+    def get_min_num(self, request, obj=None, **kwargs):
+        return 1
+
+    def get_max_num(self, request, obj=None, **kwargs):
+        return 5
+
+    monkeypatch.setattr(ProductImageInline, "get_extra", get_extra)
+    monkeypatch.setattr(ProductImageInline, "get_min_num", get_min_num)
+    monkeypatch.setattr(ProductImageInline, "get_max_num", get_max_num)
+
+    response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+
+    assert response.status_code == 200
+    inline = next(item for item in response.json()["inlines"] if item["model"] == "testapp.productimage")
+    assert inline["extra"] == 2
+    assert inline["min_num"] == 1
+    assert inline["max_num"] == 5
+
+
 def test_readonly_display_fields_include_values_and_display_metadata(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
 
