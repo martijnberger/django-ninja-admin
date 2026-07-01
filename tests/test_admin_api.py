@@ -477,12 +477,15 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert show_all.status_code == 200
     show_all_body = show_all.json()
     assert len(show_all_body["rows"]) == show_all_body["config"]["result_count"]
+    assert show_all_body["config"]["full_count"] == 3
     assert show_all_body["config"]["show_all"] is True
     assert show_all_body["config"]["can_show_all"] is True
     assert show_all_body["config"]["list_display_links"] == ["name"]
     assert show_all_body["config"]["actions_on_top"] is True
     assert show_all_body["config"]["actions_on_bottom"] is False
     assert show_all_body["config"]["actions_selection_counter"] is True
+    assert show_all_body["config"]["show_full_result_count"] is True
+    assert show_all_body["config"]["show_admin_actions"] is True
     assert show_all_body["columns"][0]["display_link"] is True
     assert show_all_body["columns"][2]["sortable"] is True
     assert show_all_body["config"]["search_fields"] == ["name", "description", "category__name"]
@@ -522,6 +525,20 @@ def test_changelist_action_ui_metadata_follows_model_admin(admin_client, sample,
     assert config["actions_on_bottom"] is True
     assert config["actions_selection_counter"] is False
     assert {field["name"] for field in response.json()["action_form"]} == {"action", "selected_ids", "select_across"}
+
+
+def test_changelist_can_skip_full_result_count(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "show_full_result_count", False)
+
+    response = admin_client.get("/admin-api/testapp/product?q=Alpha")
+
+    assert response.status_code == 200
+    config = response.json()["config"]
+    assert config["result_count"] == 1
+    assert config["full_count"] is None
+    assert config["show_full_result_count"] is False
+    assert config["show_admin_actions"] is True
 
 
 def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client, sample, monkeypatch):

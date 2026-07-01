@@ -45,6 +45,7 @@ class ModelAdmin(BaseAdmin):
     search_fields = ()
     search_help_text = None
     date_hierarchy = None
+    show_full_result_count = True
     save_as = False
     save_as_continue = True
     save_on_top = False

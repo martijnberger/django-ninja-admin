@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   typed response config for frontend parity with Django admin action controls.
 - Added admin system checks for invalid `list_select_related` types and
   relation paths.
+- Added `show_full_result_count` and `show_admin_actions` changelist metadata,
+  with `full_count` omitted when full counts are disabled.
 
 ## 0.1.2 - 2026-07-01
 

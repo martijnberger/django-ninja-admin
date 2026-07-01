@@ -28,8 +28,10 @@ class ChangeList:
         self.date_hierarchy_field = self.get_date_hierarchy_field()
         self.filter_specs = self.get_filters(self.params)
         self.queryset = self.get_queryset(self.params, self.filter_specs)
-        self.full_result_count = model_admin.get_queryset(request).count()
+        self.show_full_result_count = bool(getattr(model_admin, "show_full_result_count", True))
+        self.full_result_count = model_admin.get_queryset(request).count() if self.show_full_result_count else None
         self.result_count = self.queryset.count()
+        self.show_admin_actions = not self.show_full_result_count or bool(self.full_result_count)
         self.per_page = self.get_per_page()
         self.show_all = self.can_show_all()
         self.can_show_all_results = self.result_count <= self.model_admin.list_max_show_all

@@ -182,7 +182,7 @@ class DateHierarchyDescription(Schema):
 
 
 class ChangelistConfig(Schema):
-    full_count: int
+    full_count: int | None
     result_count: int
     page_count: int
     page: int
@@ -195,6 +195,8 @@ class ChangelistConfig(Schema):
     actions_on_top: bool = True
     actions_on_bottom: bool = False
     actions_selection_counter: bool = True
+    show_full_result_count: bool = True
+    show_admin_actions: bool = True
     action_choices: list[ActionChoice]
     filters: list[FilterDescription]
     date_hierarchy: DateHierarchyDescription | None = None

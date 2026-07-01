@@ -955,6 +955,8 @@ class NinjaAdminSite:
                 "actions_on_top": bool(model_admin.actions_on_top),
                 "actions_on_bottom": bool(model_admin.actions_on_bottom),
                 "actions_selection_counter": bool(model_admin.actions_selection_counter),
+                "show_full_result_count": changelist.show_full_result_count,
+                "show_admin_actions": changelist.show_admin_actions,
                 "action_choices": model_admin.get_action_choices(request),
                 "filters": changelist.filter_descriptions(),
                 "date_hierarchy": changelist.date_hierarchy_description(),

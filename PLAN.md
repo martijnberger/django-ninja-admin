@@ -85,6 +85,7 @@ Completed or mostly complete:
 - Inline deletion change messages now preserve deleted object display text instead of falling back to primary keys.
 - Actions cover custom return values, empty-selection validation, and `select_across` behavior over filtered changelists.
 - Changelist responses expose action UI placement and selection-counter metadata for frontend action controls.
+- Changelist responses now honor `show_full_result_count` and expose `show_admin_actions` metadata.
 - Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, readonly, model `blank`/`null`, uniqueness/index, default, and upload metadata.
 - Permission hardening for actions, autocomplete, view-on-site, and object-level bulk updates.
 - Ninja-native `ChangeList` foundation for validated lookup params, shared action/changelist querysets, search, ordering, pagination, show-all behavior, `list_select_related`, `date_hierarchy`, and facet counts.
