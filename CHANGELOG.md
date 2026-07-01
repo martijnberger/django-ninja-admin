@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   configurations.
 - Added relation-path support for `date_hierarchy` checks and changelist
   metadata/filtering.
+- Extended changelist `select_related()` inference to display callables and
+  methods that declare related-field ordering metadata.
 
 ## 0.1.5 - 2026-07-01
 

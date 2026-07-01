@@ -10,11 +10,11 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import models
+from django.db import connection, models
 from django.forms.models import BaseInlineFormSet
 from django.test import Client, RequestFactory, override_settings
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
-from django.test.utils import isolate_apps
+from django.test.utils import CaptureQueriesContext, isolate_apps
 from django.utils import timezone
 from ninja.security import SessionAuthIsStaff
 
@@ -1616,6 +1616,37 @@ def test_changelist_auto_selects_related_list_display_fields(db):
 
     assert changelist.auto_select_related_fields() == ["category"]
     assert "category" in changelist.queryset.query.select_related
+
+
+def test_changelist_auto_selects_related_display_ordering_paths(db, sample):
+    @display(description="Category label", ordering="category__name")
+    def category_label(obj):
+        return obj.category.name
+
+    class RelatedOrderingProductAdmin(ModelAdmin):
+        list_display = ("name", category_label)
+        ordering = ("name",)
+
+    Category.objects.create(name="Accessories")
+    Product.objects.create(name="Gamma", category=sample.category, price="8.00")
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, RelatedOrderingProductAdmin)
+    user = get_user_model().objects.create_user("query-admin-callable", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+    model_admin = admin_site.get_model_admin(Product)
+
+    changelist = ChangeList(request, model_admin)
+
+    assert changelist.auto_select_related_fields() == ["category"]
+    assert "category" in changelist.queryset.query.select_related
+    with CaptureQueriesContext(connection) as queries:
+        rendered = [category_label(obj) for obj in changelist.result_list]
+
+    assert rendered == ["Cameras", "Cameras", "Cameras"]
+    assert len(queries) == 0
 
 
 def test_changelist_route_uses_model_admin_hook(admin_client, sample, monkeypatch):

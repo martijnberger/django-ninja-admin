@@ -51,7 +51,7 @@ Statuses:
 | Lookup validation | partial | `lookup_allowed`, invalid lookup-key tests, and invalid lookup-value typed error tests | Match Django suspicious lookup behavior |
 | Pagination/show all | implemented | `ChangeList`, pagination/show-all tests, and `show_full_result_count` tests | Large-result behavior |
 | Ordering/sort links | partial | Sort metadata plus multi-column ordering state/link tests | Deeper Django query-string semantics |
-| `list_select_related` and direct FK optimization | partial | `auto_select_related_fields`, tests | Query-count tests and m2m/prefetch strategy |
+| `list_select_related` and direct FK optimization | partial | `auto_select_related_fields`, direct-FK and callable related-ordering query-count tests | More m2m/prefetch strategy and broader query-count coverage |
 | List display links/display metadata | partial | Changelist column metadata, callable display columns, plus row URL/object-permission metadata tests | More readonly-field action variants and upstream fixture comparisons |
 | List filters | partial | Package-owned filter classes, bounded date-range filter tests, choices-null tests, empty-filter validation tests, related-filter/simple-filter visibility tests, many-to-many empty relation tests, related-only ordering tests, and common filter tests | Semantic edge-case comparison against Django/upstream |
 | Facets | partial | `_facets=1`, `ShowFacets` support, tests | Query-count optimization and exact Django facet semantics |

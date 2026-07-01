@@ -102,14 +102,43 @@ class ChangeList:
         related_fields = []
         for field_name in self.list_display:
             if not isinstance(field_name, str):
+                ordering_field = self.get_ordering_field(field_name)
+                related_path = self.select_related_path_for_ordering(ordering_field)
+                if related_path and related_path not in related_fields:
+                    related_fields.append(related_path)
                 continue
+            field = None
             try:
                 field = self.model._meta.get_field(field_name)
             except FieldDoesNotExist:
-                continue
-            if isinstance(field, (models.ForeignKey, models.OneToOneField)):
+                pass
+            if isinstance(field, (models.ForeignKey, models.OneToOneField)) and field.name not in related_fields:
                 related_fields.append(field.name)
+                continue
+            ordering_field = self.get_ordering_field(field_name)
+            related_path = self.select_related_path_for_ordering(ordering_field)
+            if related_path and related_path not in related_fields:
+                related_fields.append(related_path)
         return related_fields
+
+    def select_related_path_for_ordering(self, ordering_field):
+        if not isinstance(ordering_field, str) or "__" not in ordering_field:
+            return None
+
+        opts = self.model._meta
+        related_parts = []
+        for path_part in ordering_field.split("__")[:-1]:
+            if path_part == "pk":
+                path_part = opts.pk.name
+            try:
+                field = opts.get_field(path_part)
+            except FieldDoesNotExist:
+                return None
+            if not isinstance(field, (models.ForeignKey, models.OneToOneField)):
+                return None
+            related_parts.append(field.name)
+            opts = field.remote_field.model._meta
+        return "__".join(related_parts) if related_parts else None
 
     def apply_remaining_lookup_params(self, queryset, params, filter_specs):
         for key, value in params.items():
