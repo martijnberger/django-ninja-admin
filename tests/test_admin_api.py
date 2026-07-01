@@ -811,6 +811,30 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert "/custom-admin/hidden-status" not in schema["paths"]
 
 
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_site_auth_accepts_ninja_auth_sequences():
+    client = Client()
+
+    assert client.get("/multi-auth-admin/whoami").status_code == 401
+    primary = client.get("/multi-auth-admin/whoami", headers={"X-Primary-Token": "primary"})
+    secondary = client.get("/multi-auth-admin/whoami", headers={"X-Secondary-Token": "secondary"})
+    invalid = client.get("/multi-auth-admin/whoami", headers={"X-Primary-Token": "wrong"})
+
+    assert primary.status_code == 200
+    assert primary.json() == {"auth": "primary"}
+    assert secondary.status_code == 200
+    assert secondary.json() == {"auth": "secondary"}
+    assert invalid.status_code == 401
+
+    schema = client.get("/multi-auth-admin/openapi.json").json()
+    operation = schema["paths"]["/multi-auth-admin/whoami"]["get"]
+    assert operation["operationId"] == "multi_auth_whoami"
+    assert {"PrimaryTokenAuth": []} in operation["security"]
+    assert {"SecondaryTokenAuth": []} in operation["security"]
+    assert schema["components"]["securitySchemes"]["PrimaryTokenAuth"]["in"] == "header"
+    assert schema["components"]["securitySchemes"]["SecondaryTokenAuth"]["name"] == "X-Secondary-Token"
+
+
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, sample):
     schema = admin_client.get("/custom-form-admin/openapi.json").json()

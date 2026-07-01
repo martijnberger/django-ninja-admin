@@ -39,7 +39,7 @@ Statuses:
 | Permission hooks | partial | `BaseAdmin.has_*_permission`, API tests | More object-level and custom hook coverage |
 | Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, many-to-many `list_display`, `list_editable` form-layout conflict, `list_select_related`, and widget-conflict tests | Match Django check IDs/coverage more closely |
 | `get_changelist()` hooks | implemented | `ModelAdmin.get_changelist*`, route hook test | More subclassing examples/docs |
-| Custom site/model views | partial | `admin_view()`, `get_urls()`, `route()`, route tags/descriptions, hidden routes, raw method wrapping, `auth=None`, named response schemas, custom route tests | More multi-auth override coverage |
+| Custom site/model views | partial | `admin_view()`, `get_urls()`, `route()`, route tags/descriptions, hidden routes, raw method wrapping, `auth=None`, named response schemas, custom route tests, and site-level auth-sequence route tests | More route-level multi-auth override coverage |
 | Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values, and model-property metadata in changelist tests | More readonly-field display variants |
 
 ## Changelist, Filtering, Search, And Ordering
@@ -86,7 +86,7 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | Staff-session auth default | implemented | `SessionAuthIsStaff`, auth tests, auth docs | More project-level examples |
-| Custom auth and `auth=None` | implemented | Auth contract tests and auth docs | Multi-auth test coverage |
+| Custom auth and `auth=None` | implemented | Auth contract tests, multi-auth mounted-route tests, and auth docs | More project-level examples |
 | Typed error bodies | partial | Exception handlers, Ninja validation handler, API tests, and model-route OpenAPI error maps | Full error schema snapshots |
 | Stable operation IDs/tags | partial | Explicit operation IDs and semantic OpenAPI contract tests | Broader site/custom-route snapshot tests |
 | Per-model request/response contracts | partial | Output, write payload, inline operation, discriminated action payload/input/response, global action cache invalidation, and response-map schemas in OpenAPI | Broader Phase 6 snapshots and examples |

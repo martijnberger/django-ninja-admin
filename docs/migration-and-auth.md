@@ -229,6 +229,35 @@ class InternalTokenAuth(APIKeyHeader):
 admin_site = NinjaAdminSite(auth=InternalTokenAuth())
 ```
 
+Use a sequence when more than one Ninja auth method may authenticate the same
+admin API:
+
+```python
+from ninja.security import APIKeyHeader
+from django_ninja_admin import NinjaAdminSite
+
+
+class PrimaryTokenAuth(APIKeyHeader):
+    param_name = "X-Primary-Token"
+
+    def authenticate(self, request, key):
+        if key == "primary-token":
+            return "primary-admin"
+        return None
+
+
+class SecondaryTokenAuth(APIKeyHeader):
+    param_name = "X-Secondary-Token"
+
+    def authenticate(self, request, key):
+        if key == "secondary-token":
+            return "secondary-admin"
+        return None
+
+
+admin_site = NinjaAdminSite(auth=[PrimaryTokenAuth(), SecondaryTokenAuth()])
+```
+
 Use `auth=None` only for deliberately unauthenticated APIs, such as local tests
 or a separately protected internal mount:
 

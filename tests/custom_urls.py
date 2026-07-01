@@ -1,5 +1,6 @@
 from django.urls import path
 from ninja import Schema
+from ninja.security import APIKeyHeader
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite
 from tests.testapp.models import Category, Product
@@ -15,6 +16,28 @@ class SiteStatusResponse(Schema):
 
 class PublicStatusResponse(Schema):
     public: str
+
+
+class AuthStatusResponse(Schema):
+    auth: str
+
+
+class PrimaryTokenAuth(APIKeyHeader):
+    param_name = "X-Primary-Token"
+
+    def authenticate(self, request, key):
+        if key == "primary":
+            return "primary"
+        return None
+
+
+class SecondaryTokenAuth(APIKeyHeader):
+    param_name = "X-Secondary-Token"
+
+    def authenticate(self, request, key):
+        if key == "secondary":
+            return "secondary"
+        return None
 
 
 class CustomProductAdmin(ModelAdmin):
@@ -78,6 +101,30 @@ custom_site = CustomAdminSite(name="custom_admin", include_auth=False)
 custom_site.register(Category, ModelAdmin)
 custom_site.register(Product, CustomProductAdmin)
 
+
+class MultiAuthAdminSite(NinjaAdminSite):
+    def whoami(self, request):
+        return {"auth": request.auth}
+
+    def get_urls(self):
+        return [
+            self.route(
+                "/whoami",
+                self.whoami,
+                response=AuthStatusResponse,
+                operation_id="multi_auth_whoami",
+                tags=["custom.auth"],
+            )
+        ]
+
+
+multi_auth_site = MultiAuthAdminSite(
+    name="multi_auth_admin",
+    auth=[PrimaryTokenAuth(), SecondaryTokenAuth()],
+    include_auth=False,
+)
+
 urlpatterns = [
     path("custom-admin/", custom_site.urls),
+    path("multi-auth-admin/", multi_auth_site.urls),
 ]

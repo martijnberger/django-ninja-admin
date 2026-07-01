@@ -55,7 +55,7 @@ Completed or mostly complete:
 - Public exports for `site`, `NinjaAdminSite`, `ModelAdmin`, inlines, decorators, registration, and package-owned admin filter classes.
 - Registry coverage now includes option-based registration, duplicate/unregistered errors, abstract-model rejection, and the public `@register` decorator.
 - Core site/model routes for apps, context, permissions, history, autocomplete, view-on-site, changelist, detail, add/change/delete, actions, and bulk updates.
-- Default `SessionAuthIsStaff`, explicit `auth=None`, and custom auth callable support.
+- Default `SessionAuthIsStaff`, explicit `auth=None`, custom auth callable, and multiple Ninja auth callable support.
 - Basic Pydantic request envelopes and typed response schemas.
 - Dynamic Pydantic output schemas with FK labels, many-to-many IDs, and `schema_field_overrides`.
 - Dynamic per-model Pydantic request schemas for create, replace, partial update, and list-editable bulk update payloads.
@@ -139,7 +139,7 @@ Known non-parity areas:
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file/image attributes, basic file clearing and multipart file uploads, generated-form `formfield_*` customizations, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but real image upload validation/storage edge cases, custom model fields, and advanced widget behavior still need deeper parity.
 - Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, history permission filtering, autocomplete pagination, `_to_field` validation, inline permission checks, readonly/unknown inline field rejection, richer inline delete messages, unchanged bulk-row handling, row-indexed inline/bulk errors, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works and now has semantic contract coverage for core model routes, custom action input/response schemas, and global action cache invalidation, but broader snapshots and example coverage are still needed before release.
-- Admin extensibility is still young: custom view routing, route metadata/auth overrides, named response-schema coverage, and display metadata exist, but deeper multi-auth and override-hook parity need work.
+- Admin extensibility is still young: custom view routing, route metadata/auth overrides, named response-schema coverage, site-level multi-auth coverage, and display metadata exist, but deeper override-hook parity still needs work.
 - Release hardening has local/CI `just` gates, wheel import smoke, a clean sample-project smoke, initial PostgreSQL CI coverage, and an initial copyright audit; remaining work is to confirm CI results and repeat the audit before release candidates.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix and targeted local registry/route contracts.
 

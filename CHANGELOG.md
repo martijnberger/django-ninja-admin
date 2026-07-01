@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   form, delete, and view-on-site frontend actions.
 - Added image-specific response schema and form metadata for Django
   `ImageField` values, including upload hints and width/height field names.
+- Added mounted-route coverage and docs for `NinjaAdminSite` auth sequences,
+  including OpenAPI security metadata for multiple Ninja auth callables.
 
 ## 0.1.2 - 2026-07-01
 
