@@ -248,10 +248,14 @@ class LockedContextAdminSite(NinjaAdminSite):
 locked_context_site = LockedContextAdminSite(name="locked_context_admin", include_auth=False)
 
 
+public_permissions_site = NinjaAdminSite(name="public_permissions_admin", auth=None, include_auth=False)
+
+
 urlpatterns = [
     path("custom-admin/", custom_site.urls),
     path("slug-autocomplete-admin/", slug_autocomplete_site.urls),
     path("multi-auth-admin/", multi_auth_site.urls),
     path("context-admin/", context_site.urls),
     path("locked-context-admin/", locked_context_site.urls),
+    path("public-permissions-admin/", public_permissions_site.urls),
 ]

@@ -56,6 +56,7 @@ Completed or mostly complete:
 - Registry coverage now includes option-based registration, duplicate/unregistered errors, abstract-model rejection, swapped-model skipping, and the public `@register` decorator.
 - Core site/model routes for apps, context, permissions, history, autocomplete, view-on-site, changelist, detail, add/change/delete, actions, and bulk updates.
 - Context metadata honors custom site title/header/url/sidebar settings and uses `NinjaAdminSite.has_permission()` for permission status.
+- Permissions metadata includes site-level `has_permission` and is covered for default staff-session and explicit `auth=None` sites.
 - Default `SessionAuthIsStaff`, explicit `auth=None`, custom auth callable, and multiple Ninja auth callable support.
 - Basic Pydantic request envelopes and typed response schemas.
 - Dynamic Pydantic output schemas with FK labels, many-to-many IDs, and `schema_field_overrides`.
@@ -67,7 +68,7 @@ Completed or mostly complete:
 - Custom actions can now declare Pydantic/Ninja input and response schemas through `@action(input_schema=..., response_schema=...)`; input schemas are validated before dispatch and exposed as discriminated per-action OpenAPI payload variants.
 - Action system checks now validate `allowed_permissions` entries while preserving custom `has_<permission>_permission()` hooks.
 - Global action changes now invalidate the lazy Ninja API/OpenAPI cache so action payload schemas stay current after initial API construction.
-- Built-in apps, context, and permissions site routes now advertise typed OpenAPI auth-error responses.
+- Built-in apps, context, and permissions site routes now advertise typed OpenAPI auth-error responses, while omitting them for explicit `auth=None` sites.
 - Model routes now advertise richer OpenAPI response maps for typed error bodies, including normalized `422` request-validation responses.
 - Pydantic/Ninja request validation errors are normalized into typed API error bodies.
 - Django `ModelForm` and inline formset validation for create/update/inline mutations.

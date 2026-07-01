@@ -18,6 +18,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   overrides and added custom site metadata coverage.
 - Added typed OpenAPI auth-error response maps for built-in apps, context,
   and permissions site routes.
+- Added `has_permission` to `/permissions` responses and made built-in site
+  route auth-error response maps honor `auth=None` sites.
 
 ## 0.1.15 - 2026-07-02
 

@@ -348,6 +348,15 @@ class NinjaAdminSite:
             response_map.setdefault(status_code, ErrorResponse)
         return response_map
 
+    def _site_route_response(self, success_response, *, errors=()):
+        response_map = {200: success_response}
+        if self.auth is not None:
+            response_map[401] = ErrorResponse
+            response_map[403] = ErrorResponse
+        for status_code in errors:
+            response_map[status_code] = ErrorResponse
+        return response_map
+
     def _custom_route_view_func(self, view_func):
         if not (hasattr(view_func, "__self__") and hasattr(view_func, "__func__")):
             return view_func
@@ -491,7 +500,7 @@ class NinjaAdminSite:
 
         @router.get(
             "/apps",
-            response={200: list[AppSummary], 401: ErrorResponse, 403: ErrorResponse},
+            response=site._site_route_response(list[AppSummary]),
             operation_id="admin_list_apps",
         )
         def list_apps(request):
@@ -499,7 +508,7 @@ class NinjaAdminSite:
 
         @router.get(
             "/apps/{app_label}",
-            response={200: AppSummary, 401: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse},
+            response=site._site_route_response(AppSummary, errors=(404,)),
             operation_id="admin_get_app",
         )
         def get_app(request, app_label: str):
@@ -507,7 +516,7 @@ class NinjaAdminSite:
 
         @router.get(
             "/context",
-            response={200: SiteContext, 401: ErrorResponse, 403: ErrorResponse},
+            response=site._site_route_response(SiteContext),
             operation_id="admin_context",
         )
         def context(request):
@@ -515,7 +524,7 @@ class NinjaAdminSite:
 
         @router.get(
             "/permissions",
-            response={200: dict[str, bool], 401: ErrorResponse, 403: ErrorResponse},
+            response=site._site_route_response(dict[str, bool]),
             operation_id="admin_permissions",
         )
         def permissions(request):
@@ -525,6 +534,7 @@ class NinjaAdminSite:
                 "is_active": user.is_active,
                 "is_staff": user.is_staff,
                 "is_superuser": user.is_superuser,
+                "has_permission": site.has_permission(request),
             }
 
         @router.get(

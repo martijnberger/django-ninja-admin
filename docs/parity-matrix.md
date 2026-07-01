@@ -24,11 +24,11 @@ Statuses:
 | --- | --- | --- | --- |
 | `GET /apps` and `GET /apps/{app_label}` | implemented | `NinjaAdminSite.get_app_list`, API tests, and typed auth-error OpenAPI maps | Upstream fixture comparisons |
 | `GET /context` | implemented | `NinjaAdminSite.each_context`, API tests, custom metadata tests, and `has_permission()` override coverage | Upstream fixture comparisons |
-| `GET /permissions` | implemented | Site route in `sites.py`, API tests, and typed auth-error OpenAPI maps | Broader auth matrix |
+| `GET /permissions` | implemented | Site route in `sites.py`, site-level `has_permission`, default/auth-none API tests, and typed auth-error OpenAPI maps | Upstream fixture comparisons |
 | `GET /history` | partial | History route, log model, app/model/object/action filter, permission-filter tests, client-controlled page/page-size pagination, per-row model identity/object links, and Django-style change-message text | Broader upstream history fixture comparisons |
 | `GET /autocomplete` | partial | Permission-hardened route plus rich pagination metadata, many-to-many source-field tests, and non-PK `ForeignKey(to_field=...)` option IDs | Additional remote-field and permission edge cases |
 | `GET /view-on-site/{content_type_id}/{object_id}` | implemented | Route, permission, callable hook, external URL tests, configured Site-domain URLs, and request-host fallback when Site is missing | Upstream fixture comparisons |
-| Docs/OpenAPI routes | partial | `/docs`, `/openapi.json`, semantic model-route contract tests, and built-in site-route success/error response maps | Full docs examples and broader snapshots |
+| Docs/OpenAPI routes | partial | `/docs`, `/openapi.json`, semantic model-route contract tests, auth-aware built-in site-route maps, and custom-route success/error response maps | Full docs examples and broader snapshots |
 
 ## Registry, Model Admins, And Checks
 
@@ -86,7 +86,7 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | Staff-session auth default | implemented | `SessionAuthIsStaff`, auth tests, auth docs | More project-level examples |
-| Custom auth and `auth=None` | implemented | Auth contract tests, multi-auth mounted-route tests, and auth docs | More project-level examples |
+| Custom auth and `auth=None` | implemented | Auth contract tests, multi-auth mounted-route tests, auth-none site-route tests, and auth docs | More project-level examples |
 | Typed error bodies | partial | Exception handlers, Ninja validation handler, runtime auth-error tests, and built-in/custom route OpenAPI error maps | Full error schema snapshots |
 | Stable operation IDs/tags | partial | Explicit and generated operation IDs plus semantic OpenAPI contract tests for core site/model routes and custom site/model routes, including multi-method uniqueness | Broader custom-route snapshot tests |
 | Per-model request/response contracts | partial | Output, write payload, mutation/bulk response, inline operation, discriminated action payload/input/response, global action cache invalidation, and response-map schemas in OpenAPI | Broader Phase 6 snapshots and examples |

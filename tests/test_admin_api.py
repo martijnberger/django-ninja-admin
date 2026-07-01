@@ -211,6 +211,39 @@ def test_site_routes_return_typed_auth_errors(db):
     assert body["errors"][0]["param"] == "non_field_errors"
 
 
+def test_permissions_route_reports_site_permission(admin_client):
+    staff_response = admin_client.get("/admin-api/permissions")
+
+    assert staff_response.status_code == 200
+    assert staff_response.json() == {
+        "is_authenticated": True,
+        "is_active": True,
+        "is_staff": True,
+        "is_superuser": False,
+        "has_permission": True,
+    }
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_permissions_route_supports_auth_none_sites():
+    public_response = Client().get("/public-permissions-admin/permissions")
+
+    assert public_response.status_code == 200
+    assert public_response.json() == {
+        "is_authenticated": False,
+        "is_active": False,
+        "is_staff": False,
+        "is_superuser": False,
+        "has_permission": False,
+    }
+
+    schema = Client().get("/public-permissions-admin/openapi.json").json()
+    operation = schema["paths"]["/public-permissions-admin/permissions"]["get"]
+    assert "security" not in operation
+    assert "401" not in operation["responses"]
+    assert "403" not in operation["responses"]
+
+
 def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):
     schema = admin_client.get("/admin-api/openapi.json").json()
     paths = schema["paths"]
