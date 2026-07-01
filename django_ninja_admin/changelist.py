@@ -434,7 +434,7 @@ class ChangeList:
         query = self.params.copy()
         for parameter in remove:
             for key in list(query):
-                if key == parameter or key.startswith(parameter):
+                if self.should_remove_query_param(key, parameter):
                     query.pop(key, None)
         for key, value in new_params.items():
             if value is None:
@@ -443,6 +443,11 @@ class ChangeList:
                 query[key] = value
         encoded = query.urlencode(safe=",")
         return f"?{encoded}" if encoded else "?"
+
+    def should_remove_query_param(self, key, parameter):
+        if key == parameter:
+            return True
+        return parameter.endswith("__") and key.startswith(parameter)
 
     def params_from_query_string(self, query_string):
         query = QueryDict(query_string[1:] if query_string.startswith("?") else query_string, mutable=True)

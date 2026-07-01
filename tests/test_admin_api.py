@@ -1607,6 +1607,20 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
         assert "page" not in params
         assert "p" not in params
 
+    prefixed_filter = admin_client.get("/admin-api/testapp/product?price__gte=1&pp=1&page=2&o=3")
+    assert prefixed_filter.status_code == 200
+    prefixed_body = prefixed_filter.json()
+    prefixed_price_column = next(column for column in prefixed_body["columns"] if column["field"] == "price")
+    assert prefixed_price_column["descending_query_string"] == "?price__gte=1&pp=1&o=-3"
+    assert prefixed_price_column["remove_sorting_query_string"] == "?price__gte=1&pp=1"
+    prefixed_stock_filter = next(
+        item for item in prefixed_body["config"]["filters"] if item["parameter_name"] == "stock_status__exact"
+    )
+    prefixed_stock_choice = next(
+        choice for choice in prefixed_stock_filter["choices"] if choice["display"] == "In Stock"
+    )
+    assert prefixed_stock_choice["query_string"] == "?price__gte=1&pp=1&o=3&stock_status__exact=in_stock"
+
     show_all = admin_client.get("/admin-api/testapp/product?all=1")
     assert show_all.status_code == 200
     show_all_body = show_all.json()
