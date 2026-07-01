@@ -1,4 +1,4 @@
-from django_ninja_admin import ModelAdmin, SimpleListFilter, TabularInline, action, display, site
+from django_ninja_admin import VERTICAL, ModelAdmin, SimpleListFilter, TabularInline, action, display, site
 from tests.testapp.models import Category, Product, ProductImage, Tag
 
 
@@ -36,6 +36,8 @@ class ProductAdmin(ModelAdmin):
     actions = ["mark_out_of_stock", "report_names"]
     readonly_fields = ("upper_name",)
     date_hierarchy = "created_at"
+    radio_fields = {"stock_status": VERTICAL}
+    prepopulated_fields = {"description": ("name",)}
 
     @display(description="Upper name", ordering="name")
     def upper_name(self, obj):

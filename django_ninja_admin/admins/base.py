@@ -257,6 +257,12 @@ class BaseAdmin:
             self.get_form_class(request, obj, change=obj is not None),
             readonly_fields=self.get_readonly_fields(request, obj),
             instance=obj,
+            autocomplete_fields=self.get_autocomplete_fields(request),
+            raw_id_fields=self.raw_id_fields,
+            filter_horizontal=self.filter_horizontal,
+            filter_vertical=self.filter_vertical,
+            radio_fields=self.radio_fields,
+            prepopulated_fields=self.get_prepopulated_fields(request, obj),
         )
 
     def serialize_object(self, obj, request=None):

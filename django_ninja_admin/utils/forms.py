@@ -115,29 +115,91 @@ def field_description(name, field, *, read_only=False, current_value=None):
     return {"name": name, "type": field.__class__.__name__, "attrs": attrs}
 
 
-def form_field_descriptions(form_class, *, readonly_fields=(), instance=None):
+def form_field_descriptions(
+    form_class,
+    *,
+    readonly_fields=(),
+    instance=None,
+    autocomplete_fields=(),
+    raw_id_fields=(),
+    filter_horizontal=(),
+    filter_vertical=(),
+    radio_fields=None,
+    prepopulated_fields=None,
+):
     form = form_class(instance=instance)
+    autocomplete_fields = set(autocomplete_fields or ())
+    raw_id_fields = set(raw_id_fields or ())
+    filter_horizontal = set(filter_horizontal or ())
+    filter_vertical = set(filter_vertical or ())
+    radio_fields = radio_fields or {}
+    prepopulated_fields = prepopulated_fields or {}
     descriptions = []
     for name, field in form.fields.items():
         current_value = form.initial.get(name)
-        descriptions.append(
-            field_description(name, field, read_only=name in readonly_fields, current_value=current_value)
+        description = field_description(name, field, read_only=name in readonly_fields, current_value=current_value)
+        _apply_admin_field_metadata(
+            description,
+            name,
+            autocomplete_fields=autocomplete_fields,
+            raw_id_fields=raw_id_fields,
+            filter_horizontal=filter_horizontal,
+            filter_vertical=filter_vertical,
+            radio_fields=radio_fields,
+            prepopulated_fields=prepopulated_fields,
         )
+        descriptions.append(description)
     for name in readonly_fields:
         if name not in form.fields:
-            descriptions.append(
-                {
-                    "name": name,
-                    "type": "ReadonlyField",
-                    "attrs": {
-                        "required": False,
-                        "label": name.replace("_", " ").title(),
-                        "help_text": "",
-                        "read_only": True,
-                    },
-                }
+            description = {
+                "name": name,
+                "type": "ReadonlyField",
+                "attrs": {
+                    "required": False,
+                    "label": name.replace("_", " ").title(),
+                    "help_text": "",
+                    "read_only": True,
+                },
+            }
+            _apply_admin_field_metadata(
+                description,
+                name,
+                autocomplete_fields=autocomplete_fields,
+                raw_id_fields=raw_id_fields,
+                filter_horizontal=filter_horizontal,
+                filter_vertical=filter_vertical,
+                radio_fields=radio_fields,
+                prepopulated_fields=prepopulated_fields,
             )
+            descriptions.append(description)
     return descriptions
+
+
+def _apply_admin_field_metadata(
+    description,
+    name,
+    *,
+    autocomplete_fields,
+    raw_id_fields,
+    filter_horizontal,
+    filter_vertical,
+    radio_fields,
+    prepopulated_fields,
+):
+    attrs = description["attrs"]
+    if name in autocomplete_fields:
+        attrs["admin_widget"] = "autocomplete"
+    if name in raw_id_fields:
+        attrs["admin_widget"] = "raw_id"
+    if name in filter_horizontal:
+        attrs["admin_widget"] = "filter_horizontal"
+    if name in filter_vertical:
+        attrs["admin_widget"] = "filter_vertical"
+    if name in radio_fields:
+        attrs["admin_widget"] = "radio"
+        attrs["radio_orientation"] = radio_fields[name]
+    if name in prepopulated_fields:
+        attrs["prepopulated_from"] = list(prepopulated_fields[name])
 
 
 def form_errors(form):

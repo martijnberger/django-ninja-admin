@@ -10,7 +10,7 @@ from django.test import Client, RequestFactory, override_settings
 from django.utils import timezone
 from ninja.security import SessionAuthIsStaff
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, TabularInline, site
+from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline, site
 from django_ninja_admin.changelist import ChangeList
 from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
 from tests.testapp.models import Category, Product, ProductImage, ProductReview, Tag
@@ -336,11 +336,16 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
         ["in_stock", "In Stock"],
         ["out_of_stock", "Out of Stock"],
     ]
+    assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
+    assert fields_by_name["stock_status"]["attrs"]["radio_orientation"] == VERTICAL
+    assert fields_by_name["category"]["attrs"]["admin_widget"] == "autocomplete"
+    assert fields_by_name["description"]["attrs"]["prepopulated_from"] == ["name"]
     assert fields_by_name["manual"]["type"] == "FileField"
     assert fields_by_name["manual"]["attrs"]["needs_multipart_form"] is True
     assert fields_by_name["tags"]["type"] == "ModelMultipleChoiceField"
     assert fields_by_name["tags"]["attrs"]["related_model"] == "testapp.tag"
     assert fields_by_name["tags"]["attrs"]["multiple"] is True
+    assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_horizontal"
     assert form.json()["form"]["filter_horizontal"] == ["tags"]
 
     change_form = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
@@ -407,6 +412,24 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
 
     deleted = admin_client.delete(f"/admin-api/testapp/product/{created_id}")
     assert deleted.status_code == 204
+
+
+def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db):
+    user = get_user_model().objects.create_user("widget-admin", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product/form")
+    request.user = user
+
+    class RawWidgetProductAdmin(ModelAdmin):
+        raw_id_fields = ("category",)
+        filter_vertical = ("tags",)
+
+    model_admin = RawWidgetProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    form = model_admin.get_form_description(request)["form"]
+    fields_by_name = {field["name"]: field for field in form["fields"]}
+
+    assert fields_by_name["category"]["attrs"]["admin_widget"] == "raw_id"
+    assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_vertical"
 
 
 def test_direct_delete_returns_protected_object_details(admin_client, sample):
