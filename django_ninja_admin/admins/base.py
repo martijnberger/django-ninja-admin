@@ -363,20 +363,35 @@ class BaseAdmin:
 
     def to_field_allowed(self, request, to_field):
         try:
-            field = self.model._meta.get_field(to_field)
+            field = self.opts.get_field(to_field)
         except FieldDoesNotExist:
             return False
         if field.primary_key:
             return True
-        for model, _admin in self.admin_site._registry.items():
-            if model is self.model:
-                continue
-            for related_field in model._meta.fields:
-                if related_field.remote_field and related_field.remote_field.model is self.model:
-                    return True
-            for related_field in model._meta.many_to_many:
-                if related_field.remote_field and related_field.remote_field.model is self.model:
-                    return True
+        for many_to_many in self.opts.many_to_many:
+            if many_to_many.m2m_target_field_name() == to_field:
+                return True
+        registered_models = set()
+        for model, admin in self.admin_site._registry.items():
+            registered_models.add(model)
+            for inline in getattr(admin, "inlines", ()) or ():
+                inline_model = getattr(inline, "model", None)
+                if inline_model is not None:
+                    registered_models.add(inline_model)
+        related_objects = (
+            field
+            for field in self.opts.get_fields(include_hidden=True)
+            if field.auto_created and not field.concrete
+        )
+        for related_object in related_objects:
+            related_model = related_object.related_model
+            remote_field = related_object.field.remote_field
+            if (
+                any(issubclass(model, related_model) for model in registered_models)
+                and hasattr(remote_field, "get_related_field")
+                and remote_field.get_related_field() == field
+            ):
+                return True
         return False
 
     def get_field_queryset(self, db, db_field, request):

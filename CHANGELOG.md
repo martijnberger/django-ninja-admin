@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   validation errors instead of being silently ignored.
 - Improved bulk list-editable updates so unchanged rows are validated and
   returned without invoking save hooks or writing empty change-log entries.
+- Tightened `_to_field` validation to follow Django-admin relation-target
+  semantics instead of allowing arbitrary fields from related models.
 - Added support for passing pytest selectors through `just test` and
   `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full

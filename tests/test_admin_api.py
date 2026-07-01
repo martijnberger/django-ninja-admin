@@ -752,6 +752,22 @@ def test_direct_delete_returns_permission_needed_details(staff_client, sample):
     assert Category.objects.filter(pk=sample.category_id).exists()
 
 
+def test_model_routes_validate_to_field(admin_client, sample):
+    allowed = admin_client.get(f"/admin-api/testapp/category/{sample.category_id}?_to_field=id")
+    assert allowed.status_code == 200
+    assert allowed.json()["name"] == "Cameras"
+
+    bad_category_field = admin_client.get(f"/admin-api/testapp/category/{sample.category.name}?_to_field=name")
+    assert bad_category_field.status_code == 400
+    assert bad_category_field.json()["errors"] == [
+        {"message": "The field 'name' cannot be referenced.", "param": "_to_field"}
+    ]
+
+    bad_product_field = admin_client.delete(f"/admin-api/testapp/product/{sample.category_id}?_to_field=category")
+    assert bad_product_field.status_code == 400
+    assert Product.objects.filter(pk=sample.pk).exists()
+
+
 def test_create_payload_uses_pydantic_request_validation(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product",
