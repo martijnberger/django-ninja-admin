@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.1 - 2026-07-01
+
 - Added Pydantic-backed custom action input/response schemas through
   `@action(input_schema=..., response_schema=...)`.
 - Added discriminated per-action request payload variants for action OpenAPI
