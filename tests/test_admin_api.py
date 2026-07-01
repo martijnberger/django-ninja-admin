@@ -733,6 +733,18 @@ def test_admin_checks_reject_mixed_random_ordering(db):
     assert mixed_errors[0].hint == 'Either remove the "?", or remove the other fields.'
 
 
+def test_admin_checks_allow_relation_path_date_hierarchy(db):
+    class RelatedDateHierarchyImageAdmin(ModelAdmin):
+        date_hierarchy = "product__created_at"
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(ProductImage, RelatedDateHierarchyImageAdmin)
+
+    error_ids = {error.id for error in admin_site.get_model_admin(ProductImage).check()}
+
+    assert error_ids.isdisjoint({"django_ninja_admin.E028", "django_ninja_admin.E029"})
+
+
 def test_admin_checks_allow_expression_ordering(db):
     class ExpressionOrderingProductAdmin(ModelAdmin):
         ordering = (models.F("name").asc(),)
@@ -1928,6 +1940,42 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     )
     assert bad_day.status_code == 400
     assert bad_day.json()["errors"] == [{"message": "Invalid day.", "param": "created_at__day"}]
+
+
+def test_changelist_date_hierarchy_supports_relation_paths(admin_client, sample):
+    class RelatedDateHierarchyImageAdmin(ModelAdmin):
+        date_hierarchy = "product__created_at"
+        ordering = ("title",)
+
+    beta = Product.objects.get(name="Beta")
+    Product.objects.filter(pk=sample.pk).update(created_at=timezone.make_aware(datetime(2024, 1, 15, 10, 0)))
+    Product.objects.filter(pk=beta.pk).update(created_at=timezone.make_aware(datetime(2025, 2, 20, 10, 0)))
+    ProductImage.objects.create(product=beta, title="Beta image")
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(ProductImage, RelatedDateHierarchyImageAdmin)
+    model_admin = admin_site.get_model_admin(ProductImage)
+    user = get_user_model().objects.get(username="admin")
+
+    request = RequestFactory().get("/admin-api/testapp/productimage")
+    request.user = user
+    changelist = ChangeList(request, model_admin)
+
+    description = changelist.date_hierarchy_description()
+    assert description["field"] == "product__created_at"
+    assert description["level"] == "year"
+    assert [choice["value"] for choice in description["choices"]] == [2024, 2025]
+
+    by_year_request = RequestFactory().get("/admin-api/testapp/productimage?product__created_at__year=2024")
+    by_year_request.user = user
+    by_year = ChangeList(by_year_request, model_admin)
+    by_year_description = by_year.date_hierarchy_description()
+
+    assert by_year.result_count == 1
+    assert by_year_description["level"] == "month"
+    assert by_year_description["choices"][0]["query_string"] == (
+        "?product__created_at__year=2024&product__created_at__month=1"
+    )
 
 
 def test_date_field_list_filter_uses_bounded_ranges(admin_client, sample, monkeypatch):

@@ -9,7 +9,7 @@ from django.http import Http404, QueryDict
 
 from django_ninja_admin.exceptions import AdminValidationError, DisallowedModelAdminLookup
 from django_ninja_admin.filters import build_filter_spec
-from django_ninja_admin.utils.lookup import field_name_for_display
+from django_ninja_admin.utils.lookup import field_name_for_display, model_field_from_path
 
 IGNORED_LOOKUP_PARAMS = {"q", "p", "page", "pp", "all", "o", "_facets"}
 
@@ -26,6 +26,7 @@ class ChangeList:
         self.list_select_related = model_admin.get_list_select_related(request)
         self.search_fields = tuple(model_admin.get_search_fields(request))
         self.sortable_by = tuple(model_admin.get_sortable_by(request))
+        self.date_hierarchy_model_field = None
         self.date_hierarchy_field = self.get_date_hierarchy_field()
         self.filter_specs = self.get_filters(self.params)
         self.queryset = self.get_queryset(self.params, self.filter_specs)
@@ -150,7 +151,7 @@ class ChangeList:
         if not field_name:
             return None
         try:
-            field = self.model._meta.get_field(field_name)
+            field = model_field_from_path(self.model, field_name)
         except FieldDoesNotExist as exc:
             raise AdminValidationError(
                 [{"message": f"The date_hierarchy field {field_name!r} does not exist.", "param": "date_hierarchy"}]
@@ -164,6 +165,7 @@ class ChangeList:
                     }
                 ]
             )
+        self.date_hierarchy_model_field = field
         return field_name
 
     def get_date_hierarchy_values(self, params):
@@ -412,7 +414,7 @@ class ChangeList:
         if not self.date_hierarchy_field:
             return None
 
-        field = self.model._meta.get_field(self.date_hierarchy_field)
+        field = self.date_hierarchy_model_field
         values = self.get_date_hierarchy_values(self.params)
         year_param, month_param, day_param = self.date_hierarchy_param_names
         queryset = self.date_queryset()

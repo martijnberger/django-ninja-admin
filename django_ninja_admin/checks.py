@@ -12,7 +12,7 @@ from django.forms.models import BaseInlineFormSet, BaseModelForm, _get_foreign_k
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.filters import FieldListFilter, SimpleListFilter
 from django_ninja_admin.utils.flatten import flatten
-from django_ninja_admin.utils.lookup import field_name_for_display
+from django_ninja_admin.utils.lookup import field_name_for_display, model_field_from_path
 
 ERROR_PREFIX = "django_ninja_admin"
 
@@ -796,8 +796,9 @@ def _check_date_hierarchy(model_admin):
     field_name = getattr(model_admin, "date_hierarchy", None)
     if not field_name:
         return []
-    field = _model_field(model_admin, field_name)
-    if field is None:
+    try:
+        field = model_field_from_path(model_admin.model, field_name)
+    except FieldDoesNotExist:
         return [
             _error(
                 model_admin.__class__,

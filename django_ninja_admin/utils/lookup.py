@@ -2,6 +2,21 @@ from django.core.exceptions import FieldDoesNotExist, ObjectDoesNotExist
 from django.db.models import Model
 
 
+def model_field_from_path(model, field_path):
+    opts = model._meta
+    path_parts = field_path.split("__")
+    for index, path_part in enumerate(path_parts):
+        if path_part == "pk":
+            path_part = opts.pk.name
+        field = opts.get_field(path_part)
+        has_more_parts = index < len(path_parts) - 1
+        if has_more_parts and hasattr(field, "path_infos"):
+            opts = field.path_infos[-1].to_opts
+        elif has_more_parts:
+            raise FieldDoesNotExist(field_path)
+    return field
+
+
 def field_name_for_display(name):
     if isinstance(name, str):
         return name

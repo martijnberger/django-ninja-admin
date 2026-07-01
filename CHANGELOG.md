@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added admin system checks rejecting non-sequence `inlines` and `actions`
   configurations.
+- Added relation-path support for `date_hierarchy` checks and changelist
+  metadata/filtering.
 
 ## 0.1.5 - 2026-07-01
 

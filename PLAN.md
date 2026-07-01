@@ -112,6 +112,7 @@ Completed or mostly complete:
 - Expanded changelist metadata for display links, sortable columns, multi-column sort state/query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
 - Changelist rows now expose detail, change-form, delete, view-on-site, and object-permission metadata for frontend action rendering.
 - Date hierarchy metadata now includes clear/back navigation query strings and validates impossible year/month/day combinations.
+- Date hierarchy checks and changelist metadata/filtering now support relation paths such as `product__created_at`.
 - Initial N+1 hardening through automatic `select_related()` for direct relation fields in `list_display`.
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
 - Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, radio fields, widget-option conflicts, date hierarchy, actions, and inlines.
