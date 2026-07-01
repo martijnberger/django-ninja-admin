@@ -4575,6 +4575,31 @@ def test_model_routes_validate_to_field(admin_client, sample):
     assert bad_product_field.status_code == 400
     assert Product.objects.filter(pk=sample.pk).exists()
 
+    bad_update_field = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}?_to_field=category",
+        data={"data": {"name": "Nope"}},
+        content_type="application/json",
+    )
+    assert bad_update_field.status_code == 400
+    sample.refresh_from_db()
+    assert sample.name == "Alpha"
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_update_routes_support_allowed_to_field(admin_client):
+    category = Category.objects.create(name="Cameras", slug="cameras")
+
+    response = admin_client.patch(
+        "/slug-autocomplete-admin/testapp/category/cameras?_to_field=slug",
+        data={"data": {"name": "Updated Cameras"}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["name"] == "Updated Cameras"
+    category.refresh_from_db()
+    assert category.name == "Updated Cameras"
+
 
 def test_create_payload_uses_pydantic_request_validation(admin_client, sample):
     response = admin_client.post(

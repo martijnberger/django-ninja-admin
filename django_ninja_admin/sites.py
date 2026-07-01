@@ -828,8 +828,13 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_partial_update",
         )
-        def update(request, object_id: str, payload: update_payload_schema):
-            return site._update_object(request, model_admin, object_id, payload, partial=True)
+        def update(
+            request,
+            object_id: str,
+            payload: update_payload_schema,
+            to_field: str | None = Query(None, alias="_to_field"),
+        ):
+            return site._update_object(request, model_admin, object_id, payload, partial=True, to_field=to_field)
 
         @router.put(
             f"{prefix}/{{object_id}}",
@@ -843,8 +848,13 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_update",
         )
-        def replace(request, object_id: str, payload: replace_payload_schema):
-            return site._update_object(request, model_admin, object_id, payload, partial=False)
+        def replace(
+            request,
+            object_id: str,
+            payload: replace_payload_schema,
+            to_field: str | None = Query(None, alias="_to_field"),
+        ):
+            return site._update_object(request, model_admin, object_id, payload, partial=False, to_field=to_field)
 
         if change_file_fields:
 
@@ -865,8 +875,12 @@ class NinjaAdminSite:
                     required_data=False,
                 ),
             )
-            def update_multipart(request, object_id: str):
-                obj = site._get_object_or_404(request, model_admin, object_id)
+            def update_multipart(
+                request,
+                object_id: str,
+                to_field: str | None = Query(None, alias="_to_field"),
+            ):
+                obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
                 payload = site._multipart_mutation_payload(request, update_payload_schema)
                 return site._update_object(
@@ -896,8 +910,12 @@ class NinjaAdminSite:
                     required_data=True,
                 ),
             )
-            def replace_multipart(request, object_id: str):
-                obj = site._get_object_or_404(request, model_admin, object_id)
+            def replace_multipart(
+                request,
+                object_id: str,
+                to_field: str | None = Query(None, alias="_to_field"),
+            ):
+                obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
                 payload = site._multipart_mutation_payload(request, replace_payload_schema)
                 return site._update_object(
@@ -1361,8 +1379,8 @@ class NinjaAdminSite:
             if isinstance(field, forms.FileField) and name in files
         }
 
-    def _update_object(self, request, model_admin, object_id, payload, *, partial, files=None, obj=None):
-        obj = obj or self._get_object_or_404(request, model_admin, object_id)
+    def _update_object(self, request, model_admin, object_id, payload, *, partial, files=None, obj=None, to_field=None):
+        obj = obj or self._get_object_or_404(request, model_admin, object_id, to_field)
         if not model_admin.has_change_permission(request, obj):
             raise PermissionDenied
         with transaction.atomic(using=router_db_for_write(model_admin.model)):
