@@ -10,6 +10,7 @@ from django.forms.models import BaseModelForm, _get_foreign_key
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.filters import FieldListFilter, SimpleListFilter
+from django_ninja_admin.utils.flatten import flatten
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 from django_ninja_admin.utils.lookup import field_name_for_display
 
@@ -278,7 +279,7 @@ def _check_formfield_overrides(model_admin):
 
 def _editable_form_field_names(model_admin):
     if model_admin.fields is not None:
-        return set(model_admin.fields)
+        return set(flatten(model_admin.fields))
     if model_admin.fieldsets is not None:
         try:
             return set(flatten_fieldsets(model_admin.fieldsets))
@@ -317,7 +318,7 @@ def _check_form_layout(model_admin):
 
     fields = []
     if model_admin.fields is not None:
-        fields = list(model_admin.fields)
+        fields = list(flatten(model_admin.fields))
     elif model_admin.fieldsets is not None:
         try:
             fields = flatten_fieldsets(model_admin.fieldsets)
@@ -349,7 +350,10 @@ def _check_form_layout(model_admin):
 
 def _check_form_option_items(model_admin, option, *, require_model_field=False):
     errors = []
-    for item in getattr(model_admin, option, None) or ():
+    items = getattr(model_admin, option, None) or ()
+    if option == "fields" and isinstance(items, (list, tuple)):
+        items = flatten(items)
+    for item in items:
         if not isinstance(item, str):
             errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E048"))
             continue

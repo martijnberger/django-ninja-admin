@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `serializer_class` hooks explicitly unsupported.
 - Added admin system checks for invalid `fields`/`exclude` entries and unknown
   fields listed in `exclude`.
+- Allowed Django-style row tuples in the `fields` option during admin checks,
+  matching the form-generation flattening behavior.
 - Added admin system checks rejecting reverse relations in `autocomplete_fields`
   and `raw_id_fields`.
 - Added admin system checks for invalid `prepopulated_fields` shapes, targets,

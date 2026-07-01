@@ -661,20 +661,32 @@ def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db
 
 
 def test_admin_checks_validate_fields_and_exclude_items(db):
+    class RowFieldsProductAdmin(ModelAdmin):
+        fields = (("name", "price"), "category")
+
     class BadFieldsProductAdmin(ModelAdmin):
         fields = ("name", 123)
 
     class BadExcludeProductAdmin(ModelAdmin):
         exclude = ("missing", 123)
 
+    row_fields_site = NinjaAdminSite(include_auth=False)
+    row_fields_site.register(Product, RowFieldsProductAdmin)
     fields_site = NinjaAdminSite(include_auth=False)
     fields_site.register(Product, BadFieldsProductAdmin)
     exclude_site = NinjaAdminSite(include_auth=False)
     exclude_site.register(Product, BadExcludeProductAdmin)
 
+    row_fields_errors = row_fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
     fields_errors = fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
     exclude_errors = exclude_site.check(app_configs=[django_apps.get_app_config("testapp")])
 
+    assert row_fields_errors == []
+    assert list(row_fields_site.get_model_admin(Product).get_form_class(None).base_fields) == [
+        "name",
+        "price",
+        "category",
+    ]
     assert {error.id for error in fields_errors} == {"django_ninja_admin.E048"}
     assert {error.id for error in exclude_errors} == {"django_ninja_admin.E048", "django_ninja_admin.E049"}
 
