@@ -261,6 +261,7 @@ class RelatedFieldListFilter(FieldListFilter):
         super().__init__(field, request, params, model, model_admin, field_path)
         target_field = field.target_field
         self.lookup_kwarg = f"{field_path}__{target_field.name}__exact"
+        self.parameter_name = self.lookup_kwarg
         self.lookup_kwarg_isnull = f"{field_path}__isnull"
         self.used_parameters = self._used_parameters(params)
         if self.lookup_kwarg_isnull in params:
@@ -268,6 +269,16 @@ class RelatedFieldListFilter(FieldListFilter):
 
     def expected_parameters(self):
         return [self.lookup_kwarg, self.legacy_lookup_kwarg, self.lookup_kwarg_isnull]
+
+    @property
+    def include_empty_choice(self):
+        return self.field.null or (
+            getattr(self.field, "is_relation", False) and getattr(self.field, "many_to_many", False)
+        )
+
+    def has_output(self):
+        extra = 1 if self.include_empty_choice else 0
+        return len(self.field_choices(None)) + extra > 1
 
     def field_choices(self, changelist):
         related_model = self.field.remote_field.model

@@ -444,12 +444,21 @@ def test_changelist_search_filter_and_detail(admin_client, sample):
 
 
 def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sample):
+    initial = admin_client.get("/admin-api/testapp/product")
+    assert initial.status_code == 200
+    assert {
+        item["parameter_name"] for item in initial.json()["config"]["filters"]
+    } == {"stock_status__exact", "price_band"}
+
     accessories = Category.objects.create(name="Accessories")
     Product.objects.create(name="Tripod", category=accessories, price="6.00", description="Stable")
 
     related_filtered = admin_client.get(f"/admin-api/testapp/product?category__id__exact={sample.category_id}")
     assert related_filtered.status_code == 200
     assert related_filtered.json()["config"]["result_count"] == 2
+    assert "category__id__exact" in {
+        item["parameter_name"] for item in related_filtered.json()["config"]["filters"]
+    }
 
     simple_filtered = admin_client.get("/admin-api/testapp/product?price_band=cheap")
     assert simple_filtered.status_code == 200

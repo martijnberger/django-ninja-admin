@@ -21,6 +21,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   of leaking Django ORM conversion errors.
 - Added Django-admin-style `NULL` choice handling for choices list filters via
   `__isnull` query strings.
+- Matched Django admin related-filter visibility by hiding related filters that
+  have only one non-empty choice while still applying their query params, and
+  exposing the real related lookup key.
 
 ## 0.1.2 - 2026-07-01
 

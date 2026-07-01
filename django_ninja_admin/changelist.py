@@ -53,8 +53,7 @@ class ChangeList:
                 self.model,
                 self.model_admin,
             )
-            if filter_spec.has_output():
-                filter_specs.append(filter_spec)
+            filter_specs.append(filter_spec)
         return filter_specs
 
     def expected_filter_params(self, filter_specs):
@@ -478,4 +477,4 @@ class ChangeList:
         }
 
     def filter_descriptions(self):
-        return [filter_spec.as_dict(self) for filter_spec in self.filter_specs]
+        return [filter_spec.as_dict(self) for filter_spec in self.filter_specs if filter_spec.has_output()]
