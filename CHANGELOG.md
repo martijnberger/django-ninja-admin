@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.4 - 2026-07-01
+
 - Added per-model Pydantic response schemas for create/update and bulk
   list-editable updates so OpenAPI advertises `ProductAdminOut`-style response
   objects.
