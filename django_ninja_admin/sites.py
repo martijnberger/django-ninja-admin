@@ -47,7 +47,7 @@ from django_ninja_admin.schemas import (
     ViewOnSiteResponse,
 )
 from django_ninja_admin.utils.format_error import format_error
-from django_ninja_admin.utils.forms import form_errors, model_data_for_form
+from django_ninja_admin.utils.forms import form_errors, formset_errors, model_data_for_form
 from django_ninja_admin.utils.lookup import label_for_field, lookup_field
 from django_ninja_admin.utils.quote import unquote
 
@@ -805,52 +805,134 @@ class NinjaAdminSite:
             fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
             related_name = fk.remote_field.accessor_name
             related_manager = getattr(obj, related_name, None)
-            results[inline_id] = {"add": [], "change": [], "delete": []}
-            for data in operations.get("add", []):
-                if not inline.has_add_permission(request, obj):
-                    raise PermissionDenied
-                data = {**data, fk.name: obj.pk}
-                form_class = inline.get_form_class(request, None, change=False)
-                form = form_class(data=data)
-                if not form.is_valid():
-                    raise AdminValidationError({inline_id: {"add": form_errors(form)}})
-                instance = form.save()
-                results[inline_id]["add"].append(inline.serialize_object(instance, request))
-            for data in operations.get("change", []):
-                if not inline.has_change_permission(request, obj):
-                    raise PermissionDenied
-                pk = data.get("pk") or data.get(inline.model._meta.pk.name)
-                if pk is None:
-                    raise AdminValidationError({inline_id: {"change": [{"message": "Missing pk.", "param": "pk"}]}})
-                instance_qs = related_manager.all() if related_manager is not None else inline.model.objects.none()
-                try:
-                    instance = instance_qs.get(pk=pk)
-                except inline.model.DoesNotExist:
-                    raise AdminValidationError(
-                        {inline_id: {"change": [{"message": "Unknown inline object.", "param": "pk"}]}}
-                    )
-                form_class = inline.get_form_class(request, instance, change=True)
-                current = model_data_for_form(instance, list(form_class.base_fields.keys()))
-                current.update(data)
-                current[fk.name] = obj.pk
-                form = form_class(data=current, instance=instance)
-                if not form.is_valid():
-                    raise AdminValidationError({inline_id: {"change": form_errors(form)}})
-                form.save()
-                results[inline_id]["change"].append(inline.serialize_object(instance, request))
-            for pk in operations.get("delete", []):
-                if not inline.has_delete_permission(request, obj):
-                    raise PermissionDenied
-                instance_qs = related_manager.all() if related_manager is not None else inline.model.objects.none()
-                try:
-                    instance = instance_qs.get(pk=pk)
-                except inline.model.DoesNotExist:
-                    raise AdminValidationError(
-                        {inline_id: {"delete": [{"message": "Unknown inline object.", "param": "pk"}]}}
-                    )
-                instance.delete()
-                results[inline_id]["delete"].append(pk)
+            results[inline_id] = self._process_inline_formset(
+                request,
+                inline,
+                obj,
+                operations,
+                related_manager,
+                change=change,
+            )
         return results
+
+    def _process_inline_formset(self, request, inline, obj, operations, related_manager, *, change):
+        allowed_operations = {"add", "change", "delete"}
+        unknown_operations = set(operations) - allowed_operations
+        if unknown_operations:
+            raise AdminValidationError(
+                {
+                    f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": [
+                        {
+                            "message": f"Unknown inline operation: {', '.join(sorted(unknown_operations))}.",
+                            "param": "non_field_errors",
+                        }
+                    ]
+                }
+            )
+
+        add_rows = list(operations.get("add", []))
+        change_rows = list(operations.get("change", []))
+        delete_pks = {str(pk) for pk in operations.get("delete", [])}
+        if add_rows and not inline.has_add_permission(request, obj):
+            raise PermissionDenied
+        if change_rows and not inline.has_change_permission(request, obj):
+            raise PermissionDenied
+        if delete_pks and not inline.has_delete_permission(request, obj):
+            raise PermissionDenied
+        if delete_pks and not inline.can_delete:
+            raise AdminValidationError(
+                {
+                    f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": {
+                        "delete": [{"message": "Inline deletion is not allowed.", "param": "delete"}]
+                    }
+                }
+            )
+
+        queryset = related_manager.all() if related_manager is not None else inline.model.objects.none()
+        existing_instances = list(queryset)
+        existing_by_pk = {str(instance.pk): instance for instance in existing_instances}
+        changes_by_pk = {}
+        inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
+        for row in change_rows:
+            pk = row.get("pk") or row.get(inline.model._meta.pk.name)
+            if pk is None:
+                raise AdminValidationError({inline_id: {"change": [{"message": "Missing pk.", "param": "pk"}]}})
+            pk = str(pk)
+            if pk not in existing_by_pk:
+                raise AdminValidationError(
+                    {inline_id: {"change": [{"message": "Unknown inline object.", "param": "pk"}]}}
+                )
+            changes_by_pk[pk] = row
+        for pk in delete_pks:
+            if pk not in existing_by_pk:
+                raise AdminValidationError(
+                    {inline_id: {"delete": [{"message": "Unknown inline object.", "param": "pk"}]}}
+                )
+
+        formset_class = inline.get_formset(request, obj, change=change)
+        formset_data = self._inline_formset_data(
+            request,
+            inline,
+            obj,
+            formset_class,
+            existing_instances,
+            changes_by_pk,
+            add_rows,
+            delete_pks,
+        )
+        formset = formset_class(data=formset_data, instance=obj, queryset=queryset)
+        if not formset.is_valid():
+            raise AdminValidationError({inline_id: {"formset": formset_errors(formset)}})
+        formset.save()
+        return {
+            "add": [inline.serialize_object(instance, request) for instance in formset.new_objects],
+            "change": [inline.serialize_object(instance, request) for instance, _fields in formset.changed_objects],
+            "delete": [instance.pk for instance in formset.deleted_objects],
+        }
+
+    def _inline_formset_data(
+        self,
+        request,
+        inline,
+        obj,
+        formset_class,
+        existing_instances,
+        changes_by_pk,
+        add_rows,
+        delete_pks,
+    ):
+        prefix = formset_class.get_default_prefix()
+        min_num = inline.get_min_num(request, obj) or 0
+        max_num = inline.get_max_num(request, obj)
+        total_forms = len(existing_instances) + len(add_rows)
+        formset_data = {
+            f"{prefix}-TOTAL_FORMS": str(total_forms),
+            f"{prefix}-INITIAL_FORMS": str(len(existing_instances)),
+            f"{prefix}-MIN_NUM_FORMS": str(min_num),
+            f"{prefix}-MAX_NUM_FORMS": "" if max_num is None else str(max_num),
+        }
+        editable_fields = set(formset_class.form.base_fields)
+        pk_name = inline.model._meta.pk.name
+        fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
+        for index, instance in enumerate(existing_instances):
+            pk = str(instance.pk)
+            row = model_data_for_form(instance, list(editable_fields))
+            row.update(changes_by_pk.get(pk, {}))
+            self._copy_inline_form_row(formset_data, prefix, index, row, editable_fields)
+            formset_data[f"{prefix}-{index}-{pk_name}"] = pk
+            formset_data[f"{prefix}-{index}-{fk.name}"] = str(obj.pk)
+            if pk in delete_pks:
+                formset_data[f"{prefix}-{index}-DELETE"] = "on"
+        for offset, row in enumerate(add_rows, start=len(existing_instances)):
+            self._copy_inline_form_row(formset_data, prefix, offset, row, editable_fields)
+            formset_data[f"{prefix}-{offset}-{fk.name}"] = str(obj.pk)
+        return formset_data
+
+    def _copy_inline_form_row(self, formset_data, prefix, index, row, editable_fields):
+        for name, value in row.items():
+            if name in {"pk", "id"} or name not in editable_fields:
+                continue
+            formset_data[f"{prefix}-{index}-{name}"] = value
 
     def _bulk_update(self, request, model_admin, payload):
         if not payload.data:
@@ -863,6 +945,8 @@ class NinjaAdminSite:
             obj = model_admin.get_object(request, pk)
             if obj is None:
                 raise AdminValidationError({idx: [{"message": "Object not found.", "param": "pk"}]})
+            if not model_admin.has_change_permission(request, obj):
+                raise PermissionDenied
             form_class = model_admin.get_form_class(request, obj, change=True)
             allowed = set(model_admin.list_editable) | {"pk", model_admin.model._meta.pk.name}
             current = model_data_for_form(obj, list(form_class.base_fields.keys()))

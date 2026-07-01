@@ -1,7 +1,10 @@
+from django import forms
 from django.contrib.auth import get_permission_codename
+from django.forms.models import _get_foreign_key, inlineformset_factory
 from django.utils.text import format_lazy
 
 from django_ninja_admin.admins.base import BaseAdmin
+from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 
 
 class InlineModelAdmin(BaseAdmin):
@@ -43,6 +46,32 @@ class InlineModelAdmin(BaseAdmin):
         if not self.has_view_or_change_permission(request):
             return queryset.none()
         return queryset
+
+    def get_formset(self, request, obj=None, change=False):
+        fk = _get_foreign_key(self.parent_model, self.model, fk_name=self.fk_name)
+        excluded_fields = set(self.get_exclude(request, obj) or ())
+        excluded_fields.update(self.get_readonly_fields(request, obj) or ())
+        excluded_fields.add(fk.name)
+        fields = [
+            field
+            for field in flatten_fieldsets(self.get_fieldsets(request, obj))
+            if field not in excluded_fields
+        ]
+        min_num = self.get_min_num(request, obj)
+        max_num = self.get_max_num(request, obj)
+        return inlineformset_factory(
+            self.parent_model,
+            self.model,
+            form=forms.ModelForm,
+            fk_name=self.fk_name,
+            fields=fields,
+            extra=self.get_extra(request, obj),
+            min_num=min_num,
+            max_num=max_num,
+            can_delete=self.can_delete,
+            validate_min=min_num is not None,
+            validate_max=max_num is not None,
+        )
 
     def _has_any_perms_for_target_model(self, request, perms):
         opts = self.opts

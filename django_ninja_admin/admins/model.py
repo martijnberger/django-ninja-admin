@@ -289,22 +289,5 @@ class ModelAdmin(BaseAdmin):
     def get_deleted_objects(self, objs, request):
         return get_deleted_objects(objs, request, self.admin_site)
 
-    def serialize_object(self, obj, request=None):
-        schema = self.get_output_schema(request)
-        data = schema.model_validate(obj, from_attributes=True).model_dump(mode="json", by_alias=True)
-        for field in obj._meta.fields:
-            if field.name == "password":
-                data.pop(field.name, None)
-                data.pop(f"{field.name}_id", None)
-                continue
-            value = getattr(obj, field.name)
-            alias = f"{field.name}_id" if field.remote_field else field.name
-            if field.remote_field and value is not None and alias in data:
-                data[f"{field.name}_label"] = str(value)
-        for field in obj._meta.many_to_many:
-            if obj.pk and field.name not in data:
-                data[field.name] = list(getattr(obj, field.name).values_list("pk", flat=True))
-        return data
-
     def form_initial_for_instance(self, obj, form_class):
         return model_to_dict(obj, fields=list(form_class.base_fields.keys()))

@@ -61,6 +61,13 @@ def form_errors(form):
     return format_error(form.errors)
 
 
+def formset_errors(formset):
+    return {
+        "forms": [format_error(errors) for errors in formset.errors],
+        "non_form_errors": format_error(formset.non_form_errors()),
+    }
+
+
 class RequestDataFormMixin:
     def clean(self):
         cleaned = super().clean()

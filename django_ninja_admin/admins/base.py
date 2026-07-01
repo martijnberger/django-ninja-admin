@@ -18,6 +18,7 @@ class BaseAdmin:
     fieldsets = None
     form_class = None
     output_schema = None
+    schema_field_overrides = {}
     filter_vertical = ()
     filter_horizontal = ()
     radio_fields = {}
@@ -75,30 +76,58 @@ class BaseAdmin:
             exclude=exclude or None,
         )
 
-    def _output_schema_for_fields(self, fields_key):
+    def get_schema_field_overrides(self, request=None):
+        return self.schema_field_overrides
+
+    def _output_schema_for_fields(self, fields_key, custom_fields):
         from ninja.orm import create_schema
 
         cache = getattr(self, "_output_schema_cache", {})
-        if fields_key not in cache:
+        cache_key = (
+            fields_key,
+            tuple((name, repr(field_type), repr(default)) for name, field_type, default in custom_fields),
+        )
+        if cache_key not in cache:
             fields = list(fields_key)
-            cache[fields_key] = create_schema(
+            cache[cache_key] = create_schema(
                 self.model,
                 name=f"{self.model.__name__}AdminOut",
                 fields=fields,
+                custom_fields=custom_fields,
             )
             self._output_schema_cache = cache
-        return cache[fields_key]
+        return cache[cache_key]
 
     def get_output_schema(self, request=None):
         if self.output_schema is not None:
             return self.output_schema
+        overrides = self.get_schema_field_overrides(request) or {}
         fields = [self.model._meta.pk.name]
         fields.extend(
             field.name
             for field in self.model._meta.fields
             if field.name != self.model._meta.pk.name and field.name != "password"
         )
-        return self._output_schema_for_fields(tuple(fields))
+        custom_fields = []
+        for field in self.model._meta.fields:
+            if field.remote_field and field.name != "password":
+                custom_fields.append((f"{field.name}_label", str, None))
+        for field in self.model._meta.many_to_many:
+            custom_fields.append((field.name, list[object], []))
+        custom_fields.extend(
+            (name, field_type, default)
+            for name, value in overrides.items()
+            for field_type, default in [self._normalize_schema_override(value)]
+        )
+        return self._output_schema_for_fields(tuple(fields), tuple(custom_fields))
+
+    def _normalize_schema_override(self, value):
+        if isinstance(value, tuple):
+            if len(value) == 2:
+                return value
+            if len(value) == 1:
+                return value[0], None
+        return value, None
 
     def get_form_fields_description(self, request, obj=None):
         return form_field_descriptions(

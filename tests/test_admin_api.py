@@ -5,7 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import Client
 from ninja.security import SessionAuthIsStaff
 
-from django_ninja_admin import NinjaAdminSite
+from django_ninja_admin import ModelAdmin, NinjaAdminSite, site
 from django_ninja_admin.models import LogEntry
 from tests.testapp.models import Category, Product, ProductImage
 
@@ -67,6 +67,7 @@ def test_changelist_search_filter_and_detail(admin_client, sample):
     detail = admin_client.get(f"/admin-api/testapp/product/{sample.pk}")
     assert detail.status_code == 200
     assert detail.json()["name"] == "Alpha"
+    assert detail.json()["category_label"] == "Cameras"
 
 
 def test_forms_create_update_delete_and_history(admin_client, sample):
@@ -144,6 +145,68 @@ def test_actions_bulk_autocomplete_and_view_on_site(admin_client, sample):
     onsite = admin_client.get(f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}")
     assert onsite.status_code == 200
     assert onsite.json()["url"].endswith(f"/products/{sample.pk}/")
+
+
+def test_bulk_update_checks_object_level_change_permission(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    def has_change_permission(request, obj=None):
+        return obj is None
+
+    monkeypatch.setattr(product_admin, "has_change_permission", has_change_permission)
+    response = admin_client.put(
+        "/admin-api/testapp/product/bulk",
+        data={"data": [{"pk": sample.pk, "stock_status": "out_of_stock"}]},
+        content_type="application/json",
+    )
+    assert response.status_code == 403
+    sample.refresh_from_db()
+    assert sample.stock_status == "in_stock"
+
+
+def test_inline_formset_enforces_max_num(admin_client, sample):
+    response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={
+            "data": {},
+            "inlines": {
+                "testapp.productimage": {
+                    "add": [
+                        {"title": "Side"},
+                        {"title": "Back"},
+                        {"title": "Detail"},
+                    ]
+                }
+            },
+        },
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert ProductImage.objects.filter(product=sample).count() == 1
+
+
+def test_inline_formset_honors_can_delete(admin_client, sample, monkeypatch):
+    from tests.testapp.admin import ProductImageInline
+
+    image = sample.images.get()
+    monkeypatch.setattr(ProductImageInline, "can_delete", False)
+    response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"delete": [image.pk]}}},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert ProductImage.objects.filter(pk=image.pk).exists()
+
+
+def test_schema_field_overrides_are_included():
+    class ProductAdminWithOverride(ModelAdmin):
+        schema_field_overrides = {"custom_note": (str, None)}
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    model_admin = ProductAdminWithOverride(Product, admin_site)
+
+    assert "custom_note" in model_admin.get_output_schema().model_fields
 
 
 def test_model_actions_require_model_access(staff_client, sample):
