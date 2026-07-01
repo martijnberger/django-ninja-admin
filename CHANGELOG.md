@@ -18,6 +18,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   including `formfield_overrides`, `formfield_for_dbfield()`,
   `formfield_for_foreignkey()`, `formfield_for_manytomany()`, and
   `formfield_for_choice_field()`.
+- Added an admin system check that rejects `list_editable` fields omitted from
+  the generated admin form by `fields`, `fieldsets`, or `exclude`.
 
 ## 0.1.1 - 2026-07-01
 

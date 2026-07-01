@@ -326,6 +326,31 @@ def test_admin_checks_report_form_widget_option_conflicts(db):
     } <= error_ids
 
 
+def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db):
+    class MissingFromFieldsProductAdmin(ModelAdmin):
+        list_display = ("name", "stock_status")
+        list_display_links = ("name",)
+        list_editable = ("stock_status",)
+        fields = ("name", "category", "price")
+
+    class ExcludedProductAdmin(ModelAdmin):
+        list_display = ("name", "stock_status")
+        list_display_links = ("name",)
+        list_editable = ("stock_status",)
+        exclude = ("stock_status",)
+
+    fields_site = NinjaAdminSite(include_auth=False)
+    fields_site.register(Product, MissingFromFieldsProductAdmin)
+    exclude_site = NinjaAdminSite(include_auth=False)
+    exclude_site.register(Product, ExcludedProductAdmin)
+
+    fields_errors = fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    exclude_errors = exclude_site.check(app_configs=[django_apps.get_app_config("testapp")])
+
+    assert "django_ninja_admin.E044" in {error.id for error in fields_errors}
+    assert "django_ninja_admin.E044" in {error.id for error in exclude_errors}
+
+
 def test_admin_checks_validate_radio_fields_shape(db):
     class BadRadioShapeAdmin(ModelAdmin):
         radio_fields = ("stock_status",)

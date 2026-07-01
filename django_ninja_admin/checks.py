@@ -78,6 +78,8 @@ def _model_field(model_admin, name):
 def _check_display_options(model_admin):
     errors = []
     list_display = tuple(model_admin.get_list_display(None))
+    editable_form_fields = _editable_form_field_names(model_admin)
+    excluded_form_fields = set(model_admin.get_exclude(None) or ())
     for item in list_display:
         if not isinstance(item, str):
             errors.append(_error(model_admin.__class__, "Items in 'list_display' must be strings.", "E002"))
@@ -157,7 +159,26 @@ def _check_display_options(model_admin):
             errors.append(_error(model_admin.__class__, f"The field '{item}' is a primary key.", "E009"))
         if not field.editable:
             errors.append(_error(model_admin.__class__, f"The field '{item}' is not editable.", "E010"))
+        if item in excluded_form_fields or (editable_form_fields is not None and item not in editable_form_fields):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_editable' refers to '{item}', which is not included in the admin form.",
+                    "E044",
+                )
+            )
     return errors
+
+
+def _editable_form_field_names(model_admin):
+    if model_admin.fields is not None:
+        return set(model_admin.fields)
+    if model_admin.fieldsets is not None:
+        try:
+            return set(flatten_fieldsets(model_admin.fieldsets))
+        except (KeyError, TypeError, ValueError):
+            return None
+    return None
 
 
 def _check_form_layout(model_admin):

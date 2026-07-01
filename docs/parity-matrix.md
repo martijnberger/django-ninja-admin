@@ -37,7 +37,7 @@ Statuses:
 | Model registration/unregistration | implemented | `NinjaAdminSite.register`, `unregister`, duplicate/unregistered/abstract/decorator tests | Swapped-model tests |
 | Default site/autodiscover | partial | Lazy `site`, `autodiscover()` | Project-level smoke test |
 | Permission hooks | partial | `BaseAdmin.has_*_permission`, API tests | More object-level and custom hook coverage |
-| Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, many-to-many `list_display`, and widget-conflict tests | Match Django check IDs/coverage more closely |
+| Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, many-to-many `list_display`, `list_editable` form-layout conflict, and widget-conflict tests | Match Django check IDs/coverage more closely |
 | `get_changelist()` hooks | implemented | `ModelAdmin.get_changelist*`, route hook test | More subclassing examples/docs |
 | Custom site/model views | partial | `admin_view()`, `get_urls()`, `route()`, route tags/descriptions, hidden routes, raw method wrapping, `auth=None`, named response schemas, custom route tests | More multi-auth override coverage |
 | Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values, and model-property metadata in changelist tests | More readonly-field display variants |

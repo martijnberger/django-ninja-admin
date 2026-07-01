@@ -93,6 +93,7 @@ Completed or mostly complete:
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
 - Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, radio fields, widget-option conflicts, date hierarchy, actions, and inlines.
 - Admin system checks now reject direct many-to-many fields in `list_display`, preventing raw related managers from leaking into changelist cells.
+- Admin system checks now reject `list_editable` fields removed from generated forms by `fields`, `fieldsets`, or `exclude`, preventing silent bulk-update no-ops.
 - `get_changelist()` and `get_changelist_instance()` hooks for changelist customization.
 - Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration, raw bound method wrapping, route tags/descriptions, hidden routes, and explicit route-level `auth=None`.
 - Custom admin view tests now cover named Ninja response schemas together with route-level auth overrides.
@@ -119,7 +120,7 @@ Known non-parity areas:
 
 - Changelist behavior is still not fully equivalent to upstream `ChangeList`; deeper query-string behavior, result rendering metadata, list-editable formset parity, and broader N+1 hardening still need work.
 - Filter handling now covers common Django admin filter families plus initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
-- System checks now cover common invalid configurations, many-to-many `list_display` mistakes, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
+- System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_editable` form-layout conflicts, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas now advertise action names, discriminated per-action input payload variants, and optional custom response schema unions.
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing and multipart file uploads, generated-form `formfield_*` customizations, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
 - Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, history permission filtering, autocomplete pagination, `_to_field` validation, inline permission checks, readonly/unknown inline field rejection, richer inline delete messages, unchanged bulk-row handling, row-indexed inline/bulk errors, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
