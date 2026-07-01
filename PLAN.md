@@ -63,6 +63,7 @@ Completed or mostly complete:
 - Pydantic/Ninja request validation errors are normalized into typed API error bodies.
 - Django `ModelForm` and inline formset validation for create/update/inline mutations.
 - Inline mutations reject duplicate change/delete PKs and rows that attempt to change and delete the same inline object.
+- Inline mutation tests now cover unknown inline objects and transaction rollback of parent saves when inline validation fails.
 - Bulk list-editable updates use strict row schemas, reject duplicate PKs, and validate all rows before writing.
 - Direct delete and default `delete_selected` return structured protected-object and permission-needed details.
 - Change messages include field labels and inline add/change/delete entries for history/log consumers.

@@ -772,6 +772,23 @@ def test_inline_mutation_rejects_duplicate_and_conflicting_rows(admin_client, sa
     assert ProductImage.objects.filter(pk=image.pk).exists()
 
 
+def test_inline_mutation_rolls_back_parent_save_for_unknown_inline_object(admin_client, sample):
+    response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={
+            "data": {"price": "99.00"},
+            "inlines": {"testapp.productimage": {"change": [{"pk": 999999, "title": "Ghost"}]}},
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["errors"]["testapp.productimage"]["change"][0]["message"] == "Unknown inline object."
+    sample.refresh_from_db()
+    assert str(sample.price) == "12.50"
+    assert not LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).exists()
+
+
 def test_schema_field_overrides_are_included():
     class ProductAdminWithOverride(ModelAdmin):
         schema_field_overrides = {"custom_note": (str, None)}
