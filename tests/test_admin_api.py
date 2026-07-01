@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 
 import pytest
+from django import forms
 from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
@@ -438,6 +439,45 @@ def test_admin_checks_validate_sortable_by(db):
     assert valid_ids.isdisjoint({"django_ninja_admin.E055", "django_ninja_admin.E056", "django_ninja_admin.E057"})
     assert bad_shape_ids == {"django_ninja_admin.E055"}
     assert bad_items_ids == {"django_ninja_admin.E056", "django_ninja_admin.E057"}
+
+
+def test_admin_checks_validate_form_class(db):
+    class ProductAdminForm(forms.ModelForm):
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status")
+
+    class CategoryAdminForm(forms.ModelForm):
+        class Meta:
+            model = Category
+            fields = ("name",)
+
+    class PlainForm(forms.Form):
+        name = forms.CharField()
+
+    class ValidFormProductAdmin(ModelAdmin):
+        form_class = ProductAdminForm
+
+    class PlainFormProductAdmin(ModelAdmin):
+        form_class = PlainForm
+
+    class WrongModelFormProductAdmin(ModelAdmin):
+        form_class = CategoryAdminForm
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidFormProductAdmin)
+    plain_site = NinjaAdminSite(include_auth=False)
+    plain_site.register(Product, PlainFormProductAdmin)
+    wrong_model_site = NinjaAdminSite(include_auth=False)
+    wrong_model_site.register(Product, WrongModelFormProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    plain_ids = {error.id for error in plain_site.get_model_admin(Product).check()}
+    wrong_model_ids = {error.id for error in wrong_model_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint({"django_ninja_admin.E058", "django_ninja_admin.E059"})
+    assert plain_ids == {"django_ninja_admin.E058"}
+    assert wrong_model_ids == {"django_ninja_admin.E059"}
 
 
 def test_admin_checks_reject_reverse_relation_widget_fields(db):

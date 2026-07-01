@@ -19,6 +19,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   and source fields.
 - Added admin system checks for invalid `sortable_by` shapes and entries outside
   `list_display`.
+- Added admin system checks for invalid custom `form_class` values and
+  mismatched `ModelForm` models.
 - Added changelist row URL and object-permission metadata for detail, change
   form, delete, and view-on-site frontend actions.
 - Added image-specific response schema and form metadata for Django

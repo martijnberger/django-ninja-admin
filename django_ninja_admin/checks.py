@@ -4,7 +4,7 @@ from django.core import checks
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models.base import ModelBase
-from django.forms.models import _get_foreign_key
+from django.forms.models import BaseModelForm, _get_foreign_key
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.filters import FieldListFilter, SimpleListFilter
@@ -33,6 +33,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_list_select_related(model_admin))
     errors.extend(_check_display_options(model_admin))
     errors.extend(_check_sortable_by(model_admin))
+    errors.extend(_check_form_class(model_admin))
     errors.extend(_check_form_layout(model_admin))
     errors.extend(_check_prepopulated_fields(model_admin))
     errors.extend(_check_list_filters(model_admin))
@@ -203,6 +204,26 @@ def _check_sortable_by(model_admin):
                 )
             )
     return errors
+
+
+def _check_form_class(model_admin):
+    form_class = getattr(model_admin, "form_class", None)
+    if form_class is None:
+        return []
+    if not isinstance(form_class, type) or not issubclass(form_class, BaseModelForm):
+        return [_error(model_admin.__class__, "The value of 'form_class' must inherit from ModelForm.", "E058")]
+
+    form_model = getattr(getattr(form_class, "_meta", None), "model", None)
+    if form_model is not None and form_model is not model_admin.model:
+        return [
+            _error(
+                model_admin.__class__,
+                f"The value of 'form_class' declares model '{form_model._meta.label}', "
+                f"but this admin is registered for '{model_admin.model._meta.label}'.",
+                "E059",
+            )
+        ]
+    return []
 
 
 def _editable_form_field_names(model_admin):
