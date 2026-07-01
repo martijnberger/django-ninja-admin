@@ -2178,6 +2178,17 @@ def test_actions_support_custom_return_values_empty_selection_and_select_across(
     assert select_across.json() == {"names": ["Beta"]}
 
 
+def test_actions_reject_invalid_selected_ids(admin_client, sample):
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "report_names", "selected_ids": ["not-a-pk"]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["errors"] == [{"message": "Invalid selected object id.", "param": "selected_ids"}]
+
+
 def test_action_input_schema_validates_and_dispatches(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/actions",

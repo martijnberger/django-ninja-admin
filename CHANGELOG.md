@@ -42,6 +42,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   inline changes, matching Django admin's no-op change behavior.
 - Added changelist row URL and object-permission metadata for detail, change
   form, delete, and view-on-site frontend actions.
+- Validated action `selected_ids` through the model primary key before queryset
+  dispatch, returning typed errors for malformed object IDs.
 - Added image-specific response schema and form metadata for Django
   `ImageField` values, including upload hints and width/height field names.
 - Added mounted-route coverage and docs for `NinjaAdminSite` auth sequences,

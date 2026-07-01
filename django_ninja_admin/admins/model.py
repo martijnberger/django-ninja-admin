@@ -537,7 +537,7 @@ class ModelAdmin(BaseAdmin):
                 [{"message": _("Items must be selected in order to perform actions on them."), "param": "selected_ids"}]
             )
         if payload.selected_ids and not payload.select_across:
-            queryset = queryset.filter(pk__in=payload.selected_ids)
+            queryset = queryset.filter(pk__in=self._clean_action_selected_ids(payload.selected_ids))
         func = self.get_actions(request)[action][0]
         action_data = self._action_data(func, payload)
         if self._action_input_schema(func) is None:
@@ -545,6 +545,19 @@ class ModelAdmin(BaseAdmin):
         else:
             response = func(self, request, queryset, action_data)
         return response if response is not None else {"detail": "Action completed."}
+
+    def _clean_action_selected_ids(self, selected_ids):
+        try:
+            return [self._clean_action_selected_id(value) for value in selected_ids]
+        except (TypeError, ValueError, ValidationError) as exc:
+            raise AdminValidationError(
+                [{"message": _("Invalid selected object id."), "param": "selected_ids"}]
+            ) from exc
+
+    def _clean_action_selected_id(self, value):
+        if value in (None, ""):
+            raise ValueError
+        return self.model._meta.pk.to_python(value)
 
     def _action_input_schema(self, func):
         return getattr(func, "action_input_schema", None)
