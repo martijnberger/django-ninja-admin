@@ -294,6 +294,8 @@ class BaseAdmin:
             return int
         if isinstance(field, forms.FloatField):
             return float
+        if isinstance(field, forms.SplitDateTimeField):
+            return tuple[date, time]
         if isinstance(field, forms.DateTimeField):
             return datetime
         if isinstance(field, forms.DateField):

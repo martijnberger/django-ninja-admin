@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 import pytest
@@ -2148,6 +2148,61 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_split_datetime_payload_uses_pydantic_and_multivalue_form_normalization(admin_client, sample):
+    schema = admin_client.get("/split-datetime-admin/openapi.json").json()
+    description_schema = schema["components"]["schemas"]["ProductAdminCreateData"]["properties"]["description"][
+        "anyOf"
+    ][0]
+    assert description_schema["prefixItems"] == [
+        {"format": "date", "type": "string"},
+        {"format": "time", "type": "string"},
+    ]
+
+    invalid = admin_client.post(
+        "/split-datetime-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Bad split time",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "description": ["2026-07-01", "not-a-time"],
+            }
+        },
+        content_type="application/json",
+    )
+    assert invalid.status_code == 422
+    assert invalid.json()["errors"][0]["param"] == "data.description.1"
+
+    created = admin_client.post(
+        "/split-datetime-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Split window",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "description": ["2026-07-01", "09:30"],
+            }
+        },
+        content_type="application/json",
+    )
+    assert created.status_code == 201, created.json()
+    product_id = created.json()["data"]["id"]
+    product = Product.objects.get(pk=product_id)
+    assert product.description.startswith("2026-07-01T09:30:00")
+
+    changed = admin_client.patch(
+        f"/split-datetime-admin/testapp/product/{product_id}",
+        data={"data": {"description": ["2026-07-02", "10:15"]}},
+        content_type="application/json",
+    )
+    assert changed.status_code == 200, changed.json()
+    product.refresh_from_db()
+    assert product.description.startswith("2026-07-02T10:15:00")
+
+
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_client, sample):
     allowed_category = Category.objects.create(name="Allowed Cameras")
 
@@ -2244,6 +2299,11 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
         contact_email = forms.EmailField(required=False)
         homepage = forms.URLField(required=False)
         duration = forms.DurationField(required=False)
+        release_window = forms.SplitDateTimeField(
+            required=False,
+            input_date_formats=["%Y-%m-%d"],
+            input_time_formats=["%H:%M"],
+        )
         bounded_name = forms.CharField(required=False, min_length=3, max_length=8)
         bounded_count = forms.IntegerField(required=False, min_value=2, max_value=5)
         bounded_price = forms.DecimalField(
@@ -2280,6 +2340,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
             "contact_email": "buyer@example.com",
             "homepage": "https://example.com/products",
             "duration": "1 02:03:04",
+            "release_window": ["2026-07-01", "09:30"],
             "bounded_name": "Camera",
             "bounded_count": 3,
             "bounded_price": "4.50",
@@ -2295,6 +2356,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert validated.contact_email == "buyer@example.com"
     assert str(validated.homepage) == "https://example.com/products"
     assert validated.duration == timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert validated.release_window == (date(2026, 7, 1), time(9, 30))
     assert validated.bounded_name == "Camera"
     assert validated.bounded_count == 3
     assert validated.bounded_price == Decimal("4.50")
@@ -2309,6 +2371,10 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert json_schema["bounded_count"]["anyOf"][0]["minimum"] == 2
     assert json_schema["contact_email"]["anyOf"][0]["format"] == "email"
     assert json_schema["homepage"]["anyOf"][0]["format"] == "uri"
+    assert json_schema["release_window"]["anyOf"][0]["prefixItems"] == [
+        {"format": "date", "type": "string"},
+        {"format": "time", "type": "string"},
+    ]
     assert json_schema["bounded_price"]["anyOf"][0]["maximum"] == 9.99
     assert json_schema["bounded_price"]["anyOf"][0]["minimum"] == 1.0
     assert json_schema["bounded_price"]["anyOf"][1]["pattern"]
@@ -2327,6 +2393,27 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "tracking_id": "not-a-uuid",
                 "host": "2001:db8::1",
                 "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "release_window": ["2026-07-01", "not-a-time"],
                 "bounded_name": "Camera",
                 "bounded_count": 3,
                 "bounded_price": "4.50",

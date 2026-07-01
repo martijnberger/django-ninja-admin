@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added native Pydantic request schema typing and mutation normalization for
+  Django `SplitDateTimeField` payloads.
+
 ## 0.1.12 - 2026-07-01
 
 - Added JSON-safe form field error-message and localization metadata, plus

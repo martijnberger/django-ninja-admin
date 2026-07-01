@@ -112,6 +112,9 @@ Completed or mostly complete:
   types for matching Django form fields.
 - Pydantic request schemas now use native duration types, and form descriptions
   expose temporal input formats.
+- Pydantic request schemas now use structured date/time tuple payloads for
+  Django `SplitDateTimeField`, with mutation normalization into Django
+  `MultiWidget` form data.
 - Pydantic request schemas now infer typed list entries for multiple-choice
   fields from declared choice values.
 - Pydantic request schemas now constrain concrete Django choice values with

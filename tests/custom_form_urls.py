@@ -121,7 +121,33 @@ custom_formfield_site.register(Tag, ModelAdmin)
 custom_formfield_site.register(Product, FormfieldHookProductAdmin)
 
 
+class SplitDateTimeProductForm(forms.ModelForm):
+    description = forms.SplitDateTimeField(
+        required=False,
+        input_date_formats=["%Y-%m-%d"],
+        input_time_formats=["%H:%M", "%H:%M:%S"],
+    )
+
+    class Meta:
+        model = Product
+        fields = ("name", "category", "price", "stock_status", "description")
+
+    def clean_description(self):
+        value = self.cleaned_data["description"]
+        return "" if value is None else value.isoformat()
+
+
+class SplitDateTimeProductAdmin(ModelAdmin):
+    form_class = SplitDateTimeProductForm
+
+
+split_datetime_site = NinjaAdminSite(name="split_datetime_admin", include_auth=False)
+split_datetime_site.register(Category, ModelAdmin)
+split_datetime_site.register(Product, SplitDateTimeProductAdmin)
+
+
 urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
     path("custom-formfield-admin/", custom_formfield_site.urls),
+    path("split-datetime-admin/", split_datetime_site.urls),
 ]

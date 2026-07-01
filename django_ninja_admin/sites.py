@@ -1141,20 +1141,40 @@ class NinjaAdminSite:
             return inlines.model_dump(mode="json", by_alias=True, exclude_none=True, exclude_unset=True)
         return inlines
 
-    def _normalize_file_clear_data(self, form_class, data):
+    def _normalize_form_data(self, form_class, data):
         normalized = dict(data)
         for field_name, field in form_class.base_fields.items():
             if isinstance(field, forms.FileField) and field_name in normalized and normalized[field_name] is None:
                 normalized.pop(field_name)
                 normalized[f"{field_name}-clear"] = "on"
+            if isinstance(field, forms.MultiValueField) and field_name in normalized:
+                self._expand_multivalue_form_data(normalized, field_name, field)
         return normalized
+
+    def _expand_multivalue_form_data(self, data, field_name, field):
+        value = data[field_name]
+        values = None
+        if value is None:
+            values = [""] * len(field.fields)
+        elif isinstance(value, (list, tuple)):
+            values = value
+        elif hasattr(field.widget, "decompress"):
+            try:
+                values = field.widget.decompress(value)
+            except Exception:
+                values = None
+        if values is None:
+            return
+        data.pop(field_name, None)
+        for index, item in enumerate(values):
+            data[f"{field_name}_{index}"] = item
 
     def _create_object(self, request, model_admin, payload, *, files=None):
         if not model_admin.has_add_permission(request):
             raise PermissionDenied
         with transaction.atomic(using=router_db_for_write(model_admin.model)):
             form_class = model_admin.get_form_class(request, None, change=False)
-            form_data = self._normalize_file_clear_data(form_class, self._payload_data(payload))
+            form_data = self._normalize_form_data(form_class, self._payload_data(payload))
             form = form_class(data=form_data, files=files or None)
             if not form.is_valid():
                 raise AdminValidationError({"form": form_errors(form)})
@@ -1295,7 +1315,7 @@ class NinjaAdminSite:
                 current = model_data_for_form(obj, list(form_class.base_fields.keys()))
                 current.update(form_data)
                 form_data = current
-            form_data = self._normalize_file_clear_data(form_class, form_data)
+            form_data = self._normalize_form_data(form_class, form_data)
             form = form_class(data=form_data, files=files or None, instance=obj)
             if not form.is_valid():
                 raise AdminValidationError({"form": form_errors(form)})
@@ -1591,7 +1611,7 @@ class NinjaAdminSite:
             form_class = model_admin.get_form_class(request, obj, change=True)
             current = model_data_for_form(obj, list(form_class.base_fields.keys()))
             current.update({key: value for key, value in data.items() if key in allowed})
-            current = self._normalize_file_clear_data(form_class, current)
+            current = self._normalize_form_data(form_class, current)
             form = form_class(data=current, instance=obj)
             if not form.is_valid():
                 row_errors[idx] = form_errors(form)
