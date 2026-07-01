@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.14 - 2026-07-02
+
 - Added structured list-editing row metadata to changelist responses, including
   row index, primary-key field, row primary key, and editable field
   descriptions.
@@ -19,6 +21,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added structured `SelectDateWidget` form metadata for split date-select
   rendering, including part order, generated field names, choices, empty
   choices, and selected values.
+- Added an admin system check rejecting duplicate `readonly_fields` entries,
+  including duplicate callable readonly fields.
 
 ## 0.1.13 - 2026-07-01
 
