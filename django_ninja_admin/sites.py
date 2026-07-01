@@ -3,6 +3,7 @@ from functools import wraps
 from typing import Any
 from weakref import WeakSet
 
+from django import forms
 from django.apps import apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -881,6 +882,14 @@ class NinjaAdminSite:
             return inlines.model_dump(mode="json", by_alias=True, exclude_none=True, exclude_unset=True)
         return inlines
 
+    def _normalize_file_clear_data(self, form_class, data):
+        normalized = dict(data)
+        for field_name, field in form_class.base_fields.items():
+            if isinstance(field, forms.FileField) and field_name in normalized and normalized[field_name] is None:
+                normalized.pop(field_name)
+                normalized[f"{field_name}-clear"] = "on"
+        return normalized
+
     def _update_object(self, request, model_admin, object_id, payload, *, partial):
         obj = self._get_object_or_404(request, model_admin, object_id)
         if not model_admin.has_change_permission(request, obj):
@@ -892,6 +901,7 @@ class NinjaAdminSite:
                 current = model_data_for_form(obj, list(form_class.base_fields.keys()))
                 current.update(form_data)
                 form_data = current
+            form_data = self._normalize_file_clear_data(form_class, form_data)
             form = form_class(data=form_data, instance=obj)
             if not form.is_valid():
                 raise AdminValidationError({"form": form_errors(form)})
@@ -1129,6 +1139,7 @@ class NinjaAdminSite:
             form_class = model_admin.get_form_class(request, obj, change=True)
             current = model_data_for_form(obj, list(form_class.base_fields.keys()))
             current.update({key: value for key, value in data.items() if key in allowed})
+            current = self._normalize_file_clear_data(form_class, current)
             form = form_class(data=current, instance=obj)
             if not form.is_valid():
                 raise AdminValidationError({idx: form_errors(form)})

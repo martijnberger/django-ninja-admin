@@ -432,6 +432,30 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db):
     assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_vertical"
 
 
+def test_file_field_can_be_cleared_with_null_payload(admin_client, sample):
+    response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {"manual": None}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["manual"] is None
+    sample.refresh_from_db()
+    assert sample.manual.name == ""
+
+    detail = admin_client.get(f"/admin-api/testapp/product/{sample.pk}")
+    assert detail.status_code == 200
+    assert detail.json()["manual"] is None
+
+    change_form = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+    manual_attrs = next(field["attrs"] for field in change_form.json()["form"]["fields"] if field["name"] == "manual")
+    assert "current_file" not in manual_attrs
+
+    change_entry = LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).latest("action_time")
+    assert json.loads(change_entry.change_message) == [{"changed": {"fields": ["Manual"]}}]
+
+
 def test_direct_delete_returns_protected_object_details(admin_client, sample):
     ProductReview.objects.create(product=sample, note="Pinned review")
 
