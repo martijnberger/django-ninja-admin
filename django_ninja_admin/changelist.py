@@ -7,6 +7,7 @@ from django.core.paginator import InvalidPage
 from django.db import models
 from django.http import Http404, QueryDict
 
+from django_ninja_admin.constants import ShowFacets
 from django_ninja_admin.exceptions import AdminValidationError, DisallowedModelAdminLookup
 from django_ninja_admin.filters import build_filter_spec
 from django_ninja_admin.utils.lookup import field_name_for_display, model_field_from_path
@@ -385,11 +386,10 @@ class ChangeList:
         return wants_all and self.result_count <= self.model_admin.list_max_show_all
 
     def should_show_facets(self):
-        show_facets = getattr(self.model_admin, "show_facets", None)
-        mode = getattr(show_facets, "name", str(show_facets))
-        if mode == "ALWAYS":
+        show_facets = getattr(self.model_admin, "show_facets", ShowFacets.ALLOW)
+        if show_facets is ShowFacets.ALWAYS:
             return True
-        if mode == "NEVER":
+        if show_facets is ShowFacets.NEVER:
             return False
         return self.params.get("_facets") in {"1", "true", "True"}
 

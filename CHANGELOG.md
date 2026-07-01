@@ -25,6 +25,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   changelist metadata serialization.
 - Added an admin system check for malformed custom `paginator` classes before
   changelist pagination runs.
+- Added explicit changelist coverage for `ShowFacets.NEVER` and
+  `ShowFacets.ALWAYS` behavior.
 
 ## 0.1.5 - 2026-07-01
 

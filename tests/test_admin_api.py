@@ -2065,6 +2065,28 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     assert bad_day.json()["errors"] == [{"message": "Invalid day.", "param": "created_at__day"}]
 
 
+def test_changelist_show_facets_modes(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    monkeypatch.setattr(product_admin, "show_facets", ShowFacets.NEVER)
+    never = admin_client.get("/admin-api/testapp/product?_facets=1")
+    assert never.status_code == 200
+    assert never.json()["config"]["show_facets"] is False
+    stock_filter = next(
+        item for item in never.json()["config"]["filters"] if item["parameter_name"] == "stock_status__exact"
+    )
+    assert all(choice["count"] is None for choice in stock_filter["choices"])
+
+    monkeypatch.setattr(product_admin, "show_facets", ShowFacets.ALWAYS)
+    always = admin_client.get("/admin-api/testapp/product")
+    assert always.status_code == 200
+    assert always.json()["config"]["show_facets"] is True
+    stock_filter = next(
+        item for item in always.json()["config"]["filters"] if item["parameter_name"] == "stock_status__exact"
+    )
+    assert {choice["display"]: choice["count"] for choice in stock_filter["choices"]}["Out of Stock"] == 1
+
+
 def test_changelist_date_hierarchy_supports_relation_paths(admin_client, sample):
     class RelatedDateHierarchyImageAdmin(ModelAdmin):
         date_hierarchy = "product__created_at"
