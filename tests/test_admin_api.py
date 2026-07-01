@@ -277,6 +277,26 @@ def test_site_registration_contracts_and_decorator(db):
     assert isinstance(admin_site.get_model_admin(Tag), RegisteredTagAdmin)
 
 
+@isolate_apps("tests.testapp")
+@override_settings(TESTAPP_SWAPPED_MODEL="testapp.ReplacementThing")
+def test_site_registration_skips_swapped_models(db):
+    class SwappedThing(models.Model):
+        name = models.CharField(max_length=20)
+
+        class Meta:
+            app_label = "testapp"
+            swappable = "TESTAPP_SWAPPED_MODEL"
+
+    admin_site = NinjaAdminSite(include_auth=False)
+
+    admin_site.register(SwappedThing)
+
+    assert SwappedThing._meta.swapped == "testapp.ReplacementThing"
+    assert admin_site.is_registered(SwappedThing) is False
+    with pytest.raises(NotRegistered):
+        admin_site.get_model_admin(SwappedThing)
+
+
 def test_site_action_changes_invalidate_openapi_schema(db):
     admin_site = NinjaAdminSite(include_auth=False, name="action_cache")
     admin_site.register(Product, ModelAdmin)

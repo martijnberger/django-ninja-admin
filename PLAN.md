@@ -53,7 +53,7 @@ Completed or mostly complete:
 
 - Package scaffold, dependency policy, licenses, app config, default site, lazy API construction, and basic documentation.
 - Public exports for `site`, `NinjaAdminSite`, `ModelAdmin`, inlines, decorators, registration, and package-owned admin filter classes.
-- Registry coverage now includes option-based registration, duplicate/unregistered errors, abstract-model rejection, and the public `@register` decorator.
+- Registry coverage now includes option-based registration, duplicate/unregistered errors, abstract-model rejection, swapped-model skipping, and the public `@register` decorator.
 - Core site/model routes for apps, context, permissions, history, autocomplete, view-on-site, changelist, detail, add/change/delete, actions, and bulk updates.
 - Default `SessionAuthIsStaff`, explicit `auth=None`, custom auth callable, and multiple Ninja auth callable support.
 - Basic Pydantic request envelopes and typed response schemas.

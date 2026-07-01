@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   preserving per-route OpenAPI security metadata.
 - Added readonly form-field display values and metadata for admin methods and
   model properties, including boolean flags and empty-value fallbacks.
+- Added explicit registry coverage for swapped models, which are skipped during
+  registration to match Django admin behavior.
 
 ## 0.1.2 - 2026-07-01
 
