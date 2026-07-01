@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   matching the form-generation flattening behavior.
 - Added admin system checks for malformed `fieldsets`, duplicate fieldset
   fields, and `list_editable` fields omitted from custom fieldsets.
+- Added admin system checks for duplicate fields in the `fields` option,
+  including row-tuples.
 - Added admin system checks rejecting reverse relations in `autocomplete_fields`
   and `raw_id_fields`.
 - Added admin system checks for invalid `prepopulated_fields` shapes, targets,

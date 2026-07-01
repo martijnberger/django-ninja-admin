@@ -419,10 +419,17 @@ def _check_form_option_items(model_admin, option, *, require_model_field=False):
     items = getattr(model_admin, option, None) or ()
     if option == "fields" and isinstance(items, (list, tuple)):
         items = flatten(items)
+    seen_fields = set()
     for item in items:
         if not isinstance(item, str):
             errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E048"))
             continue
+        if option == "fields":
+            if item in seen_fields:
+                errors.append(
+                    _error(model_admin.__class__, f"The field '{item}' is duplicated in 'fields'.", "E065")
+                )
+            seen_fields.add(item)
         if require_model_field and _model_field(model_admin, item) is None:
             errors.append(
                 _error(model_admin.__class__, f"The value of '{option}' refers to unknown field '{item}'.", "E049")

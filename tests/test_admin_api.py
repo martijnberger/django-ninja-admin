@@ -677,6 +677,9 @@ def test_admin_checks_validate_fields_and_exclude_items(db):
     class BadFieldsProductAdmin(ModelAdmin):
         fields = ("name", 123)
 
+    class DuplicateFieldsProductAdmin(ModelAdmin):
+        fields = ("name", ("price", "name"))
+
     class BadExcludeProductAdmin(ModelAdmin):
         exclude = ("missing", 123)
 
@@ -684,11 +687,14 @@ def test_admin_checks_validate_fields_and_exclude_items(db):
     row_fields_site.register(Product, RowFieldsProductAdmin)
     fields_site = NinjaAdminSite(include_auth=False)
     fields_site.register(Product, BadFieldsProductAdmin)
+    duplicate_fields_site = NinjaAdminSite(include_auth=False)
+    duplicate_fields_site.register(Product, DuplicateFieldsProductAdmin)
     exclude_site = NinjaAdminSite(include_auth=False)
     exclude_site.register(Product, BadExcludeProductAdmin)
 
     row_fields_errors = row_fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
     fields_errors = fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    duplicate_fields_errors = duplicate_fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
     exclude_errors = exclude_site.check(app_configs=[django_apps.get_app_config("testapp")])
 
     assert row_fields_errors == []
@@ -698,6 +704,7 @@ def test_admin_checks_validate_fields_and_exclude_items(db):
         "category",
     ]
     assert {error.id for error in fields_errors} == {"django_ninja_admin.E048"}
+    assert {error.id for error in duplicate_fields_errors} == {"django_ninja_admin.E065"}
     assert {error.id for error in exclude_errors} == {"django_ninja_admin.E048", "django_ninja_admin.E049"}
 
 
