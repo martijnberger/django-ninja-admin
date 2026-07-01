@@ -53,6 +53,7 @@ Completed or mostly complete:
 
 - Package scaffold, dependency policy, licenses, app config, default site, lazy API construction, and basic documentation.
 - Public exports for `site`, `NinjaAdminSite`, `ModelAdmin`, inlines, decorators, registration, and package-owned admin filter classes.
+- Registry coverage now includes option-based registration, duplicate/unregistered errors, abstract-model rejection, and the public `@register` decorator.
 - Core site/model routes for apps, context, permissions, history, autocomplete, view-on-site, changelist, detail, add/change/delete, actions, and bulk updates.
 - Default `SessionAuthIsStaff`, explicit `auth=None`, and custom auth callable support.
 - Basic Pydantic request envelopes and typed response schemas.
@@ -118,7 +119,7 @@ Known non-parity areas:
 - OpenAPI generation works and now has semantic contract coverage for core model routes and custom action input/response schemas, but broader snapshots and example coverage are still needed before release.
 - Admin extensibility is still young: custom view routing, route metadata/auth overrides, named response-schema coverage, and display metadata exist, but deeper multi-auth and override-hook parity need work.
 - Release hardening has local/CI `just` gates, wheel import smoke, a clean sample-project smoke, initial PostgreSQL CI coverage, and an initial copyright audit; remaining work is to confirm CI results and repeat the audit before release candidates.
-- Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix.
+- Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix and targeted local registry/route contracts.
 
 ## Implementation Phases
 

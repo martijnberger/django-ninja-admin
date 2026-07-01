@@ -6,12 +6,15 @@ from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ImproperlyConfigured
+from django.db import models
 from django.test import Client, RequestFactory, override_settings
 from django.utils import timezone
 from ninja.security import SessionAuthIsStaff
 
-from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline, site
+from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline, register, site
 from django_ninja_admin.changelist import ChangeList
+from django_ninja_admin.exceptions import AlreadyRegistered, NotRegistered
 from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
 from tests.testapp.models import Category, Product, ProductImage, ProductReview, Tag
 
@@ -221,6 +224,39 @@ def test_admin_checks_accept_valid_test_admins(db):
     errors = site.check(app_configs=[django_apps.get_app_config("testapp")])
 
     assert errors == []
+
+
+def test_site_registration_contracts_and_decorator(db):
+    admin_site = NinjaAdminSite(include_auth=False)
+
+    admin_site.register(Category, list_display=("name",))
+    assert admin_site.is_registered(Category) is True
+    assert admin_site.get_model_admin(Category).list_display == ("name",)
+
+    with pytest.raises(AlreadyRegistered):
+        admin_site.register(Category)
+
+    admin_site.unregister(Category)
+    assert admin_site.is_registered(Category) is False
+
+    with pytest.raises(NotRegistered):
+        admin_site.unregister(Category)
+
+    class AbstractThing(models.Model):
+        name = models.CharField(max_length=20)
+
+        class Meta:
+            abstract = True
+            app_label = "testapp"
+
+    with pytest.raises(ImproperlyConfigured):
+        admin_site.register(AbstractThing)
+
+    @register(Tag, site=admin_site)
+    class RegisteredTagAdmin(ModelAdmin):
+        list_display = ("name",)
+
+    assert isinstance(admin_site.get_model_admin(Tag), RegisteredTagAdmin)
 
 
 def test_admin_checks_report_invalid_model_admin_configuration(db):

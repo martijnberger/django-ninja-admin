@@ -34,7 +34,7 @@ Statuses:
 
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
-| Model registration/unregistration | implemented | `NinjaAdminSite.register`, `unregister` | More duplicate/swapped/abstract tests |
+| Model registration/unregistration | implemented | `NinjaAdminSite.register`, `unregister`, duplicate/unregistered/abstract/decorator tests | Swapped-model tests |
 | Default site/autodiscover | partial | Lazy `site`, `autodiscover()` | Project-level smoke test |
 | Permission hooks | partial | `BaseAdmin.has_*_permission`, API tests | More object-level and custom hook coverage |
 | Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, many-to-many `list_display`, and widget-conflict tests | Match Django check IDs/coverage more closely |
