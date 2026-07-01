@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added Pydantic-backed custom action input schemas through
+  `@action(input_schema=...)`.
+- Added support for passing pytest selectors through `just test` and
+  `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full
   check workflows.
 - Added a package smoke script that builds the wheel, installs it into an

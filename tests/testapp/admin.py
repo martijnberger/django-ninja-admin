@@ -1,3 +1,7 @@
+from typing import Literal
+
+from ninja import Schema
+
 from django_ninja_admin import VERTICAL, ModelAdmin, SimpleListFilter, TabularInline, action, display, site
 from tests.testapp.models import Category, Product, ProductImage, Tag
 
@@ -24,6 +28,11 @@ class ProductImageInline(TabularInline):
     max_num = 3
 
 
+class StockStatusActionData(Schema):
+    status: Literal["in_stock", "out_of_stock"]
+    note: str | None = None
+
+
 class ProductAdmin(ModelAdmin):
     list_display = ("name", "category", "price", "stock_status", "upper_name", "has_description", "tagline")
     list_filter = ("stock_status", "category", PriceBandFilter)
@@ -33,7 +42,7 @@ class ProductAdmin(ModelAdmin):
     filter_horizontal = ("tags",)
     ordering = ("name",)
     inlines = [ProductImageInline]
-    actions = ["mark_out_of_stock", "report_names"]
+    actions = ["mark_out_of_stock", "report_names", "set_stock_status"]
     readonly_fields = ("upper_name",)
     date_hierarchy = "created_at"
     radio_fields = {"stock_status": VERTICAL}
@@ -58,6 +67,11 @@ class ProductAdmin(ModelAdmin):
     @action(description="Report names", permissions=["view"])
     def report_names(self, request, queryset):
         return {"names": list(queryset.order_by("name").values_list("name", flat=True))}
+
+    @action(description="Set stock status", permissions=["change"], input_schema=StockStatusActionData)
+    def set_stock_status(self, request, queryset, data):
+        updated = queryset.update(stock_status=data.status)
+        return {"updated": updated, "status": data.status, "note": data.note}
 
 
 class CategoryAdmin(ModelAdmin):

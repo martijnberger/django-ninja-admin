@@ -114,6 +114,48 @@ Use Django-admin-style hooks for behavior:
 - `delete_model(request, obj)`
 - `delete_queryset(request, queryset)`
 
+### Action Input Schemas
+
+Actions can declare extra JSON input with Pydantic/Ninja schemas:
+
+```python
+from typing import Literal
+
+from ninja import Schema
+
+from django_ninja_admin import ModelAdmin, action
+
+
+class StockStatusActionData(Schema):
+    status: Literal["in_stock", "out_of_stock"]
+    note: str | None = None
+
+
+class ProductAdmin(ModelAdmin):
+    actions = ["set_stock_status"]
+
+    @action(input_schema=StockStatusActionData, permissions=["change"])
+    def set_stock_status(self, request, queryset, data):
+        queryset.update(stock_status=data.status)
+        return {"status": data.status, "note": data.note}
+```
+
+The action route keeps the normal action envelope and adds `data` for the
+custom payload:
+
+```json
+{
+  "action": "set_stock_status",
+  "selected_ids": [1, 2],
+  "data": {
+    "status": "out_of_stock",
+    "note": "seasonal"
+  }
+}
+```
+
+The schema is included in OpenAPI under the model action payload component.
+
 ## Request And Error Shapes
 
 Mutation requests use a data envelope:

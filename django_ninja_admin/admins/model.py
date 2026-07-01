@@ -1,6 +1,6 @@
 import enum
 from functools import wraps
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
@@ -11,9 +11,11 @@ from django.forms.models import model_to_dict
 from django.utils.text import capfirst, smart_split, unescape_string_literal
 from django.utils.translation import gettext_lazy as _
 from ninja import Schema
-from pydantic import Field, create_model
+from pydantic import BaseModel, Field, TypeAdapter, create_model
+from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin.admins.base import BaseAdmin
+from django_ninja_admin.exceptions import AdminValidationError
 from django_ninja_admin.models import ADDITION, CHANGE, DELETION, LogEntry
 from django_ninja_admin.routes import AdminRoute
 from django_ninja_admin.schemas import AdminInlinePayloadSchema
@@ -323,19 +325,37 @@ class ModelAdmin(BaseAdmin):
 
     def get_action_payload_schema(self, request=None):
         cache = getattr(self, "_action_payload_schema_cache", {})
-        action_names = tuple(name for _func, name, _description in self._get_base_actions())
-        cache_key = ("action-payload", action_names)
+        actions = self._get_base_actions()
+        action_names = tuple(name for _func, name, _description in actions)
+        action_data_schemas = tuple(
+            schema
+            for schema in dict.fromkeys(
+                getattr(func, "action_input_schema", None)
+                for func, _name, _description in actions
+                if getattr(func, "action_input_schema", None) is not None
+            )
+        )
+        cache_key = ("action-payload", action_names, action_data_schemas)
         if cache_key not in cache:
             action_type = Literal.__getitem__(action_names) if action_names else str
+            data_type = self._action_data_union(action_data_schemas)
             cache[cache_key] = create_model(
                 f"{self.model.__name__}AdminActionPayload",
                 __base__=Schema,
                 action=(action_type, ...),
                 selected_ids=(list[Any], Field(default_factory=list)),
                 select_across=(bool, False),
+                data=(data_type | None, None),
             )
             self._action_payload_schema_cache = cache
         return cache[cache_key]
+
+    def _action_data_union(self, action_data_schemas):
+        if not action_data_schemas:
+            return dict[str, Any]
+        if len(action_data_schemas) == 1:
+            return action_data_schemas[0]
+        return Union.__getitem__(action_data_schemas)
 
     def construct_change_message(self, request, form, inline_results=None, add=False):
         inline_results = inline_results or {}
@@ -448,20 +468,49 @@ class ModelAdmin(BaseAdmin):
     def response_action(self, request, queryset, payload):
         action = payload.action
         if action not in self.get_actions(request):
-            from django_ninja_admin.exceptions import AdminValidationError
-
             raise AdminValidationError([{"message": _("Invalid action."), "param": "action"}])
         if not payload.selected_ids and not payload.select_across:
-            from django_ninja_admin.exceptions import AdminValidationError
-
             raise AdminValidationError(
                 [{"message": _("Items must be selected in order to perform actions on them."), "param": "selected_ids"}]
             )
         if payload.selected_ids and not payload.select_across:
             queryset = queryset.filter(pk__in=payload.selected_ids)
         func = self.get_actions(request)[action][0]
-        response = func(self, request, queryset)
+        action_data = self._action_data(func, payload)
+        if self._action_input_schema(func) is None:
+            response = func(self, request, queryset)
+        else:
+            response = func(self, request, queryset, action_data)
         return response if response is not None else {"detail": "Action completed."}
+
+    def _action_input_schema(self, func):
+        return getattr(func, "action_input_schema", None)
+
+    def _action_data(self, func, payload):
+        schema = self._action_input_schema(func)
+        if schema is None:
+            return None
+        raw_data = getattr(payload, "data", None)
+        if isinstance(raw_data, BaseModel):
+            raw_data = raw_data.model_dump()
+        if raw_data is None:
+            raw_data = {}
+        try:
+            return TypeAdapter(schema).validate_python(raw_data)
+        except PydanticValidationError as exc:
+            raise AdminValidationError(self._action_data_errors(exc)) from exc
+
+    def _action_data_errors(self, exc):
+        errors = []
+        for error in exc.errors():
+            location = ".".join(str(part) for part in error.get("loc", ()))
+            errors.append(
+                {
+                    "message": error.get("msg", str(error)),
+                    "param": f"data.{location}" if location else "data",
+                }
+            )
+        return errors
 
     def get_deleted_objects(self, objs, request):
         return get_deleted_objects(objs, request, self.admin_site)

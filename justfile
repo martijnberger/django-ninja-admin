@@ -1,10 +1,10 @@
 set dotenv-load := false
 
-test:
-    UV_CACHE_DIR=.uv-cache uv run pytest
+test *args:
+    UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
 
-postgres-test:
-    DJANGO_NINJA_ADMIN_TEST_DATABASE=postgres UV_CACHE_DIR=.uv-cache uv run pytest
+postgres-test *args:
+    DJANGO_NINJA_ADMIN_TEST_DATABASE=postgres UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
 
 lint:
     UV_CACHE_DIR=.uv-cache uv run ruff check .

@@ -106,7 +106,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "delete_selected",
         "mark_out_of_stock",
         "report_names",
+        "set_stock_status",
     ]
+    assert {"$ref": "#/components/schemas/StockStatusActionData"} in components["ProductAdminActionPayload"][
+        "properties"
+    ]["data"]["anyOf"]
 
 
 def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):
@@ -826,6 +830,32 @@ def test_actions_support_custom_return_values_empty_selection_and_select_across(
     )
     assert select_across.status_code == 200
     assert select_across.json() == {"names": ["Beta"]}
+
+
+def test_action_input_schema_validates_and_dispatches(admin_client, sample):
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={
+            "action": "set_stock_status",
+            "selected_ids": [sample.pk],
+            "data": {"status": "out_of_stock", "note": "seasonal"},
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"updated": 1, "status": "out_of_stock", "note": "seasonal"}
+    sample.refresh_from_db()
+    assert sample.stock_status == "out_of_stock"
+
+    missing_data = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "set_stock_status", "selected_ids": [sample.pk]},
+        content_type="application/json",
+    )
+
+    assert missing_data.status_code == 400
+    assert missing_data.json()["errors"][0]["param"] == "data.status"
 
 
 def test_delete_selected_returns_protected_object_details(admin_client, sample):
