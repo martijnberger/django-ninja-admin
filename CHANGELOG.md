@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Improved `lookup_allowed()` parity with Django admin by allowing local field
+  lookup suffixes and `limit_choices_to` reverse-FK lookup parameters while
+  preserving relational lookup validation.
+
 ## 0.1.6 - 2026-07-01
 
 - Added admin system checks rejecting non-sequence `inlines` and `actions`

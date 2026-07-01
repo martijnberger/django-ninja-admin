@@ -114,6 +114,7 @@ Completed or mostly complete:
 - Changelist facet handling now has mounted-route coverage for `ShowFacets.NEVER`, `ALLOW`, and `ALWAYS`.
 - Field-based `list_filter` tuple entries now validate as two-item `(field, FieldListFilter)` declarations at check and runtime boundaries.
 - Invalid changelist lookup values now return typed API errors for both declared filters and direct field lookups.
+- `lookup_allowed()` now allows local field lookup suffixes and Django-style `limit_choices_to` reverse-FK lookup parameters while continuing to reject unapproved relational lookups.
 - Expanded changelist metadata for display links, sortable columns, multi-column sort state/query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
 - Changelist rows now expose detail, change-form, delete, view-on-site, and object-permission metadata for frontend action rendering.
 - Date hierarchy metadata now includes clear/back navigation query strings and validates impossible year/month/day combinations.

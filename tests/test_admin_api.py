@@ -2208,6 +2208,50 @@ def test_date_field_list_filter_uses_bounded_ranges(admin_client, sample, monkey
     assert "2023" not in stale_this_month["query_string"]
 
 
+def test_changelist_allows_local_field_lookup_suffixes(admin_client, sample):
+    response = admin_client.get("/admin-api/testapp/product?price__gte=10")
+
+    assert response.status_code == 200
+    assert response.json()["config"]["result_count"] == 1
+    assert response.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+
+@isolate_apps("tests.testapp")
+def test_lookup_allowed_honors_limit_choices_to_relation_lookups(db):
+    class LimitedCategory(models.Model):
+        name = models.CharField(max_length=100)
+
+        class Meta:
+            app_label = "testapp"
+
+    class LimitedProduct(models.Model):
+        category = models.ForeignKey(LimitedCategory, on_delete=models.CASCADE)
+
+        class Meta:
+            app_label = "testapp"
+
+    class LimitedImage(models.Model):
+        product = models.ForeignKey(
+            LimitedProduct,
+            on_delete=models.CASCADE,
+            limit_choices_to={"category__name": "Cameras"},
+        )
+
+        class Meta:
+            app_label = "testapp"
+
+    class LimitedProductAdmin(ModelAdmin):
+        list_filter = ()
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(LimitedProduct, LimitedProductAdmin)
+    model_admin = admin_site.get_model_admin(LimitedProduct)
+    request = RequestFactory().get("/admin-api/testapp/limitedproduct")
+
+    assert model_admin.lookup_allowed("category__name", "Cameras", request) is True
+    assert model_admin.lookup_allowed("category__name", "Accessories", request) is False
+
+
 def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):
     bad_lookup = admin_client.get("/admin-api/testapp/product?category__name=Cameras")
     assert bad_lookup.status_code == 400

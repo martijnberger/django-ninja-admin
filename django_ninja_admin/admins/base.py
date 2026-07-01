@@ -448,13 +448,53 @@ class BaseAdmin:
         return None
 
     def lookup_allowed(self, lookup, value, request):
-        if lookup in self.get_list_filter(request):
+        from django.contrib.admin.widgets import url_params_from_lookup_dict
+
+        from django_ninja_admin.filters import SimpleListFilter
+
+        model = self.model
+        for fk_lookup in model._meta.related_fkey_lookups:
+            if callable(fk_lookup):
+                fk_lookup = fk_lookup()
+            if (lookup, value) in url_params_from_lookup_dict(fk_lookup).items():
+                return True
+
+        relation_parts = []
+        previous_field = None
+        lookup_parts = lookup.split("__")
+        for part in lookup_parts:
+            try:
+                field = model._meta.get_field(part)
+            except FieldDoesNotExist:
+                break
+            if not previous_field or (
+                previous_field.is_relation
+                and field not in model._meta.parents.values()
+                and field is not model._meta.auto_field
+                and (model._meta.auto_field is None or part not in getattr(previous_field, "to_fields", []))
+                and (field.is_relation or not field.primary_key)
+            ):
+                relation_parts.append(part)
+            if not getattr(field, "path_infos", None):
+                break
+            previous_field = field
+            model = field.path_infos[-1].to_opts.model
+
+        if len(relation_parts) <= 1:
             return True
-        try:
-            self.model._meta.get_field(lookup.split("__", 1)[0])
-            return "__" not in lookup
-        except FieldDoesNotExist:
-            return False
+
+        valid_lookups = {getattr(self, "date_hierarchy", None)}
+        for filter_item in self.get_list_filter(request):
+            if isinstance(filter_item, type) and issubclass(filter_item, SimpleListFilter):
+                valid_lookups.add(filter_item.parameter_name)
+            elif isinstance(filter_item, (list, tuple)) and filter_item:
+                valid_lookups.add(filter_item[0])
+            else:
+                valid_lookups.add(filter_item)
+
+        relation_lookup = "__".join(relation_parts)
+        relation_lookup_with_part = "__".join([*relation_parts, part])
+        return not {relation_lookup, relation_lookup_with_part}.isdisjoint(valid_lookups)
 
     def to_field_allowed(self, request, to_field):
         try:
