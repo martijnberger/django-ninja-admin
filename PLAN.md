@@ -83,6 +83,7 @@ Completed or mostly complete:
 - Bulk list-editable updates now aggregate server-side row errors before writing.
 - Direct delete and default `delete_selected` return structured protected-object and permission-needed details.
 - Collected-object delete permission checks now honor object-level delete hooks, including the default `delete_selected` action.
+- Direct delete now returns structured permission-needed details when object-level delete hooks deny the target row.
 - Model detail/form/delete routes now reject bad `_to_field` references with typed validation errors.
 - History listing now filters by caller-visible models before pagination and supports app/model/object/action filters with typed bad-param handling.
 - Autocomplete now returns typed not-found responses for invalid pages and has coverage for many-to-many source fields.

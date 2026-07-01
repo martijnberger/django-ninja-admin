@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   methods that declare related-field ordering metadata.
 - Hardened collected-object delete permission checks so `delete_selected`
   returns permission-needed details when object-level delete hooks deny a row.
+- Aligned direct delete with collected-object permission reporting for
+  object-level delete hook denials.
 
 ## 0.1.5 - 2026-07-01
 

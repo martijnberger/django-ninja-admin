@@ -2506,6 +2506,24 @@ def test_direct_delete_returns_permission_needed_details(staff_client, sample):
     assert Category.objects.filter(pk=sample.category_id).exists()
 
 
+def test_direct_delete_returns_object_permission_needed_details(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    def has_delete_permission(request, obj=None):
+        return obj is None
+
+    monkeypatch.setattr(product_admin, "has_delete_permission", has_delete_permission)
+
+    response = admin_client.delete(f"/admin-api/testapp/product/{sample.pk}")
+
+    assert response.status_code == 403
+    body = response.json()
+    assert body["errors"][0]["param"] == "object_id"
+    assert body["perms_needed"] == ["product"]
+    assert body["model_count"]["testapp.product"] == 1
+    assert Product.objects.filter(pk=sample.pk).exists()
+
+
 def test_model_routes_validate_to_field(admin_client, sample):
     allowed = admin_client.get(f"/admin-api/testapp/category/{sample.category_id}?_to_field=id")
     assert allowed.status_code == 200

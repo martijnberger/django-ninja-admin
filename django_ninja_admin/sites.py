@@ -849,7 +849,7 @@ class NinjaAdminSite:
         )
         def delete(request, object_id: str, to_field: str | None = Query(None, alias="_to_field")):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
-            if not model_admin.has_delete_permission(request, obj):
+            if not model_admin.has_delete_permission(request):
                 raise PermissionDenied
             deleted_objects, model_count, perms_needed, protected = model_admin.get_deleted_objects([obj], request)
             if protected:
