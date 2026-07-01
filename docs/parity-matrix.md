@@ -62,7 +62,7 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | Dynamic output schemas | partial | `BaseAdmin.get_output_schema`, schema override test | Stable component names and richer custom fields |
-| Pydantic request envelopes | partial | Per-model create/update/bulk, per-inline operation, action-name schemas, and custom action input schemas with OpenAPI tests | Discriminated per-action payload variants |
+| Pydantic request envelopes | partial | Per-model create/update/bulk, per-inline operation, discriminated action payload variants, and custom action input schemas with OpenAPI tests | Broader edge-case schemas and snapshots |
 | Django ModelForm validation | implemented | Create/update tests | More field/widget variants |
 | Custom `form_class` | partial | Mounted custom-form route test covers schema fields, custom widget attrs, form validation, and persistence | More custom formfield callbacks, media, and field override edge cases |
 | Form descriptions | partial | Widget, custom-widget, validator, relation, numeric, decimal, choice, readonly, model-field, file, m2m, and admin-widget metadata tests | Image metadata, custom field metadata, and advanced widget details |
@@ -89,7 +89,7 @@ Statuses:
 | Custom auth and `auth=None` | implemented | Auth contract tests and auth docs | Multi-auth test coverage |
 | Typed error bodies | partial | Exception handlers, Ninja validation handler, API tests, and model-route OpenAPI error maps | Full error schema snapshots |
 | Stable operation IDs/tags | partial | Explicit operation IDs and semantic OpenAPI contract tests | Broader site/custom-route snapshot tests |
-| Per-model request/response contracts | partial | Output, write payload, inline operation, action payload/input/response, and response-map schemas in OpenAPI | Discriminated action contracts and Phase 6 snapshots |
+| Per-model request/response contracts | partial | Output, write payload, inline operation, discriminated action payload/input/response, and response-map schemas in OpenAPI | Broader Phase 6 snapshots and examples |
 
 ## Release Hardening
 

@@ -373,9 +373,7 @@ class NinjaAdminSite:
             raw_errors = raw_errors if isinstance(raw_errors, list) else [raw_errors or str(exc)]
             for error in raw_errors:
                 if isinstance(error, dict):
-                    location = ".".join(
-                        str(part) for part in error.get("loc", []) if part not in {"body", "payload"}
-                    )
+                    location = self._request_validation_param(error)
                     errors.append(
                         {
                             "message": error.get("msg", str(error)),
@@ -391,6 +389,16 @@ class NinjaAdminSite:
         @api.exception_handler(MissingSearchFields)
         def missing_search_fields(request, exc):
             return error_response(request, "Missing search_fields.", 409, param="search_fields")
+
+    def _request_validation_param(self, error):
+        if error.get("type") == "union_tag_invalid":
+            discriminator = (error.get("ctx") or {}).get("discriminator")
+            if discriminator:
+                return str(discriminator).strip("'\"")
+        location_parts = [str(part) for part in error.get("loc", []) if part not in {"body", "payload"}]
+        if len(location_parts) > 1 and location_parts[1] in {"action", "selected_ids", "select_across", "data"}:
+            location_parts = location_parts[1:]
+        return ".".join(location_parts)
 
     def _register_site_routes(self, router):
         site = self

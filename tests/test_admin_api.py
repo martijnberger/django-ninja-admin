@@ -102,15 +102,23 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert "testapp.productimage" in components["ProductAdminInlinePayload"]["properties"]
     assert components["ProductImageInlineAddRow"]["required"] == ["title"]
     assert components["ProductImageInlineChangeRow"]["required"] == ["pk"]
-    assert components["ProductAdminActionPayload"]["properties"]["action"]["enum"] == [
-        "delete_selected",
-        "mark_out_of_stock",
-        "report_names",
-        "set_stock_status",
-    ]
-    assert {"$ref": "#/components/schemas/StockStatusActionData"} in components["ProductAdminActionPayload"][
-        "properties"
-    ]["data"]["anyOf"]
+    action_payload_schema = components["ProductAdminActionPayload"]
+    assert action_payload_schema["discriminator"] == {
+        "propertyName": "action",
+        "mapping": {
+            "delete_selected": "#/components/schemas/ProductAdminDeleteSelectedActionPayload",
+            "mark_out_of_stock": "#/components/schemas/ProductAdminMarkOutOfStockActionPayload",
+            "report_names": "#/components/schemas/ProductAdminReportNamesActionPayload",
+            "set_stock_status": "#/components/schemas/ProductAdminSetStockStatusActionPayload",
+        },
+    }
+    assert {schema["$ref"] for schema in action_payload_schema["oneOf"]} == set(
+        action_payload_schema["discriminator"]["mapping"].values()
+    )
+    set_status_payload = components["ProductAdminSetStockStatusActionPayload"]
+    assert set_status_payload["properties"]["action"]["const"] == "set_stock_status"
+    assert set_status_payload["properties"]["data"] == {"$ref": "#/components/schemas/StockStatusActionData"}
+    assert set(set_status_payload["required"]) == {"action", "data"}
     action_response_schema = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["responses"]["200"][
         "content"
     ]["application/json"]["schema"]
@@ -858,8 +866,17 @@ def test_action_input_schema_validates_and_dispatches(admin_client, sample):
         content_type="application/json",
     )
 
-    assert missing_data.status_code == 400
-    assert missing_data.json()["errors"][0]["param"] == "data.status"
+    assert missing_data.status_code == 422
+    assert missing_data.json()["errors"][0]["param"] == "data"
+
+    unexpected_data = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "report_names", "selected_ids": [sample.pk], "data": {"status": "out_of_stock"}},
+        content_type="application/json",
+    )
+
+    assert unexpected_data.status_code == 422
+    assert unexpected_data.json()["errors"][0]["param"] == "data"
 
 
 def test_delete_selected_returns_protected_object_details(admin_client, sample):

@@ -1,7 +1,8 @@
 import enum
+import re
 from functools import reduce, wraps
 from operator import or_
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
@@ -12,7 +13,7 @@ from django.forms.models import model_to_dict
 from django.utils.text import capfirst, smart_split, unescape_string_literal
 from django.utils.translation import gettext_lazy as _
 from ninja import Schema
-from pydantic import BaseModel, Field, TypeAdapter, create_model
+from pydantic import BaseModel, Field, RootModel, TypeAdapter, create_model
 from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin.admins.base import BaseAdmin
@@ -327,22 +328,49 @@ class ModelAdmin(BaseAdmin):
     def get_action_payload_schema(self, request=None):
         cache = getattr(self, "_action_payload_schema_cache", {})
         actions = self._get_base_actions()
-        action_names = tuple(name for _func, name, _description in actions)
-        action_data_schemas = self._action_schemas(actions, "action_input_schema")
-        cache_key = ("action-payload", action_names, action_data_schemas)
+        action_signatures = tuple((name, getattr(func, "action_input_schema", None)) for func, name, _desc in actions)
+        cache_key = ("action-payload", action_signatures)
         if cache_key not in cache:
-            action_type = Literal.__getitem__(action_names) if action_names else str
-            data_type = self._action_data_union(action_data_schemas)
-            cache[cache_key] = create_model(
-                f"{self.model.__name__}AdminActionPayload",
-                __base__=Schema,
-                action=(action_type, ...),
-                selected_ids=(list[Any], Field(default_factory=list)),
-                select_across=(bool, False),
-                data=(data_type | None, None),
-            )
+            variants = tuple(self._action_payload_variant_schema(func, name) for func, name, _desc in actions)
+            cache[cache_key] = self._action_payload_root_schema(variants)
             self._action_payload_schema_cache = cache
         return cache[cache_key]
+
+    def _action_payload_root_schema(self, variants):
+        if not variants:
+            return create_model(
+                f"{self.model.__name__}AdminActionPayload",
+                __base__=Schema,
+                action=(str, ...),
+                selected_ids=(list[Any], Field(default_factory=list)),
+                select_across=(bool, False),
+                data=(dict[str, Any] | None, None),
+            )
+        union_type = self._union_type(variants)
+        discriminated_union = Annotated[union_type, Field(discriminator="action")]
+        return type(
+            f"{self.model.__name__}AdminActionPayload",
+            (RootModel[discriminated_union],),
+            {"__module__": self.__class__.__module__},
+        )
+
+    def _action_payload_variant_schema(self, func, name):
+        action_type = Literal.__getitem__(name)
+        input_schema = getattr(func, "action_input_schema", None)
+        fields = {
+            "action": (action_type, ...),
+            "selected_ids": (list[Any], Field(default_factory=list)),
+            "select_across": (bool, False),
+        }
+        if input_schema is None:
+            fields["data"] = (None, None)
+        else:
+            fields["data"] = (input_schema, ...)
+        return create_model(
+            f"{self.model.__name__}Admin{self._schema_name_part(name)}ActionPayload",
+            __base__=Schema,
+            **fields,
+        )
 
     def get_action_response_schema(self, request=None):
         cache = getattr(self, "_action_response_schema_cache", {})
@@ -367,15 +395,12 @@ class ModelAdmin(BaseAdmin):
             )
         )
 
-    def _action_data_union(self, action_data_schemas):
-        if not action_data_schemas:
-            return dict[str, Any]
-        if len(action_data_schemas) == 1:
-            return action_data_schemas[0]
-        return self._union_type(action_data_schemas)
-
     def _union_type(self, types):
         return reduce(or_, types)
+
+    def _schema_name_part(self, value):
+        parts = re.split(r"[^0-9A-Za-z]+", value)
+        return "".join(part[:1].upper() + part[1:] for part in parts if part) or "Action"
 
     def construct_change_message(self, request, form, inline_results=None, add=False):
         inline_results = inline_results or {}
@@ -486,6 +511,7 @@ class ModelAdmin(BaseAdmin):
         return None
 
     def response_action(self, request, queryset, payload):
+        payload = self._action_payload_value(payload)
         action = payload.action
         if action not in self.get_actions(request):
             raise AdminValidationError([{"message": _("Invalid action."), "param": "action"}])
@@ -505,6 +531,9 @@ class ModelAdmin(BaseAdmin):
 
     def _action_input_schema(self, func):
         return getattr(func, "action_input_schema", None)
+
+    def _action_payload_value(self, payload):
+        return payload.root if isinstance(payload, RootModel) else payload
 
     def _action_data(self, func, payload):
         schema = self._action_input_schema(func)

@@ -163,8 +163,9 @@ custom payload:
 }
 ```
 
-Input and response schemas are included in OpenAPI under the model action
-payload and response components.
+Input schemas are included in OpenAPI as per-action payload variants selected
+by an `action` discriminator. Response schemas are included under the model
+action response component.
 
 ## Request And Error Shapes
 
