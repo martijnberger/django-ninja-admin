@@ -94,7 +94,7 @@ Completed or mostly complete:
 - Collected-object delete permission checks now honor object-level delete hooks, including the default `delete_selected` action.
 - Direct delete now returns structured permission-needed details when object-level delete hooks deny the target row.
 - Model detail/form/delete routes now reject bad `_to_field` references with typed validation errors.
-- History listing now filters by caller-visible models before pagination and supports app/model/object/action filters plus current page/page-size metadata with typed bad-param handling.
+- History listing now filters by caller-visible models before pagination and supports app/model/object/action filters plus current page/page-size metadata, typed bad-param handling, and structured model identity on each row.
 - Autocomplete now returns typed not-found responses for invalid pages, exposes richer pagination metadata, and has coverage for many-to-many source fields.
 - View-on-site route coverage now includes callable hooks that return absolute or protocol-relative external URLs.
 - View-on-site now returns absolute URLs from the configured Site domain and falls back to the request host when that Site row is missing.
@@ -251,7 +251,7 @@ Completed or mostly complete:
   including callable constraints and structured `Q` objects.
 - Readonly form descriptions now expose display labels, values, boolean flags, and empty-value fallbacks for admin methods and model properties.
 - Custom `form_class` and generated-form `formfield_*` customization hooks are covered through mounted Ninja routes for write-schema generation, custom widget attributes, Django form validation, and mutation persistence.
-- History responses now include Django-style human-readable change-message text for parent and inline add/change/delete operations.
+- History responses now include Django-style human-readable change-message text for parent and inline add/change/delete operations, plus model identity metadata for frontend routing/rendering.
 - Semantic OpenAPI contract tests now cover core site/model route operation IDs, tags, security, request body schemas, success response schemas, and typed error response maps.
 - API and authentication docs now cover Ninja-native customization hooks such as `form_class`, `output_schema`, and `schema_field_overrides`, plus default/custom/disabled auth patterns.
 - Local release gates now use `just` for lint, tests, package smoke, and aggregate checks.

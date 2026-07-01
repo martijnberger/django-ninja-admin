@@ -280,6 +280,11 @@ class HistoryItem(Schema):
     action_time: str
     user_id: Any
     content_type_id: Any = None
+    model: str | None = None
+    app_label: str | None = None
+    model_name: str | None = None
+    model_verbose_name: str | None = None
+    model_verbose_name_plural: str | None = None
     object_id: str | None = None
     object_repr: str
     action_flag: int

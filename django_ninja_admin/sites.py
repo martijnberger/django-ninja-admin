@@ -518,12 +518,20 @@ class NinjaAdminSite:
                     message = json.loads(item.change_message or "[]")
                 except json.JSONDecodeError:
                     message = item.change_message
+                content_type = item.content_type
+                model_class = content_type.model_class() if content_type is not None else None
+                opts = model_class._meta if model_class is not None else None
                 results.append(
                     {
                         "id": item.pk,
                         "action_time": item.action_time.isoformat(),
                         "user_id": item.user_id,
                         "content_type_id": item.content_type_id,
+                        "model": f"{opts.app_label}.{opts.model_name}" if opts is not None else None,
+                        "app_label": opts.app_label if opts is not None else None,
+                        "model_name": opts.model_name if opts is not None else None,
+                        "model_verbose_name": str(opts.verbose_name) if opts is not None else None,
+                        "model_verbose_name_plural": str(opts.verbose_name_plural) if opts is not None else None,
                         "object_id": item.object_id,
                         "object_repr": item.object_repr,
                         "action_flag": item.action_flag,

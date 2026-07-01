@@ -267,6 +267,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert _response_schema_ref(paths["/admin-api/context"]["get"], "200") == "#/components/schemas/SiteContext"
     assert _response_schema_ref(paths["/admin-api/history"]["get"], "200") == "#/components/schemas/HistoryResponse"
     assert components["HistoryItem"]["properties"]["change_message_text"]["type"] == "string"
+    assert components["HistoryItem"]["properties"]["model"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert _response_schema_ref(paths["/admin-api/autocomplete"]["get"], "200") == (
         "#/components/schemas/AutocompleteResponse"
     )
@@ -3976,6 +3977,16 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     assert global_history.json()["pagination"]["per_page"] == 20
     assert global_history.json()["pagination"]["count"] == 2
     assert {item["change_message_text"] for item in global_history.json()["results"]} == {"Added.", "Changed Name."}
+    assert {
+        (
+            item["model"],
+            item["app_label"],
+            item["model_name"],
+            item["model_verbose_name"],
+            item["model_verbose_name_plural"],
+        )
+        for item in global_history.json()["results"]
+    } == {("testapp.product", "testapp", "product", "product", "products")}
 
     filtered = client.get(
         "/admin-api/history",
