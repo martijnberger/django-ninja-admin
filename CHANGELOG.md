@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.13 - 2026-07-01
+
 - Added native Pydantic request schema typing and mutation normalization for
   Django `SplitDateTimeField` payloads.
 - Added recursive Pydantic request schema typing and mutation normalization for
