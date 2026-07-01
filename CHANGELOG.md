@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   metadata/filtering.
 - Extended changelist `select_related()` inference to display callables and
   methods that declare related-field ordering metadata.
+- Hardened collected-object delete permission checks so `delete_selected`
+  returns permission-needed details when object-level delete hooks deny a row.
 
 ## 0.1.5 - 2026-07-01
 

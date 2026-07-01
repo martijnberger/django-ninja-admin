@@ -2756,6 +2756,28 @@ def test_delete_selected_returns_protected_object_details(admin_client, sample):
     assert Product.objects.filter(pk=sample.pk).exists()
 
 
+def test_delete_selected_returns_object_permission_needed_details(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    def has_delete_permission(request, obj=None):
+        return obj is None
+
+    monkeypatch.setattr(product_admin, "has_delete_permission", has_delete_permission)
+
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "delete_selected", "selected_ids": [sample.pk]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 403
+    body = response.json()
+    assert body["errors"][0]["param"] == "selected_ids"
+    assert body["perms_needed"] == ["product"]
+    assert body["model_count"]["testapp.product"] == 1
+    assert Product.objects.filter(pk=sample.pk).exists()
+
+
 def test_action_payload_uses_pydantic_request_validation(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/actions",

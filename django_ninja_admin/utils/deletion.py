@@ -15,7 +15,9 @@ def get_deleted_objects(objs, request, admin_site):
             model_admin = admin_site.get_model_admin(model)
         except Exception:
             continue
-        if not model_admin.has_delete_permission(request):
+        if not model_admin.has_delete_permission(request) or any(
+            not model_admin.has_delete_permission(request, obj) for obj in instances
+        ):
             perms_needed.add(opts.verbose_name)
     return collector.nested(), model_count, perms_needed, collector.protected
 
