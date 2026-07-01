@@ -11,6 +11,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import models
+from django.forms.models import BaseInlineFormSet
 from django.test import Client, RequestFactory, override_settings
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.test.utils import isolate_apps
@@ -454,6 +455,39 @@ def test_admin_checks_validate_inline_count_options(db):
 
     assert valid_ids.isdisjoint({"django_ninja_admin.E073", "django_ninja_admin.E074", "django_ninja_admin.E075"})
     assert bad_ids == {"django_ninja_admin.E073", "django_ninja_admin.E074", "django_ninja_admin.E075"}
+
+
+def test_inline_admin_supports_custom_formset_classes(db):
+    class CustomInlineFormSet(BaseInlineFormSet):
+        pass
+
+    class ValidInline(TabularInline):
+        model = ProductImage
+        formset = CustomInlineFormSet
+
+    class BadInline(TabularInline):
+        model = ProductImage
+        formset = forms.Form
+
+    class ValidInlineProductAdmin(ModelAdmin):
+        inlines = [ValidInline]
+
+    class BadInlineProductAdmin(ModelAdmin):
+        inlines = [BadInline]
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidInlineProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadInlineProductAdmin)
+
+    inline = valid_site.get_model_admin(Product).get_inline_instances(None, check_permissions=False)[0]
+    formset_class = inline.get_formset(RequestFactory().get("/"))
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+
+    assert issubclass(formset_class, CustomInlineFormSet)
+    assert "django_ninja_admin.E076" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E076"}
 
 
 def test_admin_checks_reject_reverse_relation_in_list_display(db):

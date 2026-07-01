@@ -7,7 +7,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.expressions import Combinable
-from django.forms.models import BaseModelForm, _get_foreign_key
+from django.forms.models import BaseInlineFormSet, BaseModelForm, _get_foreign_key
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.filters import FieldListFilter, SimpleListFilter
@@ -904,4 +904,7 @@ def _check_inlines(model_admin):
         max_num = getattr(inline_class, "max_num", None)
         if max_num is not None and not isinstance(max_num, int):
             errors.append(_error(inline_class, "The value of 'max_num' must be an integer or None.", "E075"))
+        formset = getattr(inline_class, "formset", None)
+        if not isinstance(formset, type) or not issubclass(formset, BaseInlineFormSet):
+            errors.append(_error(inline_class, "The value of 'formset' must inherit from BaseInlineFormSet.", "E076"))
     return errors

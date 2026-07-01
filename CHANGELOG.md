@@ -27,6 +27,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   still validating `F("field")` references when possible.
 - Added inline admin system checks for invalid `extra`, `min_num`, and
   `max_num` option types.
+- Added custom inline `formset` support with system checks requiring
+  `BaseInlineFormSet` subclasses.
 
 ## 0.1.4 - 2026-07-01
 

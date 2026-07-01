@@ -2,7 +2,7 @@ from typing import Any
 
 from django import forms
 from django.contrib.auth import get_permission_codename
-from django.forms.models import _get_foreign_key, inlineformset_factory
+from django.forms.models import BaseInlineFormSet, _get_foreign_key, inlineformset_factory
 from django.utils.text import format_lazy
 from pydantic import Field, create_model
 
@@ -17,6 +17,7 @@ class InlineModelAdmin(BaseAdmin):
     extra = 3
     min_num = None
     max_num = None
+    formset = BaseInlineFormSet
     verbose_name = None
     verbose_name_plural = None
     can_delete = True
@@ -67,6 +68,7 @@ class InlineModelAdmin(BaseAdmin):
             self.parent_model,
             self.model,
             form=forms.ModelForm,
+            formset=self.formset,
             fk_name=self.fk_name,
             fields=fields,
             extra=self.get_extra(request, obj),
