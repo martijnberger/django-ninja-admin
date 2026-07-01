@@ -424,6 +424,19 @@ def test_admin_checks_report_invalid_model_admin_configuration(db):
     } <= error_ids
 
 
+def test_admin_checks_reject_reverse_relation_in_list_display(db):
+    class ReverseRelationProductAdmin(ModelAdmin):
+        list_display = ("name", "reviews")
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, ReverseRelationProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E043"}
+    assert "many-to-many or reverse field" in errors[0].msg
+
+
 def test_admin_checks_validate_action_permission_hooks(db):
     @action(permissions=["change"])
     def valid_action(model_admin, request, queryset):

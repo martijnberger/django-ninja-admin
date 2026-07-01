@@ -127,11 +127,11 @@ def _check_display_options(model_admin):
             )
             continue
         field = _model_field(model_admin, item)
-        if field is not None and getattr(field, "many_to_many", False):
+        if field is not None and (getattr(field, "many_to_many", False) or getattr(field, "one_to_many", False)):
             errors.append(
                 _error(
                     model_admin.__class__,
-                    f"The value of 'list_display' refers to '{item}', which is a many-to-many field.",
+                    f"The value of 'list_display' refers to '{item}', which is a many-to-many or reverse field.",
                     "E043",
                 )
             )

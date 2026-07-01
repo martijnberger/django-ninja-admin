@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `list_max_show_all` values.
 - Added admin system checks for invalid `save_as`, `save_on_top`, and
   `view_on_site` option types.
+- Extended `list_display` system checks to reject reverse relation fields in
+  addition to many-to-many fields.
 
 ## 0.1.4 - 2026-07-01
 

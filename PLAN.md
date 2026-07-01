@@ -116,7 +116,7 @@ Completed or mostly complete:
 - Admin system checks now validate `save_as`, `save_on_top`, and `view_on_site` option types before form/config metadata generation.
 - Custom `form_class` system checks now validate `ModelForm` inheritance and catch forms whose declared `Meta.model` does not match the registered admin model.
 - `formfield_overrides` system checks now validate field-class keys, mapping-shaped overrides, and string formfield keyword names.
-- Admin system checks now reject direct many-to-many fields in `list_display`, preventing raw related managers from leaking into changelist cells.
+- Admin system checks now reject direct many-to-many and reverse relation fields in `list_display`, preventing raw related managers from leaking into changelist cells.
 - Admin system checks now reject `list_editable` fields removed from generated forms by `fields`, `fieldsets`, or `exclude`, preventing silent bulk-update no-ops.
 - Admin system checks now reject first-column `list_editable` fields unless an explicit `list_display_links` target is configured.
 - Admin system checks now validate `list_select_related` types and relation paths before changelist runtime.
