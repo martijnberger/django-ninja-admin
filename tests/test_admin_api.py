@@ -417,6 +417,20 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert rows_by_name["Beta"]["cells"]["subtitle"] == "No subtitle"
 
 
+def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    match_one = Tag.objects.create(name="Search Match One")
+    match_two = Tag.objects.create(name="Search Match Two")
+    sample.tags.add(match_one, match_two)
+    monkeypatch.setattr(product_admin, "search_fields", ("tags__name",))
+
+    response = admin_client.get("/admin-api/testapp/product?q=Search")
+
+    assert response.status_code == 200
+    assert response.json()["config"]["result_count"] == 1
+    assert [row["cells"]["name"] for row in response.json()["rows"]] == ["Alpha"]
+
+
 def test_changelist_auto_selects_related_list_display_fields(db):
     user = get_user_model().objects.create_user("query-admin", password="pw", is_staff=True)
     user.user_permissions.set(Permission.objects.all())

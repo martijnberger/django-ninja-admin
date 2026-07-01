@@ -83,6 +83,7 @@ Completed or mostly complete:
 - Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, readonly, model `blank`/`null`, uniqueness/index, default, and upload metadata.
 - Permission hardening for actions, autocomplete, view-on-site, and object-level bulk updates.
 - Ninja-native `ChangeList` foundation for validated lookup params, shared action/changelist querysets, search, ordering, pagination, show-all behavior, `list_select_related`, `date_hierarchy`, and facet counts.
+- Changelist search now applies distinct results for duplicate-prone many-to-many search paths.
 - Package-owned list filter classes for simple, field, choices, related, related-only, boolean, date, all-values, and empty-value filters, with Pydantic-safe filter metadata.
 - Expanded changelist metadata for display links, sortable columns, sort query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
 - Initial N+1 hardening through automatic `select_related()` for direct relation fields in `list_display`.

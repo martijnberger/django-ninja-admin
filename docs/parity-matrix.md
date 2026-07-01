@@ -47,7 +47,7 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | Shared changelist queryset for list/actions | implemented | `ChangeList`, filtered action test | More selected/action edge cases |
-| Search fields | partial | `ModelAdmin.get_search_results`, tests | More lookup suffix and duplicate handling tests |
+| Search fields | partial | `ModelAdmin.get_search_results`, many-to-many duplicate distinct tests | More lookup suffix tests |
 | Lookup validation | partial | `lookup_allowed`, invalid lookup tests | Match Django suspicious lookup behavior |
 | Pagination/show all | implemented | `ChangeList`, pagination/show-all tests | Large-result behavior |
 | Ordering/sort links | partial | Sort metadata and tests | Multi-column ordering UI parity |

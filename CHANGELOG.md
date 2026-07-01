@@ -35,6 +35,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   carry labels, boolean flags, and empty-value text from their getter.
 - Improved inline deletion change messages so logs preserve the deleted
   inline object's display text while keeping public mutation responses stable.
+- Improved changelist search so many-to-many search paths are treated as
+  duplicate-prone and automatically return distinct rows.
 - Added support for passing pytest selectors through `just test` and
   `just postgres-test`.
 - Added a `just` command surface for local lint, test, package smoke, and full

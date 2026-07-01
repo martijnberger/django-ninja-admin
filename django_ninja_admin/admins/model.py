@@ -225,13 +225,14 @@ class ModelAdmin(BaseAdmin):
     def get_search_results(self, request, queryset, search_term):
         def construct_search(field_name):
             if field_name.startswith("^"):
-                return f"{field_name.removeprefix('^')}__istartswith", None
+                return f"{field_name.removeprefix('^')}__istartswith", None, False
             if field_name.startswith("="):
-                return f"{field_name.removeprefix('=')}__iexact", None
+                return f"{field_name.removeprefix('=')}__iexact", None, False
             if field_name.startswith("@"):
-                return f"{field_name.removeprefix('@')}__search", None
+                return f"{field_name.removeprefix('@')}__search", None, False
             opts = queryset.model._meta
             prev_field = None
+            may_have_duplicates = False
             for path_part in field_name.split(LOOKUP_SEP):
                 if path_part == "pk":
                     path_part = opts.pk.name
@@ -239,23 +240,27 @@ class ModelAdmin(BaseAdmin):
                     field = opts.get_field(path_part)
                 except FieldDoesNotExist:
                     if prev_field and prev_field.get_lookup(path_part):
-                        return field_name, prev_field if path_part == "exact" else None
-                    return f"{field_name}__icontains", None
+                        return field_name, prev_field if path_part == "exact" else None, may_have_duplicates
+                    return f"{field_name}__icontains", None, may_have_duplicates
                 prev_field = field
                 if hasattr(field, "path_infos"):
+                    may_have_duplicates = may_have_duplicates or any(
+                        path_info.m2m for path_info in field.path_infos
+                    )
                     opts = field.path_infos[-1].to_opts
-            return f"{field_name}__icontains", None
+            return f"{field_name}__icontains", None, may_have_duplicates
 
         may_have_duplicates = False
         search_fields = self.get_search_fields(request)
         if search_fields and search_term:
             orm_lookups = [construct_search(str(field)) for field in search_fields]
+            may_have_duplicates = any(lookup_may_have_duplicates for _, _, lookup_may_have_duplicates in orm_lookups)
             term_queries = []
             for bit in smart_split(search_term):
                 if bit.startswith(('"', "'")) and bit[0] == bit[-1]:
                     bit = unescape_string_literal(bit)
                 bit_lookups = []
-                for orm_lookup, validate_field in orm_lookups:
+                for orm_lookup, validate_field, _lookup_may_have_duplicates in orm_lookups:
                     if validate_field is not None:
                         formfield = validate_field.formfield()
                         try:
