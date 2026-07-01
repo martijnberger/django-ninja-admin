@@ -23,6 +23,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   random ordering (`"?"`) with other fields.
 - Tightened field-based `list_filter` validation so tuple entries must be
   two-item `(field, FieldListFilter)` declarations.
+- Allowed Django ORM expression ordering entries in admin system checks while
+  still validating `F("field")` references when possible.
 
 ## 0.1.4 - 2026-07-01
 

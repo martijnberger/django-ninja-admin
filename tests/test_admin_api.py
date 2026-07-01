@@ -616,6 +616,25 @@ def test_admin_checks_reject_mixed_random_ordering(db):
     assert mixed_errors[0].hint == 'Either remove the "?", or remove the other fields.'
 
 
+def test_admin_checks_allow_expression_ordering(db):
+    class ExpressionOrderingProductAdmin(ModelAdmin):
+        ordering = (models.F("name").asc(),)
+
+    class MissingExpressionOrderingProductAdmin(ModelAdmin):
+        ordering = (models.F("missing").desc(),)
+
+    expression_site = NinjaAdminSite(include_auth=False)
+    expression_site.register(Product, ExpressionOrderingProductAdmin)
+    missing_site = NinjaAdminSite(include_auth=False)
+    missing_site.register(Product, MissingExpressionOrderingProductAdmin)
+
+    expression_ids = {error.id for error in expression_site.get_model_admin(Product).check()}
+    missing_ids = {error.id for error in missing_site.get_model_admin(Product).check()}
+
+    assert expression_ids.isdisjoint({"django_ninja_admin.E020", "django_ninja_admin.E021"})
+    assert missing_ids == {"django_ninja_admin.E021"}
+
+
 def test_admin_checks_validate_field_based_list_filter_classes(db):
     class TupleSimpleFilter(SimpleListFilter):
         title = "tuple simple"

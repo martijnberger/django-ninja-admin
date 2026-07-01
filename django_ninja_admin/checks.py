@@ -6,6 +6,7 @@ from django.core import checks
 from django.core.exceptions import FieldDoesNotExist
 from django.db import models
 from django.db.models.base import ModelBase
+from django.db.models.expressions import Combinable
 from django.forms.models import BaseModelForm, _get_foreign_key
 
 from django_ninja_admin.exceptions import NotRegistered
@@ -650,10 +651,17 @@ def _check_lookup_fields(
             )
         )
     for item in items:
-        if not isinstance(item, str):
+        if allow_random and isinstance(item, (Combinable, models.OrderBy)):
+            order_by = item if isinstance(item, models.OrderBy) else item.asc()
+            if isinstance(order_by.expression, models.F):
+                field_path = order_by.expression.name
+            else:
+                continue
+        elif isinstance(item, str):
+            field_path = item
+        else:
             errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E020"))
             continue
-        field_path = item
         if allow_descending:
             field_path = field_path.removeprefix("-")
         if allow_random and field_path == "?":
