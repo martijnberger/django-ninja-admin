@@ -2588,6 +2588,38 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     assert inline["max_num"] == 5
 
 
+def test_inline_descriptions_use_formfield_hooks_and_media(admin_client, sample, monkeypatch):
+    from tests.testapp.admin import ProductImageInline
+
+    class InlineTitleWidget(forms.TextInput):
+        class Media:
+            css = {"all": ("admin/inline-title.css",)}
+            js = ("admin/inline-title.js",)
+
+    original_formfield_for_dbfield = ProductImageInline.formfield_for_dbfield
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        if db_field.name == "title":
+            kwargs["help_text"] = "Inline title from formfield hook."
+            kwargs["widget"] = InlineTitleWidget(attrs={"data-inline": "title"})
+        return original_formfield_for_dbfield(self, db_field, request, **kwargs)
+
+    monkeypatch.setattr(ProductImageInline, "formfield_for_dbfield", formfield_for_dbfield)
+
+    response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+
+    assert response.status_code == 200
+    inline = next(item for item in response.json()["inlines"] if item["model"] == "testapp.productimage")
+    assert inline["media"] == {
+        "css": {"all": ["admin/inline-title.css"]},
+        "js": ["admin/inline-title.js"],
+    }
+    title_fields = [field for row in inline["formset"] for field in row if field["name"] == "title"]
+    assert title_fields
+    assert all(field["attrs"]["help_text"] == "Inline title from formfield hook." for field in title_fields)
+    assert all(field["attrs"]["widget_attrs"]["data-inline"] == "title" for field in title_fields)
+
+
 def test_readonly_display_fields_include_values_and_display_metadata(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
 

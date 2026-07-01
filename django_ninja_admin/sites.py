@@ -55,7 +55,7 @@ from django_ninja_admin.schemas import (
 )
 from django_ninja_admin.utils.deletion import deletion_error_payload
 from django_ninja_admin.utils.format_error import format_error
-from django_ninja_admin.utils.forms import form_errors, formset_errors, model_data_for_form
+from django_ninja_admin.utils.forms import form_errors, form_media_description, formset_errors, model_data_for_form
 from django_ninja_admin.utils.lookup import (
     display_metadata_for_field,
     field_name_for_display,
@@ -1092,11 +1092,13 @@ class NinjaAdminSite:
         data = model_admin.get_form_description(request, obj)
         inlines = []
         for inline in model_admin.get_inline_instances(request, obj):
+            formset_class = inline.get_formset(request, obj, change=obj is not None)
             inline_desc = {
                 "model": f"{inline.model._meta.app_label}.{inline.model._meta.model_name}",
                 "readonly_fields": list(inline.get_readonly_fields(request, obj)),
                 "fieldsets": list(inline.get_fieldsets(request, obj)),
                 "prepopulated": dict(inline.get_prepopulated_fields(request, obj)),
+                "media": form_media_description(formset_class.form()),
                 "permissions": {
                     "has_add_permission": inline.has_add_permission(request, obj),
                     "has_change_permission": inline.has_change_permission(request, obj),

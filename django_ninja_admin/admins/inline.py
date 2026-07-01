@@ -77,6 +77,7 @@ class InlineModelAdmin(BaseAdmin):
             can_delete=self.can_delete,
             validate_min=min_num is not None,
             validate_max=max_num is not None,
+            formfield_callback=lambda db_field, **kwargs: self.formfield_for_dbfield(db_field, request, **kwargs),
         )
 
     def get_inline_row_schema(self, request=None, obj=None, *, change=False, partial=False, require_pk=False):

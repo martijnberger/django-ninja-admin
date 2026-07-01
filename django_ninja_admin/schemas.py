@@ -116,6 +116,7 @@ class InlineDescription(Schema):
     readonly_fields: list[str]
     fieldsets: list[Any]
     prepopulated: dict[str, Any]
+    media: FormMediaDescription = Field(default_factory=FormMediaDescription)
     permissions: PermissionMap
     extra: int = 3
     min_num: int | None = None

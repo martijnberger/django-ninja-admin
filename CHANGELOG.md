@@ -14,6 +14,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   available.
 - Added form-level media metadata to form descriptions so custom widget CSS and
   JavaScript assets are available through mounted Ninja form routes.
+- Added inline formset media metadata and routed inline formset fields through
+  `formfield_for_dbfield()` customization hooks.
 
 ## 0.1.8 - 2026-07-01
 
