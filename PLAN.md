@@ -92,6 +92,7 @@ Completed or mostly complete:
 - Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration, raw bound method wrapping, route tags/descriptions, hidden routes, and explicit route-level `auth=None`.
 - Custom admin view tests now cover named Ninja response schemas together with route-level auth overrides.
 - Display decorator metadata for descriptions, ordering, booleans, and per-field empty values is reflected in changelist columns/results.
+- Changelist display metadata now also recognizes labels, boolean flags, and empty-value text attached to model property getters.
 - File field read serialization now uses typed Pydantic metadata (`name`, `url`) and form descriptions expose multipart/current-file hints.
 - Existing file fields can be cleared in JSON mutations by sending explicit `null`, using Django's form clear semantics and recording change messages.
 - Many-to-many fields now have Pydantic write schemas, JSON-safe change-form values, form relation metadata, output serialization, and create/update persistence coverage.

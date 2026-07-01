@@ -7,7 +7,8 @@ def display_attr_for_field(name, model, model_admin=None):
         attr = getattr(model_admin, name, None)
         if attr is not None and callable(attr):
             return attr
-    return getattr(model, name, None)
+    attr = getattr(model, name, None)
+    return attr.fget if isinstance(attr, property) else attr
 
 
 def label_for_field(name, model, model_admin=None):

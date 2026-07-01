@@ -402,11 +402,19 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     columns_by_field = {column["field"]: column for column in show_all_body["columns"]}
     assert columns_by_field["has_description"]["boolean"] is True
     assert columns_by_field["tagline"]["empty_value_display"] == "No description"
+    assert columns_by_field["is_expensive"]["headerName"] == "Expensive"
+    assert columns_by_field["is_expensive"]["boolean"] is True
+    assert columns_by_field["subtitle"]["headerName"] == "Subtitle"
+    assert columns_by_field["subtitle"]["empty_value_display"] == "No subtitle"
     rows_by_name = {row["cells"]["name"]: row for row in show_all_body["rows"]}
     assert rows_by_name["Alpha"]["cells"]["has_description"] is True
     assert rows_by_name["Alpha"]["cells"]["tagline"] == "Nice camera"
+    assert rows_by_name["Alpha"]["cells"]["is_expensive"] is True
+    assert rows_by_name["Alpha"]["cells"]["subtitle"] == "Nice camera"
     assert rows_by_name["Beta"]["cells"]["has_description"] is False
     assert rows_by_name["Beta"]["cells"]["tagline"] == "No description"
+    assert rows_by_name["Beta"]["cells"]["is_expensive"] is False
+    assert rows_by_name["Beta"]["cells"]["subtitle"] == "No subtitle"
 
 
 def test_changelist_auto_selects_related_list_display_fields(db):

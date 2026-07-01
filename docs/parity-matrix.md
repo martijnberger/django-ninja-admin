@@ -40,7 +40,7 @@ Statuses:
 | Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin, many-to-many `list_display`, and widget-conflict tests | Match Django check IDs/coverage more closely |
 | `get_changelist()` hooks | implemented | `ModelAdmin.get_changelist*`, route hook test | More subclassing examples/docs |
 | Custom site/model views | partial | `admin_view()`, `get_urls()`, `route()`, route tags/descriptions, hidden routes, raw method wrapping, `auth=None`, named response schemas, custom route tests | More multi-auth override coverage |
-| Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values in changelist tests | More model-method/property and readonly-field display variants |
+| Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values, and model-property metadata in changelist tests | More readonly-field display variants |
 
 ## Changelist, Filtering, Search, And Ordering
 

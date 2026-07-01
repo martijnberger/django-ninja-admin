@@ -40,6 +40,20 @@ class Product(models.Model):
     def get_absolute_url(self):
         return reverse("product-detail", kwargs={"pk": self.pk})
 
+    def _is_expensive(self):
+        return self.price >= 10
+
+    _is_expensive.boolean = True
+    _is_expensive.short_description = "Expensive"
+    is_expensive = property(_is_expensive)
+
+    def _subtitle(self):
+        return self.description or None
+
+    _subtitle.short_description = "Subtitle"
+    _subtitle.empty_value_display = "No subtitle"
+    subtitle = property(_subtitle)
+
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")

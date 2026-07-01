@@ -40,7 +40,17 @@ class StockStatusActionResult(Schema):
 
 
 class ProductAdmin(ModelAdmin):
-    list_display = ("name", "category", "price", "stock_status", "upper_name", "has_description", "tagline")
+    list_display = (
+        "name",
+        "category",
+        "price",
+        "stock_status",
+        "upper_name",
+        "has_description",
+        "tagline",
+        "is_expensive",
+        "subtitle",
+    )
     list_filter = ("stock_status", "category", PriceBandFilter)
     list_editable = ("stock_status",)
     search_fields = ("name", "description", "category__name")
