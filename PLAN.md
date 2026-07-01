@@ -94,6 +94,7 @@ Completed or mostly complete:
 - Release hardening docs now include a changelog and explicit alpha/beta/stable checklist.
 - GitHub Actions now runs the `just` gates across Django 4.2, 5.0, 5.1, 5.2, and an experimental 6.0 lane.
 - CI now has a PostgreSQL lane using env-driven test database settings and `just postgres-test`.
+- An initial copyright/license audit records MIT package licensing, Django BSD attribution, upstream parity references, and no-DRF dependency checks.
 - Initial behavioral tests and no DRF/drf-spectacular runtime dependency.
 
 Known non-parity areas:
@@ -106,7 +107,7 @@ Known non-parity areas:
 - Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works and now has semantic contract coverage for core model routes, but it does not yet expose every custom action/request variant or the same richness upstream provided through drf-spectacular hooks.
 - Admin extensibility is still young: custom view routing, route metadata/auth overrides, and display metadata exist, but deeper multi-auth/response-schema coverage and override-hook parity need work.
-- Release hardening has local/CI `just` gates, wheel import smoke, a clean sample-project smoke, and initial PostgreSQL CI coverage, but still needs a copyright audit.
+- Release hardening has local/CI `just` gates, wheel import smoke, a clean sample-project smoke, initial PostgreSQL CI coverage, and an initial copyright audit; remaining work is to confirm CI results and repeat the audit before release candidates.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix.
 
 ## Implementation Phases

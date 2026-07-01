@@ -16,4 +16,5 @@ pre-release, minor versions may still adjust public API and wire contracts.
   Django project and exercises docs, OpenAPI, app discovery, and a model
   changelist.
 - Added env-driven PostgreSQL test settings and a CI PostgreSQL lane.
+- Added an initial copyright/license audit document for release hardening.
 - Added a release checklist with alpha, beta, and stable readiness criteria.

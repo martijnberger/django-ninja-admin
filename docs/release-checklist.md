@@ -47,7 +47,7 @@ just check
 - All parity gaps are implemented or documented as intentional v2 differences.
 - Release notes describe migration impact from the previous package version.
 - Copyright notices for Django-derived and upstream-derived code have been
-  reviewed.
+  reviewed and recorded in `docs/copyright-audit.md`.
 - The version follows semantic versioning: patch for compatible bug fixes,
   minor for compatible feature additions, and major for contract-breaking API
   or wire-shape changes.
