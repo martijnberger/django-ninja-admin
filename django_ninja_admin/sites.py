@@ -1243,31 +1243,32 @@ class NinjaAdminSite:
         if not payload_data:
             raise AdminValidationError([{"message": "Change data cannot be empty.", "param": "data"}])
         validated_rows = []
+        row_errors = {}
         seen_pks = set()
         allowed = set(model_admin.list_editable) | {"pk", model_admin.model._meta.pk.name}
         for idx, data in enumerate(payload_data):
             pk = data.get("pk") or data.get(model_admin.model._meta.pk.name)
             if pk is None:
-                raise AdminValidationError({idx: [{"message": "This field is required.", "param": "pk"}]})
+                row_errors[idx] = [{"message": "This field is required.", "param": "pk"}]
+                continue
             pk_key = str(pk)
             if pk_key in seen_pks:
-                raise AdminValidationError({idx: [{"message": "Duplicate object in bulk update.", "param": "pk"}]})
+                row_errors[idx] = [{"message": "Duplicate object in bulk update.", "param": "pk"}]
+                continue
             seen_pks.add(pk_key)
             unknown_fields = sorted(set(data) - allowed)
             if unknown_fields:
-                raise AdminValidationError(
+                row_errors[idx] = [
                     {
-                        idx: [
-                            {
-                                "message": f"Field is not list editable: {', '.join(unknown_fields)}.",
-                                "param": unknown_fields[0],
-                            }
-                        ]
+                        "message": f"Field is not list editable: {', '.join(unknown_fields)}.",
+                        "param": unknown_fields[0],
                     }
-                )
+                ]
+                continue
             obj = model_admin.get_object(request, pk)
             if obj is None:
-                raise AdminValidationError({idx: [{"message": "Object not found.", "param": "pk"}]})
+                row_errors[idx] = [{"message": "Object not found.", "param": "pk"}]
+                continue
             if not model_admin.has_change_permission(request, obj):
                 raise PermissionDenied
             form_class = model_admin.get_form_class(request, obj, change=True)
@@ -1276,8 +1277,11 @@ class NinjaAdminSite:
             current = self._normalize_file_clear_data(form_class, current)
             form = form_class(data=current, instance=obj)
             if not form.is_valid():
-                raise AdminValidationError({idx: form_errors(form)})
+                row_errors[idx] = form_errors(form)
+                continue
             validated_rows.append((idx, obj, form))
+        if row_errors:
+            raise AdminValidationError(row_errors)
 
         results = {}
         with transaction.atomic(using=router_db_for_write(model_admin.model)):
