@@ -350,11 +350,17 @@ class NinjaAdminSite:
 
     def _site_route_response(self, success_response, *, errors=()):
         response_map = {200: success_response}
-        if self.auth is not None:
-            response_map[401] = ErrorResponse
-            response_map[403] = ErrorResponse
+        response_map.update(self._auth_error_responses(include_forbidden=True))
         for status_code in errors:
             response_map[status_code] = ErrorResponse
+        return response_map
+
+    def _auth_error_responses(self, *, include_forbidden=False):
+        if self.auth is None:
+            return {}
+        response_map = {401: ErrorResponse}
+        if include_forbidden:
+            response_map[403] = ErrorResponse
         return response_map
 
     def _custom_route_view_func(self, view_func):
@@ -497,6 +503,7 @@ class NinjaAdminSite:
 
     def _register_site_routes(self, router):
         site = self
+        auth_errors = site._auth_error_responses()
 
         @router.get(
             "/apps",
@@ -541,6 +548,7 @@ class NinjaAdminSite:
             "/history",
             response={
                 200: HistoryResponse,
+                **auth_errors,
                 400: ErrorResponse,
                 403: ErrorResponse,
                 404: ErrorResponse,
@@ -631,6 +639,7 @@ class NinjaAdminSite:
             "/autocomplete",
             response={
                 200: AutocompleteResponse,
+                **auth_errors,
                 403: ErrorResponse,
                 404: ErrorResponse,
                 409: ErrorResponse,
@@ -697,6 +706,7 @@ class NinjaAdminSite:
             "/view-on-site/{content_type_id}/{object_id}",
             response={
                 200: ViewOnSiteResponse,
+                **auth_errors,
                 403: ErrorResponse,
                 404: ErrorResponse,
                 409: ErrorResponse,
@@ -740,6 +750,7 @@ class NinjaAdminSite:
         model_name = model._meta.model_name
         prefix = f"/{app_label}/{model_name}"
         tags = [f"{app_label}.{model_name}"]
+        auth_errors = site._auth_error_responses()
         create_payload_schema = model_admin.get_mutation_payload_schema(None, change=False, partial=False)
         update_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=True)
         replace_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=False)
@@ -755,6 +766,7 @@ class NinjaAdminSite:
             201: mutation_response_schema,
             202: dict[str, Any],
             204: None,
+            **auth_errors,
             400: ErrorResponse,
             403: ErrorResponse,
             422: ErrorResponse,
@@ -764,6 +776,7 @@ class NinjaAdminSite:
             201: dict[str, Any],
             202: dict[str, Any],
             204: None,
+            **auth_errors,
             400: ErrorResponse,
             403: ErrorResponse,
             404: ErrorResponse,
@@ -772,7 +785,13 @@ class NinjaAdminSite:
 
         @router.get(
             prefix,
-            response={200: ChangelistResponse, 400: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse},
+            response={
+                200: ChangelistResponse,
+                **auth_errors,
+                400: ErrorResponse,
+                403: ErrorResponse,
+                404: ErrorResponse,
+            },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_list",
         )
@@ -781,7 +800,7 @@ class NinjaAdminSite:
 
         @router.get(
             f"{prefix}/form",
-            response={200: FormResponse, 403: ErrorResponse},
+            response={200: FormResponse, **auth_errors, 403: ErrorResponse},
             tags=tags,
             operation_id=f"{app_label}_{model_name}_add_form",
         )
@@ -826,6 +845,7 @@ class NinjaAdminSite:
             f"{prefix}/actions",
             response={
                 200: action_response_schema,
+                **auth_errors,
                 400: ErrorResponse,
                 403: ErrorResponse,
                 409: ErrorResponse,
@@ -842,7 +862,13 @@ class NinjaAdminSite:
 
         @router.put(
             f"{prefix}/bulk",
-            response={200: bulk_response_schema, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
+            response={
+                200: bulk_response_schema,
+                **auth_errors,
+                400: ErrorResponse,
+                403: ErrorResponse,
+                422: ErrorResponse,
+            },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_bulk_update",
         )
@@ -863,6 +889,7 @@ class NinjaAdminSite:
             f"{prefix}/{{object_id}}",
             response={
                 200: model_admin.get_output_schema(None),
+                **auth_errors,
                 400: ErrorResponse,
                 403: ErrorResponse,
                 404: ErrorResponse,
@@ -878,7 +905,13 @@ class NinjaAdminSite:
 
         @router.get(
             f"{prefix}/{{object_id}}/form",
-            response={200: FormResponse, 400: ErrorResponse, 403: ErrorResponse, 404: ErrorResponse},
+            response={
+                200: FormResponse,
+                **auth_errors,
+                400: ErrorResponse,
+                403: ErrorResponse,
+                404: ErrorResponse,
+            },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_change_form",
         )
@@ -981,6 +1014,7 @@ class NinjaAdminSite:
             response={
                 200: dict[str, Any],
                 204: None,
+                **auth_errors,
                 400: ErrorResponse,
                 403: ErrorResponse,
                 404: ErrorResponse,

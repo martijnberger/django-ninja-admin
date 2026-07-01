@@ -342,9 +342,9 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         ("/admin-api/apps/{app_label}", "get", {"401", "403", "404"}),
         ("/admin-api/context", "get", {"401", "403"}),
         ("/admin-api/permissions", "get", {"401", "403"}),
-        ("/admin-api/history", "get", {"400", "403", "404", "422"}),
-        ("/admin-api/autocomplete", "get", {"403", "404", "409", "422"}),
-        ("/admin-api/view-on-site/{content_type_id}/{object_id}", "get", {"403", "404", "409", "422"}),
+        ("/admin-api/history", "get", {"400", "401", "403", "404", "422"}),
+        ("/admin-api/autocomplete", "get", {"401", "403", "404", "409", "422"}),
+        ("/admin-api/view-on-site/{content_type_id}/{object_id}", "get", {"401", "403", "404", "409", "422"}),
     ]:
         operation = paths[path][method]
         assert statuses <= set(operation["responses"])
@@ -352,16 +352,16 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
             assert _response_schema_ref(operation, status) == "#/components/schemas/ErrorResponse"
 
     for path, method, statuses in [
-        ("/admin-api/testapp/product", "get", {"400", "403", "404"}),
-        ("/admin-api/testapp/product", "post", {"400", "403", "422"}),
-        ("/admin-api/testapp/product/form", "get", {"403"}),
-        ("/admin-api/testapp/product/actions", "post", {"400", "403", "409", "422"}),
-        ("/admin-api/testapp/product/bulk", "put", {"400", "403", "422"}),
-        ("/admin-api/testapp/product/{object_id}", "get", {"400", "403", "404"}),
-        ("/admin-api/testapp/product/{object_id}", "patch", {"400", "403", "404", "422"}),
-        ("/admin-api/testapp/product/{object_id}", "put", {"400", "403", "404", "422"}),
-        ("/admin-api/testapp/product/{object_id}", "delete", {"400", "403", "404", "409"}),
-        ("/admin-api/testapp/product/{object_id}/form", "get", {"400", "403", "404"}),
+        ("/admin-api/testapp/product", "get", {"400", "401", "403", "404"}),
+        ("/admin-api/testapp/product", "post", {"400", "401", "403", "422"}),
+        ("/admin-api/testapp/product/form", "get", {"401", "403"}),
+        ("/admin-api/testapp/product/actions", "post", {"400", "401", "403", "409", "422"}),
+        ("/admin-api/testapp/product/bulk", "put", {"400", "401", "403", "422"}),
+        ("/admin-api/testapp/product/{object_id}", "get", {"400", "401", "403", "404"}),
+        ("/admin-api/testapp/product/{object_id}", "patch", {"400", "401", "403", "404", "422"}),
+        ("/admin-api/testapp/product/{object_id}", "put", {"400", "401", "403", "404", "422"}),
+        ("/admin-api/testapp/product/{object_id}", "delete", {"400", "401", "403", "404", "409"}),
+        ("/admin-api/testapp/product/{object_id}/form", "get", {"400", "401", "403", "404"}),
     ]:
         operation = paths[path][method]
         assert statuses <= set(operation["responses"])

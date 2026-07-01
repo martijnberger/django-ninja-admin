@@ -20,6 +20,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   and permissions site routes.
 - Added `has_permission` to `/permissions` responses and made built-in site
   route auth-error response maps honor `auth=None` sites.
+- Added conditional `401` OpenAPI error response maps for protected built-in
+  site and model admin routes.
 
 ## 0.1.15 - 2026-07-02
 
