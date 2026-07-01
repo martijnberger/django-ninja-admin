@@ -64,6 +64,9 @@ class CustomAdminSite(NinjaAdminSite):
     def status(self, request):
         return {"site": "ok"}
 
+    def token_status(self, request):
+        return {"auth": request.auth}
+
     def public_status(self, request):
         return {"public": "ok"}
 
@@ -78,6 +81,14 @@ class CustomAdminSite(NinjaAdminSite):
                 response=SiteStatusResponse,
                 operation_id="custom_site_status",
                 tags=["custom.site"],
+            ),
+            self.route(
+                "/token-status",
+                self.token_status,
+                response=AuthStatusResponse,
+                operation_id="custom_token_status",
+                tags=["custom.auth"],
+                auth=[PrimaryTokenAuth(), SecondaryTokenAuth()],
             ),
             self.route(
                 "/public-status",

@@ -777,6 +777,15 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert site_response.status_code == 200
     assert site_response.json() == {"site": "ok"}
 
+    token_primary = Client().get("/custom-admin/token-status", headers={"X-Primary-Token": "primary"})
+    token_secondary = Client().get("/custom-admin/token-status", headers={"X-Secondary-Token": "secondary"})
+    token_denied = Client().get("/custom-admin/token-status")
+    assert token_primary.status_code == 200
+    assert token_primary.json() == {"auth": "primary"}
+    assert token_secondary.status_code == 200
+    assert token_secondary.json() == {"auth": "secondary"}
+    assert token_denied.status_code == 401
+
     public_response = Client().get("/custom-admin/public-status")
     assert public_response.status_code == 200
     assert public_response.json() == {"public": "ok"}
@@ -794,11 +803,18 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
 
     schema = admin_client.get("/custom-admin/openapi.json").json()
     status_operation = schema["paths"]["/custom-admin/status"]["get"]
+    token_operation = schema["paths"]["/custom-admin/token-status"]["get"]
     public_operation = schema["paths"]["/custom-admin/public-status"]["get"]
     stats_operation = schema["paths"]["/custom-admin/testapp/product/stats"]["get"]
     assert status_operation["operationId"] == "custom_site_status"
     assert status_operation["tags"] == ["custom.site"]
+    assert status_operation["security"] == [{"SessionAuthIsStaff": []}]
     assert _response_schema_ref(status_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert token_operation["operationId"] == "custom_token_status"
+    assert token_operation["tags"] == ["custom.auth"]
+    assert {"PrimaryTokenAuth": []} in token_operation["security"]
+    assert {"SecondaryTokenAuth": []} in token_operation["security"]
+    assert _response_schema_ref(token_operation, "200") == "#/components/schemas/AuthStatusResponse"
     assert public_operation["operationId"] == "custom_public_status"
     assert public_operation["tags"] == ["custom.public"]
     assert "security" not in public_operation

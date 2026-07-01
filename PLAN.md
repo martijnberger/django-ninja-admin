@@ -108,7 +108,7 @@ Completed or mostly complete:
 - Admin system checks now reject `list_editable` fields removed from generated forms by `fields`, `fieldsets`, or `exclude`, preventing silent bulk-update no-ops.
 - Admin system checks now validate `list_select_related` types and relation paths before changelist runtime.
 - `get_changelist()` and `get_changelist_instance()` hooks for changelist customization.
-- Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration, raw bound method wrapping, route tags/descriptions, hidden routes, and explicit route-level `auth=None`.
+- Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration, raw bound method wrapping, route tags/descriptions, hidden routes, explicit route-level `auth=None`, and route-level auth sequence overrides.
 - Custom admin view tests now cover named Ninja response schemas together with route-level auth overrides.
 - Display decorator metadata for descriptions, ordering, booleans, and per-field empty values is reflected in changelist columns/results.
 - Changelist display metadata now also recognizes labels, boolean flags, and empty-value text attached to model property getters.
@@ -139,7 +139,7 @@ Known non-parity areas:
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file/image attributes, basic file clearing and multipart file uploads, generated-form `formfield_*` customizations, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but real image upload validation/storage edge cases, custom model fields, and advanced widget behavior still need deeper parity.
 - Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, history permission filtering, autocomplete pagination, `_to_field` validation, inline permission checks, readonly/unknown inline field rejection, richer inline delete messages, unchanged bulk-row handling, row-indexed inline/bulk errors, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works and now has semantic contract coverage for core model routes, custom action input/response schemas, and global action cache invalidation, but broader snapshots and example coverage are still needed before release.
-- Admin extensibility is still young: custom view routing, route metadata/auth overrides, named response-schema coverage, site-level multi-auth coverage, and display metadata exist, but deeper override-hook parity still needs work.
+- Admin extensibility is still young: custom view routing, route metadata/auth overrides, named response-schema coverage, site/route-level multi-auth coverage, and display metadata exist, but deeper override-hook parity still needs work.
 - Release hardening has local/CI `just` gates, wheel import smoke, a clean sample-project smoke, initial PostgreSQL CI coverage, and an initial copyright audit; remaining work is to confirm CI results and repeat the audit before release candidates.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix and targeted local registry/route contracts.
 

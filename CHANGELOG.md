@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `ImageField` values, including upload hints and width/height field names.
 - Added mounted-route coverage and docs for `NinjaAdminSite` auth sequences,
   including OpenAPI security metadata for multiple Ninja auth callables.
+- Added route-level auth-sequence override coverage for custom admin routes,
+  preserving per-route OpenAPI security metadata.
 
 ## 0.1.2 - 2026-07-01
 
