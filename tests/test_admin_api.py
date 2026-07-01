@@ -2234,6 +2234,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
         metadata = forms.JSONField(required=False)
         tracking_id = forms.UUIDField(required=False)
         host = forms.GenericIPAddressField(required=False)
+        homepage = forms.URLField(required=False)
         duration = forms.DurationField(required=False)
         bounded_name = forms.CharField(required=False, min_length=3, max_length=8)
         bounded_count = forms.IntegerField(required=False, min_value=2, max_value=5)
@@ -2268,6 +2269,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
             "metadata": {"nested": [1, "two"]},
             "tracking_id": tracking_id,
             "host": "2001:db8::1",
+            "homepage": "https://example.com/products",
             "duration": "1 02:03:04",
             "bounded_name": "Camera",
             "bounded_count": 3,
@@ -2281,6 +2283,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert validated.metadata == {"nested": [1, "two"]}
     assert validated.tracking_id.hex == "550e8400e29b41d4a716446655440000"
     assert str(validated.host) == "2001:db8::1"
+    assert str(validated.homepage) == "https://example.com/products"
     assert validated.duration == timedelta(days=1, hours=2, minutes=3, seconds=4)
     assert validated.bounded_name == "Camera"
     assert validated.bounded_count == 3
@@ -2294,6 +2297,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
     assert json_schema["bounded_name"]["anyOf"][0]["minLength"] == 3
     assert json_schema["bounded_count"]["anyOf"][0]["maximum"] == 5
     assert json_schema["bounded_count"]["anyOf"][0]["minimum"] == 2
+    assert json_schema["homepage"]["anyOf"][0]["format"] == "uri"
     assert json_schema["bounded_price"]["anyOf"][0]["maximum"] == 9.99
     assert json_schema["bounded_price"]["anyOf"][0]["minimum"] == 1.0
     assert json_schema["bounded_price"]["anyOf"][1]["pattern"]
@@ -2311,6 +2315,27 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
                 "metadata": {},
                 "tracking_id": "not-a-uuid",
                 "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "homepage": "not-a-url",
                 "duration": "1 02:03:04",
                 "bounded_name": "Camera",
                 "bounded_count": 3,

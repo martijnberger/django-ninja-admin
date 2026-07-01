@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils.dateparse import parse_duration
 from django.utils.safestring import mark_safe
 from ninja import Schema
-from pydantic import BeforeValidator, ConfigDict, Field, IPvAnyAddress, create_model
+from pydantic import AnyUrl, BeforeValidator, ConfigDict, Field, IPvAnyAddress, create_model
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
@@ -280,6 +280,8 @@ class BaseAdmin:
             return Annotated[timedelta, BeforeValidator(_parse_duration_value)]
         if isinstance(field, forms.UUIDField):
             return UUID
+        if isinstance(field, forms.URLField):
+            return AnyUrl
         if isinstance(field, forms.GenericIPAddressField):
             return IPvAnyAddress
         if isinstance(field, forms.JSONField):
