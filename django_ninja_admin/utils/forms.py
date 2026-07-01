@@ -1,6 +1,8 @@
 from decimal import Decimal
 
 from django import forms
+from django.core.exceptions import FieldDoesNotExist
+from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 
 from django_ninja_admin.utils.format_error import format_error
@@ -68,7 +70,36 @@ def _validator_names(field):
     return [validator.__class__.__name__ for validator in getattr(field, "validators", ())]
 
 
-def field_description(name, field, *, read_only=False, current_value=None):
+def _model_field_for_name(model, name):
+    if model is None:
+        return None
+    try:
+        return model._meta.get_field(name)
+    except FieldDoesNotExist:
+        return None
+
+
+def _model_field_metadata(field):
+    if field is None:
+        return {}
+    attrs = {
+        "blank": bool(getattr(field, "blank", False)),
+        "null": bool(getattr(field, "null", False)),
+        "editable": bool(getattr(field, "editable", True)),
+        "primary_key": bool(getattr(field, "primary_key", False)),
+        "unique": bool(getattr(field, "unique", False)),
+        "db_index": bool(getattr(field, "db_index", False)),
+    }
+    if getattr(field, "default", None) is not None and field.default is not models.NOT_PROVIDED:
+        default = _jsonish_value(field.default)
+        if default is not None:
+            attrs["default"] = default
+    if isinstance(field, models.FileField):
+        attrs["upload_to"] = str(getattr(field, "upload_to", ""))
+    return attrs
+
+
+def field_description(name, field, *, read_only=False, current_value=None, model_field=None):
     widget = field.widget
     attrs = {
         "required": field.required,
@@ -81,6 +112,7 @@ def field_description(name, field, *, read_only=False, current_value=None):
         "multiple": getattr(widget, "allow_multiple_selected", False),
         "validators": _validator_names(field),
     }
+    attrs.update(_model_field_metadata(model_field))
     if getattr(widget, "input_type", None):
         attrs["input_type"] = widget.input_type
     if hasattr(widget, "needs_multipart_form"):
@@ -128,6 +160,7 @@ def form_field_descriptions(
     prepopulated_fields=None,
 ):
     form = form_class(instance=instance)
+    model = getattr(getattr(form_class, "_meta", None), "model", None)
     autocomplete_fields = set(autocomplete_fields or ())
     raw_id_fields = set(raw_id_fields or ())
     filter_horizontal = set(filter_horizontal or ())
@@ -137,7 +170,13 @@ def form_field_descriptions(
     descriptions = []
     for name, field in form.fields.items():
         current_value = form.initial.get(name)
-        description = field_description(name, field, read_only=name in readonly_fields, current_value=current_value)
+        description = field_description(
+            name,
+            field,
+            read_only=name in readonly_fields,
+            current_value=current_value,
+            model_field=_model_field_for_name(model, name),
+        )
         _apply_admin_field_metadata(
             description,
             name,
@@ -151,6 +190,7 @@ def form_field_descriptions(
         descriptions.append(description)
     for name in readonly_fields:
         if name not in form.fields:
+            model_field = _model_field_for_name(model, name)
             description = {
                 "name": name,
                 "type": "ReadonlyField",
@@ -159,6 +199,7 @@ def form_field_descriptions(
                     "label": name.replace("_", " ").title(),
                     "help_text": "",
                     "read_only": True,
+                    **_model_field_metadata(model_field),
                 },
             }
             _apply_admin_field_metadata(

@@ -330,21 +330,32 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
     assert fields_by_name["category"]["attrs"]["related_model"] == "testapp.category"
     assert fields_by_name["category"]["attrs"]["to_field_name"] == "id"
+    assert fields_by_name["category"]["attrs"]["blank"] is False
+    assert fields_by_name["category"]["attrs"]["null"] is False
+    assert fields_by_name["category"]["attrs"]["editable"] is True
     assert fields_by_name["price"]["attrs"]["max_digits"] == 8
     assert fields_by_name["price"]["attrs"]["decimal_places"] == 2
+    assert fields_by_name["price"]["attrs"]["blank"] is False
+    assert fields_by_name["price"]["attrs"]["unique"] is False
     assert fields_by_name["stock_status"]["attrs"]["choices"] == [
         ["in_stock", "In Stock"],
         ["out_of_stock", "Out of Stock"],
     ]
+    assert fields_by_name["stock_status"]["attrs"]["default"] == "in_stock"
     assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
     assert fields_by_name["stock_status"]["attrs"]["radio_orientation"] == VERTICAL
     assert fields_by_name["category"]["attrs"]["admin_widget"] == "autocomplete"
+    assert fields_by_name["description"]["attrs"]["blank"] is True
+    assert fields_by_name["description"]["attrs"]["null"] is False
     assert fields_by_name["description"]["attrs"]["prepopulated_from"] == ["name"]
     assert fields_by_name["manual"]["type"] == "FileField"
     assert fields_by_name["manual"]["attrs"]["needs_multipart_form"] is True
+    assert fields_by_name["manual"]["attrs"]["blank"] is True
+    assert fields_by_name["manual"]["attrs"]["upload_to"] == "manuals"
     assert fields_by_name["tags"]["type"] == "ModelMultipleChoiceField"
     assert fields_by_name["tags"]["attrs"]["related_model"] == "testapp.tag"
     assert fields_by_name["tags"]["attrs"]["multiple"] is True
+    assert fields_by_name["tags"]["attrs"]["blank"] is True
     assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_horizontal"
     assert form.json()["form"]["filter_horizontal"] == ["tags"]
 

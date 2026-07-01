@@ -68,7 +68,7 @@ Completed or mostly complete:
 - Direct delete and default `delete_selected` return structured protected-object and permission-needed details.
 - Change messages include field labels and inline add/change/delete entries for history/log consumers.
 - Actions cover custom return values, empty-selection validation, and `select_across` behavior over filtered changelists.
-- Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, and readonly metadata.
+- Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, readonly, model `blank`/`null`, uniqueness/index, default, and upload metadata.
 - Permission hardening for actions, autocomplete, view-on-site, and object-level bulk updates.
 - Ninja-native `ChangeList` foundation for validated lookup params, shared action/changelist querysets, search, ordering, pagination, show-all behavior, `list_select_related`, `date_hierarchy`, and facet counts.
 - Package-owned list filter classes for simple, field, choices, related, related-only, boolean, date, all-values, and empty-value filters, with Pydantic-safe filter metadata.
@@ -91,7 +91,7 @@ Known non-parity areas:
 - Filter handling now covers common Django admin filter families plus initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas advertise action names, but custom action-specific extra payload contracts are not yet modeled.
-- Field metadata now covers common widget, relation, choice, validator, numeric, decimal, readonly, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
+- Field metadata now covers common widget, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but multipart file uploads, image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.
 - Inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works, but it does not yet expose full per-model request/response contracts or the same richness upstream provided through drf-spectacular hooks.
 - Admin extensibility is still young: custom view routing and display metadata exist, but deeper auth/tag/response-schema coverage and override-hook parity need work.
