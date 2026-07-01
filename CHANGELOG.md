@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.12 - 2026-07-01
+
 - Added JSON-safe form field error-message and localization metadata, plus
   structured radio and prepopulated field descriptors.
 - Added structured form field validator metadata for frontend form rendering.
