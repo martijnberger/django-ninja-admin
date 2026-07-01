@@ -458,8 +458,26 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
         content_type="application/json",
     )
     assert created.status_code == 201
-    assert created.json()["data"]["name"] == "Allowed"
-    assert set(created.json()["data"]["tags"]) == set(tag_ids)
+    created_body = created.json()
+    created_id = created_body["data"]["id"]
+    hooked_tag = Tag.objects.get(name="Hooked")
+    assert created_body["data"]["name"] == "Allowed"
+    assert created_body["data"]["description"] == "Created through custom form [add:save_model]"
+    assert created_body["data"]["response_hook"] == "add"
+    assert set(created_body["data"]["tags"]) == {*tag_ids, hooked_tag.pk}
+    assert set(Product.objects.get(pk=created_id).tags.values_list("pk", flat=True)) == {*tag_ids, hooked_tag.pk}
+
+    changed = admin_client.patch(
+        f"/custom-form-admin/testapp/product/{created_id}",
+        data={"data": {"description": "Changed through custom form"}},
+        content_type="application/json",
+    )
+    assert changed.status_code == 200
+    changed_body = changed.json()
+    assert changed_body["data"]["description"] == "Changed through custom form [change:save_model]"
+    assert changed_body["data"]["response_hook"] == "change"
+    assert set(changed_body["data"]["tags"]) == {*tag_ids, hooked_tag.pk}
+    assert Product.objects.get(pk=created_id).description == "Changed through custom form [change:save_model]"
 
 
 def test_changelist_facets_and_date_hierarchy(admin_client, sample):

@@ -30,6 +30,26 @@ class CustomFormProductAdmin(ModelAdmin):
     form_class = ProductAdminForm
     filter_horizontal = ("tags",)
 
+    def save_model(self, request, obj, form, change):
+        action = "change" if change else "add"
+        obj.description = f"{obj.description} [{action}:save_model]"
+        super().save_model(request, obj, form, change)
+
+    def save_related(self, request, form, inline_results, change):
+        super().save_related(request, form, inline_results, change)
+        tag, _created = Tag.objects.get_or_create(name="Hooked")
+        form.instance.tags.add(tag)
+
+    def response_add(self, request, obj, form, inline_results):
+        response = super().response_add(request, obj, form, inline_results)
+        response["data"]["response_hook"] = "add"
+        return response
+
+    def response_change(self, request, obj, form, inline_results):
+        response = super().response_change(request, obj, form, inline_results)
+        response["data"]["response_hook"] = "change"
+        return response
+
 
 custom_form_site = NinjaAdminSite(name="custom_form_admin", include_auth=False)
 custom_form_site.register(Category, ModelAdmin)
