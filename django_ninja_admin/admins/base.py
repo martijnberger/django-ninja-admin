@@ -276,13 +276,23 @@ class BaseAdmin:
             return IPvAnyAddress
         if isinstance(field, forms.JSONField):
             return Any
+        if isinstance(field, forms.TypedMultipleChoiceField):
+            return list[self.get_pydantic_type_for_typed_choice_field(field)]
         if isinstance(field, forms.MultipleChoiceField):
             return list[self.get_pydantic_type_for_choices(field.choices)]
         if isinstance(field, forms.FileField):
             return Any
+        if isinstance(field, forms.TypedChoiceField):
+            return self.get_pydantic_type_for_typed_choice_field(field)
         if getattr(field, "choices", None) and not isinstance(field.choices, str | bytes):
             return self.get_pydantic_type_for_choices(field.choices)
         return str
+
+    def get_pydantic_type_for_typed_choice_field(self, field):
+        coerce = getattr(field, "coerce", None)
+        if coerce in {str, int, float, bool, Decimal, UUID}:
+            return coerce
+        return self.get_pydantic_type_for_choices(field.choices)
 
     def get_pydantic_type_for_choices(self, choices):
         value_types = set()

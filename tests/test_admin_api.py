@@ -2316,6 +2316,16 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
             required=False,
             choices=((1, "One"), ("two", "Two")),
         )
+        typed_number = forms.TypedChoiceField(
+            required=False,
+            choices=(("1", "One"), ("2", "Two")),
+            coerce=int,
+        )
+        typed_numbers = forms.TypedMultipleChoiceField(
+            required=False,
+            choices=(("1", "One"), ("2", "Two")),
+            coerce=int,
+        )
 
         class Meta:
             model = Product
@@ -2335,11 +2345,15 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
             "stock_status": "in_stock",
             "numeric_flags": [1, 2],
             "mixed_flags": [1, "two"],
+            "typed_number": "1",
+            "typed_numbers": ["1", "2"],
         }
     )
 
     assert validated.numeric_flags == [1, 2]
     assert validated.mixed_flags == [1, "two"]
+    assert validated.typed_number == 1
+    assert validated.typed_numbers == [1, 2]
 
     with pytest.raises(PydanticValidationError):
         schema.model_validate(
@@ -2350,6 +2364,36 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "stock_status": "in_stock",
                 "numeric_flags": ["one"],
                 "mixed_flags": [1, "two"],
+                "typed_number": "1",
+                "typed_numbers": ["1", "2"],
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed choices",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "numeric_flags": [1, 2],
+                "mixed_flags": [1, "two"],
+                "typed_number": "one",
+                "typed_numbers": ["1", "2"],
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed choices",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "numeric_flags": [1, 2],
+                "mixed_flags": [1, "two"],
+                "typed_number": "1",
+                "typed_numbers": ["one"],
             }
         )
 
