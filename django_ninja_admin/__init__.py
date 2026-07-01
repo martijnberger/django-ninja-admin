@@ -12,6 +12,7 @@ __all__ = [
     "NinjaAdminSite",
     "RelatedFieldListFilter",
     "RelatedOnlyFieldListFilter",
+    "ShowFacets",
     "SimpleListFilter",
     "StackedInline",
     "TabularInline",
@@ -51,6 +52,10 @@ def __getattr__(name):
         from django_ninja_admin.admins import inline
 
         return getattr(inline, name)
+    if name == "ShowFacets":
+        from django_ninja_admin.constants import ShowFacets
+
+        return ShowFacets
     if name in {"HORIZONTAL", "VERTICAL", "ModelAdmin"}:
         from django_ninja_admin.admins import model
 

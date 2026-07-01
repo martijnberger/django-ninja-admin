@@ -1,4 +1,3 @@
-import enum
 import re
 from functools import reduce, wraps
 from operator import or_
@@ -18,6 +17,7 @@ from pydantic import BaseModel, Field, RootModel, TypeAdapter, create_model
 from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin.admins.base import BaseAdmin
+from django_ninja_admin.constants import ShowFacets
 from django_ninja_admin.exceptions import AdminValidationError
 from django_ninja_admin.models import ADDITION, CHANGE, DELETION, LogEntry
 from django_ninja_admin.routes import AdminRoute
@@ -26,12 +26,6 @@ from django_ninja_admin.utils.deletion import get_deleted_objects
 
 HORIZONTAL, VERTICAL = 1, 2
 DEFAULT_ROUTE_AUTH = object()
-
-
-class ShowFacets(enum.Enum):
-    NEVER = "NEVER"
-    ALLOW = "ALLOW"
-    ALWAYS = "ALWAYS"
 
 
 class ModelAdmin(BaseAdmin):

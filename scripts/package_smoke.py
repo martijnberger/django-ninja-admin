@@ -78,6 +78,7 @@ import django_ninja_admin
 from django_ninja_admin import (
     ModelAdmin,
     NinjaAdminSite,
+    ShowFacets,
     TabularInline,
     action,
     display,
@@ -90,6 +91,7 @@ assert str(package_file).startswith(str(install_root)), package_file
 assert django_ninja_admin.site is site
 assert NinjaAdminSite is not None
 assert ModelAdmin is not None
+assert ShowFacets.ALLOW.value == "ALLOW"
 assert TabularInline is not None
 assert callable(action)
 assert callable(display)

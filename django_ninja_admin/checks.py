@@ -37,6 +37,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_list_select_related(model_admin))
     errors.extend(_check_pagination_options(model_admin))
     errors.extend(_check_boolean_options(model_admin))
+    errors.extend(_check_show_facets(model_admin))
     errors.extend(_check_display_options(model_admin))
     errors.extend(_check_sortable_by(model_admin))
     errors.extend(_check_form_class(model_admin))
@@ -275,6 +276,14 @@ def _check_boolean_options(model_admin):
             )
         )
     return errors
+
+
+def _check_show_facets(model_admin):
+    from django_ninja_admin.constants import ShowFacets
+
+    if not isinstance(getattr(model_admin, "show_facets", ShowFacets.ALLOW), ShowFacets):
+        return [_error(model_admin.__class__, "The value of 'show_facets' must be a ShowFacets value.", "E088")]
+    return []
 
 
 def _display_item_in(item, candidates):

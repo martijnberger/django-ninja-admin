@@ -19,6 +19,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   object-level delete hook denials.
 - Added admin system checks for malformed boolean options used by form and
   changelist metadata.
+- Exported `ShowFacets` from the package root and added an admin system check
+  for malformed `show_facets` values.
 
 ## 0.1.5 - 2026-07-01
 

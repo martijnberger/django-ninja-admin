@@ -24,6 +24,7 @@ from django_ninja_admin import (
     ModelAdmin,
     NinjaAdminSite,
     RelatedOnlyFieldListFilter,
+    ShowFacets,
     SimpleListFilter,
     TabularInline,
     action,
@@ -761,6 +762,25 @@ def test_admin_checks_reject_mixed_random_ordering(db):
     assert "django_ninja_admin.E072" not in random_ids
     assert {error.id for error in mixed_errors} == {"django_ninja_admin.E072"}
     assert mixed_errors[0].hint == 'Either remove the "?", or remove the other fields.'
+
+
+def test_admin_checks_validate_show_facets_option(db):
+    class ValidFacetsProductAdmin(ModelAdmin):
+        show_facets = ShowFacets.ALWAYS
+
+    class BadFacetsProductAdmin(ModelAdmin):
+        show_facets = "ALWAYS"
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidFacetsProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadFacetsProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+
+    assert "django_ninja_admin.E088" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E088"}
 
 
 def test_admin_checks_allow_relation_path_date_hierarchy(db):
