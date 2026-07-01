@@ -191,6 +191,8 @@ class DateHierarchyChoice(Schema):
 class DateHierarchyDescription(Schema):
     field: str
     title: str
+    field_type: str
+    timezone: str | None = None
     level: str
     params: dict[str, int]
     clear_query_string: str

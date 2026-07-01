@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added active-timezone metadata and explicit timezone-aware bucketing for
+  `DateTimeField` changelist date hierarchies.
 - Normalized Pydantic-cleaned inline row values into Django formset data,
   including `MultiValueField` expansion for custom inline forms.
 - Added structured `SelectDateWidget` form metadata for split date-select

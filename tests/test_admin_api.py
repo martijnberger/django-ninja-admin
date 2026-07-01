@@ -1,5 +1,5 @@
 import json
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -3265,6 +3265,8 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     assert {choice["display"]: choice["count"] for choice in stock_filter["choices"]}["Out of Stock"] == 1
     assert {choice["display"]: choice["count"] for choice in stock_filter["choices"]}["In Stock"] == 2
     assert body["config"]["date_hierarchy"]["level"] == "year"
+    assert body["config"]["date_hierarchy"]["field_type"] == "DateTimeField"
+    assert body["config"]["date_hierarchy"]["timezone"] == timezone.get_current_timezone_name()
     assert body["config"]["date_hierarchy"]["clear_query_string"] == "?_facets=1"
     assert body["config"]["date_hierarchy"]["back_query_string"] is None
     assert [choice["value"] for choice in body["config"]["date_hierarchy"]["choices"]] == [2024, 2025]
@@ -3299,6 +3301,28 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     )
     assert bad_day.status_code == 400
     assert bad_day.json()["errors"] == [{"message": "Invalid day.", "param": "created_at__day"}]
+
+
+def test_changelist_date_hierarchy_uses_active_timezone(admin_client, sample):
+    boundary = datetime(2024, 1, 1, 0, 30, tzinfo=UTC)
+    Product.objects.all().update(created_at=boundary)
+
+    with timezone.override("America/Los_Angeles"):
+        response = admin_client.get("/admin-api/testapp/product")
+        by_year = admin_client.get("/admin-api/testapp/product?created_at__year=2023")
+
+    assert response.status_code == 200
+    hierarchy = response.json()["config"]["date_hierarchy"]
+    assert hierarchy["field_type"] == "DateTimeField"
+    assert hierarchy["timezone"] == "America/Los_Angeles"
+    assert [choice["value"] for choice in hierarchy["choices"]] == [2023]
+
+    assert by_year.status_code == 200
+    assert by_year.json()["config"]["result_count"] == Product.objects.count()
+    by_year_hierarchy = by_year.json()["config"]["date_hierarchy"]
+    assert by_year_hierarchy["timezone"] == "America/Los_Angeles"
+    assert by_year_hierarchy["level"] == "month"
+    assert [choice["value"] for choice in by_year_hierarchy["choices"]] == [12]
 
 
 def test_changelist_show_facets_modes(admin_client, sample, monkeypatch):
@@ -3344,6 +3368,8 @@ def test_changelist_date_hierarchy_supports_relation_paths(admin_client, sample)
 
     description = changelist.date_hierarchy_description()
     assert description["field"] == "product__created_at"
+    assert description["field_type"] == "DateTimeField"
+    assert description["timezone"] == timezone.get_current_timezone_name()
     assert description["level"] == "year"
     assert [choice["value"] for choice in description["choices"]] == [2024, 2025]
 

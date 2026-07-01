@@ -6,6 +6,7 @@ from django.core.exceptions import FieldDoesNotExist, FieldError, PermissionDeni
 from django.core.paginator import InvalidPage
 from django.db import models
 from django.http import Http404, QueryDict
+from django.utils import timezone
 
 from django_ninja_admin.constants import ShowFacets
 from django_ninja_admin.exceptions import AdminValidationError, DisallowedModelAdminLookup
@@ -486,6 +487,10 @@ class ChangeList:
         return {
             "field": self.date_hierarchy_field,
             "title": str(field.verbose_name),
+            "field_type": (
+                field.get_internal_type() if hasattr(field, "get_internal_type") else field.__class__.__name__
+            ),
+            "timezone": timezone.get_current_timezone_name() if isinstance(field, models.DateTimeField) else None,
             "level": level,
             "params": values,
             "clear_query_string": self.date_hierarchy_clear_query_string(),
@@ -508,7 +513,12 @@ class ChangeList:
 
     def date_values(self, queryset, field, level):
         if isinstance(field, models.DateTimeField):
-            return queryset.datetimes(self.date_hierarchy_field, level, order="ASC")
+            return queryset.datetimes(
+                self.date_hierarchy_field,
+                level,
+                order="ASC",
+                tzinfo=timezone.get_current_timezone(),
+            )
         return queryset.dates(self.date_hierarchy_field, level, order="ASC")
 
     def date_hierarchy_choice(self, date_value, level, current_values):
