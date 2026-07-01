@@ -356,7 +356,9 @@ class ChangeList:
         remove = set(remove or [])
         query = self.params.copy()
         for parameter in remove:
-            query.pop(parameter, None)
+            for key in list(query):
+                if key == parameter or key.startswith(parameter):
+                    query.pop(key, None)
         for key, value in new_params.items():
             if value is None:
                 query.pop(key, None)

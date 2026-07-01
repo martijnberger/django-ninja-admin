@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+import datetime
 
 from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
 from django.db import models
@@ -321,6 +321,7 @@ class EmptyFieldListFilter(FieldListFilter):
 class DateFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         super().__init__(field, request, params, model, model_admin, field_path)
+        self.field_generic = f"{field_path}__"
         self.lookup_kwarg_since = f"{field_path}__gte"
         self.lookup_kwarg_until = f"{field_path}__lt"
         self.lookup_kwarg_isnull = f"{field_path}__isnull"
@@ -333,42 +334,70 @@ class DateFieldListFilter(FieldListFilter):
             self.used_parameters = {
                 self.lookup_kwarg_isnull: _bool_value(self.used_parameters[self.lookup_kwarg_isnull])
             }
+        self.links = self.get_links()
 
     def expected_parameters(self):
-        return [self.lookup_kwarg_since, self.lookup_kwarg_until, self.lookup_kwarg_isnull]
+        parameters = [self.lookup_kwarg_since, self.lookup_kwarg_until]
+        if self.field.null:
+            parameters.append(self.lookup_kwarg_isnull)
+        return parameters
 
-    def choices(self, changelist):
-        today = timezone.localdate()
-        tomorrow = today + timedelta(days=1)
-        month_start = today.replace(day=1)
-        year_start = today.replace(month=1, day=1)
-        ranges = [
+    def get_links(self):
+        now = timezone.now()
+        if timezone.is_aware(now):
+            now = timezone.localtime(now)
+        if isinstance(self.field, models.DateTimeField):
+            today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            today = now.date()
+        tomorrow = today + datetime.timedelta(days=1)
+        if today.month == 12:
+            next_month = today.replace(year=today.year + 1, month=1, day=1)
+        else:
+            next_month = today.replace(month=today.month + 1, day=1)
+        next_year = today.replace(year=today.year + 1, month=1, day=1)
+        links = [
             (_display(_("Any date")), {}),
             (
                 _display(_("Today")),
-                {self.lookup_kwarg_since: today.isoformat(), self.lookup_kwarg_until: tomorrow.isoformat()},
+                {self.lookup_kwarg_since: today, self.lookup_kwarg_until: tomorrow},
             ),
-            (_display(_("Past 7 days")), {self.lookup_kwarg_since: (today - timedelta(days=7)).isoformat()}),
-            (_display(_("This month")), {self.lookup_kwarg_since: month_start.isoformat()}),
-            (_display(_("This year")), {self.lookup_kwarg_since: year_start.isoformat()}),
+            (
+                _display(_("Past 7 days")),
+                {
+                    self.lookup_kwarg_since: today - datetime.timedelta(days=7),
+                    self.lookup_kwarg_until: tomorrow,
+                },
+            ),
+            (
+                _display(_("This month")),
+                {self.lookup_kwarg_since: today.replace(day=1), self.lookup_kwarg_until: next_month},
+            ),
+            (
+                _display(_("This year")),
+                {self.lookup_kwarg_since: today.replace(month=1, day=1), self.lookup_kwarg_until: next_year},
+            ),
         ]
-        for label, params in ranges:
+        if self.field.null:
+            links.extend(
+                [
+                    (_display(_("No date")), {self.lookup_kwarg_isnull: True}),
+                    (_display(_("Has date")), {self.lookup_kwarg_isnull: False}),
+                ]
+            )
+        return links
+
+    def choices(self, changelist):
+        current_params = {key: str(value) for key, value in self.used_parameters.items()}
+        for label, params in self.links:
+            params = {key: str(value) for key, value in params.items()}
             if params:
-                selected = all(str(self.used_parameters.get(key)) == str(value) for key, value in params.items())
-                query_string = changelist.get_query_string(params, remove=self.expected_parameters())
+                selected = current_params == params
+                query_string = changelist.get_query_string(params, remove=[self.field_generic])
             else:
                 selected = not self.used_parameters
-                query_string = changelist.get_query_string(remove=self.expected_parameters())
+                query_string = changelist.get_query_string(remove=[self.field_generic])
             yield {"selected": selected, "query_string": query_string, "display": _display(label)}
-        if self.field.null:
-            yield {
-                "selected": self.used_parameters.get(self.lookup_kwarg_isnull) is True,
-                "query_string": changelist.get_query_string(
-                    {self.lookup_kwarg_isnull: "1"},
-                    remove=[self.lookup_kwarg_since, self.lookup_kwarg_until],
-                ),
-                "display": _display(_("No date")),
-            }
 
 
 def get_fields_from_path(model, field_path):

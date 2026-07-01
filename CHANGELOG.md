@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Aligned date list-filter ranges with Django admin by adding upper bounds for
+  date-time choices and clearing stale date filter params when switching ranges.
+
 ## 0.1.2 - 2026-07-01
 
 - Improved inline mutations so server-side add/change/delete validation returns

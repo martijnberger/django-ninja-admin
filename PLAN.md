@@ -89,6 +89,7 @@ Completed or mostly complete:
 - Changelist search now applies distinct results for duplicate-prone many-to-many search paths.
 - Changelist search now covers Django-style prefix and lookup-suffix behavior, including non-text `__exact` searches that cast field values to text.
 - Package-owned list filter classes for simple, field, choices, related, related-only, boolean, date, all-values, and empty-value filters, with Pydantic-safe filter metadata.
+- Date list filters now use Django-admin-style bounded ranges and clear stale grouped date params when switching choices.
 - Expanded changelist metadata for display links, sortable columns, multi-column sort state/query strings, selected ordering, search fields, pagination state, facets, and date hierarchy choices.
 - Date hierarchy metadata now includes clear/back navigation query strings and validates impossible year/month/day combinations.
 - Initial N+1 hardening through automatic `select_related()` for direct relation fields in `list_display`.
@@ -121,7 +122,7 @@ Completed or mostly complete:
 Known non-parity areas:
 
 - Changelist behavior is still not fully equivalent to upstream `ChangeList`; deeper query-string behavior, result rendering metadata, list-editable formset parity, timezone-sensitive date hierarchy behavior, and broader N+1 hardening still need work.
-- Filter handling now covers common Django admin filter families plus initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
+- Filter handling now covers common Django admin filter families, bounded date filter ranges, and initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_editable` form-layout conflicts, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action payload schemas now advertise action names, discriminated per-action input payload variants, and optional custom response schema unions.
 - Field metadata now covers common widget, custom widget attrs, relation, choice, validator, numeric, decimal, readonly, model `blank`/`null`/default/index/unique/editable attributes, initial file attributes, basic file clearing and multipart file uploads, generated-form `formfield_*` customizations, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but image-specific behavior, custom model fields, and advanced widget behavior still need deeper parity.

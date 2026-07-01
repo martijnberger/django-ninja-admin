@@ -825,6 +825,48 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     assert bad_day.json()["errors"] == [{"message": "Invalid day.", "param": "created_at__day"}]
 
 
+def test_date_field_list_filter_uses_bounded_ranges(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", ("created_at",))
+    monkeypatch.setattr(
+        "django_ninja_admin.filters.timezone.now",
+        lambda: timezone.make_aware(datetime(2024, 1, 15, 12, 0)),
+    )
+    Product.objects.all().update(created_at=timezone.make_aware(datetime(2024, 1, 15, 10, 0)))
+    Product.objects.create(
+        name="Future",
+        category=sample.category,
+        price="7.00",
+        created_at=timezone.make_aware(datetime(2024, 2, 1, 10, 0)),
+    )
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    date_filter = next(item for item in response.json()["config"]["filters"] if item["title"] == "created at")
+    this_month = next(choice for choice in date_filter["choices"] if choice["display"] == "This month")
+    assert "created_at__gte=" in this_month["query_string"]
+    assert "created_at__lt=" in this_month["query_string"]
+
+    filtered = admin_client.get(f"/admin-api/testapp/product{this_month['query_string']}")
+    assert filtered.status_code == 200
+    assert filtered.json()["config"]["result_count"] == 2
+    assert [row["cells"]["name"] for row in filtered.json()["rows"]] == ["Alpha", "Beta"]
+
+    stale_response = admin_client.get(
+        "/admin-api/testapp/product",
+        {
+            "created_at__gte": "2023-01-01 00:00:00+00:00",
+            "created_at__lt": "2023-02-01 00:00:00+00:00",
+        },
+    )
+    stale_filter = next(item for item in stale_response.json()["config"]["filters"] if item["title"] == "created at")
+    stale_any_date = next(choice for choice in stale_filter["choices"] if choice["display"] == "Any date")
+    stale_this_month = next(choice for choice in stale_filter["choices"] if choice["display"] == "This month")
+    assert stale_any_date["query_string"] == "?"
+    assert "2023" not in stale_this_month["query_string"]
+
+
 def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):
     bad_lookup = admin_client.get("/admin-api/testapp/product?category__name=Cameras")
     assert bad_lookup.status_code == 400
