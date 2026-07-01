@@ -229,6 +229,8 @@ class ChangelistConfig(Schema):
     previous_page_query_string: str | None = None
     next_page_query_string: str | None = None
     last_page_query_string: str | None = None
+    show_all_query_string: str | None = None
+    clear_show_all_query_string: str | None = None
     show_all: bool = False
     can_show_all: bool = False
     show_facets: bool = False

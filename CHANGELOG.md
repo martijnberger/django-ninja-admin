@@ -29,6 +29,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added structured changelist page choices with selected state and query
   strings for page-range rendering.
 - Added page-local and filtered-result row indexes to changelist rows.
+- Added changelist show-all and clear-show-all query-string metadata.
 
 ## 0.1.15 - 2026-07-02
 

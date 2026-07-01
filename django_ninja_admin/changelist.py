@@ -479,6 +479,14 @@ class ChangeList:
             ),
         }
 
+    def show_all_query_strings(self):
+        return {
+            "show_all_query_string": (
+                self.get_query_string({"all": "1"}) if self.can_show_all_results and not self.show_all else None
+            ),
+            "clear_show_all_query_string": self.get_query_string(remove={"all"}) if self.show_all else None,
+        }
+
     def get_query_string(self, new_params=None, remove=None):
         new_params = new_params or {}
         remove = PAGE_PARAMS | set(remove or [])
