@@ -2057,6 +2057,7 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
     }
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
     assert fields_by_name["name"]["attrs"]["widget_attrs"]["data-admin"] == "custom"
+    assert fields_by_name["name"]["attrs"]["error_messages"]["required"] == "Product name is required."
     assert fields_by_name["description"]["attrs"]["widget"] == "Textarea"
     assert fields_by_name["description"]["attrs"]["widget_attrs"]["rows"] == 2
     assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_horizontal"
@@ -2165,6 +2166,12 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
     assert fields_by_name["stock_status"]["attrs"]["widget"] == "RadioSelect"
     assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
     assert fields_by_name["stock_status"]["attrs"]["radio_orientation"] == VERTICAL
+    assert fields_by_name["stock_status"]["attrs"]["radio"] == {
+        "app_label": "testapp",
+        "model_name": "product",
+        "field_name": "stock_status",
+        "orientation": VERTICAL,
+    }
     category_choices = fields_by_name["category"]["attrs"]["choices"]
     assert [str(allowed_category.pk), "Allowed Cameras"] in category_choices
     assert [str(sample.category_id), "Cameras"] not in category_choices
@@ -2578,6 +2585,9 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert form.status_code == 200
     assert form.json()["form"]["model"] == "testapp.product"
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
+    assert fields_by_name["name"]["attrs"]["error_messages"]["required"] == "This field is required."
+    assert fields_by_name["name"]["attrs"]["localize"] is False
+    assert fields_by_name["name"]["attrs"]["is_localized"] is False
     assert fields_by_name["category"]["attrs"]["related_model"] == "testapp.category"
     assert fields_by_name["category"]["attrs"]["related_app_label"] == "testapp"
     assert fields_by_name["category"]["attrs"]["related_model_name"] == "category"
@@ -2603,6 +2613,12 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["stock_status"]["attrs"]["default"] == "in_stock"
     assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
     assert fields_by_name["stock_status"]["attrs"]["radio_orientation"] == VERTICAL
+    assert fields_by_name["stock_status"]["attrs"]["radio"] == {
+        "app_label": "testapp",
+        "model_name": "product",
+        "field_name": "stock_status",
+        "orientation": VERTICAL,
+    }
     assert fields_by_name["category"]["attrs"]["admin_widget"] == "autocomplete"
     assert fields_by_name["category"]["attrs"]["autocomplete"] == {
         "app_label": "testapp",
@@ -2612,6 +2628,12 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["description"]["attrs"]["blank"] is True
     assert fields_by_name["description"]["attrs"]["null"] is False
     assert fields_by_name["description"]["attrs"]["prepopulated_from"] == ["name"]
+    assert fields_by_name["description"]["attrs"]["prepopulated"] == {
+        "app_label": "testapp",
+        "model_name": "product",
+        "field_name": "description",
+        "sources": [{"field_name": "name", "label": "name", "internal_type": "CharField"}],
+    }
     assert fields_by_name["manual"]["type"] == "FileField"
     assert fields_by_name["manual"]["attrs"]["needs_multipart_form"] is True
     assert fields_by_name["manual"]["attrs"]["blank"] is True
@@ -3080,6 +3102,7 @@ def test_form_description_exposes_multiwidget_metadata(db):
             "widget": "DateInput",
             "widget_attrs": {"data-part": "date"},
             "is_hidden": False,
+            "is_localized": False,
             "multiple": False,
             "template_name": "django/forms/widgets/date.html",
             "input_type": "text",
@@ -3091,6 +3114,7 @@ def test_form_description_exposes_multiwidget_metadata(db):
             "widget": "TimeInput",
             "widget_attrs": {"data-part": "time"},
             "is_hidden": False,
+            "is_localized": False,
             "multiple": False,
             "template_name": "django/forms/widgets/time.html",
             "input_type": "text",

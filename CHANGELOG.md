@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added JSON-safe form field error-message and localization metadata, plus
+  structured radio and prepopulated field descriptors.
+
 ## 0.1.11 - 2026-07-01
 
 - Added native Pydantic request schema typing for duration form fields and

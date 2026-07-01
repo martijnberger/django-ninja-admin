@@ -20,6 +20,7 @@ class ProductAdminForm(forms.ModelForm):
     name = forms.CharField(
         max_length=100,
         widget=ProductNameWidget(attrs={"data-admin": "custom"}),
+        error_messages={"required": "Product name is required."},
     )
     description = forms.CharField(
         required=False,

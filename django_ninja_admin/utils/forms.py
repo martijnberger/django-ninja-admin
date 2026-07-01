@@ -212,6 +212,7 @@ def _widget_metadata(widget):
         "widget": widget.__class__.__name__,
         "widget_attrs": _jsonish_value(getattr(widget, "attrs", {})),
         "is_hidden": widget.is_hidden,
+        "is_localized": bool(getattr(widget, "is_localized", False)),
         "multiple": getattr(widget, "allow_multiple_selected", False),
     }
     if getattr(widget, "template_name", None):
@@ -263,9 +264,12 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         "help_text": str(field.help_text or ""),
         "read_only": read_only,
         "disabled": getattr(field, "disabled", False),
+        "localize": bool(getattr(field, "localize", False)),
         "validators": _validator_names(field),
         **_widget_metadata(widget),
     }
+    if getattr(field, "error_messages", None):
+        attrs["error_messages"] = _jsonish_value(field.error_messages)
     attrs.update(_model_field_metadata(model_field))
     subwidgets = _multiwidget_metadata(widget)
     if subwidgets:
@@ -452,8 +456,40 @@ def _apply_admin_field_metadata(
     if name in radio_fields:
         attrs["admin_widget"] = "radio"
         attrs["radio_orientation"] = radio_fields[name]
+        attrs["radio"] = {
+            **_source_field_identity(source_model, name),
+            "orientation": radio_fields[name],
+        }
     if name in prepopulated_fields:
-        attrs["prepopulated_from"] = list(prepopulated_fields[name])
+        source_names = list(prepopulated_fields[name])
+        attrs["prepopulated_from"] = source_names
+        attrs["prepopulated"] = {
+            **_source_field_identity(source_model, name),
+            "sources": [_prepopulated_source_metadata(source_model, source_name) for source_name in source_names],
+        }
+
+
+def _source_field_identity(source_model, field_name):
+    if source_model is None:
+        return {"field_name": field_name}
+    return {
+        "app_label": source_model._meta.app_label,
+        "model_name": source_model._meta.model_name,
+        "field_name": field_name,
+    }
+
+
+def _prepopulated_source_metadata(source_model, field_name):
+    metadata = {"field_name": field_name}
+    field = _model_field_for_name(source_model, field_name)
+    if field is not None:
+        metadata["label"] = str(field.verbose_name)
+        metadata["internal_type"] = (
+            field.get_internal_type()
+            if hasattr(field, "get_internal_type")
+            else field.__class__.__name__
+        )
+    return metadata
 
 
 def form_errors(form):
