@@ -4020,6 +4020,59 @@ def test_form_description_exposes_multiwidget_metadata(db):
     )
 
 
+def test_form_description_exposes_select_date_widget_metadata(db):
+    user = get_user_model().objects.create_user("selectdate-admin", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product/form?release_date=2024-02-03")
+    request.user = user
+
+    class SelectDateProductForm(forms.ModelForm):
+        release_date = forms.DateField(
+            required=False,
+            widget=forms.SelectDateWidget(
+                years=[2024, 2025],
+                months={1: "Jan", 2: "Feb"},
+                empty_label=("Year", "Month", "Day"),
+                attrs={"data-date": "release"},
+            ),
+        )
+
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status")
+
+    class SelectDateProductAdmin(ModelAdmin):
+        form_class = SelectDateProductForm
+
+    model_admin = SelectDateProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    form = model_admin.get_form_description(request)["form"]
+    attrs = next(field["attrs"] for field in form["fields"] if field["name"] == "release_date")
+
+    assert attrs["widget"] == "SelectDateWidget"
+    assert attrs["template_name"] == "django/forms/widgets/select_date.html"
+    assert attrs["input_type"] == "select"
+    assert attrs["use_fieldset"] is True
+    assert attrs["widget_attrs"] == {"data-date": "release"}
+    assert attrs["value"] == "2024-02-03"
+    assert attrs["select_date"] == {
+        "order": ["month", "day", "year"],
+        "field_names": {
+            "year": "release_date_year",
+            "month": "release_date_month",
+            "day": "release_date_day",
+        },
+        "years": [2024, 2025],
+        "months": [{"value": 1, "label": "Jan"}, {"value": 2, "label": "Feb"}],
+        "days": list(range(1, 32)),
+        "empty_choices": {
+            "year": {"value": "", "label": "Year"},
+            "month": {"value": "", "label": "Month"},
+            "day": {"value": "", "label": "Day"},
+        },
+        "selected": {"year": 2024, "month": 2, "day": 3},
+    }
+
+
 def test_form_description_exposes_filepath_field_metadata(db, tmp_path):
     fixture_file = tmp_path / "choice.txt"
     fixture_file.write_text("ok")

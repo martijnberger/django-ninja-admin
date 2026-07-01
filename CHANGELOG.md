@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added structured `SelectDateWidget` form metadata for split date-select
+  rendering, including part order, generated field names, choices, empty
+  choices, and selected values.
+
 ## 0.1.13 - 2026-07-01
 
 - Added native Pydantic request schema typing and mutation normalization for

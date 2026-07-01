@@ -256,6 +256,41 @@ def _multiwidget_metadata(widget):
     ]
 
 
+def _select_date_metadata(name, field, current_value):
+    widget = field.widget
+    if not isinstance(widget, forms.SelectDateWidget):
+        return {}
+    order = list(widget._parse_date_fmt()) or ["month", "day", "year"]
+    select_date = {
+        "order": order,
+        "field_names": {
+            "year": widget.year_field % name,
+            "month": widget.month_field % name,
+            "day": widget.day_field % name,
+        },
+        "years": [_jsonish_value(year) for year in widget.years],
+        "months": [
+            {"value": _jsonish_value(value), "label": str(label)}
+            for value, label in widget.months.items()
+        ],
+        "days": list(range(1, 32)),
+        "empty_choices": {
+            "year": {"value": _jsonish_value(widget.year_none_value[0]), "label": str(widget.year_none_value[1])},
+            "month": {"value": _jsonish_value(widget.month_none_value[0]), "label": str(widget.month_none_value[1])},
+            "day": {"value": _jsonish_value(widget.day_none_value[0]), "label": str(widget.day_none_value[1])},
+        },
+    }
+    if current_value not in (None, ""):
+        selected = {
+            key: _jsonish_value(value)
+            for key, value in widget.format_value(current_value).items()
+            if value not in (None, "")
+        }
+        if selected:
+            select_date["selected"] = selected
+    return {"select_date": select_date}
+
+
 def _input_formats(field):
     input_formats = getattr(field, "input_formats", None)
     if input_formats is not None:
@@ -336,6 +371,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     subwidgets = _multiwidget_metadata(widget)
     if subwidgets:
         attrs["subwidgets"] = subwidgets
+    attrs.update(_select_date_metadata(name, field, current_value))
     input_formats = _input_formats(field)
     if input_formats:
         attrs["input_formats"] = input_formats

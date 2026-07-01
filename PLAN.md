@@ -98,6 +98,9 @@ Completed or mostly complete:
 - Changelist responses now expose admin-style pagination state with `multi_page`, `pagination_required`, and an elided `page_range`.
 - Changelist responses now support callable `list_display` entries with stable response keys, labels, display metadata, admin checks, and `admin_order_field` sorting.
 - Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, readonly, model `blank`/`null`, uniqueness/index, default, and upload metadata.
+- Form descriptions now expose structured `SelectDateWidget` metadata for
+  split date-select rendering, including order, generated field names, choices,
+  empty choices, and selected values.
 - Form descriptions now expose stable model-field identity metadata, including
   field class, internal type, attname, and database column when available.
 - Form descriptions now expose aggregated custom form/widget media assets for
