@@ -1114,6 +1114,36 @@ def test_admin_checks_reject_reverse_relation_widget_fields(db):
     assert {error.id for error in raw_id_errors} == {"django_ninja_admin.E025"}
 
 
+def test_admin_checks_require_registered_searchable_autocomplete_targets(db):
+    class ProductAutocompleteAdmin(ModelAdmin):
+        autocomplete_fields = ("category",)
+
+    unregistered_site = NinjaAdminSite(include_auth=False)
+    unregistered_site.register(Product, ProductAutocompleteAdmin)
+
+    class UnsearchableCategoryAdmin(ModelAdmin):
+        pass
+
+    unsearchable_site = NinjaAdminSite(include_auth=False)
+    unsearchable_site.register(Product, ProductAutocompleteAdmin)
+    unsearchable_site.register(Category, UnsearchableCategoryAdmin)
+
+    class SearchableCategoryAdmin(ModelAdmin):
+        search_fields = ("name",)
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ProductAutocompleteAdmin)
+    valid_site.register(Category, SearchableCategoryAdmin)
+
+    unregistered_errors = unregistered_site.get_model_admin(Product).check()
+    unsearchable_errors = unsearchable_site.get_model_admin(Product).check()
+    valid_errors = valid_site.get_model_admin(Product).check()
+
+    assert {error.id for error in unregistered_errors} == {"django_ninja_admin.E026"}
+    assert {error.id for error in unsearchable_errors} == {"django_ninja_admin.E027"}
+    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E026", "django_ninja_admin.E027"})
+
+
 def test_admin_checks_validate_prepopulated_fields(db):
     class ValidPrepopulatedProductAdmin(ModelAdmin):
         prepopulated_fields = {"description": ("name",)}

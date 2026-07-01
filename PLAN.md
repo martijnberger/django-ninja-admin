@@ -216,6 +216,8 @@ Completed or mostly complete:
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
 - Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, radio fields, widget-option conflicts, date hierarchy, actions, and inlines.
 - Relation widget checks now reject reverse relations in `autocomplete_fields` and `raw_id_fields`, preventing frontend metadata for unsupported admin widget targets.
+- Autocomplete checks now require related models to be registered with
+  `search_fields`, catching endpoint misconfiguration before runtime.
 - `prepopulated_fields` system checks now validate dict shape, target field suitability, source-field list shape, and source-field existence.
 - `sortable_by` system checks now validate sequence shape, item types, and membership in `list_display` before changelist sorting runs.
 - Admin system checks now reject `ordering` configurations that combine random ordering (`"?"`) with other fields.
@@ -269,7 +271,7 @@ Known non-parity areas:
 
 - Changelist behavior is still not fully equivalent to upstream `ChangeList`; remaining query-string edge cases, result rendering metadata, list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
 - Filter handling now covers common Django admin filter families, bounded date filter ranges, and initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
-- System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_editable` form-layout conflicts, `list_select_related` mistakes, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
+- System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_editable` form-layout conflicts, `list_select_related` mistakes, autocomplete target registration/searchability, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action metadata and payload schemas now advertise action names, permission requirements, discriminated per-action input payload variants, and optional custom response schema unions.
 - Field metadata now covers common widget, custom widget attrs, relation, flat/grouped choice, structured validator details, error-message, localization, numeric, decimal, readonly display values, model `blank`/`null`/default/index/unique/editable attributes, initial file/image attributes, basic file clearing and multipart file uploads, generated-form `formfield_*` customizations, basic many-to-many values/widgets, and admin widget intent for raw-id/radio/prepopulated/autocomplete/filter-horizontal/filter-vertical fields, but real image upload validation/storage edge cases, custom model fields, and advanced widget behavior still need deeper parity.
 - Save/delete and response hooks, inline formsets, typed operation schemas, inline multivalue normalization, protected-delete details, history permission filtering, autocomplete pagination, `_to_field` validation, inline permission checks, readonly/unknown inline field rejection, richer inline delete messages, unchanged bulk-row handling, row-indexed inline/bulk errors, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
