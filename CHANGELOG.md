@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `serializer_class` hooks explicitly unsupported.
 - Added admin system checks for invalid `fields`/`exclude` entries and unknown
   fields listed in `exclude`.
+- Added admin system checks rejecting reverse relations in `autocomplete_fields`
+  and `raw_id_fields`.
 - Added changelist row URL and object-permission metadata for detail, change
   form, delete, and view-on-site frontend actions.
 - Added image-specific response schema and form metadata for Django

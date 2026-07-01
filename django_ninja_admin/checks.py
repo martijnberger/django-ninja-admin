@@ -38,8 +38,16 @@ def check_model_admin(model_admin):
     errors.extend(_check_form_option_conflicts(model_admin))
     errors.extend(_check_lookup_fields(model_admin, "search_fields", allow_search_prefixes=True))
     errors.extend(_check_lookup_fields(model_admin, "ordering", allow_descending=True, allow_random=True))
-    errors.extend(_check_relation_fields(model_admin, "autocomplete_fields", require_registered_remote=True))
-    errors.extend(_check_relation_fields(model_admin, "raw_id_fields"))
+    forward_relation_types = (models.ForeignKey, models.ManyToManyField)
+    errors.extend(
+        _check_relation_fields(
+            model_admin,
+            "autocomplete_fields",
+            relation_types=forward_relation_types,
+            require_registered_remote=True,
+        )
+    )
+    errors.extend(_check_relation_fields(model_admin, "raw_id_fields", relation_types=forward_relation_types))
     errors.extend(_check_relation_fields(model_admin, "filter_horizontal", many_to_many_only=True))
     errors.extend(_check_relation_fields(model_admin, "filter_vertical", many_to_many_only=True))
     errors.extend(_check_date_hierarchy(model_admin))
@@ -395,7 +403,14 @@ def _check_field_path(model_admin, field_path, option, code, *, allow_final_look
     return []
 
 
-def _check_relation_fields(model_admin, option, *, many_to_many_only=False, require_registered_remote=False):
+def _check_relation_fields(
+    model_admin,
+    option,
+    *,
+    many_to_many_only=False,
+    relation_types=None,
+    require_registered_remote=False,
+):
     errors = []
     for item in getattr(model_admin, option) or ():
         if not isinstance(item, str):
@@ -405,6 +420,15 @@ def _check_relation_fields(model_admin, option, *, many_to_many_only=False, requ
         if field is None:
             errors.append(
                 _error(model_admin.__class__, f"The value of '{option}' refers to unknown field '{item}'.", "E023")
+            )
+            continue
+        if relation_types is not None and not isinstance(field, relation_types):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The field '{item}' must be a forward ForeignKey, OneToOneField, or ManyToManyField.",
+                    "E025",
+                )
             )
             continue
         if many_to_many_only and not isinstance(field, models.ManyToManyField):

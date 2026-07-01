@@ -411,6 +411,29 @@ def test_admin_checks_validate_list_select_related(db):
     assert len(bad_path_errors) == 3
 
 
+def test_admin_checks_reject_reverse_relation_widget_fields(db):
+    class ReviewAdmin(ModelAdmin):
+        search_fields = ("note",)
+
+    class ReverseAutocompleteProductAdmin(ModelAdmin):
+        autocomplete_fields = ("reviews",)
+
+    class ReverseRawIdProductAdmin(ModelAdmin):
+        raw_id_fields = ("reviews",)
+
+    autocomplete_site = NinjaAdminSite(include_auth=False)
+    autocomplete_site.register(Product, ReverseAutocompleteProductAdmin)
+    autocomplete_site.register(ProductReview, ReviewAdmin)
+    raw_id_site = NinjaAdminSite(include_auth=False)
+    raw_id_site.register(Product, ReverseRawIdProductAdmin)
+
+    autocomplete_errors = autocomplete_site.get_model_admin(Product).check()
+    raw_id_errors = raw_id_site.get_model_admin(Product).check()
+
+    assert {error.id for error in autocomplete_errors} == {"django_ninja_admin.E025"}
+    assert {error.id for error in raw_id_errors} == {"django_ninja_admin.E025"}
+
+
 def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db):
     class MissingFromFieldsProductAdmin(ModelAdmin):
         list_display = ("name", "stock_status")
