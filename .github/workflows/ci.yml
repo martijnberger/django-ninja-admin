@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    name: Django ${{ matrix.django-label }} / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - django-label: "4.2"
+            django: ">=4.2,<4.3"
+            python-version: "3.12"
+            experimental: false
+          - django-label: "5.0"
+            django: ">=5.0,<5.1"
+            python-version: "3.12"
+            experimental: false
+          - django-label: "5.1"
+            django: ">=5.1,<5.2"
+            python-version: "3.12"
+            experimental: false
+          - django-label: "5.2"
+            django: ">=5.2,<5.3"
+            python-version: "3.12"
+            experimental: false
+          - django-label: "6.0"
+            django: ">=6.0,<6.1"
+            python-version: "3.12"
+            experimental: true
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Select Django version
+        run: uv pip install "django${{ matrix.django }}"
+
+      - name: Lint
+        run: just lint
+
+      - name: Test
+        run: just test
+
+      - name: Package smoke
+        run: just package-smoke

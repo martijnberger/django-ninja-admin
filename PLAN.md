@@ -91,6 +91,7 @@ Completed or mostly complete:
 - Local release gates now use `just` for lint, tests, package smoke, and aggregate checks.
 - Package smoke tooling builds the wheel, installs it into an isolated target, verifies public API imports, and checks dependency metadata for absent DRF/drf-spectacular dependencies.
 - Release hardening docs now include a changelog and explicit alpha/beta/stable checklist.
+- GitHub Actions now runs the `just` gates across Django 4.2, 5.0, 5.1, 5.2, and an experimental 6.0 lane.
 - Initial behavioral tests and no DRF/drf-spectacular runtime dependency.
 
 Known non-parity areas:
@@ -103,7 +104,7 @@ Known non-parity areas:
 - Save/delete and response hooks, inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works and now has semantic contract coverage for core model routes, but it does not yet expose every custom action/request variant or the same richness upstream provided through drf-spectacular hooks.
 - Admin extensibility is still young: custom view routing, route metadata/auth overrides, and display metadata exist, but deeper multi-auth/response-schema coverage and override-hook parity need work.
-- Release hardening has local `just` gates and a wheel import smoke check, but still needs CI matrices, PostgreSQL coverage, a clean sample-project smoke, and a copyright audit.
+- Release hardening has local/CI `just` gates and a wheel import smoke check, but still needs PostgreSQL coverage, a clean sample-project smoke, and a copyright audit.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix.
 
 ## Implementation Phases

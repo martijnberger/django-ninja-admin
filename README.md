@@ -35,11 +35,12 @@ just lint
 just test
 just package-smoke
 just check
+just ci
 ```
 
 `just package-smoke` builds the wheel, installs it into a temporary target,
 imports the public API, and confirms the wheel metadata does not depend on DRF
-or drf-spectacular.
+or drf-spectacular. `just ci` is an alias for the full local gate.
 
 See [Migration And Authentication](docs/migration-and-auth.md) for guidance on
 moving DRF serializer customizations to `form_class`, `output_schema`, and

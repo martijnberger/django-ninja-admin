@@ -10,3 +10,5 @@ package-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/package_smoke.py
 
 check: lint test package-smoke
+
+ci: check

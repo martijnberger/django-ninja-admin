@@ -95,9 +95,9 @@ Statuses:
 
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
-| Ruff/pytest local gates | implemented | `just lint`, `just test`, `just check` | Add CI workflow |
+| Ruff/pytest local gates | implemented | `just lint`, `just test`, `just check`, `.github/workflows/ci.yml` | Keep CI and local gates aligned |
 | Package build/install smoke | partial | `scripts/package_smoke.py`, `just package-smoke` | Add clean sample-project install/mount smoke |
-| Django version matrix | missing | Single local environment | Phase 7 |
+| Django version matrix | partial | `.github/workflows/ci.yml` covers Django 4.2, 5.0, 5.1, 5.2, and experimental 6.0 | Confirm CI results and expand Python versions when supported |
 | PostgreSQL coverage | missing | SQLite-only tests | Phase 7 |
 | Copyright/license audit | partial | MIT and Django BSD license files | Audit any newly ported code |
 | Changelog/release checklist | implemented | `CHANGELOG.md`, `docs/release-checklist.md` | Expand release notes before each tag |
