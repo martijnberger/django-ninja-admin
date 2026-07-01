@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   generic Django `MultiValueField` payloads.
 - Added `FilePathField` request schema coverage and form metadata for path,
   match, recursion, and allowed target kinds.
+- Added `ComboField` request validation/schema hints and subfield metadata for
+  stacked Django form validators.
 
 ## 0.1.12 - 2026-07-01
 

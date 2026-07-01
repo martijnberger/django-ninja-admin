@@ -287,6 +287,22 @@ def _filepath_metadata(field):
     return {key: value for key, value in attrs.items() if value is not None}
 
 
+def _combo_metadata(field):
+    if not isinstance(field, forms.ComboField):
+        return {}
+    return {
+        "combo_fields": [
+            {
+                "index": index,
+                "type": description["type"],
+                "attrs": description["attrs"],
+            }
+            for index, subfield in enumerate(field.fields)
+            for description in [field_description(str(index), subfield)]
+        ]
+    }
+
+
 def field_description(name, field, *, read_only=False, current_value=None, model_field=None):
     widget = field.widget
     attrs = {
@@ -314,6 +330,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     if getattr(field, "choices", None):
         attrs["choices"] = [(_choice_value(value), str(label)) for value, label in field.choices]
     attrs.update(_filepath_metadata(field))
+    attrs.update(_combo_metadata(field))
     if getattr(field, "initial", None) not in (None, ""):
         initial = _jsonish_value(field.initial)
         if initial is not None:

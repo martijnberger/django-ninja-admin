@@ -46,6 +46,16 @@ def _validate_email_value(value):
     return value
 
 
+def _form_field_clean_validator(field):
+    def validate(value):
+        try:
+            return field.clean(value)
+        except DjangoValidationError as exc:
+            raise ValueError("; ".join(str(message) for message in exc.messages)) from exc
+
+    return validate
+
+
 def _choice_membership_validator(choices):
     allowed = tuple(choices)
 
@@ -294,6 +304,8 @@ class BaseAdmin:
             return int
         if isinstance(field, forms.FloatField):
             return float
+        if isinstance(field, forms.ComboField):
+            return self.get_pydantic_type_for_combo_field(field)
         if isinstance(field, forms.SplitDateTimeField):
             return tuple[date, time]
         if isinstance(field, forms.MultiValueField):
@@ -383,6 +395,29 @@ class BaseAdmin:
                 ]
             return coerce
         return self.get_pydantic_type_for_choices(field.choices, as_literal=choices_as_literal)
+
+    def get_pydantic_type_for_combo_field(self, field):
+        metadata = []
+        constraints = self.get_pydantic_constraints_for_combo_field(field)
+        if constraints:
+            metadata.append(Field(**constraints))
+        metadata.append(AfterValidator(_form_field_clean_validator(field)))
+        return Annotated[str, *metadata]
+
+    def get_pydantic_constraints_for_combo_field(self, field):
+        constraints = {}
+        for subfield in field.fields:
+            if not isinstance(subfield, forms.CharField):
+                continue
+            if "min_length" not in constraints and getattr(subfield, "min_length", None) is not None:
+                constraints["min_length"] = subfield.min_length
+            if "max_length" not in constraints and getattr(subfield, "max_length", None) is not None:
+                constraints["max_length"] = subfield.max_length
+            if "pattern" not in constraints:
+                pattern = self.get_pydantic_pattern_for_form_field(subfield)
+                if pattern:
+                    constraints["pattern"] = pattern
+        return constraints
 
     def get_pydantic_type_for_multivalue_field(self, field, *, choices_as_literal=True):
         field_types = tuple(

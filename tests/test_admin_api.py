@@ -2366,6 +2366,13 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
         contact_email = forms.EmailField(required=False)
         homepage = forms.URLField(required=False)
         file_path = forms.FilePathField(path=str(tmp_path), match=r".*\.txt$", required=False)
+        combo_code = forms.ComboField(
+            fields=[
+                forms.CharField(max_length=5),
+                forms.RegexField(regex=r"^[A-Z]+$"),
+            ],
+            required=False,
+        )
         duration = forms.DurationField(required=False)
         release_window = forms.SplitDateTimeField(
             required=False,
@@ -2408,6 +2415,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             "contact_email": "buyer@example.com",
             "homepage": "https://example.com/products",
             "file_path": str(fixture_file),
+            "combo_code": "ABCDE",
             "duration": "1 02:03:04",
             "release_window": ["2026-07-01", "09:30"],
             "bounded_name": "Camera",
@@ -2425,6 +2433,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert validated.contact_email == "buyer@example.com"
     assert str(validated.homepage) == "https://example.com/products"
     assert validated.file_path == str(fixture_file)
+    assert validated.combo_code == "ABCDE"
     assert validated.duration == timedelta(days=1, hours=2, minutes=3, seconds=4)
     assert validated.release_window == (date(2026, 7, 1), time(9, 30))
     assert validated.bounded_name == "Camera"
@@ -2442,6 +2451,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert json_schema["contact_email"]["anyOf"][0]["format"] == "email"
     assert json_schema["homepage"]["anyOf"][0]["format"] == "uri"
     assert json_schema["file_path"]["anyOf"][0]["const"] == str(fixture_file)
+    assert json_schema["combo_code"]["anyOf"][0]["maxLength"] == 5
+    assert json_schema["combo_code"]["anyOf"][0]["pattern"] == "^[A-Z]+$"
     assert json_schema["release_window"]["anyOf"][0]["prefixItems"] == [
         {"format": "date", "type": "string"},
         {"format": "time", "type": "string"},
@@ -2463,6 +2474,27 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
                 "metadata": {},
                 "tracking_id": "not-a-uuid",
                 "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "combo_code": "abc",
                 "duration": "1 02:03:04",
                 "bounded_name": "Camera",
                 "bounded_count": 3,
@@ -3755,6 +3787,41 @@ def test_form_description_exposes_filepath_field_metadata(db, tmp_path):
     assert str(fixture_file) in choice_values
     assert str(nested_file) in choice_values
     assert str(skipped_file) not in choice_values
+
+
+def test_form_description_exposes_combo_field_metadata(db):
+    class ComboProductForm(forms.ModelForm):
+        combo_code = forms.ComboField(
+            fields=[
+                forms.CharField(max_length=5),
+                forms.RegexField(regex=r"^[A-Z]+$"),
+            ],
+            required=False,
+        )
+
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status")
+
+    class ComboProductAdmin(ModelAdmin):
+        form_class = ComboProductForm
+
+    model_admin = ComboProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    request = RequestFactory().get("/")
+    field = next(
+        item for item in model_admin.get_form_fields_description(request) if item["name"] == "combo_code"
+    )
+
+    attrs = field["attrs"]
+    assert field["type"] == "ComboField"
+    assert [item["type"] for item in attrs["combo_fields"]] == ["CharField", "RegexField"]
+    assert attrs["combo_fields"][0]["index"] == 0
+    assert attrs["combo_fields"][0]["attrs"]["max_length"] == 5
+    assert attrs["combo_fields"][1]["index"] == 1
+    assert any(
+        detail.get("pattern") == "^[A-Z]+$"
+        for detail in attrs["combo_fields"][1]["attrs"]["validator_details"]
+    )
 
 
 @pytest.mark.parametrize(

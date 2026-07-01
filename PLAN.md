@@ -121,6 +121,9 @@ Completed or mostly complete:
 - Pydantic request schemas now cover `FilePathField` fixed filesystem choices,
   and form descriptions expose path, match, recursion, and allow-files/folders
   metadata for frontend renderers.
+- Pydantic request schemas now validate `ComboField` values through Django's
+  stacked subfield cleaners while exposing representable string constraints,
+  and form descriptions expose structured combo subfield metadata.
 - Pydantic request schemas now infer typed list entries for multiple-choice
   fields from declared choice values.
 - Pydantic request schemas now constrain concrete Django choice values with
