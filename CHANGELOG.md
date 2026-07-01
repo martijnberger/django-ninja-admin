@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   stacked Django form validators.
 - Added numeric `step_size` request validation/OpenAPI hints and form metadata,
   including offset step validation through Django form cleaners.
+- Added Django temporal form-field cleaners to Pydantic request schemas so
+  custom date, time, and datetime input formats are accepted before persistence.
 
 ## 0.1.12 - 2026-07-01
 

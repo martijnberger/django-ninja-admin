@@ -316,11 +316,11 @@ class BaseAdmin:
         if isinstance(field, forms.MultiValueField):
             return self.get_pydantic_type_for_multivalue_field(field, choices_as_literal=choices_as_literal)
         if isinstance(field, forms.DateTimeField):
-            return datetime
+            return Annotated[datetime, BeforeValidator(_form_field_clean_validator(field))]
         if isinstance(field, forms.DateField):
-            return date
+            return Annotated[date, BeforeValidator(_form_field_clean_validator(field))]
         if isinstance(field, forms.TimeField):
-            return time
+            return Annotated[time, BeforeValidator(_form_field_clean_validator(field))]
         if isinstance(field, forms.DurationField):
             return Annotated[timedelta, BeforeValidator(_parse_duration_value)]
         if isinstance(field, forms.UUIDField):

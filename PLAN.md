@@ -127,6 +127,9 @@ Completed or mostly complete:
 - Pydantic request schemas now validate numeric `step_size` constraints and
   expose OpenAPI `multipleOf` hints when they are not offset, while form
   descriptions include step size and offset metadata.
+- Pydantic request schemas now run Django date/time/datetime cleaners before
+  type validation so custom temporal `input_formats` are accepted by request
+  payloads.
 - Pydantic request schemas now infer typed list entries for multiple-choice
   fields from declared choice values.
 - Pydantic request schemas now constrain concrete Django choice values with

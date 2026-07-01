@@ -2373,6 +2373,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             ],
             required=False,
         )
+        custom_date = forms.DateField(required=False, input_formats=["%d/%m/%Y"])
+        custom_time = forms.TimeField(required=False, input_formats=["%H.%M"])
+        custom_datetime = forms.DateTimeField(required=False, input_formats=["%d/%m/%Y %H.%M"])
         duration = forms.DurationField(required=False)
         release_window = forms.SplitDateTimeField(
             required=False,
@@ -2419,6 +2422,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             "homepage": "https://example.com/products",
             "file_path": str(fixture_file),
             "combo_code": "ABCDE",
+            "custom_date": "01/07/2026",
+            "custom_time": "09.30",
+            "custom_datetime": "01/07/2026 09.30",
             "duration": "1 02:03:04",
             "release_window": ["2026-07-01", "09:30"],
             "bounded_name": "Camera",
@@ -2440,6 +2446,14 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert str(validated.homepage) == "https://example.com/products"
     assert validated.file_path == str(fixture_file)
     assert validated.combo_code == "ABCDE"
+    assert validated.custom_date == date(2026, 7, 1)
+    assert validated.custom_time == time(9, 30)
+    assert validated.custom_datetime.year == 2026
+    assert validated.custom_datetime.month == 7
+    assert validated.custom_datetime.day == 1
+    assert validated.custom_datetime.hour == 9
+    assert validated.custom_datetime.minute == 30
+    assert validated.custom_datetime.tzinfo is not None
     assert validated.duration == timedelta(days=1, hours=2, minutes=3, seconds=4)
     assert validated.release_window == (date(2026, 7, 1), time(9, 30))
     assert validated.bounded_name == "Camera"
@@ -2465,6 +2479,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert json_schema["file_path"]["anyOf"][0]["const"] == str(fixture_file)
     assert json_schema["combo_code"]["anyOf"][0]["maxLength"] == 5
     assert json_schema["combo_code"]["anyOf"][0]["pattern"] == "^[A-Z]+$"
+    assert json_schema["custom_date"]["anyOf"][0]["format"] == "date"
+    assert json_schema["custom_time"]["anyOf"][0]["format"] == "time"
+    assert json_schema["custom_datetime"]["anyOf"][0]["format"] == "date-time"
     assert json_schema["release_window"]["anyOf"][0]["prefixItems"] == [
         {"format": "date", "type": "string"},
         {"format": "time", "type": "string"},
@@ -2487,6 +2504,27 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
                 "metadata": {},
                 "tracking_id": "not-a-uuid",
                 "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "custom_date": "2026-07-01",
                 "duration": "1 02:03:04",
                 "bounded_name": "Camera",
                 "bounded_count": 3,
