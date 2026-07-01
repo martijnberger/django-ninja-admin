@@ -2961,6 +2961,11 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
     fields_by_name = {field["name"]: field for field in form["fields"]}
 
     assert fields_by_name["category"]["attrs"]["admin_widget"] == "raw_id"
+    assert fields_by_name["category"]["attrs"]["raw_id"] == {
+        "app_label": "testapp",
+        "model_name": "product",
+        "field_name": "category",
+    }
     assert fields_by_name["category"]["attrs"]["selected_options"] == [
         {"id": str(sample.category_id), "text": "Cameras"}
     ]

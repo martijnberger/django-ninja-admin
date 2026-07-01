@@ -9,6 +9,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added native Pydantic request schema typing for duration form fields and
   exposed temporal input formats in form field descriptions.
+- Added structured raw-id widget metadata to form field descriptions.
 
 ## 0.1.10 - 2026-07-01
 

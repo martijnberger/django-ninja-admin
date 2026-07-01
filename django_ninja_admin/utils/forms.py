@@ -425,6 +425,12 @@ def _apply_admin_field_metadata(
             }
     if name in raw_id_fields:
         attrs["admin_widget"] = "raw_id"
+        if source_model is not None:
+            attrs["raw_id"] = {
+                "app_label": source_model._meta.app_label,
+                "model_name": source_model._meta.model_name,
+                "field_name": name,
+            }
     if name in filter_horizontal:
         attrs["admin_widget"] = "filter_horizontal"
     if name in filter_vertical:
