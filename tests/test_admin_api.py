@@ -2627,6 +2627,12 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["tags"]["attrs"]["multiple"] is True
     assert fields_by_name["tags"]["attrs"]["blank"] is True
     assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_horizontal"
+    assert fields_by_name["tags"]["attrs"]["filtered_select"] == {
+        "app_label": "testapp",
+        "model_name": "product",
+        "field_name": "tags",
+        "direction": "horizontal",
+    }
     assert form.json()["form"]["filter_horizontal"] == ["tags"]
 
     change_form = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
@@ -3018,6 +3024,12 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
         {"id": str(sample.category_id), "text": "Cameras"}
     ]
     assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_vertical"
+    assert fields_by_name["tags"]["attrs"]["filtered_select"] == {
+        "app_label": "testapp",
+        "model_name": "product",
+        "field_name": "tags",
+        "direction": "vertical",
+    }
     assert {option["text"] for option in fields_by_name["tags"]["attrs"]["selected_options"]} == {
         "Featured",
         "Compact",

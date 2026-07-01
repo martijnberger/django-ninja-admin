@@ -117,6 +117,8 @@ Completed or mostly complete:
 - Form descriptions now expose widget template, fieldset, format, and
   `MultiWidget` subwidget metadata for richer frontend rendering.
 - Raw-id form field descriptions now include structured lookup request metadata.
+- Filter-horizontal and filter-vertical form field descriptions now include
+  structured selector metadata.
 - Form descriptions now support callable `readonly_fields`, exposing stable string names, labels, values, and display metadata while accepting them in admin checks.
 - Permission hardening for actions, autocomplete, view-on-site, and object-level bulk updates.
 - Ninja-native `ChangeList` foundation for validated lookup params, shared action/changelist querysets, search, ordering, pagination, show-all behavior, `list_select_related`, `date_hierarchy`, and facet counts.
