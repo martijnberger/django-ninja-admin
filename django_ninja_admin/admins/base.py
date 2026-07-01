@@ -277,7 +277,7 @@ class BaseAdmin:
         if isinstance(field, forms.JSONField):
             return Any
         if isinstance(field, forms.MultipleChoiceField):
-            return list[str]
+            return list[self.get_pydantic_type_for_choices(field.choices)]
         if isinstance(field, forms.FileField):
             return Any
         if getattr(field, "choices", None) and not isinstance(field.choices, str | bytes):

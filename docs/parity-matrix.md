@@ -62,7 +62,7 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | Dynamic output schemas | partial | `BaseAdmin.get_output_schema`, schema override tests including computed `ModelAdmin` methods | Stable component names and richer custom fields |
-| Pydantic request envelopes | partial | Per-model create/update/bulk, richer JSON/UUID/IP/duration form-field types, per-inline operation, discriminated action payload variants, and custom action input schemas with OpenAPI tests | Broader edge-case schemas and snapshots |
+| Pydantic request envelopes | partial | Per-model create/update/bulk, richer JSON/UUID/IP/duration/multiple-choice form-field types, per-inline operation, discriminated action payload variants, and custom action input schemas with OpenAPI tests | Broader edge-case schemas and snapshots |
 | Django ModelForm validation | implemented | Create/update tests | More field/widget variants |
 | Custom `form_class` and formfield hooks | partial | Mounted custom-form and custom-formfield route tests cover schema fields, custom widget attrs/media, inline form classes, inline formfield hooks/media, `formfield_overrides`, `formfield_for_dbfield`, relation/choice hooks, form validation, persistence, and system checks for `form_class`/`formfield_overrides` | More field override edge cases |
 | Form descriptions | partial | Widget, custom-widget, widget templates/subwidgets, temporal input formats, form media, validator, initial values, structured relation/autocomplete, selected relation labels, relation `limit_choices_to`, numeric, decimal, choice, readonly display/callable, model-field identity, file/image, m2m, and admin-widget metadata tests | Custom field metadata and advanced widget details |

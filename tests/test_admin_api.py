@@ -2299,6 +2299,54 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample):
         )
 
 
+def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
+    class MultiChoiceProductForm(forms.ModelForm):
+        numeric_flags = forms.MultipleChoiceField(
+            required=False,
+            choices=((1, "One"), (2, "Two")),
+        )
+        mixed_flags = forms.MultipleChoiceField(
+            required=False,
+            choices=((1, "One"), ("two", "Two")),
+        )
+
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status")
+
+    class MultiChoiceProductAdmin(ModelAdmin):
+        form_class = MultiChoiceProductForm
+
+    model_admin = MultiChoiceProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    schema = model_admin.get_write_schema(None)
+
+    validated = schema.model_validate(
+        {
+            "name": "Typed choices",
+            "category": sample.category_id,
+            "price": "9.00",
+            "stock_status": "in_stock",
+            "numeric_flags": [1, 2],
+            "mixed_flags": [1, "two"],
+        }
+    )
+
+    assert validated.numeric_flags == [1, 2]
+    assert validated.mixed_flags == [1, "two"]
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed choices",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "numeric_flags": ["one"],
+                "mixed_flags": [1, "two"],
+            }
+        )
+
+
 def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     alpha_date = timezone.make_aware(datetime(2024, 1, 15, 10, 0))
     beta = Product.objects.get(name="Beta")

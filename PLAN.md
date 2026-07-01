@@ -112,6 +112,8 @@ Completed or mostly complete:
   types for matching Django form fields.
 - Pydantic request schemas now use native duration types, and form descriptions
   expose temporal input formats.
+- Pydantic request schemas now infer typed list entries for multiple-choice
+  fields from declared choice values.
 - Form descriptions now expose widget template, fieldset, format, and
   `MultiWidget` subwidget metadata for richer frontend rendering.
 - Raw-id form field descriptions now include structured lookup request metadata.
