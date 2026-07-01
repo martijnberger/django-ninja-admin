@@ -30,6 +30,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   strings for page-range rendering.
 - Added page-local and filtered-result row indexes to changelist rows.
 - Added changelist show-all and clear-show-all query-string metadata.
+- Made changelist date hierarchy start at the lowest useful initial level when
+  all filtered results share a year or month.
 
 ## 0.1.15 - 2026-07-02
 

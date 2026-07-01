@@ -3810,6 +3810,43 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     assert bad_day.json()["errors"] == [{"message": "Invalid day.", "param": "created_at__day"}]
 
 
+def test_changelist_date_hierarchy_selects_lowest_useful_initial_level(admin_client, sample):
+    beta = Product.objects.get(name="Beta")
+    Product.objects.filter(pk=sample.pk).update(created_at=timezone.make_aware(datetime(2024, 1, 15, 10, 0)))
+    Product.objects.filter(pk=beta.pk).update(created_at=timezone.make_aware(datetime(2024, 2, 20, 10, 0)))
+
+    same_year = admin_client.get("/admin-api/testapp/product")
+
+    assert same_year.status_code == 200
+    same_year_hierarchy = same_year.json()["config"]["date_hierarchy"]
+    assert same_year_hierarchy["level"] == "month"
+    assert same_year_hierarchy["params"] == {"year": 2024}
+    assert same_year_hierarchy["clear_query_string"] == "?"
+    assert same_year_hierarchy["back_query_string"] == "?"
+    assert [
+        (choice["value"], choice["query_string"]) for choice in same_year_hierarchy["choices"]
+    ] == [
+        (1, "?created_at__year=2024&created_at__month=1"),
+        (2, "?created_at__year=2024&created_at__month=2"),
+    ]
+
+    Product.objects.filter(pk=beta.pk).update(created_at=timezone.make_aware(datetime(2024, 1, 20, 10, 0)))
+    same_month = admin_client.get("/admin-api/testapp/product")
+
+    assert same_month.status_code == 200
+    same_month_hierarchy = same_month.json()["config"]["date_hierarchy"]
+    assert same_month_hierarchy["level"] == "day"
+    assert same_month_hierarchy["params"] == {"year": 2024, "month": 1}
+    assert same_month_hierarchy["clear_query_string"] == "?"
+    assert same_month_hierarchy["back_query_string"] == "?created_at__year=2024"
+    assert [
+        (choice["value"], choice["query_string"]) for choice in same_month_hierarchy["choices"]
+    ] == [
+        (15, "?created_at__year=2024&created_at__month=1&created_at__day=15"),
+        (20, "?created_at__year=2024&created_at__month=1&created_at__day=20"),
+    ]
+
+
 def test_changelist_date_hierarchy_uses_active_timezone(admin_client, sample):
     boundary = datetime(2024, 1, 1, 0, 30, tzinfo=UTC)
     Product.objects.all().update(created_at=boundary)
@@ -3822,7 +3859,9 @@ def test_changelist_date_hierarchy_uses_active_timezone(admin_client, sample):
     hierarchy = response.json()["config"]["date_hierarchy"]
     assert hierarchy["field_type"] == "DateTimeField"
     assert hierarchy["timezone"] == "America/Los_Angeles"
-    assert [choice["value"] for choice in hierarchy["choices"]] == [2023]
+    assert hierarchy["level"] == "day"
+    assert hierarchy["params"] == {"year": 2023, "month": 12}
+    assert [choice["value"] for choice in hierarchy["choices"]] == [31]
 
     assert by_year.status_code == 200
     assert by_year.json()["config"]["result_count"] == Product.objects.count()

@@ -528,6 +528,7 @@ class ChangeList:
 
         field = self.date_hierarchy_model_field
         values = self.get_date_hierarchy_values(self.params)
+        values = self.select_date_hierarchy_level(values, field)
         year_param, month_param, day_param = self.date_hierarchy_param_names
         queryset = self.date_queryset()
         if "year" in values:
@@ -566,12 +567,38 @@ class ChangeList:
     def date_hierarchy_clear_query_string(self):
         return self.get_query_string({}, remove=self.date_hierarchy_param_names)
 
+    def select_date_hierarchy_level(self, values, field):
+        if values:
+            return values
+
+        date_range = self.date_queryset().aggregate(
+            first=models.Min(self.date_hierarchy_field),
+            last=models.Max(self.date_hierarchy_field),
+        )
+        first = date_range["first"]
+        last = date_range["last"]
+        if first is None or last is None:
+            return values
+        if isinstance(field, models.DateTimeField):
+            first = timezone.localtime(first) if timezone.is_aware(first) else first
+            last = timezone.localtime(last) if timezone.is_aware(last) else last
+
+        selected_values = {}
+        if first.year == last.year:
+            selected_values["year"] = first.year
+            if first.month == last.month:
+                selected_values["month"] = first.month
+        return selected_values
+
     def date_hierarchy_back_query_string(self, values):
         year_param, month_param, day_param = self.date_hierarchy_param_names
         if "day" in values:
-            return self.get_query_string({}, remove=[day_param])
+            return self.get_query_string(
+                {year_param: values["year"], month_param: values["month"]},
+                remove=[day_param],
+            )
         if "month" in values:
-            return self.get_query_string({}, remove=[month_param, day_param])
+            return self.get_query_string({year_param: values["year"]}, remove=[month_param, day_param])
         if "year" in values:
             return self.get_query_string({}, remove=[year_param, month_param, day_param])
         return None
