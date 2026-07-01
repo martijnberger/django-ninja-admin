@@ -25,7 +25,7 @@ class ProductImageInline(TabularInline):
 
 
 class ProductAdmin(ModelAdmin):
-    list_display = ("name", "category", "price", "stock_status", "upper_name")
+    list_display = ("name", "category", "price", "stock_status", "upper_name", "has_description", "tagline")
     list_filter = ("stock_status", "category", PriceBandFilter)
     list_editable = ("stock_status",)
     search_fields = ("name", "description", "category__name")
@@ -39,6 +39,14 @@ class ProductAdmin(ModelAdmin):
     @display(description="Upper name", ordering="name")
     def upper_name(self, obj):
         return obj.name.upper()
+
+    @display(boolean=True, description="Has description")
+    def has_description(self, obj):
+        return bool(obj.description)
+
+    @display(description="Tagline", empty_value="No description")
+    def tagline(self, obj):
+        return obj.description or None
 
     @action(description="Mark out of stock", permissions=["change"])
     def mark_out_of_stock(self, request, queryset):

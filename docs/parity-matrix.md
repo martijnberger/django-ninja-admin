@@ -40,6 +40,7 @@ Statuses:
 | Admin system checks | partial | `django_ninja_admin/checks.py`, invalid-admin tests | Match Django check IDs/coverage more closely |
 | `get_changelist()` hooks | implemented | `ModelAdmin.get_changelist*`, route hook test | More subclassing examples/docs |
 | Custom site/model views | partial | `admin_view()`, `get_urls()`, `route()`, custom route tests | More auth/tag/response-schema override coverage |
+| Display decorator metadata | partial | `@display` descriptions, ordering, boolean flags, empty values in changelist tests | More model-method/property and readonly-field display variants |
 
 ## Changelist, Filtering, Search, And Ordering
 

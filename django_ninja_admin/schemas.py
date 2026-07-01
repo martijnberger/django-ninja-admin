@@ -117,6 +117,8 @@ class Column(Schema):
     field: str
     headerName: str
     display_link: bool = False
+    boolean: bool = False
+    empty_value_display: str | None = None
     sortable: bool = False
     ordering_field: str | None = None
     ordering_index: str | None = None

@@ -55,7 +55,7 @@ from django_ninja_admin.schemas import (
 from django_ninja_admin.utils.deletion import deletion_error_payload
 from django_ninja_admin.utils.format_error import format_error
 from django_ninja_admin.utils.forms import form_errors, formset_errors, model_data_for_form
-from django_ninja_admin.utils.lookup import label_for_field, lookup_field
+from django_ninja_admin.utils.lookup import display_metadata_for_field, label_for_field, lookup_field
 from django_ninja_admin.utils.quote import unquote
 
 all_sites = WeakSet()
@@ -722,6 +722,7 @@ class NinjaAdminSite:
                 "field": field,
                 "headerName": label_for_field(field, model_admin.model, model_admin),
                 "display_link": field in (changelist.list_display_links or ()),
+                **display_metadata_for_field(field, model_admin.model, model_admin),
                 "sortable": field in changelist.ordering_field_columns,
                 "ordering_field": changelist.get_ordering_field(field),
                 "ordering_index": changelist.ordering_field_columns.get(field),
@@ -735,7 +736,9 @@ class NinjaAdminSite:
             cells = {}
             for field in list_display:
                 value = lookup_field(field, obj, model_admin)
-                cells[field] = empty_value if value is None else value
+                display_metadata = display_metadata_for_field(field, model_admin.model, model_admin)
+                field_empty_value = display_metadata["empty_value_display"] or empty_value
+                cells[field] = field_empty_value if value in (None, "") else value
             rows.append({"id": obj.pk, "cells": cells})
         action_form = [
             {

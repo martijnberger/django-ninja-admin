@@ -77,6 +77,7 @@ Completed or mostly complete:
 - Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, date hierarchy, actions, and inlines.
 - `get_changelist()` and `get_changelist_instance()` hooks for changelist customization.
 - Initial site/model custom view support through `admin_view()`, `get_urls()`, and `route()` helpers, including OpenAPI registration.
+- Display decorator metadata for descriptions, ordering, booleans, and per-field empty values is reflected in changelist columns/results.
 - Initial behavioral tests and no DRF/drf-spectacular runtime dependency.
 
 Known non-parity areas:
@@ -88,7 +89,7 @@ Known non-parity areas:
 - Field metadata now covers common widget, relation, choice, validator, numeric, decimal, and readonly attributes, but file/image fields, custom model fields, raw-id fields, radio fields, prepopulated fields, and many-to-many widgets still need deeper parity.
 - Inline formsets, typed operation schemas, protected-delete details, and stricter bulk validation are now used, but upstream-style error semantics and edge-case coverage are not exhaustive.
 - OpenAPI generation works, but it does not yet expose full per-model request/response contracts or the same richness upstream provided through drf-spectacular hooks.
-- Admin extensibility is still young: custom view routing exists, but deeper auth/tag/response-schema coverage and override-hook parity need work.
+- Admin extensibility is still young: custom view routing and display metadata exist, but deeper auth/tag/response-schema coverage and override-hook parity need work.
 - Upstream fixture parity and contract comparisons have not been ported beyond the initial parity matrix.
 
 ## Implementation Phases

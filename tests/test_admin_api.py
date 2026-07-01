@@ -185,17 +185,26 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
 
     show_all = admin_client.get("/admin-api/testapp/product?all=1")
     assert show_all.status_code == 200
-    assert len(show_all.json()["rows"]) == show_all.json()["config"]["result_count"]
-    assert show_all.json()["config"]["show_all"] is True
-    assert show_all.json()["config"]["can_show_all"] is True
-    assert show_all.json()["config"]["list_display_links"] == ["name"]
-    assert show_all.json()["columns"][0]["display_link"] is True
-    assert show_all.json()["columns"][2]["sortable"] is True
-    assert show_all.json()["config"]["search_fields"] == ["name", "description", "category__name"]
-    price_column = next(column for column in show_all.json()["columns"] if column["field"] == "price")
+    show_all_body = show_all.json()
+    assert len(show_all_body["rows"]) == show_all_body["config"]["result_count"]
+    assert show_all_body["config"]["show_all"] is True
+    assert show_all_body["config"]["can_show_all"] is True
+    assert show_all_body["config"]["list_display_links"] == ["name"]
+    assert show_all_body["columns"][0]["display_link"] is True
+    assert show_all_body["columns"][2]["sortable"] is True
+    assert show_all_body["config"]["search_fields"] == ["name", "description", "category__name"]
+    price_column = next(column for column in show_all_body["columns"] if column["field"] == "price")
     assert price_column["ascending_query_string"] == "?all=1&o=3"
     assert price_column["descending_query_string"] == "?all=1&o=-3"
     assert price_column["remove_sorting_query_string"] == "?all=1"
+    columns_by_field = {column["field"]: column for column in show_all_body["columns"]}
+    assert columns_by_field["has_description"]["boolean"] is True
+    assert columns_by_field["tagline"]["empty_value_display"] == "No description"
+    rows_by_name = {row["cells"]["name"]: row for row in show_all_body["rows"]}
+    assert rows_by_name["Alpha"]["cells"]["has_description"] is True
+    assert rows_by_name["Alpha"]["cells"]["tagline"] == "Nice camera"
+    assert rows_by_name["Beta"]["cells"]["has_description"] is False
+    assert rows_by_name["Beta"]["cells"]["tagline"] == "No description"
 
 
 def test_changelist_auto_selects_related_list_display_fields(db):
