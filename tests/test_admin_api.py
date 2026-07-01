@@ -468,6 +468,19 @@ def test_admin_checks_report_invalid_model_admin_configuration(db):
     } <= error_ids
 
 
+def test_admin_checks_reject_empty_list_display(db):
+    class EmptyListDisplayProductAdmin(ModelAdmin):
+        list_display = ()
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, EmptyListDisplayProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E091"}
+    assert "list_display" in errors[0].msg
+
+
 def test_admin_checks_validate_inline_count_options(db):
     class ValidInline(TabularInline):
         model = ProductImage

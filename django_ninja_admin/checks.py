@@ -101,6 +101,8 @@ def _model_field(model_admin, name):
 def _check_display_options(model_admin):
     errors = []
     list_display = tuple(model_admin.get_list_display(None))
+    if not list_display:
+        errors.append(_error(model_admin.__class__, "The value of 'list_display' must not be empty.", "E091"))
     editable_form_fields = _editable_form_field_names(model_admin)
     excluded_form_fields = set(model_admin.get_exclude(None) or ())
     for item in list_display:

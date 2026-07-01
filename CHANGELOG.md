@@ -7,6 +7,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added an admin system check rejecting empty `list_display` configurations.
 - Added selected relation labels to form field metadata for foreign-key and
   many-to-many fields.
 - Added Django-style human-readable change-message text to history responses,
