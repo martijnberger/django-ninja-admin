@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   fields listed in `exclude`.
 - Allowed Django-style row tuples in the `fields` option during admin checks,
   matching the form-generation flattening behavior.
+- Added admin system checks for malformed `fieldsets`, duplicate fieldset
+  fields, and `list_editable` fields omitted from custom fieldsets.
 - Added admin system checks rejecting reverse relations in `autocomplete_fields`
   and `raw_id_fields`.
 - Added admin system checks for invalid `prepopulated_fields` shapes, targets,

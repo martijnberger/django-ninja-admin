@@ -648,16 +648,26 @@ def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db
         list_editable = ("stock_status",)
         exclude = ("stock_status",)
 
+    class MissingFromFieldsetsProductAdmin(ModelAdmin):
+        list_display = ("name", "stock_status")
+        list_display_links = ("name",)
+        list_editable = ("stock_status",)
+        fieldsets = ((None, {"fields": ("name", "category", "price")}),)
+
     fields_site = NinjaAdminSite(include_auth=False)
     fields_site.register(Product, MissingFromFieldsProductAdmin)
     exclude_site = NinjaAdminSite(include_auth=False)
     exclude_site.register(Product, ExcludedProductAdmin)
+    fieldsets_site = NinjaAdminSite(include_auth=False)
+    fieldsets_site.register(Product, MissingFromFieldsetsProductAdmin)
 
     fields_errors = fields_site.check(app_configs=[django_apps.get_app_config("testapp")])
     exclude_errors = exclude_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    fieldsets_errors = fieldsets_site.check(app_configs=[django_apps.get_app_config("testapp")])
 
     assert "django_ninja_admin.E044" in {error.id for error in fields_errors}
     assert "django_ninja_admin.E044" in {error.id for error in exclude_errors}
+    assert "django_ninja_admin.E044" in {error.id for error in fieldsets_errors}
 
 
 def test_admin_checks_validate_fields_and_exclude_items(db):
@@ -689,6 +699,57 @@ def test_admin_checks_validate_fields_and_exclude_items(db):
     ]
     assert {error.id for error in fields_errors} == {"django_ninja_admin.E048"}
     assert {error.id for error in exclude_errors} == {"django_ninja_admin.E048", "django_ninja_admin.E049"}
+
+
+def test_admin_checks_validate_fieldsets_shape_and_duplicates(db):
+    class ValidFieldsetsProductAdmin(ModelAdmin):
+        fieldsets = (
+            (None, {"fields": (("name", "price"), "category")}),
+            ("Advanced", {"fields": ("description",)}),
+        )
+
+    class MissingFieldsOptionProductAdmin(ModelAdmin):
+        fieldsets = ((None, {"classes": ("collapse",)}),)
+
+    class StringFieldsProductAdmin(ModelAdmin):
+        fieldsets = ((None, {"fields": "name"}),)
+
+    class BadFieldItemProductAdmin(ModelAdmin):
+        fieldsets = ((None, {"fields": ("name", 123)}),)
+
+    class DuplicateFieldProductAdmin(ModelAdmin):
+        fieldsets = ((None, {"fields": ("name", ("price", "name"))}),)
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidFieldsetsProductAdmin)
+    missing_site = NinjaAdminSite(include_auth=False)
+    missing_site.register(Product, MissingFieldsOptionProductAdmin)
+    string_site = NinjaAdminSite(include_auth=False)
+    string_site.register(Product, StringFieldsProductAdmin)
+    bad_item_site = NinjaAdminSite(include_auth=False)
+    bad_item_site.register(Product, BadFieldItemProductAdmin)
+    duplicate_site = NinjaAdminSite(include_auth=False)
+    duplicate_site.register(Product, DuplicateFieldProductAdmin)
+
+    assert valid_site.check(app_configs=[django_apps.get_app_config("testapp")]) == []
+    assert list(valid_site.get_model_admin(Product).get_form_class(None).base_fields) == [
+        "name",
+        "price",
+        "category",
+        "description",
+    ]
+    assert {error.id for error in missing_site.check(app_configs=[django_apps.get_app_config("testapp")])} == {
+        "django_ninja_admin.E013"
+    }
+    assert {error.id for error in string_site.check(app_configs=[django_apps.get_app_config("testapp")])} == {
+        "django_ninja_admin.E013"
+    }
+    assert {error.id for error in bad_item_site.check(app_configs=[django_apps.get_app_config("testapp")])} == {
+        "django_ninja_admin.E013"
+    }
+    assert {error.id for error in duplicate_site.check(app_configs=[django_apps.get_app_config("testapp")])} == {
+        "django_ninja_admin.E064"
+    }
 
 
 def test_admin_checks_validate_radio_fields_shape(db):

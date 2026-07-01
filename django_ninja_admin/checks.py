@@ -11,7 +11,6 @@ from django.forms.models import BaseModelForm, _get_foreign_key
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.filters import FieldListFilter, SimpleListFilter
 from django_ninja_admin.utils.flatten import flatten
-from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 from django_ninja_admin.utils.lookup import field_name_for_display
 
 ERROR_PREFIX = "django_ninja_admin"
@@ -281,10 +280,10 @@ def _editable_form_field_names(model_admin):
     if model_admin.fields is not None:
         return set(flatten(model_admin.fields))
     if model_admin.fieldsets is not None:
-        try:
-            return set(flatten_fieldsets(model_admin.fieldsets))
-        except (KeyError, TypeError, ValueError):
+        fields, errors = _fieldsets_fields_and_errors(model_admin)
+        if errors:
             return None
+        return set(fields)
     return None
 
 
@@ -320,12 +319,8 @@ def _check_form_layout(model_admin):
     if model_admin.fields is not None:
         fields = list(flatten(model_admin.fields))
     elif model_admin.fieldsets is not None:
-        try:
-            fields = flatten_fieldsets(model_admin.fieldsets)
-        except (KeyError, TypeError, ValueError) as exc:
-            errors.append(
-                _error(model_admin.__class__, f"The value of 'fieldsets' is malformed: {exc}.", "E013")
-            )
+        fields, fieldset_errors = _fieldsets_fields_and_errors(model_admin)
+        errors.extend(fieldset_errors)
     for item in fields:
         if not isinstance(item, str):
             continue
@@ -346,6 +341,77 @@ def _check_form_layout(model_admin):
             )
 
     return errors
+
+
+def _fieldsets_fields_and_errors(model_admin):
+    fields = []
+    errors = []
+    fieldsets = getattr(model_admin, "fieldsets", None)
+    if not isinstance(fieldsets, (list, tuple)):
+        return fields, [_error(model_admin.__class__, "The value of 'fieldsets' must be a list or tuple.", "E013")]
+
+    seen_fields = set()
+    for index, fieldset in enumerate(fieldsets):
+        if not isinstance(fieldset, (list, tuple)) or len(fieldset) != 2:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'fieldsets[{index}]' must be a two-item tuple.",
+                    "E013",
+                )
+            )
+            continue
+
+        _name, options = fieldset
+        if not isinstance(options, Mapping):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'fieldsets[{index}][1]' must be a dictionary.",
+                    "E013",
+                )
+            )
+            continue
+        if "fields" not in options:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'fieldsets[{index}][1]' must contain a 'fields' option.",
+                    "E013",
+                )
+            )
+            continue
+        if not isinstance(options["fields"], (list, tuple)):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'fieldsets[{index}][1]['fields']' must be a list or tuple.",
+                    "E013",
+                )
+            )
+            continue
+
+        for field_name in flatten(options["fields"]):
+            if not isinstance(field_name, str):
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"Items in 'fieldsets[{index}][1]['fields']' must be strings.",
+                        "E013",
+                    )
+                )
+                continue
+            fields.append(field_name)
+            if field_name in seen_fields:
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The field '{field_name}' is duplicated in 'fieldsets'.",
+                        "E064",
+                    )
+                )
+            seen_fields.add(field_name)
+    return fields, errors
 
 
 def _check_form_option_items(model_admin, option, *, require_model_field=False):
