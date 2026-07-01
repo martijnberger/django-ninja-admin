@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.10 - 2026-07-01
+
 - Added custom `form_class` support for inline formsets, including admin checks,
   form metadata, and mutation validation through the inline `ModelForm`.
 - Added `get_changeform_initial_data()` support so add-form descriptions expose
