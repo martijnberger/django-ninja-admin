@@ -14,6 +14,7 @@ class ProductAdmin(ModelAdmin):
     list_filter = ("stock_status",)
     list_editable = ("stock_status",)
     search_fields = ("name", "description", "category__name")
+    autocomplete_fields = ("category",)
     ordering = ("name",)
     inlines = [ProductImageInline]
     actions = ["mark_out_of_stock"]

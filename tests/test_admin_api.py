@@ -20,6 +20,22 @@ def admin_client(db):
 
 
 @pytest.fixture
+def staff_client(db):
+    user_count = 0
+
+    def make_client(*permission_codenames):
+        nonlocal user_count
+        user_count += 1
+        user = get_user_model().objects.create_user(f"staff-{user_count}", password="pw", is_staff=True)
+        user.user_permissions.set(Permission.objects.filter(codename__in=permission_codenames))
+        client = Client()
+        client.force_login(user)
+        return client
+
+    return make_client
+
+
+@pytest.fixture
 def sample(db):
     category = Category.objects.create(name="Cameras")
     product = Product.objects.create(name="Alpha", category=category, price="12.50", description="Nice camera")
@@ -128,6 +144,46 @@ def test_actions_bulk_autocomplete_and_view_on_site(admin_client, sample):
     onsite = admin_client.get(f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}")
     assert onsite.status_code == 200
     assert onsite.json()["url"].endswith(f"/products/{sample.pk}/")
+
+
+def test_model_actions_require_model_access(staff_client, sample):
+    client = staff_client()
+    response = client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "mark_out_of_stock", "selected_ids": [sample.pk]},
+        content_type="application/json",
+    )
+    assert response.status_code == 403
+
+
+def test_autocomplete_requires_source_model_access_and_declared_field(admin_client, staff_client, sample):
+    source_denied = staff_client("view_category").get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "category",
+            "term": "Cam",
+        },
+    )
+    assert source_denied.status_code == 403
+
+    undeclared_field = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "stock_status",
+            "term": "in",
+        },
+    )
+    assert undeclared_field.status_code == 404
+
+
+def test_view_on_site_requires_model_access(staff_client, sample):
+    content_type = ContentType.objects.get_for_model(Product)
+    response = staff_client().get(f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}")
+    assert response.status_code == 403
 
 
 def test_unauthenticated_is_rejected(db):

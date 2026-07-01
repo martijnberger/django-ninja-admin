@@ -374,13 +374,18 @@ class NinjaAdminSite:
             term: str = "",
             page: int = 1,
         ):
-            source_model = apps.get_model(app_label, model_name)
             try:
+                source_model = apps.get_model(app_label, model_name)
+                source_admin = site.get_model_admin(source_model)
                 source_field = source_model._meta.get_field(field_name)
                 remote_model = source_field.remote_field.model
                 model_admin = site.get_model_admin(remote_model)
-            except Exception:
+            except (AttributeError, LookupError, NotRegistered):
                 raise Http404
+            if field_name not in source_admin.get_autocomplete_fields(request):
+                raise Http404
+            if not source_admin.has_view_or_change_permission(request):
+                raise PermissionDenied
             if not model_admin.search_fields:
                 raise MissingSearchFields
             to_field_name = getattr(source_field.remote_field, "field_name", remote_model._meta.pk.attname)
@@ -410,14 +415,25 @@ class NinjaAdminSite:
         def view_on_site(request, content_type_id: int, object_id: str):
             try:
                 content_type = ContentType.objects.get(pk=content_type_id)
-                if not content_type.model_class():
+                model = content_type.model_class()
+                if model is None:
                     raise Http404
-                obj = content_type.get_object_for_this_type(pk=object_id)
-            except (ObjectDoesNotExist, ValueError, ValidationError):
+                model_admin = site.get_model_admin(model)
+                obj = model_admin.get_object(request, unquote(object_id))
+                if obj is None:
+                    raise Http404
+            except (ObjectDoesNotExist, ValueError, ValidationError, NotRegistered):
                 raise Http404
-            if not hasattr(obj, "get_absolute_url"):
+            if not model_admin.has_view_or_change_permission(request, obj):
+                raise PermissionDenied
+            if callable(model_admin.view_on_site):
+                absurl = model_admin.view_on_site(obj)
+            elif model_admin.view_on_site and hasattr(obj, "get_absolute_url"):
+                absurl = obj.get_absolute_url()
+            else:
+                absurl = None
+            if not absurl:
                 return Status(409, {"errors": [{"message": "Object has no get_absolute_url().", "param": "object_id"}]})
-            absurl = obj.get_absolute_url()
             if absurl.startswith(("http://", "https://", "//")):
                 return {"url": absurl}
             try:
@@ -485,6 +501,8 @@ class NinjaAdminSite:
             operation_id=f"{app_label}_{model_name}_action",
         )
         def actions_view(request, payload: ActionPayload):
+            if not model_admin.has_view_or_change_permission(request):
+                raise PermissionDenied
             cl_queryset = site._filtered_queryset(request, model_admin)
             return model_admin.response_action(request, cl_queryset, payload)
 
