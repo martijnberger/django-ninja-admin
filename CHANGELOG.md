@@ -9,6 +9,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Improved inline mutations so server-side add/change/delete validation returns
   row-indexed errors across the payload before any parent or inline writes occur.
+- Added multipart create/update routes for file-field forms, validating the
+  JSON `data`/`inlines` parts with generated Pydantic schemas before passing
+  uploads to Django `ModelForm` file handling.
 
 ## 0.1.1 - 2026-07-01
 

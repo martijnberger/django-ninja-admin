@@ -7,8 +7,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ImproperlyConfigured
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import models
 from django.test import Client, RequestFactory, override_settings
+from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.utils import timezone
 from ninja.security import SessionAuthIsStaff
 
@@ -75,6 +77,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert schema_body["paths"]["/admin-api/testapp/product"]["post"]["requestBody"]["content"]["application/json"][
         "schema"
     ] == {"$ref": "#/components/schemas/ProductAdminCreatePayload"}
+    multipart_schema = schema_body["paths"]["/admin-api/testapp/product/multipart"]["post"]["requestBody"]["content"][
+        "multipart/form-data"
+    ]["schema"]
+    assert multipart_schema["properties"]["manual"] == {"type": "string", "format": "binary"}
+    assert multipart_schema["required"] == ["data"]
     assert {
         "ProductAdminCreateData",
         "ProductAdminCreatePayload",
@@ -841,6 +848,76 @@ def test_file_field_can_be_cleared_with_null_payload(admin_client, sample):
 
     change_entry = LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).latest("action_time")
     assert json.loads(change_entry.change_message) == [{"changed": {"fields": ["Manual"]}}]
+
+
+def test_file_field_can_be_uploaded_with_multipart_payload(admin_client, sample, tmp_path):
+    with override_settings(MEDIA_ROOT=tmp_path):
+        created = admin_client.post(
+            "/admin-api/testapp/product/multipart",
+            data={
+                "data": json.dumps(
+                    {
+                        "name": "Upload",
+                        "category": sample.category_id,
+                        "tags": list(sample.tags.values_list("pk", flat=True)),
+                        "price": "7.00",
+                        "stock_status": "in_stock",
+                        "description": "Created with upload",
+                    }
+                ),
+                "manual": SimpleUploadedFile("manual.txt", b"hello", content_type="text/plain"),
+            },
+        )
+
+        assert created.status_code == 201
+        created_body = created.json()["data"]
+        product = Product.objects.get(pk=created_body["id"])
+        assert product.manual.name.startswith("manuals/manual")
+        assert (tmp_path / product.manual.name).read_bytes() == b"hello"
+        assert created_body["manual"] == {
+            "name": product.manual.name,
+            "url": f"/media/{product.manual.name}",
+        }
+
+        changed = admin_client.patch(
+            f"/admin-api/testapp/product/{product.pk}/multipart",
+            data=encode_multipart(
+                BOUNDARY,
+                {
+                    "data": json.dumps({"description": "Updated with upload"}),
+                    "manual": SimpleUploadedFile("replacement.txt", b"updated", content_type="text/plain"),
+                },
+            ),
+            content_type=MULTIPART_CONTENT,
+        )
+
+        assert changed.status_code == 200
+        product.refresh_from_db()
+        assert product.description == "Updated with upload"
+        assert product.manual.name.startswith("manuals/replacement")
+        assert (tmp_path / product.manual.name).read_bytes() == b"updated"
+        change_entry = LogEntry.objects.filter(object_id=str(product.pk), action_flag=CHANGE).latest("action_time")
+        changed_fields = json.loads(change_entry.change_message)[0]["changed"]["fields"]
+        assert set(changed_fields) == {"Description", "Manual"}
+
+
+def test_multipart_payload_uses_pydantic_request_validation(admin_client, sample):
+    response = admin_client.post(
+        "/admin-api/testapp/product/multipart",
+        data={
+            "data": json.dumps(
+                {
+                    "category": sample.category_id,
+                    "price": "7.00",
+                    "stock_status": "in_stock",
+                }
+            ),
+            "manual": SimpleUploadedFile("manual.txt", b"hello", content_type="text/plain"),
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["errors"][0]["param"] == "data.name"
 
 
 def test_direct_delete_returns_protected_object_details(admin_client, sample):

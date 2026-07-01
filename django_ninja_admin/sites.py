@@ -21,6 +21,7 @@ from django.db import router, transaction
 from django.db.models.base import ModelBase
 from django.forms.models import _get_foreign_key
 from django.http import Http404
+from django.http.multipartparser import MultiPartParserError
 from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
 from django.utils.text import capfirst
@@ -613,6 +614,8 @@ class NinjaAdminSite:
         bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
         action_payload_schema = model_admin.get_action_payload_schema(None)
         action_response_schema = model_admin.get_action_response_schema(None)
+        create_file_fields = site._file_form_field_names(model_admin, change=False)
+        change_file_fields = site._file_form_field_names(model_admin, change=True)
 
         @router.get(
             prefix,
@@ -641,26 +644,30 @@ class NinjaAdminSite:
             operation_id=f"{app_label}_{model_name}_create",
         )
         def create(request, payload: create_payload_schema):
-            if not model_admin.has_add_permission(request):
-                raise PermissionDenied
-            with transaction.atomic(using=router_db_for_write(model_admin.model)):
+            return site._create_object(request, model_admin, payload)
+
+        if create_file_fields:
+
+            @router.post(
+                f"{prefix}/multipart",
+                response={201: MutationResponse, 400: ErrorResponse, 403: ErrorResponse, 422: ErrorResponse},
+                tags=tags,
+                operation_id=f"{app_label}_{model_name}_create_multipart",
+                openapi_extra=site._multipart_openapi_extra(
+                    create_payload_schema,
+                    create_file_fields,
+                    required_data=True,
+                ),
+            )
+            def create_multipart(request):
+                payload = site._multipart_mutation_payload(request, create_payload_schema)
                 form_class = model_admin.get_form_class(request, None, change=False)
-                form = form_class(data=self._payload_data(payload))
-                if not form.is_valid():
-                    raise AdminValidationError({"form": form_errors(form)})
-                obj = model_admin.save_form(request, form, change=False)
-                model_admin.save_model(request, obj, form, change=False)
-                inline_results = site._process_inlines(
+                return site._create_object(
                     request,
                     model_admin,
-                    obj,
-                    self._payload_inlines(payload) or {},
-                    change=False,
+                    payload,
+                    files=site._multipart_form_files(request, form_class),
                 )
-                model_admin.save_related(request, form, inline_results, change=False)
-                change_message = model_admin.construct_change_message(request, form, inline_results, add=True)
-                model_admin.log_addition(request, obj, change_message)
-                return Status(201, model_admin.response_add(request, obj, form, inline_results))
 
         @router.post(
             f"{prefix}/actions",
@@ -756,6 +763,70 @@ class NinjaAdminSite:
         )
         def replace(request, object_id: str, payload: replace_payload_schema):
             return site._update_object(request, model_admin, object_id, payload, partial=False)
+
+        if change_file_fields:
+
+            @router.patch(
+                f"{prefix}/{{object_id}}/multipart",
+                response={
+                    200: MutationResponse,
+                    400: ErrorResponse,
+                    403: ErrorResponse,
+                    404: ErrorResponse,
+                    422: ErrorResponse,
+                },
+                tags=tags,
+                operation_id=f"{app_label}_{model_name}_partial_update_multipart",
+                openapi_extra=site._multipart_openapi_extra(
+                    update_payload_schema,
+                    change_file_fields,
+                    required_data=False,
+                ),
+            )
+            def update_multipart(request, object_id: str):
+                obj = site._get_object_or_404(request, model_admin, object_id)
+                form_class = model_admin.get_form_class(request, obj, change=True)
+                payload = site._multipart_mutation_payload(request, update_payload_schema)
+                return site._update_object(
+                    request,
+                    model_admin,
+                    object_id,
+                    payload,
+                    partial=True,
+                    files=site._multipart_form_files(request, form_class),
+                    obj=obj,
+                )
+
+            @router.put(
+                f"{prefix}/{{object_id}}/multipart",
+                response={
+                    200: MutationResponse,
+                    400: ErrorResponse,
+                    403: ErrorResponse,
+                    404: ErrorResponse,
+                    422: ErrorResponse,
+                },
+                tags=tags,
+                operation_id=f"{app_label}_{model_name}_update_multipart",
+                openapi_extra=site._multipart_openapi_extra(
+                    replace_payload_schema,
+                    change_file_fields,
+                    required_data=True,
+                ),
+            )
+            def replace_multipart(request, object_id: str):
+                obj = site._get_object_or_404(request, model_admin, object_id)
+                form_class = model_admin.get_form_class(request, obj, change=True)
+                payload = site._multipart_mutation_payload(request, replace_payload_schema)
+                return site._update_object(
+                    request,
+                    model_admin,
+                    object_id,
+                    payload,
+                    partial=False,
+                    files=site._multipart_form_files(request, form_class),
+                    obj=obj,
+                )
 
         @router.delete(
             f"{prefix}/{{object_id}}",
@@ -991,8 +1062,143 @@ class NinjaAdminSite:
                 normalized[f"{field_name}-clear"] = "on"
         return normalized
 
-    def _update_object(self, request, model_admin, object_id, payload, *, partial):
-        obj = self._get_object_or_404(request, model_admin, object_id)
+    def _create_object(self, request, model_admin, payload, *, files=None):
+        if not model_admin.has_add_permission(request):
+            raise PermissionDenied
+        with transaction.atomic(using=router_db_for_write(model_admin.model)):
+            form_class = model_admin.get_form_class(request, None, change=False)
+            form_data = self._normalize_file_clear_data(form_class, self._payload_data(payload))
+            form = form_class(data=form_data, files=files or None)
+            if not form.is_valid():
+                raise AdminValidationError({"form": form_errors(form)})
+            obj = model_admin.save_form(request, form, change=False)
+            model_admin.save_model(request, obj, form, change=False)
+            inline_results = self._process_inlines(
+                request,
+                model_admin,
+                obj,
+                self._payload_inlines(payload) or {},
+                change=False,
+            )
+            model_admin.save_related(request, form, inline_results, change=False)
+            change_message = model_admin.construct_change_message(request, form, inline_results, add=True)
+            model_admin.log_addition(request, obj, change_message)
+            return Status(201, model_admin.response_add(request, obj, form, inline_results))
+
+    def _file_form_field_names(self, model_admin, request=None, obj=None, *, change):
+        form_class = model_admin.get_form_class(request, obj, change=change)
+        return [name for name, field in form_class.base_fields.items() if isinstance(field, forms.FileField)]
+
+    def _multipart_openapi_extra(self, payload_schema, file_fields, *, required_data):
+        properties = {
+            "data": {
+                "type": "string",
+                "description": f"JSON object matching {payload_schema.__name__}.data.",
+            },
+            "inlines": {
+                "type": "string",
+                "description": f"Optional JSON object matching {payload_schema.__name__}.inlines.",
+            },
+        }
+        for field_name in file_fields:
+            properties[field_name] = {"type": "string", "format": "binary"}
+        schema = {"type": "object", "properties": properties}
+        if required_data:
+            schema["required"] = ["data"]
+        return {"requestBody": {"required": True, "content": {"multipart/form-data": {"schema": schema}}}}
+
+    def _multipart_mutation_payload(self, request, payload_schema):
+        data = self._json_form_part(request, "data", default={})
+        inlines = self._json_form_part(request, "inlines", default=None)
+        if not isinstance(data, dict):
+            raise NinjaValidationError(
+                [
+                    {
+                        "loc": ("body", "payload", "data"),
+                        "msg": "Input should be a valid object",
+                        "type": "dict_type",
+                    }
+                ]
+            )
+        payload_data = {"data": data}
+        if inlines is not None:
+            if not isinstance(inlines, dict):
+                raise NinjaValidationError(
+                    [
+                        {
+                            "loc": ("body", "payload", "inlines"),
+                            "msg": "Input should be a valid object",
+                            "type": "dict_type",
+                        }
+                    ]
+                )
+            payload_data["inlines"] = inlines
+        try:
+            return payload_schema.model_validate(payload_data)
+        except PydanticValidationError as exc:
+            self._raise_request_validation(exc)
+
+    def _json_form_part(self, request, name, *, default):
+        form_data, _files = self._multipart_request_parts(request)
+        if name not in form_data:
+            return default
+        raw_value = form_data.get(name)
+        if raw_value in ("", None):
+            return default
+        try:
+            return json.loads(raw_value)
+        except json.JSONDecodeError:
+            raise NinjaValidationError(
+                [
+                    {
+                        "loc": ("body", "payload", name),
+                        "msg": "Input should be valid JSON",
+                        "type": "json_invalid",
+                    }
+                ]
+            )
+
+    def _raise_request_validation(self, exc):
+        errors = []
+        for error in exc.errors(include_url=False):
+            error = dict(error)
+            error.pop("input", None)
+            error["loc"] = ("body", "payload", *error.get("loc", ()))
+            errors.append(error)
+        raise NinjaValidationError(errors)
+
+    def _multipart_request_parts(self, request):
+        cache_name = "_django_ninja_admin_multipart_parts"
+        if hasattr(request, cache_name):
+            return getattr(request, cache_name)
+        if request.method == "POST":
+            parts = (request.POST, request.FILES)
+        else:
+            try:
+                parts = request.parse_file_upload(request.META, request)
+            except MultiPartParserError:
+                raise NinjaValidationError(
+                    [
+                        {
+                            "loc": ("body", "payload"),
+                            "msg": "Input should be valid multipart form data",
+                            "type": "multipart_invalid",
+                        }
+                    ]
+                )
+        setattr(request, cache_name, parts)
+        return parts
+
+    def _multipart_form_files(self, request, form_class):
+        _form_data, files = self._multipart_request_parts(request)
+        return {
+            name: files[name]
+            for name, field in form_class.base_fields.items()
+            if isinstance(field, forms.FileField) and name in files
+        }
+
+    def _update_object(self, request, model_admin, object_id, payload, *, partial, files=None, obj=None):
+        obj = obj or self._get_object_or_404(request, model_admin, object_id)
         if not model_admin.has_change_permission(request, obj):
             raise PermissionDenied
         with transaction.atomic(using=router_db_for_write(model_admin.model)):
@@ -1003,7 +1209,7 @@ class NinjaAdminSite:
                 current.update(form_data)
                 form_data = current
             form_data = self._normalize_file_clear_data(form_class, form_data)
-            form = form_class(data=form_data, instance=obj)
+            form = form_class(data=form_data, files=files or None, instance=obj)
             if not form.is_valid():
                 raise AdminValidationError({"form": form_errors(form)})
             updated_object = model_admin.save_form(request, form, change=True)
