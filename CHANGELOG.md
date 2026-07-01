@@ -7,6 +7,17 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.15 - 2026-07-02
+
+- Allowed `response_add` and `response_change` hooks to return Ninja `Status`
+  values for custom success statuses and bodies.
+- Added OpenAPI response-map coverage for common custom mutation success
+  statuses.
+- Added admin system checks for duplicate and non-string `list_editable`
+  entries.
+- Kept disabled Django form fields visible in form metadata while making them
+  optional in generated parent and inline Pydantic write schemas.
+
 ## 0.1.14 - 2026-07-02
 
 - Added structured list-editing row metadata to changelist responses, including
