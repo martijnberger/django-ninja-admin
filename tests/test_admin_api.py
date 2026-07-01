@@ -1373,6 +1373,12 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     paginated = admin_client.get("/admin-api/testapp/product?pp=1&page=2")
     assert paginated.status_code == 200
     assert paginated.json()["config"]["page"] == 2
+    assert paginated.json()["config"]["page_count"] == 3
+    assert paginated.json()["config"]["has_next"] is True
+    assert paginated.json()["config"]["has_previous"] is True
+    assert paginated.json()["config"]["multi_page"] is True
+    assert paginated.json()["config"]["pagination_required"] is True
+    assert paginated.json()["config"]["page_range"] == [1, 2, 3]
     assert len(paginated.json()["rows"]) == 1
 
     show_all = admin_client.get("/admin-api/testapp/product?all=1")
@@ -1382,6 +1388,8 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert show_all_body["config"]["full_count"] == 3
     assert show_all_body["config"]["show_all"] is True
     assert show_all_body["config"]["can_show_all"] is True
+    assert show_all_body["config"]["pagination_required"] is False
+    assert show_all_body["config"]["page_range"] == []
     assert show_all_body["config"]["list_display_links"] == ["name"]
     assert show_all_body["config"]["actions_on_top"] is True
     assert show_all_body["config"]["actions_on_bottom"] is False

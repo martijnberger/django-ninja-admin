@@ -95,6 +95,7 @@ Completed or mostly complete:
 - Admin system checks now reject non-sequence `actions` configurations before validating registered action names and permission hooks.
 - Changelist responses expose action UI placement and selection-counter metadata for frontend action controls.
 - Changelist responses now honor `show_full_result_count` and expose `show_admin_actions` metadata.
+- Changelist responses now expose admin-style pagination state with `multi_page`, `pagination_required`, and an elided `page_range`.
 - Changelist responses now support callable `list_display` entries with stable response keys, labels, display metadata, admin checks, and `admin_order_field` sorting.
 - Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, readonly, model `blank`/`null`, uniqueness/index, default, and upload metadata.
 - Form descriptions now support callable `readonly_fields`, exposing stable string names, labels, values, and display metadata while accepting them in admin checks.

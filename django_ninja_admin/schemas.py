@@ -199,6 +199,9 @@ class ChangelistConfig(Schema):
     per_page: int
     has_next: bool = False
     has_previous: bool = False
+    multi_page: bool = False
+    pagination_required: bool = False
+    page_range: list[int | str] = []
     show_all: bool = False
     can_show_all: bool = False
     show_facets: bool = False

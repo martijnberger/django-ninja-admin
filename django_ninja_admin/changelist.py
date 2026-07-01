@@ -38,6 +38,8 @@ class ChangeList:
         self.per_page = self.get_per_page()
         self.show_all = self.can_show_all()
         self.can_show_all_results = self.result_count <= self.model_admin.list_max_show_all
+        self.multi_page = self.result_count > self.per_page
+        self.pagination_required = self.multi_page and not self.show_all
         self.show_facets = self.should_show_facets()
         page_size = (self.result_count or 1) if self.show_all else self.per_page
         self.paginator = model_admin.paginator(self.queryset, page_size)
@@ -408,6 +410,11 @@ class ChangeList:
             return self.paginator.page(self.page_num)
         except InvalidPage as exc:
             raise Http404(f"Invalid page ({self.page_num}): {exc}")
+
+    def get_page_range(self):
+        if not self.pagination_required:
+            return []
+        return list(self.paginator.get_elided_page_range(self.page_num))
 
     def get_query_string(self, new_params=None, remove=None):
         new_params = new_params or {}
