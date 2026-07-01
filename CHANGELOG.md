@@ -19,6 +19,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   including offset step validation through Django form cleaners.
 - Added Django temporal form-field cleaners to Pydantic request schemas so
   custom date, time, and datetime input formats are accepted before persistence.
+- Added typed-choice enum/member validation for float, decimal, and UUID
+  coercion hooks.
 
 ## 0.1.12 - 2026-07-01
 

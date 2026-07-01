@@ -1,6 +1,7 @@
 import json
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from uuid import UUID
 
 import pytest
 from django import forms
@@ -2865,6 +2866,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
 
 
 def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
+    uuid_choice = "550e8400-e29b-41d4-a716-446655440000"
+    other_uuid_choice = "550e8400-e29b-41d4-a716-446655440001"
+
     class MultiChoiceProductForm(forms.ModelForm):
         status_override = forms.ChoiceField(
             required=False,
@@ -2895,6 +2899,21 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
             choices=(("1", "One"), ("2", "Two")),
             coerce=int,
         )
+        typed_decimal = forms.TypedChoiceField(
+            required=False,
+            choices=(("1.25", "One"), ("2.50", "Two")),
+            coerce=Decimal,
+        )
+        typed_floats = forms.TypedMultipleChoiceField(
+            required=False,
+            choices=(("1.5", "One"), ("2.5", "Two")),
+            coerce=float,
+        )
+        typed_uuid = forms.TypedChoiceField(
+            required=False,
+            choices=((uuid_choice, "One"), (other_uuid_choice, "Two")),
+            coerce=UUID,
+        )
 
         class Meta:
             model = Product
@@ -2918,6 +2937,9 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
             "mixed_flags": [1, "two"],
             "typed_number": "1",
             "typed_numbers": ["1", "2"],
+            "typed_decimal": "1.25",
+            "typed_floats": ["1.5", "2.5"],
+            "typed_uuid": uuid_choice,
         }
     )
 
@@ -2928,6 +2950,9 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
     assert json_schema["mixed_flags"]["anyOf"][0]["items"]["enum"] == [1, "two"]
     assert json_schema["typed_number"]["anyOf"][0]["enum"] == [1, 2]
     assert json_schema["typed_numbers"]["anyOf"][0]["items"]["enum"] == [1, 2]
+    assert json_schema["typed_decimal"]["anyOf"][0]["enum"] == ["1.25", "2.50"]
+    assert json_schema["typed_floats"]["anyOf"][0]["items"]["enum"] == [1.5, 2.5]
+    assert json_schema["typed_uuid"]["anyOf"][0]["enum"] == [uuid_choice, other_uuid_choice]
 
     assert validated.status_override == "draft"
     assert validated.grouped_status == "archived"
@@ -2935,6 +2960,9 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
     assert validated.mixed_flags == [1, "two"]
     assert validated.typed_number == 1
     assert validated.typed_numbers == [1, 2]
+    assert validated.typed_decimal == Decimal("1.25")
+    assert validated.typed_floats == [1.5, 2.5]
+    assert validated.typed_uuid == UUID(uuid_choice)
 
     with pytest.raises(PydanticValidationError):
         schema.model_validate(
@@ -3077,6 +3105,39 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
                 "mixed_flags": [1, "two"],
                 "typed_number": "1",
                 "typed_numbers": ["one"],
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed choices",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "typed_decimal": "3.75",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed choices",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "typed_floats": ["3.5"],
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed choices",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "typed_uuid": "550e8400-e29b-41d4-a716-446655440099",
             }
         )
 

@@ -130,6 +130,8 @@ Completed or mostly complete:
 - Pydantic request schemas now run Django date/time/datetime cleaners before
   type validation so custom temporal `input_formats` are accepted by request
   payloads.
+- Pydantic request schemas now preserve enum/member validation for typed
+  choice fields whose `coerce` hooks produce float, decimal, or UUID values.
 - Pydantic request schemas now infer typed list entries for multiple-choice
   fields from declared choice values.
 - Pydantic request schemas now constrain concrete Django choice values with

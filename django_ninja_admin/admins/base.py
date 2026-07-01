@@ -492,6 +492,9 @@ class BaseAdmin:
     def get_pydantic_choice_values(self, choices, *, coerce=None):
         values = []
         seen = set()
+        allowed_types = (str, int, bool)
+        if coerce is not None:
+            allowed_types = (str, int, bool, float, Decimal, UUID)
         for value in self.iter_choice_values(choices):
             if value in ("", None):
                 continue
@@ -500,7 +503,7 @@ class BaseAdmin:
                     value = coerce(value)
                 except (TypeError, ValueError):
                     continue
-            if not isinstance(value, str | int | bool):
+            if not isinstance(value, allowed_types):
                 continue
             key = (type(value), value)
             if key not in seen:
