@@ -15,9 +15,9 @@ from ninja import Schema
 from pydantic import create_model
 
 from django_ninja_admin.exceptions import NotRegistered
-from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue
+from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
-from django_ninja_admin.utils.forms import file_value_metadata, form_field_descriptions
+from django_ninja_admin.utils.forms import file_value_metadata, form_field_descriptions, image_value_metadata
 
 
 class BaseAdmin:
@@ -275,7 +275,9 @@ class BaseAdmin:
         for field in self.model._meta.fields:
             if field.name == self.model._meta.pk.name or field.name == "password":
                 continue
-            if isinstance(field, models.FileField):
+            if isinstance(field, models.ImageField):
+                custom_fields.append((field.name, ImageFieldValue | None, None))
+            elif isinstance(field, models.FileField):
                 custom_fields.append((field.name, FileFieldValue | None, None))
             else:
                 fields.append(field.name)
@@ -319,6 +321,9 @@ class BaseAdmin:
             if field.name == "password":
                 continue
             value = getattr(obj, field.name)
+            if isinstance(field, models.ImageField):
+                data[field.name] = image_value_metadata(value)
+                continue
             if isinstance(field, models.FileField):
                 data[field.name] = file_value_metadata(value)
                 continue

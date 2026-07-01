@@ -65,8 +65,8 @@ Statuses:
 | Pydantic request envelopes | partial | Per-model create/update/bulk, per-inline operation, discriminated action payload variants, and custom action input schemas with OpenAPI tests | Broader edge-case schemas and snapshots |
 | Django ModelForm validation | implemented | Create/update tests | More field/widget variants |
 | Custom `form_class` and formfield hooks | partial | Mounted custom-form and custom-formfield route tests cover schema fields, custom widget attrs, `formfield_overrides`, `formfield_for_dbfield`, relation/choice hooks, form validation, and persistence | More media and field override edge cases |
-| Form descriptions | partial | Widget, custom-widget, validator, relation, numeric, decimal, choice, readonly, model-field, file, m2m, and admin-widget metadata tests | Image metadata, custom field metadata, and advanced widget details |
-| File/image fields | partial | FileField output schema/serialization, current-file form metadata, JSON clear tests, multipart create/update routes, and Pydantic validation for multipart JSON parts | Image-specific behavior and deeper storage/widget edge cases |
+| Form descriptions | partial | Widget, custom-widget, validator, relation, numeric, decimal, choice, readonly, model-field, file/image, m2m, and admin-widget metadata tests | Custom field metadata and advanced widget details |
+| File/image fields | partial | FileField output schema/serialization, ImageField typed metadata, current-file form metadata, JSON clear tests, multipart create/update routes, and Pydantic validation for multipart JSON parts | Real image upload validation and deeper storage/widget edge cases |
 | Many-to-many fields | partial | Pydantic write schema, form value metadata, output serialization, create/update tests | Through models, permissions, and richer dual-select widget semantics |
 | Raw ID/radio/filter-horizontal/prepopulated | partial | Per-field `admin_widget`, radio orientation, prepopulated source, raw-id, filter-horizontal/filter-vertical, and conflict-check tests | Full Django widget rendering semantics and more edge cases |
 

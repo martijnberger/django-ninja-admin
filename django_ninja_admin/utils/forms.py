@@ -19,6 +19,18 @@ def file_value_metadata(value):
     return {"name": name, "url": url}
 
 
+def image_value_metadata(value):
+    metadata = file_value_metadata(value)
+    if metadata is None:
+        return None
+    for dimension in ("width", "height"):
+        try:
+            metadata[dimension] = getattr(value, dimension)
+        except Exception:
+            metadata[dimension] = None
+    return metadata
+
+
 def model_data_for_form(instance, fields):
     data = model_to_dict(instance, fields=fields)
     for key, value in list(data.items()):
@@ -96,6 +108,10 @@ def _model_field_metadata(field):
             attrs["default"] = default
     if isinstance(field, models.FileField):
         attrs["upload_to"] = str(getattr(field, "upload_to", ""))
+    if isinstance(field, models.ImageField):
+        attrs["image"] = True
+        attrs["width_field"] = getattr(field, "width_field", None) or None
+        attrs["height_field"] = getattr(field, "height_field", None) or None
     return attrs
 
 
@@ -141,7 +157,12 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         attrs["decimal_places"] = field.decimal_places
     if isinstance(field, forms.FileField):
         attrs["allow_empty_file"] = getattr(field, "allow_empty_file", False)
-        current_file = file_value_metadata(current_value)
+        if isinstance(field, forms.ImageField):
+            attrs["image"] = True
+            attrs["accepted_content_types"] = ["image/*"]
+            current_file = image_value_metadata(current_value)
+        else:
+            current_file = file_value_metadata(current_value)
         if current_file is not None:
             attrs["current_file"] = current_file
     attrs.update(_relation_metadata(field))

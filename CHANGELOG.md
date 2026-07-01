@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added changelist row URL and object-permission metadata for detail, change
   form, delete, and view-on-site frontend actions.
+- Added image-specific response schema and form metadata for Django
+  `ImageField` values, including upload hints and width/height field names.
 
 ## 0.1.2 - 2026-07-01
 

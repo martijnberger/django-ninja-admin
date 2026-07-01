@@ -82,6 +82,11 @@ class FileFieldValue(Schema):
     url: str | None = None
 
 
+class ImageFieldValue(FileFieldValue):
+    width: int | None = None
+    height: int | None = None
+
+
 class FormDescription(Schema):
     model: str
     readonly_fields: list[str]

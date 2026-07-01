@@ -12,6 +12,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import models
 from django.test import Client, RequestFactory, override_settings
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
+from django.test.utils import isolate_apps
 from django.utils import timezone
 from ninja.security import SessionAuthIsStaff
 
@@ -1354,6 +1355,56 @@ def test_file_field_can_be_uploaded_with_multipart_payload(admin_client, sample,
         change_entry = LogEntry.objects.filter(object_id=str(product.pk), action_flag=CHANGE).latest("action_time")
         changed_fields = json.loads(change_entry.change_message)[0]["changed"]["fields"]
         assert set(changed_fields) == {"Description", "Manual"}
+
+
+@isolate_apps("tests.testapp")
+def test_image_field_has_typed_schema_and_image_metadata(db):
+    class GalleryImage(models.Model):
+        image = models.ImageField(
+            upload_to="photos",
+            width_field="width",
+            height_field="height",
+            blank=True,
+        )
+        width = models.PositiveIntegerField(null=True, blank=True)
+        height = models.PositiveIntegerField(null=True, blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(GalleryImage)
+    model_admin = admin_site.get_model_admin(GalleryImage)
+    request = RequestFactory().get("/")
+    obj = GalleryImage(id=1, image="photos/sample.png", width=640, height=480)
+
+    output_schema = model_admin.get_output_schema().model_json_schema()
+    image_schema = output_schema["properties"]["image"]["anyOf"]
+    assert any(option.get("$ref", "").endswith("ImageFieldValue") for option in image_schema)
+    assert output_schema["$defs"]["ImageFieldValue"]["properties"]["width"]["anyOf"][0]["type"] == "integer"
+
+    image_field = next(
+        field for field in model_admin.get_form_fields_description(request, obj) if field["name"] == "image"
+    )
+    assert image_field["type"] == "ImageField"
+    assert image_field["attrs"]["image"] is True
+    assert image_field["attrs"]["accepted_content_types"] == ["image/*"]
+    assert image_field["attrs"]["upload_to"] == "photos"
+    assert image_field["attrs"]["width_field"] == "width"
+    assert image_field["attrs"]["height_field"] == "height"
+    assert image_field["attrs"]["current_file"] == {
+        "name": "photos/sample.png",
+        "url": "/media/photos/sample.png",
+        "width": None,
+        "height": None,
+    }
+
+    assert model_admin.serialize_object(obj, request)["image"] == {
+        "name": "photos/sample.png",
+        "url": "/media/photos/sample.png",
+        "width": None,
+        "height": None,
+    }
 
 
 def test_multipart_payload_uses_pydantic_request_validation(admin_client, sample):
