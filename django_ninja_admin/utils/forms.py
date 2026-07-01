@@ -139,6 +139,24 @@ def _relation_selected_options(field, current_value):
     return selected
 
 
+def _media_asset_path(media, asset):
+    if hasattr(asset, "path"):
+        return str(asset.path)
+    return media.absolute_path(str(asset))
+
+
+def form_media_description(form):
+    media = form.media
+    css = media._css
+    return {
+        "css": {
+            medium: [_media_asset_path(media, asset) for asset in css[medium]]
+            for medium in sorted(css)
+        },
+        "js": [_media_asset_path(media, asset) for asset in media._js],
+    }
+
+
 def _validator_names(field):
     return [validator.__class__.__name__ for validator in getattr(field, "validators", ())]
 

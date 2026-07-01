@@ -1,7 +1,7 @@
 from typing import Any
 
 from ninja import Schema
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 
 
 class AdminWriteSchema(Schema):
@@ -87,10 +87,16 @@ class ImageFieldValue(FileFieldValue):
     height: int | None = None
 
 
+class FormMediaDescription(Schema):
+    css: dict[str, list[str]] = Field(default_factory=dict)
+    js: list[str] = Field(default_factory=list)
+
+
 class FormDescription(Schema):
     model: str
     readonly_fields: list[str]
     fields: list[FieldDescription]
+    media: FormMediaDescription = Field(default_factory=FormMediaDescription)
     fieldsets: list[Any]
     prepopulated: dict[str, Any]
     permissions: PermissionMap

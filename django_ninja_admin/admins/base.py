@@ -17,7 +17,12 @@ from pydantic import ConfigDict, create_model
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
-from django_ninja_admin.utils.forms import file_value_metadata, form_field_descriptions, image_value_metadata
+from django_ninja_admin.utils.forms import (
+    file_value_metadata,
+    form_field_descriptions,
+    form_media_description,
+    image_value_metadata,
+)
 from django_ninja_admin.utils.lookup import field_name_for_display
 
 
@@ -384,6 +389,8 @@ class BaseAdmin:
         return value
 
     def get_form_description(self, request, obj=None, **kwargs):
+        form_class = self.get_form_class(request, obj, change=obj is not None)
+        form = form_class(instance=obj)
         permissions = {
             "has_add_permission": self.has_add_permission(request),
             "has_change_permission": self.has_change_permission(request, obj),
@@ -394,6 +401,7 @@ class BaseAdmin:
             "model": f"{self.model._meta.app_label}.{self.model._meta.model_name}",
             "readonly_fields": [field_name_for_display(field) for field in self.get_readonly_fields(request, obj)],
             "fields": self.get_form_fields_description(request, obj),
+            "media": form_media_description(form),
             "fieldsets": list(self.get_fieldsets(request, obj)),
             "prepopulated": dict(self.get_prepopulated_fields(request, obj)),
             "permissions": permissions,

@@ -2009,6 +2009,13 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
 
     form = admin_client.get("/custom-form-admin/testapp/product/form")
     assert form.status_code == 200
+    assert form.json()["form"]["media"] == {
+        "css": {
+            "all": ["admin/product-name.css"],
+            "print": ["/print/product-name.css"],
+        },
+        "js": ["admin/product-name.js", "https://cdn.example.test/product-name.js"],
+    }
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
     assert fields_by_name["name"]["attrs"]["widget_attrs"]["data-admin"] == "custom"
     assert fields_by_name["description"]["attrs"]["widget"] == "Textarea"

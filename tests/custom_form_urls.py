@@ -7,10 +7,19 @@ from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite
 from tests.testapp.models import Category, Product, Tag
 
 
+class ProductNameWidget(forms.TextInput):
+    class Media:
+        css = {
+            "all": ("admin/product-name.css",),
+            "print": ("/print/product-name.css",),
+        }
+        js = ("admin/product-name.js", "https://cdn.example.test/product-name.js")
+
+
 class ProductAdminForm(forms.ModelForm):
     name = forms.CharField(
         max_length=100,
-        widget=forms.TextInput(attrs={"data-admin": "custom"}),
+        widget=ProductNameWidget(attrs={"data-admin": "custom"}),
     )
     description = forms.CharField(
         required=False,
