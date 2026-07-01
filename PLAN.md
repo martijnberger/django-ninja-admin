@@ -68,7 +68,7 @@ Completed or mostly complete:
 - Model routes now advertise richer OpenAPI response maps for typed error bodies, including normalized `422` request-validation responses.
 - Pydantic/Ninja request validation errors are normalized into typed API error bodies.
 - Django `ModelForm` and inline formset validation for create/update/inline mutations.
-- Mounted-route tests now cover `save_model`, `save_related`, `response_add`, `response_change`, `delete_model`, `delete_queryset`, and `response_delete` hooks during add/change/delete mutations.
+- Mounted-route tests now cover `save_form`, `save_model`, `save_related`, `response_add`, `response_change`, `delete_model`, `delete_queryset`, and `response_delete` hooks during add/change/delete mutations, plus `save_form` skipping for unchanged bulk rows.
 - Inline mutations reject duplicate change/delete PKs and rows that attempt to change and delete the same inline object.
 - Inline mutation tests now cover unknown inline objects and transaction rollback of parent saves when inline validation fails.
 - Inline mutations now distinguish unknown inline IDs from configured-but-forbidden inline operations, returning permission errors for forbidden add/change/delete attempts.

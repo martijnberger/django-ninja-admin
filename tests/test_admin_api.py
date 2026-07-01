@@ -1940,7 +1940,7 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
     created_id = created_body["data"]["id"]
     hooked_tag = Tag.objects.get(name="Hooked")
     assert created_body["data"]["name"] == "Allowed"
-    assert created_body["data"]["description"] == "Created through custom form [add:save_model]"
+    assert created_body["data"]["description"] == "Created through custom form [add:save_form] [add:save_model]"
     assert created_body["data"]["response_hook"] == "add"
     assert set(created_body["data"]["tags"]) == {*tag_ids, hooked_tag.pk}
     assert set(Product.objects.get(pk=created_id).tags.values_list("pk", flat=True)) == {*tag_ids, hooked_tag.pk}
@@ -1952,10 +1952,12 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
     )
     assert changed.status_code == 200
     changed_body = changed.json()
-    assert changed_body["data"]["description"] == "Changed through custom form [change:save_model]"
+    assert changed_body["data"]["description"] == "Changed through custom form [change:save_form] [change:save_model]"
     assert changed_body["data"]["response_hook"] == "change"
     assert set(changed_body["data"]["tags"]) == {*tag_ids, hooked_tag.pk}
-    assert Product.objects.get(pk=created_id).description == "Changed through custom form [change:save_model]"
+    assert Product.objects.get(pk=created_id).description == (
+        "Changed through custom form [change:save_form] [change:save_model]"
+    )
 
     direct_deleted = admin_client.delete(f"/custom-form-admin/testapp/product/{created_id}")
     assert direct_deleted.status_code == 200
@@ -3102,13 +3104,21 @@ def test_bulk_update_returns_all_server_side_row_errors(admin_client, sample):
 def test_bulk_update_skips_unchanged_rows(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
     beta = Product.objects.get(name="Beta")
+    save_form_calls = []
     save_calls = []
+    original_save_form = product_admin.save_form
     original_save_model = product_admin.save_model
+
+    def save_form(request, form, change):
+        obj = original_save_form(request, form, change)
+        save_form_calls.append(obj.pk)
+        return obj
 
     def save_model(request, obj, form, change):
         save_calls.append(obj.pk)
         return original_save_model(request, obj, form, change)
 
+    monkeypatch.setattr(product_admin, "save_form", save_form)
     monkeypatch.setattr(product_admin, "save_model", save_model)
     response = admin_client.put(
         "/admin-api/testapp/product/bulk",
@@ -3123,6 +3133,7 @@ def test_bulk_update_skips_unchanged_rows(admin_client, sample, monkeypatch):
 
     assert response.status_code == 200
     assert set(response.json()["data"]) == {"0", "1"}
+    assert save_form_calls == [sample.pk]
     assert save_calls == [sample.pk]
     assert LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).count() == 1
     assert not LogEntry.objects.filter(object_id=str(beta.pk), action_flag=CHANGE).exists()

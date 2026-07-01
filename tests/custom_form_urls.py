@@ -33,6 +33,12 @@ class CustomFormProductAdmin(ModelAdmin):
     filter_horizontal = ("tags",)
     ordering = ("name",)
 
+    def save_form(self, request, form, change):
+        obj = super().save_form(request, form, change)
+        action = "change" if change else "add"
+        obj.description = f"{obj.description} [{action}:save_form]"
+        return obj
+
     def save_model(self, request, obj, form, change):
         action = "change" if change else "add"
         obj.description = f"{obj.description} [{action}:save_model]"

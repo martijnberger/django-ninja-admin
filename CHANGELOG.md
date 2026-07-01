@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added mounted-route coverage for `save_form()` during create/change
+  mutations and bulk list-editable updates.
 - Added richer changelist pagination metadata with `multi_page`,
   `pagination_required`, and an elided `page_range` for frontend controls.
 - Improved `lookup_allowed()` parity with Django admin by allowing local field
