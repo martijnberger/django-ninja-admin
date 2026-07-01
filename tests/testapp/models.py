@@ -5,6 +5,20 @@ from django.utils import timezone
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100, unique=True, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class CategorySlugLink(models.Model):
+    name = models.CharField(max_length=100)
+    category = models.ForeignKey(
+        Category,
+        to_field="slug",
+        on_delete=models.CASCADE,
+        related_name="slug_links",
+    )
 
     def __str__(self):
         return self.name

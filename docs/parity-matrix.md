@@ -26,7 +26,7 @@ Statuses:
 | `GET /context` | implemented | `NinjaAdminSite.each_context`, API tests | Add site customization tests |
 | `GET /permissions` | implemented | Site route in `sites.py` | Broader auth matrix |
 | `GET /history` | partial | History route, log model, app/model/object/action filter, permission-filter tests, page/page-size pagination metadata, and Django-style change-message text | Broader upstream history fixture comparisons |
-| `GET /autocomplete` | partial | Permission-hardened route plus rich pagination metadata and many-to-many source-field tests | More remote-field edge cases |
+| `GET /autocomplete` | partial | Permission-hardened route plus rich pagination metadata, many-to-many source-field tests, and non-PK `ForeignKey(to_field=...)` option IDs | Additional remote-field and permission edge cases |
 | `GET /view-on-site/{content_type_id}/{object_id}` | implemented | Route, permission, callable hook, external URL tests, configured Site-domain URLs, and request-host fallback when Site is missing | Upstream fixture comparisons |
 | Docs/OpenAPI routes | partial | `/docs`, `/openapi.json`, semantic model-route contract tests, and built-in site-route error response maps | Full docs examples and broader snapshots |
 

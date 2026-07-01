@@ -42,7 +42,7 @@ from django_ninja_admin.changelist import ChangeList
 from django_ninja_admin.exceptions import AlreadyRegistered, NotRegistered
 from django_ninja_admin.filters import build_filter_spec
 from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
-from tests.testapp.models import Category, Product, ProductImage, ProductReview, Tag
+from tests.testapp.models import Category, CategorySlugLink, Product, ProductImage, ProductReview, Tag
 
 
 @pytest.fixture
@@ -4651,6 +4651,36 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
         },
     )
     assert bad_page.status_code == 404
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_autocomplete_uses_remote_related_to_field(admin_client):
+    Category.objects.create(name="Cameras", slug="cameras")
+    Category.objects.create(name="Accessories", slug="accessories")
+    source_model_name = CategorySlugLink._meta.model_name
+
+    form = admin_client.get("/slug-autocomplete-admin/testapp/categorysluglink/form")
+    assert form.status_code == 200
+    fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
+    assert fields_by_name["category"]["attrs"]["to_field_name"] == "slug"
+    assert fields_by_name["category"]["attrs"]["autocomplete"] == {
+        "app_label": "testapp",
+        "model_name": source_model_name,
+        "field_name": "category",
+    }
+
+    response = admin_client.get(
+        "/slug-autocomplete-admin/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": source_model_name,
+            "field_name": "category",
+            "term": "Cam",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"] == [{"id": "cameras", "text": "Cameras"}]
 
 
 def test_actions_use_filtered_changelist_queryset(admin_client, sample):

@@ -174,6 +174,9 @@ Completed or mostly complete:
   values and regex patterns, alongside existing validator names.
 - Form descriptions now support callable `readonly_fields`, exposing stable string names, labels, values, and display metadata while accepting them in admin checks.
 - Permission hardening for actions, autocomplete, view-on-site, and object-level bulk updates.
+- Autocomplete now resolves related option IDs from the source relation's
+  actual target field, including `ForeignKey(to_field=...)` relations to unique
+  non-primary-key fields.
 - Ninja-native `ChangeList` foundation for validated lookup params, shared action/changelist querysets, search, ordering, pagination, show-all behavior, `list_select_related`, `date_hierarchy`, and facet counts.
 - Date hierarchy metadata now exposes field type and active timezone for
   `DateTimeField` buckets, and changelist bucketing explicitly uses the active

@@ -14,6 +14,23 @@ class Migration(migrations.Migration):
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("name", models.CharField(max_length=100)),
+                ("slug", models.SlugField(blank=True, max_length=100, null=True, unique=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name="CategorySlugLink",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=100)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="slug_links",
+                        to="testapp.category",
+                        to_field="slug",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(

@@ -576,7 +576,10 @@ class NinjaAdminSite:
                 raise PermissionDenied
             if not model_admin.search_fields:
                 raise MissingSearchFields
-            to_field_name = getattr(source_field.remote_field, "field_name", remote_model._meta.pk.attname)
+            if hasattr(source_field.remote_field, "get_related_field"):
+                to_field_name = source_field.remote_field.get_related_field().attname
+            else:
+                to_field_name = remote_model._meta.pk.attname
             to_field_name = remote_model._meta.get_field(to_field_name).attname
             if not model_admin.to_field_allowed(request, to_field_name):
                 raise PermissionDenied

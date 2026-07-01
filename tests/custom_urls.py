@@ -3,7 +3,7 @@ from ninja import Schema
 from ninja.security import APIKeyHeader
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite
-from tests.testapp.models import Category, Product
+from tests.testapp.models import Category, CategorySlugLink, Product
 
 
 class ProductStatsResponse(Schema):
@@ -60,6 +60,16 @@ class CustomProductAdmin(ModelAdmin):
         ]
 
 
+class SearchableCategoryAdmin(ModelAdmin):
+    list_display = ("name", "slug")
+    search_fields = ("name", "slug")
+
+
+class CategorySlugLinkAdmin(ModelAdmin):
+    list_display = ("name", "category")
+    autocomplete_fields = ("category",)
+
+
 class CustomAdminSite(NinjaAdminSite):
     def status(self, request):
         return {"site": "ok"}
@@ -112,6 +122,10 @@ custom_site = CustomAdminSite(name="custom_admin", include_auth=False)
 custom_site.register(Category, ModelAdmin)
 custom_site.register(Product, CustomProductAdmin)
 
+slug_autocomplete_site = NinjaAdminSite(name="slug_autocomplete_admin", include_auth=False)
+slug_autocomplete_site.register(Category, SearchableCategoryAdmin)
+slug_autocomplete_site.register(CategorySlugLink, CategorySlugLinkAdmin)
+
 
 class MultiAuthAdminSite(NinjaAdminSite):
     def whoami(self, request):
@@ -137,5 +151,6 @@ multi_auth_site = MultiAuthAdminSite(
 
 urlpatterns = [
     path("custom-admin/", custom_site.urls),
+    path("slug-autocomplete-admin/", slug_autocomplete_site.urls),
     path("multi-auth-admin/", multi_auth_site.urls),
 ]
