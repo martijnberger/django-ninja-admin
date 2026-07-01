@@ -485,6 +485,7 @@ class NinjaAdminSite:
             action_flag: int | None = None,
             o: str = "-action_time",
             page: int = 1,
+            per_page: int = 20,
         ):
             from django_ninja_admin.models import ACTION_FLAG_CHOICES, LogEntry
 
@@ -492,6 +493,8 @@ class NinjaAdminSite:
                 raise AdminValidationError([{"message": "Invalid ordering provided.", "param": "o"}])
             if action_flag is not None and action_flag not in dict(ACTION_FLAG_CHOICES):
                 raise AdminValidationError([{"message": "Invalid action flag provided.", "param": "action_flag"}])
+            if per_page < 1:
+                raise AdminValidationError([{"message": "Invalid page size.", "param": "per_page"}])
             qs = (
                 LogEntry.objects.filter(
                     content_type_id__in=site._history_content_type_ids(
@@ -507,7 +510,7 @@ class NinjaAdminSite:
                 qs = qs.filter(object_id=object_id)
             if action_flag is not None:
                 qs = qs.filter(action_flag=action_flag)
-            paginator = site.paginator(qs, 20)
+            paginator = site.paginator(qs, per_page)
             try:
                 page_obj = paginator.page(page)
             except InvalidPage:

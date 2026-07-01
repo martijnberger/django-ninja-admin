@@ -3988,6 +3988,18 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
         for item in global_history.json()["results"]
     } == {("testapp.product", "testapp", "product", "product", "products")}
 
+    paged = client.get("/admin-api/history", {"per_page": 1, "page": 2})
+    assert paged.status_code == 200
+    assert paged.json()["pagination"] == {
+        "num_pages": 2,
+        "count": 2,
+        "has_next": False,
+        "has_previous": True,
+        "page": 2,
+        "per_page": 1,
+    }
+    assert len(paged.json()["results"]) == 1
+
     filtered = client.get(
         "/admin-api/history",
         {"app_label": "testapp", "model": "product", "object_id": str(sample.pk), "action_flag": ADDITION},
@@ -4007,6 +4019,10 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
 
     bad_page = client.get("/admin-api/history", {"page": 0})
     assert bad_page.status_code == 404
+
+    bad_page_size = client.get("/admin-api/history", {"per_page": 0})
+    assert bad_page_size.status_code == 400
+    assert bad_page_size.json()["errors"] == [{"message": "Invalid page size.", "param": "per_page"}]
 
 
 def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, sample):
