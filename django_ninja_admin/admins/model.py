@@ -82,11 +82,11 @@ class ModelAdmin(BaseAdmin):
     def __repr__(self):
         return f"<{self.__class__.__qualname__}: model={self.model.__qualname__} site={self.admin_site!r}>"
 
-    def get_inline_instances(self, request, obj=None):
+    def get_inline_instances(self, request, obj=None, *, check_permissions=True):
         inline_instances = []
         for inline_class in self.inlines:
             inline = inline_class(self.model, self.admin_site)
-            if request is not None:
+            if request is not None and check_permissions:
                 if not (
                     inline.has_view_or_change_permission(request, obj)
                     or inline.has_add_permission(request, obj)

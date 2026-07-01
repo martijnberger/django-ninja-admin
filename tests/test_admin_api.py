@@ -968,6 +968,36 @@ def test_bulk_update_validates_all_rows_before_saving(admin_client, sample):
     assert str(beta.price) == "3.00"
 
 
+def test_inline_mutations_check_inline_permissions(staff_client, sample):
+    client = staff_client("change_product")
+    image = ProductImage.objects.get(product=sample)
+
+    add_response = client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"add": [{"title": "Side"}]}}},
+        content_type="application/json",
+    )
+    assert add_response.status_code == 403
+    assert ProductImage.objects.filter(product=sample).count() == 1
+
+    change_response = client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"change": [{"pk": image.pk, "title": "Side"}]}}},
+        content_type="application/json",
+    )
+    assert change_response.status_code == 403
+    image.refresh_from_db()
+    assert image.title == "Front"
+
+    delete_response = client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"delete": [image.pk]}}},
+        content_type="application/json",
+    )
+    assert delete_response.status_code == 403
+    assert ProductImage.objects.filter(pk=image.pk).exists()
+
+
 def test_inline_formset_enforces_max_num(admin_client, sample):
     response = admin_client.patch(
         f"/admin-api/testapp/product/{sample.pk}",

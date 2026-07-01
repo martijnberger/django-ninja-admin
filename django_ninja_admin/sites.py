@@ -985,7 +985,7 @@ class NinjaAdminSite:
         results = {}
         inline_by_id = {
             f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": inline
-            for inline in model_admin.get_inline_instances(request, obj)
+            for inline in model_admin.get_inline_instances(request, obj, check_permissions=False)
         }
         for inline_id, operations in inline_payload.items():
             if inline_id not in inline_by_id:
