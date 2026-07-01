@@ -2411,6 +2411,11 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["category"]["attrs"]["related_object_name"] == "Category"
     assert fields_by_name["category"]["attrs"]["related_verbose_name"] == "category"
     assert fields_by_name["category"]["attrs"]["to_field_name"] == "id"
+    assert fields_by_name["category"]["attrs"]["model_field_name"] == "category"
+    assert fields_by_name["category"]["attrs"]["model_field_class"] == "ForeignKey"
+    assert fields_by_name["category"]["attrs"]["internal_type"] == "ForeignKey"
+    assert fields_by_name["category"]["attrs"]["attname"] == "category_id"
+    assert fields_by_name["category"]["attrs"]["column"] == "category_id"
     assert fields_by_name["category"]["attrs"]["blank"] is False
     assert fields_by_name["category"]["attrs"]["null"] is False
     assert fields_by_name["category"]["attrs"]["editable"] is True
@@ -2443,6 +2448,9 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["tags"]["attrs"]["related_app_label"] == "testapp"
     assert fields_by_name["tags"]["attrs"]["related_model_name"] == "tag"
     assert fields_by_name["tags"]["attrs"]["related_object_name"] == "Tag"
+    assert fields_by_name["tags"]["attrs"]["model_field_name"] == "tags"
+    assert fields_by_name["tags"]["attrs"]["model_field_class"] == "ManyToManyField"
+    assert fields_by_name["tags"]["attrs"]["internal_type"] == "ManyToManyField"
     assert fields_by_name["tags"]["attrs"]["multiple"] is True
     assert fields_by_name["tags"]["attrs"]["blank"] is True
     assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_horizontal"

@@ -158,6 +158,9 @@ def _model_field_metadata(field):
     if field is None:
         return {}
     attrs = {
+        "model_field_name": field.name,
+        "model_field_class": field.__class__.__name__,
+        "internal_type": field.get_internal_type() if hasattr(field, "get_internal_type") else field.__class__.__name__,
         "blank": bool(getattr(field, "blank", False)),
         "null": bool(getattr(field, "null", False)),
         "editable": bool(getattr(field, "editable", True)),
@@ -165,6 +168,10 @@ def _model_field_metadata(field):
         "unique": bool(getattr(field, "unique", False)),
         "db_index": bool(getattr(field, "db_index", False)),
     }
+    if getattr(field, "attname", None):
+        attrs["attname"] = field.attname
+    if getattr(field, "column", None):
+        attrs["column"] = field.column
     if getattr(field, "default", None) is not None and field.default is not models.NOT_PROVIDED:
         default = _jsonish_value(field.default)
         if default is not None:

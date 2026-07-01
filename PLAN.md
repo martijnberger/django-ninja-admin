@@ -98,6 +98,8 @@ Completed or mostly complete:
 - Changelist responses now expose admin-style pagination state with `multi_page`, `pagination_required`, and an elided `page_range`.
 - Changelist responses now support callable `list_display` entries with stable response keys, labels, display metadata, admin checks, and `admin_order_field` sorting.
 - Form descriptions include richer widget, validator, relation, numeric-bound, decimal-precision, choice, disabled, readonly, model `blank`/`null`, uniqueness/index, default, and upload metadata.
+- Form descriptions now expose stable model-field identity metadata, including
+  field class, internal type, attname, and database column when available.
 - Form descriptions now support callable `readonly_fields`, exposing stable string names, labels, values, and display metadata while accepting them in admin checks.
 - Permission hardening for actions, autocomplete, view-on-site, and object-level bulk updates.
 - Ninja-native `ChangeList` foundation for validated lookup params, shared action/changelist querysets, search, ordering, pagination, show-all behavior, `list_select_related`, `date_hierarchy`, and facet counts.

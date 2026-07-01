@@ -9,6 +9,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added relation `limit_choices_to` metadata to form field descriptions,
   including callable and structured `Q` object constraints.
+- Added stable model-field identity metadata to form field descriptions,
+  including field class, internal type, attname, and database column when
+  available.
 
 ## 0.1.8 - 2026-07-01
 
