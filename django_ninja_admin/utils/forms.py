@@ -2,7 +2,14 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import FieldDoesNotExist
-from django.core.validators import FileExtensionValidator, StepValueValidator
+from django.core.validators import (
+    FileExtensionValidator,
+    MaxLengthValidator,
+    MaxValueValidator,
+    MinLengthValidator,
+    MinValueValidator,
+    StepValueValidator,
+)
 from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 from django.utils.functional import Promise
@@ -248,6 +255,44 @@ def _validator_details(field):
             detail["pattern"] = pattern
         details.append(detail)
     return details
+
+
+def _validator_limit_value(validator):
+    value = getattr(validator, "limit_value", None)
+    if callable(value):
+        try:
+            return value()
+        except Exception:
+            return None
+    return value
+
+
+def _string_length_bounds(field):
+    min_length = getattr(field, "min_length", None)
+    max_length = getattr(field, "max_length", None)
+    for validator in getattr(field, "validators", ()):
+        limit_value = _validator_limit_value(validator)
+        if limit_value is None:
+            continue
+        if isinstance(validator, MinLengthValidator):
+            min_length = max(min_length if min_length is not None else limit_value, limit_value)
+        elif isinstance(validator, MaxLengthValidator):
+            max_length = min(max_length if max_length is not None else limit_value, limit_value)
+    return min_length, max_length
+
+
+def _numeric_bounds(field):
+    min_value = getattr(field, "min_value", None)
+    max_value = getattr(field, "max_value", None)
+    for validator in getattr(field, "validators", ()):
+        limit_value = _validator_limit_value(validator)
+        if limit_value is None:
+            continue
+        if isinstance(validator, MinValueValidator):
+            min_value = max(min_value if min_value is not None else limit_value, limit_value)
+        elif isinstance(validator, MaxValueValidator):
+            max_value = min(max_value if max_value is not None else limit_value, limit_value)
+    return min_value, max_value
 
 
 def _model_field_for_name(model, name):
@@ -673,18 +718,20 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     current = _jsonish_value(current_value)
     if current not in (None, ""):
         attrs["value"] = current
-    if getattr(field, "max_length", None) is not None:
-        attrs["max_length"] = field.max_length
-    if getattr(field, "min_length", None) is not None:
-        attrs["min_length"] = field.min_length
+    min_length, max_length = _string_length_bounds(field)
+    if max_length is not None:
+        attrs["max_length"] = max_length
+    if min_length is not None:
+        attrs["min_length"] = min_length
     if hasattr(field, "strip"):
         attrs["strip"] = bool(field.strip)
     if hasattr(field, "empty_value"):
         attrs["empty_value"] = _jsonish_value(field.empty_value)
-    if getattr(field, "min_value", None) is not None:
-        attrs["min_value"] = _jsonish_value(field.min_value)
-    if getattr(field, "max_value", None) is not None:
-        attrs["max_value"] = _jsonish_value(field.max_value)
+    min_value, max_value = _numeric_bounds(field)
+    if min_value is not None:
+        attrs["min_value"] = _jsonish_value(min_value)
+    if max_value is not None:
+        attrs["max_value"] = _jsonish_value(max_value)
     attrs.update(_step_metadata(field))
     if getattr(field, "max_digits", None) is not None:
         attrs["max_digits"] = field.max_digits

@@ -4057,6 +4057,18 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert name_attrs["id_for_label"] == "id_name"
     assert fields_by_name["optional_reference"]["attrs"]["empty_value"] is None
     assert fields_by_name["product_code"]["attrs"]["strip"] is True
+    assert fields_by_name["validator_bounded_name"]["attrs"]["min_length"] == 3
+    assert fields_by_name["validator_bounded_name"]["attrs"]["max_length"] == 8
+    assert fields_by_name["validator_combo_code"]["attrs"]["combo_fields"][0]["attrs"]["min_length"] == 4
+    assert fields_by_name["validator_combo_code"]["attrs"]["combo_fields"][0]["attrs"]["max_length"] == 10
+    assert fields_by_name["validator_bounded_count"]["attrs"]["min_value"] == 2
+    assert fields_by_name["validator_bounded_count"]["attrs"]["max_value"] == 5
+    assert fields_by_name["validator_bounded_ratio"]["attrs"]["min_value"] == 0.5
+    assert fields_by_name["validator_bounded_ratio"]["attrs"]["max_value"] == 2.5
+    assert fields_by_name["mixed_bound_count"]["attrs"]["min_value"] == 4
+    assert fields_by_name["mixed_bound_count"]["attrs"]["max_value"] == 8
+    assert fields_by_name["validator_bounded_price"]["attrs"]["min_value"] == "1.00"
+    assert fields_by_name["validator_bounded_price"]["attrs"]["max_value"] == "9.99"
     tracked_label_attrs = fields_by_name["tracked_label"]["attrs"]
     assert tracked_label_attrs["html_name"] == "tracked_label"
     assert tracked_label_attrs["auto_id"] == "id_tracked_label"

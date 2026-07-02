@@ -36,6 +36,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Propagated explicit form-field numeric validators into generated Pydantic
   request schemas, including custom integer, float, and decimal fields, and
   fixed custom `FloatField` inputs to advertise OpenAPI `number` schemas.
+- Reflected explicit form-field string and numeric validator bounds in form
+  description metadata, including custom `CharField`, `ComboField`, integer,
+  float, and decimal inputs.
 - Expanded the implementation plan's testing, validation, and verification
   section with concrete parity evidence rules, schema/OpenAPI contract gates,
   database/version matrix expectations, performance checks, and release
