@@ -21,7 +21,7 @@ def file_value_metadata(value):
         return None
     try:
         url = value.url
-    except (OSError, ValueError):
+    except (NotImplementedError, OSError, ValueError):
         url = None
     return {"name": name, "url": url}
 

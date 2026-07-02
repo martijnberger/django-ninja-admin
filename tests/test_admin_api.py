@@ -11,6 +11,7 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
+from django.core.files.storage import Storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.paginator import Paginator
 from django.core.validators import RegexValidator
@@ -5145,6 +5146,22 @@ def test_file_field_can_be_uploaded_with_multipart_payload(admin_client, sample,
         change_entry = LogEntry.objects.filter(object_id=str(product.pk), action_flag=CHANGE).latest("action_time")
         changed_fields = json.loads(change_entry.change_message)[0]["changed"]["fields"]
         assert set(changed_fields) == {"Description", "Manual"}
+
+
+def test_file_field_metadata_handles_storage_without_public_url(admin_client, sample, monkeypatch):
+    manual_field = Product._meta.get_field("manual")
+    monkeypatch.setattr(manual_field, "storage", Storage())
+
+    detail = admin_client.get(f"/admin-api/testapp/product/{sample.pk}")
+
+    assert detail.status_code == 200
+    assert detail.json()["manual"] == {"name": "manuals/alpha.pdf", "url": None}
+
+    change_form = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+    manual_attrs = next(field["attrs"] for field in change_form.json()["form"]["fields"] if field["name"] == "manual")
+
+    assert change_form.status_code == 200
+    assert manual_attrs["current_file"] == {"name": "manuals/alpha.pdf", "url": None}
 
 
 @isolate_apps("tests.testapp")

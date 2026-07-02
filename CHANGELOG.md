@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Kept file field serialization and form metadata usable when a storage backend
+  does not provide public URLs.
 - Capped changelist date-hierarchy bounds at the maximum representable year so
   `9999` year/month/day filters return typed responses instead of overflowing.
 - Added row-indexed `403` error details for object-level permission denials
