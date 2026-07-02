@@ -30,12 +30,15 @@ sample-project-full:
 generated-client-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/generated_client_smoke.py
 
+dist-check:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/dist_check.py
+
 parity-report *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/parity_report.py {{args}}
 
 openapi-diff *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_diff.py {{args}}
 
-check: lint format-check coverage-test package-smoke sample-project-smoke generated-client-smoke
+check: lint format-check coverage-test dist-check package-smoke sample-project-smoke generated-client-smoke
 
 ci: check
