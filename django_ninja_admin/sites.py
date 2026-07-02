@@ -1024,6 +1024,7 @@ class NinjaAdminSite:
             f"{prefix}/{{object_id}}",
             response={
                 200: dict[str, Any],
+                202: dict[str, Any],
                 204: None,
                 **auth_errors,
                 400: ErrorResponse,

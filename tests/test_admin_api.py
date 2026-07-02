@@ -154,6 +154,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     ]["content"]["application/json"]["schema"]
     assert update_accepted_schema["type"] == "object"
     assert update_accepted_schema["additionalProperties"] is True
+    delete_accepted_schema = schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["delete"]["responses"][
+        "202"
+    ]["content"]["application/json"]["schema"]
+    assert delete_accepted_schema["type"] == "object"
+    assert delete_accepted_schema["additionalProperties"] is True
     assert set(components["ProductAdminCreateData"]["required"]) == {"name", "category", "price", "stock_status"}
     assert "required" not in components["ProductAdminPartialUpdateData"]
     assert components["ProductAdminCreateData"]["properties"]["stock_status"]["type"] == "string"
@@ -2710,8 +2715,12 @@ def test_response_hooks_can_return_custom_status(admin_client, sample, monkeypat
     def response_change(request, obj, form, inline_results):
         return Status(202, {"hook": "change", "id": obj.pk, "description": obj.description})
 
+    def response_delete(request, obj_display, obj_id):
+        return Status(202, {"hook": "delete", "id": obj_id, "display": obj_display})
+
     monkeypatch.setattr(product_admin, "response_add", response_add)
     monkeypatch.setattr(product_admin, "response_change", response_change)
+    monkeypatch.setattr(product_admin, "response_delete", response_delete)
 
     created = admin_client.post(
         "/admin-api/testapp/product",
@@ -2745,6 +2754,12 @@ def test_response_hooks_can_return_custom_status(admin_client, sample, monkeypat
         "description": "Custom status response",
     }
     assert Product.objects.get(pk=created_id).description == "Custom status response"
+
+    deleted = admin_client.delete(f"/admin-api/testapp/product/{created_id}")
+
+    assert deleted.status_code == 202
+    assert deleted.json() == {"hook": "delete", "id": str(created_id), "display": "Status Hook"}
+    assert not Product.objects.filter(pk=created_id).exists()
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")

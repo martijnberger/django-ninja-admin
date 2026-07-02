@@ -7,6 +7,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added `202` OpenAPI response coverage for custom delete response hooks.
 - Made inline form descriptions include the actual number of extra blank rows
   resolved by dynamic inline formset hooks.
 - Added structured form choice options with typed `raw_value` metadata while
