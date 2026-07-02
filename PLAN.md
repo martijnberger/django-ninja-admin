@@ -380,6 +380,8 @@ Completed or mostly complete:
   possible, including nullable choice fields.
 - Model primary keys now have non-null typed output schemas for persisted admin
   response bodies.
+- Decimal model fields now preserve `max_digits` and `decimal_places`
+  constraints in generated output schemas.
 - Blank-but-non-null model fields now have non-null typed output schemas for
   persisted admin response bodies.
 - Relation write schemas and OpenAPI examples now infer input types from the

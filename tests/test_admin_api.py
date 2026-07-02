@@ -151,6 +151,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "type": "integer",
     }
     assert "id" in components["ProductAdminOut"]["required"]
+    price_string_schema = components["ProductAdminOut"]["properties"]["price"]
+    assert price_string_schema["type"] == "string"
+    assert r"\d{0,6}" in price_string_schema["pattern"]
+    assert r"\d{0,2}" in price_string_schema["pattern"]
+    assert "price" in components["ProductAdminOut"]["required"]
     assert components["ProductAdminOut"]["properties"]["manual"] == {
         "anyOf": [{"$ref": "#/components/schemas/FileFieldValue"}, {"type": "null"}]
     }

@@ -10,6 +10,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Honored Ninja `register_field()` model-field mappings in admin-owned schema
   inference paths such as custom primary keys, relation output IDs, and
   form-derived relation input schemas.
+- Tightened generated output schemas for decimal model fields so response
+  components preserve `max_digits` and `decimal_places` precision constraints.
 
 ## 0.1.23 - 2026-07-02
 

@@ -875,6 +875,8 @@ class BaseAdmin:
                 custom_fields.append(self._relation_output_custom_field(field))
             elif field.choices:
                 custom_fields.append(self._choice_output_custom_field(field))
+            elif isinstance(field, models.DecimalField):
+                custom_fields.append(self._model_field_output_custom_field(field))
             elif field.blank and not field.null:
                 custom_fields.append(self._model_field_output_custom_field(field))
             else:
