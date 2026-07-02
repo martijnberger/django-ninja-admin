@@ -5622,6 +5622,30 @@ def test_form_description_exposes_multiwidget_metadata(db):
             "supports_microseconds": False,
         },
     ]
+    assert attrs["rendered_subwidgets"] == [
+        {
+            "index": 0,
+            "name": "release_window_0",
+            "attrs": {"data-part": "date", "id": "id_release_window_0"},
+            "is_hidden": False,
+            "required": False,
+            "auto_id": "id_release_window_0",
+            "id_for_label": "id_release_window_0",
+            "type": "text",
+            "template_name": "django/forms/widgets/date.html",
+        },
+        {
+            "index": 1,
+            "name": "release_window_1",
+            "attrs": {"data-part": "time", "id": "id_release_window_1"},
+            "is_hidden": False,
+            "required": False,
+            "auto_id": "id_release_window_1",
+            "id_for_label": "id_release_window_1",
+            "type": "text",
+            "template_name": "django/forms/widgets/time.html",
+        },
+    ]
     assert any(
         detail.get("pattern") == "^[A-Z]{3}$"
         for detail in code_field["attrs"]["validator_details"]
@@ -5679,6 +5703,43 @@ def test_form_description_exposes_select_date_widget_metadata(db):
         },
         "selected": {"year": 2024, "month": 2, "day": 3},
     }
+    assert [
+        {
+            "index": item["index"],
+            "name": item["name"],
+            "auto_id": item["auto_id"],
+            "id_for_label": item["id_for_label"],
+            "value": item["value"],
+            "template_name": item["template_name"],
+        }
+        for item in attrs["rendered_subwidgets"]
+    ] == [
+        {
+            "index": 0,
+            "name": "release_date_month",
+            "auto_id": "id_release_date_month",
+            "id_for_label": "id_release_date_month",
+            "value": ["2"],
+            "template_name": "django/forms/widgets/select.html",
+        },
+        {
+            "index": 1,
+            "name": "release_date_day",
+            "auto_id": "id_release_date_day",
+            "id_for_label": "id_release_date_day",
+            "value": ["3"],
+            "template_name": "django/forms/widgets/select.html",
+        },
+        {
+            "index": 2,
+            "name": "release_date_year",
+            "auto_id": "id_release_date_year",
+            "id_for_label": "id_release_date_year",
+            "value": ["2024"],
+            "template_name": "django/forms/widgets/select.html",
+        },
+    ]
+    assert all(item["attrs"]["data-date"] == "release" for item in attrs["rendered_subwidgets"])
 
 
 def test_form_description_exposes_filepath_field_metadata(db, tmp_path):

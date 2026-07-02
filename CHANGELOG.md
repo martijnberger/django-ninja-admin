@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Exposed concrete rendered child input names, IDs, attrs, and values for
+  compound widgets such as `SplitDateTimeWidget` and `SelectDateWidget`.
+
 ## 0.1.19 - 2026-07-02
 
 - Added inline formset prefix, management-form, empty-form, and per-row

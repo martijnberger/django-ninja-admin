@@ -478,6 +478,35 @@ def _bound_subwidget_metadata(bound_field):
     return subwidgets
 
 
+def _rendered_subwidgets_metadata(bound_field):
+    if bound_field is None:
+        return []
+    try:
+        bound_widgets = list(bound_field.subwidgets)
+    except Exception:
+        return []
+    rendered = []
+    for bound_widget in bound_widgets:
+        for index, subwidget in enumerate(bound_widget.data.get("subwidgets") or []):
+            attrs = _jsonish_value(subwidget.get("attrs", {}))
+            item = {
+                "index": index,
+                "name": subwidget.get("name"),
+                "value": _jsonish_value(subwidget.get("value")),
+                "attrs": attrs,
+                "is_hidden": bool(subwidget.get("is_hidden", False)),
+                "required": bool(subwidget.get("required", False)),
+            }
+            if isinstance(attrs, dict) and attrs.get("id") not in (None, ""):
+                item["auto_id"] = str(attrs["id"])
+                item["id_for_label"] = str(attrs["id"])
+            for key in ("type", "template_name"):
+                if key in subwidget:
+                    item[key] = _jsonish_value(subwidget[key])
+            rendered.append({key: value for key, value in item.items() if value not in (None, "")})
+    return rendered
+
+
 def _hidden_initial_metadata(name, field, *, bound_field=None):
     if not getattr(field, "show_hidden_initial", False):
         return {}
@@ -513,6 +542,9 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     bound_subwidgets = _bound_subwidget_metadata(bound_field)
     if bound_subwidgets:
         attrs["bound_subwidgets"] = bound_subwidgets
+    rendered_subwidgets = _rendered_subwidgets_metadata(bound_field)
+    if rendered_subwidgets:
+        attrs["rendered_subwidgets"] = rendered_subwidgets
     attrs.update(_hidden_initial_metadata(name, field, bound_field=bound_field))
     if getattr(field, "error_messages", None):
         attrs["error_messages"] = _jsonish_value(field.error_messages)
