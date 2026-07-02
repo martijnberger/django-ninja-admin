@@ -48,3 +48,10 @@ class AdminValidationError(AdminError):
         super().__init__("Validation failed")
         self.errors = errors
 
+
+class AdminPermissionError(AdminError):
+    status_code = 403
+
+    def __init__(self, errors):
+        super().__init__("Permission denied")
+        self.errors = errors

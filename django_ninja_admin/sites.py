@@ -35,6 +35,7 @@ from pydantic import ValidationError as PydanticValidationError
 from django_ninja_admin import actions
 from django_ninja_admin.admins.model import ModelAdmin
 from django_ninja_admin.exceptions import (
+    AdminPermissionError,
     AdminValidationError,
     AlreadyRegistered,
     DisallowedModelAdminLookup,
@@ -388,6 +389,10 @@ class NinjaAdminSite:
 
         @api.exception_handler(AdminValidationError)
         def admin_validation_error(request, exc):
+            return api.create_response(request, {"errors": exc.errors}, status=exc.status_code)
+
+        @api.exception_handler(AdminPermissionError)
+        def admin_permission_error(request, exc):
             return api.create_response(request, {"errors": exc.errors}, status=exc.status_code)
 
         @api.exception_handler(ProtectedDelete)

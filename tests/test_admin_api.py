@@ -5576,6 +5576,26 @@ def test_actions_use_filtered_changelist_queryset(admin_client, sample):
     assert sample.stock_status == "in_stock"
 
 
+def test_custom_actions_check_object_level_permissions(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    def has_change_permission(request, obj=None):
+        return obj is None
+
+    monkeypatch.setattr(product_admin, "has_change_permission", has_change_permission)
+
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "mark_out_of_stock", "selected_ids": [sample.pk]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 403
+    assert response.json()["errors"] == [{"message": "Permission denied.", "param": "selected_ids"}]
+    sample.refresh_from_db()
+    assert sample.stock_status == "in_stock"
+
+
 def test_actions_support_custom_return_values_empty_selection_and_select_across(admin_client, sample):
     empty_selection = admin_client.post(
         "/admin-api/testapp/product/actions",

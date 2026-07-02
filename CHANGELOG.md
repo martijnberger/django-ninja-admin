@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Made custom model actions honor object-level permission hooks before
+  dispatching selected changelist rows.
 - Marked changelist columns as default-sorted when a custom
   `ModelAdmin.get_queryset()` `order_by()` clause maps to visible list-display
   columns.

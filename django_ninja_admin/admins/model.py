@@ -18,7 +18,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin.admins.base import BaseAdmin
 from django_ninja_admin.constants import ShowFacets
-from django_ninja_admin.exceptions import AdminValidationError
+from django_ninja_admin.exceptions import AdminPermissionError, AdminValidationError
 from django_ninja_admin.models import ADDITION, CHANGE, DELETION, LogEntry
 from django_ninja_admin.routes import AdminRoute
 from django_ninja_admin.schemas import AdminInlinePayloadSchema
@@ -550,12 +550,39 @@ class ModelAdmin(BaseAdmin):
         if payload.selected_ids and not payload.select_across:
             queryset = queryset.filter(pk__in=self._clean_action_selected_ids(payload.selected_ids))
         func = self.get_actions(request)[action][0]
+        self._check_action_object_permissions(request, queryset, func, action)
         action_data = self._action_data(func, payload)
         if self._action_input_schema(func) is None:
             response = func(self, request, queryset)
         else:
             response = func(self, request, queryset, action_data)
         return response if response is not None else {"detail": "Action completed."}
+
+    def _check_action_object_permissions(self, request, queryset, func, action_name):
+        if self._is_builtin_delete_selected_action(func, action_name):
+            return
+        permissions = tuple(getattr(func, "allowed_permissions", ()))
+        if not permissions:
+            return
+        checks = tuple(
+            check
+            for permission in permissions
+            for check in [getattr(self, f"has_{permission}_permission", None)]
+            if check is not None
+        )
+        if not checks:
+            return
+        for obj in queryset.iterator():
+            if not any(check(request, obj) for check in checks):
+                raise AdminPermissionError([{"message": _("Permission denied."), "param": "selected_ids"}])
+
+    def _is_builtin_delete_selected_action(self, func, action_name):
+        if action_name != "delete_selected":
+            return False
+        try:
+            return func is self.admin_site.get_action("delete_selected")
+        except KeyError:
+            return False
 
     def _clean_action_selected_ids(self, selected_ids):
         try:
