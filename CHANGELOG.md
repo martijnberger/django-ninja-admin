@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Forbid unknown parent `data` fields in generated create/update Pydantic
+  request schemas instead of letting Django forms ignore them.
 - Normalized direct changelist lookup params for comma-separated `__in` values
   and repeated `__in` query params plus strict `__isnull` booleans before
   applying ORM filters.

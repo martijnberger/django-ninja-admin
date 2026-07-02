@@ -5701,6 +5701,35 @@ def test_create_payload_uses_pydantic_request_validation(admin_client, sample):
     assert response.json()["errors"][0]["param"] == "data.name"
 
 
+def test_mutation_payload_rejects_unknown_parent_data_fields(admin_client, sample):
+    created = admin_client.post(
+        "/admin-api/testapp/product",
+        data={
+            "data": {
+                "name": "Ignored field",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "unknown": "silently bad",
+            }
+        },
+        content_type="application/json",
+    )
+
+    assert created.status_code == 422
+    assert created.json()["errors"][0]["param"] == "data.unknown"
+    assert not Product.objects.filter(name="Ignored field").exists()
+
+    changed = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {"unknown": "silently bad"}},
+        content_type="application/json",
+    )
+
+    assert changed.status_code == 422
+    assert changed.json()["errors"][0]["param"] == "data.unknown"
+
+
 def test_inline_payload_uses_pydantic_request_validation(admin_client, sample):
     response = admin_client.patch(
         f"/admin-api/testapp/product/{sample.pk}",

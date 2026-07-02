@@ -5,7 +5,7 @@ from pydantic import ConfigDict, Field
 
 
 class AdminWriteSchema(Schema):
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="forbid")
 
 
 class AdminInlineRowSchema(Schema):
