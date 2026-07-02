@@ -8154,6 +8154,53 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_related_list_filters_use_remote_to_field_values(admin_client, monkeypatch):
+    from tests.custom_urls import slug_autocomplete_site
+
+    Category.objects.create(name="Cameras", slug="cameras")
+    Category.objects.create(name="Accessories", slug="accessories")
+    Category.objects.create(name="Unused", slug="unused")
+    CategorySlugLink.objects.create(name="Camera link", category_id="cameras")
+    CategorySlugLink.objects.create(name="Accessory link", category_id="accessories")
+    link_admin = slug_autocomplete_site.get_model_admin(CategorySlugLink)
+
+    monkeypatch.setattr(link_admin, "list_filter", ("category",))
+    response = admin_client.get("/slug-autocomplete-admin/testapp/categorysluglink")
+
+    assert response.status_code == 200
+    category_filter = next(
+        item for item in response.json()["config"]["filters"] if item["parameter_name"] == "category__slug__exact"
+    )
+    choices_by_display = {choice["display"]: choice for choice in category_filter["choices"]}
+    assert choices_by_display["Cameras"]["query_string"] == "?category__slug__exact=cameras"
+    assert choices_by_display["Accessories"]["query_string"] == "?category__slug__exact=accessories"
+    assert choices_by_display["Unused"]["query_string"] == "?category__slug__exact=unused"
+
+    filtered = admin_client.get("/slug-autocomplete-admin/testapp/categorysluglink?category__slug__exact=cameras")
+
+    assert filtered.status_code == 200
+    assert [row["cells"]["name"] for row in filtered.json()["rows"]] == ["Camera link"]
+    filtered_category_filter = next(
+        item for item in filtered.json()["config"]["filters"] if item["parameter_name"] == "category__slug__exact"
+    )
+    assert next(choice for choice in filtered_category_filter["choices"] if choice["display"] == "Cameras")[
+        "selected"
+    ] is True
+
+    monkeypatch.setattr(link_admin, "list_filter", (("category", RelatedOnlyFieldListFilter),))
+    related_only = admin_client.get("/slug-autocomplete-admin/testapp/categorysluglink")
+
+    assert related_only.status_code == 200
+    related_only_filter = next(
+        item for item in related_only.json()["config"]["filters"] if item["parameter_name"] == "category__slug__exact"
+    )
+    related_only_choices = {choice["display"]: choice for choice in related_only_filter["choices"]}
+    assert {"Cameras", "Accessories"}.issubset(related_only_choices)
+    assert "Unused" not in related_only_choices
+    assert related_only_choices["Cameras"]["query_string"] == "?category__slug__exact=cameras"
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_autocomplete_applies_source_field_limit_choices_to(admin_client):
     public = Category.objects.create(name="Public Cameras", slug="public-cameras")
     Category.objects.create(name="Private Cameras", slug="private-cameras")

@@ -287,6 +287,7 @@ class RelatedFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         super().__init__(field, request, params, model, model_admin, field_path)
         target_field = field.target_field
+        self.target_field = target_field
         self.lookup_kwarg = f"{field_path}__{target_field.name}__exact"
         self.parameter_name = self.lookup_kwarg
         self.lookup_kwarg_isnull = f"{field_path}__isnull"
@@ -319,8 +320,11 @@ class RelatedFieldListFilter(FieldListFilter):
             queryset = queryset.order_by(related_model._meta.pk.name)
         return queryset
 
+    def target_value_for_object(self, obj):
+        return obj.serializable_value(self.target_field.attname)
+
     def field_choices(self, changelist):
-        return [(obj.pk, str(obj)) for obj in self.get_related_queryset()]
+        return [(self.target_value_for_object(obj), str(obj)) for obj in self.get_related_queryset()]
 
     def choices(self, changelist):
         yield from super().choices(changelist)
@@ -345,8 +349,8 @@ class RelatedOnlyFieldListFilter(RelatedFieldListFilter):
             .values_list(self.field_path, flat=True)
             .distinct()
         )
-        queryset = self.get_related_queryset().filter(pk__in=ids)
-        return [(obj.pk, str(obj)) for obj in queryset]
+        queryset = self.get_related_queryset().filter(**{f"{self.target_field.name}__in": ids})
+        return [(self.target_value_for_object(obj), str(obj)) for obj in queryset]
 
 
 class AllValuesFieldListFilter(FieldListFilter):

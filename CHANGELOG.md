@@ -80,6 +80,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added mounted `delete_selected` coverage for `select_across` over filtered
   changelists with object-level delete permission denial, preserving
   all-or-nothing action behavior.
+- Fixed related and related-only list filters to emit remote `to_field` values
+  in filter choices and query strings, including `ForeignKey(to_field=...)`
+  relations.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.

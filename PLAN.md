@@ -311,6 +311,9 @@ Completed or mostly complete:
 - List filters now reject malformed `__isnull` boolean values with typed lookup errors.
 - Related list filters now hide when they have only one non-empty choice, still apply hidden-filter query params, and expose their real lookup keys, matching Django admin's output threshold.
 - Related list filters now expose many-to-many empty-relation choices and related-only filters preserve related-admin ordering while limiting choices to used relations.
+- Related and related-only list filters now use the remote relation target
+  field value in choices and query strings, including
+  `ForeignKey(to_field=...)` relations.
 - Empty-value list filters now validate `__isempty` values and return typed lookup errors for invalid input.
 - Direct changelist lookup params now normalize comma-separated and repeated
   `__in` values plus strict `__isnull` booleans before applying remaining ORM
