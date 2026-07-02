@@ -167,6 +167,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "anyOf": [{"enum": ["new", "used"], "type": "string"}, {"type": "null"}],
         "title": "Condition",
     }
+    assert components["ProductAdminOut"]["properties"]["description"] == {
+        "title": "Description",
+        "type": "string",
+    }
+    assert "description" in components["ProductAdminOut"]["required"]
     assert components["ProductAdminOut"]["properties"]["tags"] == {
         "default": [],
         "items": {"type": "integer"},
@@ -7151,6 +7156,7 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
         "type": "string",
     }
     assert components["CategorySlugLinkAdminOut"]["properties"]["category_id"] == {
+        "maxLength": 100,
         "title": "Category Id",
         "type": "string",
     }

@@ -875,6 +875,8 @@ class BaseAdmin:
                 custom_fields.append(self._relation_output_custom_field(field))
             elif field.choices:
                 custom_fields.append(self._choice_output_custom_field(field))
+            elif field.blank and not field.null:
+                custom_fields.append(self._model_field_output_custom_field(field))
             else:
                 fields.append(field.name)
         for field in self.model._meta.fields:
@@ -890,10 +892,24 @@ class BaseAdmin:
         return self._output_schema_for_fields(tuple(fields), tuple(custom_fields))
 
     def _model_field_output_custom_field(self, field):
-        return field.name, self.get_pydantic_type_for_model_field(field), ...
+        return field.name, self.get_pydantic_type_for_model_output_field(field), ...
+
+    def get_pydantic_type_for_model_output_field(self, field):
+        field_type = self.get_pydantic_type_for_model_field(field)
+        constraints = {}
+        if field_type is str and getattr(field, "max_length", None) is not None:
+            constraints["max_length"] = field.max_length
+        if isinstance(field, models.DecimalField):
+            if getattr(field, "max_digits", None) is not None:
+                constraints["max_digits"] = field.max_digits
+            if getattr(field, "decimal_places", None) is not None:
+                constraints["decimal_places"] = field.decimal_places
+        if constraints:
+            return Annotated[field_type, Field(**constraints)]
+        return field_type
 
     def _relation_output_custom_field(self, field):
-        field_type = self.get_pydantic_type_for_model_field(field.target_field)
+        field_type = self.get_pydantic_type_for_model_output_field(field.target_field)
         if field.null:
             return field.attname, field_type | None, None
         return field.attname, field_type, ...

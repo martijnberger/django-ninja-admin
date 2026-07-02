@@ -24,6 +24,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   components advertise concrete enum values where possible.
 - Tightened generated output schemas for model primary keys so persisted admin
   responses advertise non-null typed IDs.
+- Tightened generated output schemas for blank-but-non-null model fields so
+  response components do not advertise nullable values for persisted strings.
 
 ## 0.1.22 - 2026-07-02
 
