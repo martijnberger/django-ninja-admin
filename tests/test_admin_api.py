@@ -5390,16 +5390,16 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
 
 
 def test_changelist_facets_and_date_hierarchy(admin_client, sample):
-    alpha_date = timezone.make_aware(datetime(2024, 1, 15, 10, 0))
+    alpha_date = datetime(2024, 1, 15, 10, 0, tzinfo=UTC)
     beta = Product.objects.get(name="Beta")
     Product.objects.filter(pk=sample.pk).update(created_at=alpha_date)
-    Product.objects.filter(pk=beta.pk).update(created_at=timezone.make_aware(datetime(2024, 2, 20, 10, 0)))
+    Product.objects.filter(pk=beta.pk).update(created_at=datetime(2024, 2, 20, 10, 0, tzinfo=UTC))
     Product.objects.create(
         name="Tripod",
         category=sample.category,
         price="6.00",
         description="Stable",
-        created_at=timezone.make_aware(datetime(2025, 3, 5, 10, 0)),
+        created_at=datetime(2025, 3, 5, 10, 0, tzinfo=UTC),
     )
 
     response = admin_client.get("/admin-api/testapp/product?_facets=1")
@@ -5457,8 +5457,8 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
 
 def test_changelist_date_hierarchy_selects_lowest_useful_initial_level(admin_client, sample):
     beta = Product.objects.get(name="Beta")
-    Product.objects.filter(pk=sample.pk).update(created_at=timezone.make_aware(datetime(2024, 1, 15, 10, 0)))
-    Product.objects.filter(pk=beta.pk).update(created_at=timezone.make_aware(datetime(2024, 2, 20, 10, 0)))
+    Product.objects.filter(pk=sample.pk).update(created_at=datetime(2024, 1, 15, 10, 0, tzinfo=UTC))
+    Product.objects.filter(pk=beta.pk).update(created_at=datetime(2024, 2, 20, 10, 0, tzinfo=UTC))
 
     same_year = admin_client.get("/admin-api/testapp/product")
 
@@ -5473,7 +5473,7 @@ def test_changelist_date_hierarchy_selects_lowest_useful_initial_level(admin_cli
         (2, "?created_at__year=2024&created_at__month=2"),
     ]
 
-    Product.objects.filter(pk=beta.pk).update(created_at=timezone.make_aware(datetime(2024, 1, 20, 10, 0)))
+    Product.objects.filter(pk=beta.pk).update(created_at=datetime(2024, 1, 20, 10, 0, tzinfo=UTC))
     same_month = admin_client.get("/admin-api/testapp/product")
 
     assert same_month.status_code == 200
@@ -5572,8 +5572,8 @@ def test_changelist_date_hierarchy_supports_relation_paths(admin_client, sample)
         ordering = ("title",)
 
     beta = Product.objects.get(name="Beta")
-    Product.objects.filter(pk=sample.pk).update(created_at=timezone.make_aware(datetime(2024, 1, 15, 10, 0)))
-    Product.objects.filter(pk=beta.pk).update(created_at=timezone.make_aware(datetime(2025, 2, 20, 10, 0)))
+    Product.objects.filter(pk=sample.pk).update(created_at=datetime(2024, 1, 15, 10, 0, tzinfo=UTC))
+    Product.objects.filter(pk=beta.pk).update(created_at=datetime(2025, 2, 20, 10, 0, tzinfo=UTC))
     ProductImage.objects.create(product=beta, title="Beta image")
 
     admin_site = NinjaAdminSite(include_auth=False)
@@ -5609,14 +5609,14 @@ def test_date_field_list_filter_uses_bounded_ranges(admin_client, sample, monkey
     monkeypatch.setattr(product_admin, "list_filter", ("created_at",))
     monkeypatch.setattr(
         "django_ninja_admin.filters.timezone.now",
-        lambda: timezone.make_aware(datetime(2024, 1, 15, 12, 0)),
+        lambda: datetime(2024, 1, 15, 12, 0, tzinfo=UTC),
     )
-    Product.objects.all().update(created_at=timezone.make_aware(datetime(2024, 1, 15, 10, 0)))
+    Product.objects.all().update(created_at=datetime(2024, 1, 15, 10, 0, tzinfo=UTC))
     Product.objects.create(
         name="Future",
         category=sample.category,
         price="7.00",
-        created_at=timezone.make_aware(datetime(2024, 2, 1, 10, 0)),
+        created_at=datetime(2024, 2, 1, 10, 0, tzinfo=UTC),
     )
 
     response = admin_client.get("/admin-api/testapp/product")

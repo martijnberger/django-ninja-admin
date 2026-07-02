@@ -346,10 +346,8 @@ class ChangeList:
 
     def date_hierarchy_boundary(self, year, month, day):
         if isinstance(self.date_hierarchy_model_field, models.DateTimeField):
-            value = datetime(year, month, day)
-            if settings.USE_TZ:
-                value = timezone.make_aware(value, timezone.get_current_timezone())
-            return value
+            tzinfo = timezone.get_current_timezone() if settings.USE_TZ else None
+            return datetime(year, month, day, tzinfo=tzinfo)
         return date(year, month, day)
 
     def apply_ordering(self, queryset, params):
