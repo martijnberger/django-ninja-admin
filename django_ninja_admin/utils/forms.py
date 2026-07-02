@@ -492,6 +492,52 @@ def _bound_subwidget_metadata(bound_field):
     return subwidgets
 
 
+def _rendered_optgroups_metadata(bound_field):
+    if bound_field is None:
+        return []
+    widget = bound_field.field.widget
+    if not getattr(bound_field.field, "choices", None) and not getattr(widget, "choices", None):
+        return []
+    if not hasattr(widget, "optgroups"):
+        return []
+    try:
+        attrs = {}
+        if bound_field.auto_id:
+            attrs["id"] = bound_field.auto_id
+        value = widget.format_value(bound_field.value())
+        optgroups = widget.optgroups(bound_field.html_name, value, bound_field.build_widget_attrs(attrs, widget))
+    except Exception:
+        return []
+
+    groups = []
+    for group_name, options, group_index in optgroups:
+        if group_name is None:
+            continue
+        group_options = []
+        for option in options:
+            item = {
+                "name": option.get("name"),
+                "value": _jsonish_value(option.get("value")),
+                "label": str(option.get("label", "")),
+                "selected": bool(option.get("selected", False)),
+                "index": str(option.get("index", "")),
+                "attrs": _jsonish_value(option.get("attrs", {})),
+            }
+            for key in ("type", "template_name", "wrap_label"):
+                if key in option:
+                    item[key] = _jsonish_value(option[key])
+            group_options.append({key: value for key, value in item.items() if value not in (None, "")})
+        if group_options:
+            groups.append(
+                {
+                    "label": str(group_name),
+                    "index": _jsonish_value(group_index),
+                    "options": group_options,
+                }
+            )
+    return groups
+
+
 def _rendered_subwidgets_metadata(bound_field):
     if bound_field is None:
         return []
@@ -559,6 +605,9 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     bound_subwidgets = _bound_subwidget_metadata(bound_field)
     if bound_subwidgets:
         attrs["bound_subwidgets"] = bound_subwidgets
+    rendered_optgroups = _rendered_optgroups_metadata(bound_field)
+    if rendered_optgroups:
+        attrs["rendered_optgroups"] = rendered_optgroups
     rendered_subwidgets = _rendered_subwidgets_metadata(bound_field)
     if rendered_subwidgets:
         attrs["rendered_subwidgets"] = rendered_subwidgets

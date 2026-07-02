@@ -4342,6 +4342,53 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
             "options": [{"value": "archived", "raw_value": "archived", "label": "Archived"}],
         },
     ]
+    assert fields_by_name["grouped_status"]["attrs"]["rendered_optgroups"] == [
+        {
+            "label": "Publishing",
+            "index": 0,
+            "options": [
+                {
+                    "name": "grouped_status",
+                    "value": "draft",
+                    "label": "Draft",
+                    "selected": False,
+                    "index": "0_0",
+                    "attrs": {},
+                    "type": "select",
+                    "template_name": "django/forms/widgets/select_option.html",
+                    "wrap_label": True,
+                },
+                {
+                    "name": "grouped_status",
+                    "value": "live",
+                    "label": "Live",
+                    "selected": False,
+                    "index": "0_1",
+                    "attrs": {},
+                    "type": "select",
+                    "template_name": "django/forms/widgets/select_option.html",
+                    "wrap_label": True,
+                },
+            ],
+        },
+        {
+            "label": "Archive",
+            "index": 1,
+            "options": [
+                {
+                    "name": "grouped_status",
+                    "value": "archived",
+                    "label": "Archived",
+                    "selected": False,
+                    "index": "1_0",
+                    "attrs": {},
+                    "type": "select",
+                    "template_name": "django/forms/widgets/select_option.html",
+                    "wrap_label": True,
+                }
+            ],
+        },
+    ]
     assert fields_by_name["numeric_flags"]["attrs"]["choices"] == [("1", "One"), ("2", "Two")]
     assert fields_by_name["numeric_flags"]["attrs"]["choice_options"] == [
         {"value": "1", "raw_value": 1, "label": "One"},
