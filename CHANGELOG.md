@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Nothing yet.
+
+## 0.1.24 - 2026-07-02
+
 - Honored Ninja `register_field()` model-field mappings in admin-owned schema
   inference paths such as custom primary keys, relation output IDs, and
   form-derived relation input schemas.
