@@ -246,8 +246,9 @@ Completed or mostly complete:
   before generated string constraints such as regex patterns.
 - Pydantic parent, inline, and bulk row request schemas now support
   `form_schema_field_overrides` for explicit per-field input/OpenAPI types
-  and form-description metadata while preserving Django form validation as the
-  persistence authority.
+  and form-description metadata, including component and route-level examples
+  that validate against their generated schemas, while preserving Django form
+  validation as the persistence authority.
 - Pydantic request schemas now carry Django form string length, field/validator
   regex pattern, numeric bound, and decimal precision constraints into
   generated validation/OpenAPI schemas.
@@ -657,6 +658,16 @@ catch admin edge cases before client projects discover them.
 - New features should usually land with one behavior test, one negative/error
   test, and one schema or metadata assertion when the public API surface
   changes.
+- When a feature depends on generated schemas, test the schema directly and
+  through a mounted route. Direct schema tests catch inference mistakes quickly;
+  mounted-route tests prove Ninja parsing, auth, exception handlers, and
+  response serialization still work together.
+- Treat generated examples as contract fixtures. Every request or response
+  example added to Pydantic models or OpenAPI should be validated against the
+  schema that advertises it.
+- Tests should be allowed to be a little redundant where the public contract is
+  generated. A direct schema assertion, an OpenAPI assertion, and a route test
+  may all cover the same field because they protect different failure modes.
 
 ### Coverage Sources
 
@@ -688,6 +699,45 @@ catch admin edge cases before client projects discover them.
   `partial`, `missing`, or `changed`, with evidence pointing to tests, docs, or
   code.
 
+### Near-Term Testing Investments
+
+- Add a semantic OpenAPI diff helper that normalizes generated documents,
+  compares route maps/components/request bodies/response maps/examples, and
+  prints expected-versus-unexpected changes. Store reviewed diffs or short
+  expected-change notes for intermediate releases.
+- Add stable schema snapshot tests for representative models instead of trying
+  to snapshot every dynamic component. Cover one simple model, one relation
+  intensive model, one inline-heavy model, one file/image model, one custom
+  field model, and one custom-action model.
+- Add a small generated-client smoke test before beta. It can use a lightweight
+  OpenAPI consumer or generated Python/TypeScript client, but it should prove
+  that list/detail/create/update/delete/action/inline payloads are usable from
+  the published schema.
+- Add a Django Ninja alignment suite for read schemas based on documented
+  `ModelSchema`/`create_schema()` behavior: explicit safe field lists, no
+  accidental `__all__`, optional PATCH-style fields where applicable, custom
+  field mappings from `register_field()`, nullable fields, relation target
+  types, and override fields.
+- Add a write-schema contract suite for form-derived Pydantic schemas:
+  required/optional fields, `fields`/`exclude`, disabled and readonly fields,
+  `form_schema_field_overrides`, typed choices, relation target fields,
+  multipart JSON parts, inline aliases, list-editable rows, and custom action
+  inputs.
+- Add mutation invariant tests that deliberately fail late in a request and
+  assert no parent, inline, bulk, file/image, log-entry, or change-message side
+  effects survive the rollback.
+- Add an upstream-fixture comparison command that runs selected v1/Django-admin
+  semantic scenarios against local fixtures and records whether the v2 response
+  is equivalent, intentionally changed, or still missing.
+- Add pytest markers or naming conventions for `schema`, `openapi`, `route`,
+  `postgres`, `smoke`, `performance`, and `parity` tests so focused gates can
+  be run without losing the full `just check` gate.
+- Add query-count/performance guardrails for the highest-risk admin views
+  before claiming beta readiness: changelist relation columns, filters/facets,
+  autocomplete, history, and inline form descriptions.
+- Expand CI reporting so failed gates point to the affected parity-matrix row
+  or release criterion where practical.
+
 ### Evidence And Traceability
 
 - Treat `docs/parity-matrix.md` as the parity evidence ledger. Each
@@ -707,6 +757,16 @@ catch admin edge cases before client projects discover them.
 - Keep a lightweight release-candidate checklist that links to the final
   parity matrix review, OpenAPI diff review, CI matrix run, PostgreSQL run,
   sample-project smoke, package smoke, and copyright/license audit.
+- Do not move a parity row from `partial` to `implemented` in the same change
+  that only adds code. The change should also add the evidence trail: focused
+  test name, OpenAPI/schema assertion when relevant, and any intentional v2
+  contract note.
+- Keep a small "known unverified behavior" list for features that work in
+  manual exploration but lack enough automated coverage. This is separate from
+  implementation gaps and should be burned down before beta.
+- When a regression test is added for a bug, link it back to the affected
+  endpoint, schema, or matrix row so future refactors preserve the reason the
+  test exists.
 
 ### Test Tiers
 
@@ -731,6 +791,12 @@ catch admin edge cases before client projects discover them.
 - Smoke tests: package install, public imports, no DRF/drf-spectacular
   dependencies, sample-project setup, docs availability, OpenAPI availability,
   and a minimal registered-model workflow should stay in the local and CI gates.
+- Contract-consumer tests: generated examples, OpenAPI documents, and any
+  generated or hand-written client fixtures should be exercised as consumers
+  would use them, not only inspected as static JSON.
+- Compatibility matrix tests: run representative behavioral and contract tests
+  across supported Django 5.0+ versions and Python 3.12+ so compatibility
+  claims are backed by execution, not dependency ranges alone.
 
 ### Required Gates By Change Type
 
@@ -758,6 +824,10 @@ catch admin edge cases before client projects discover them.
 - Documentation-only changes should at least be reviewed against the current
   parity matrix and changelog. If the documentation changes a public contract,
   add or update a contract test in the same slice.
+- Release-prep changes should run the broadest practical gate available in the
+  environment. A release may proceed from a narrower local gate only when the
+  missing wider gate is recorded with a reason and followed by CI or a later
+  verification pass.
 
 ### Validation Layers
 
@@ -862,6 +932,45 @@ catch admin edge cases before client projects discover them.
 - Track test gaps separately from implementation gaps. Some features may be
   functionally present but not release-ready until they have PostgreSQL,
   query-count, OpenAPI, or sample-project coverage.
+
+### Test Data And Fixture Strategy
+
+- Keep fixture models small but deliberately weird. Prefer models that combine
+  realistic admin complexity: custom primary keys, `to_field` relations,
+  nullable and blank fields, choices with non-string values, file/image fields,
+  JSON fields, many-to-many fields, protected relations, and custom managers.
+- Keep separate fixtures for read serialization and write validation. Read
+  fixtures should stress output shape and labels; write fixtures should stress
+  Pydantic coercion, Django form cleaning, inline formset behavior, and
+  transaction rollback.
+- Build reusable fixture builders for relation graphs, protected delete graphs,
+  inline parent/child sets, list-filter data, large changelists, file/image
+  uploads, auth users, and custom admin classes. New tests should compose these
+  instead of creating ad hoc models or database state whenever possible.
+- Include negative fixtures for malformed payloads, stale object IDs,
+  permission-denied objects, invalid lookup strings, bad `_to_field` values,
+  invalid multipart JSON, unsupported file clear values, and broken custom
+  field mappings.
+- Keep a sample project that mirrors real installation usage. It should be more
+  than a smoke app before beta: use migrations, mounted URLs, session auth,
+  registered admins, inlines, files/images, actions, filters, search, custom
+  auth, and a custom admin route.
+
+### Verification Tooling Backlog
+
+- Add `just openapi-diff` once the semantic diff helper exists.
+- Add `just sample-project-full` for the expanded sample project and reserve
+  `just sample-project-smoke` for the fast release gate.
+- Add `just generated-client-smoke` for the OpenAPI consumer check.
+- Add `just parity-report` to summarize parity-matrix statuses, evidence links,
+  and rows that lack tests.
+- Add `just postgres-test` to the default release-candidate checklist even when
+  it remains outside the fastest local `just check` loop.
+- Add a package-install matrix job that builds the wheel once and installs that
+  artifact into clean Django projects, rather than testing only from the source
+  tree.
+- Add an OpenAPI artifact upload in CI for release candidates so reviewers can
+  inspect the exact contract that would ship.
 
 ### Manual And Exploratory Verification
 

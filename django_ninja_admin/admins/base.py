@@ -271,6 +271,7 @@ class BaseAdmin:
                                 form_fields,
                                 selected_fields=selected_fields,
                                 partial=partial,
+                                overrides=overrides,
                             )
                         ]
                     }
@@ -349,7 +350,9 @@ class BaseAdmin:
             row_schema = create_model(
                 f"{self.model.__name__}AdminBulkRow",
                 __base__=AdminBulkRowSchema,
-                __config__=ConfigDict(json_schema_extra={"examples": [self._bulk_row_example(form_fields)]}),
+                __config__=ConfigDict(
+                    json_schema_extra={"examples": [self._bulk_row_example(form_fields, overrides=overrides)]}
+                ),
                 **row_fields,
             )
             cache[cache_key] = create_model(
@@ -382,8 +385,9 @@ class BaseAdmin:
     def _schema_example(self, schema):
         return (schema.model_json_schema().get("examples") or [{}])[0]
 
-    def _form_data_example(self, form_fields, *, selected_fields=None, partial=False):
+    def _form_data_example(self, form_fields, *, selected_fields=None, partial=False, overrides=None):
         data = {}
+        overrides = overrides or {}
         field_names = tuple(selected_fields or form_fields.keys())
         candidates = [
             (name, form_fields.get(name))
@@ -394,18 +398,28 @@ class BaseAdmin:
             if partial and data:
                 break
             if partial or field.required:
-                data[name] = self._form_field_example_value(field)
+                data[name] = self._form_field_example_value(field, override=overrides.get(name))
         if not data and candidates:
             name, field = candidates[0]
-            data[name] = self._form_field_example_value(field)
+            data[name] = self._form_field_example_value(field, override=overrides.get(name))
         return data
 
-    def _bulk_row_example(self, form_fields):
+    def _bulk_row_example(self, form_fields, *, overrides=None):
         row = {"pk": 1}
-        row.update(self._form_data_example(form_fields, selected_fields=tuple(self.list_editable), partial=True))
+        row.update(
+            self._form_data_example(
+                form_fields,
+                selected_fields=tuple(self.list_editable),
+                partial=True,
+                overrides=overrides,
+            )
+        )
         return row
 
-    def _form_field_example_value(self, field):
+    def _form_field_example_value(self, field, *, override=None):
+        if override is not None:
+            field_type, default = self._normalize_schema_override(override)
+            return self._schema_type_example(field_type, default)
         if isinstance(field, ModelMultipleChoiceField):
             return [self._relation_form_field_example_value(field)]
         if isinstance(field, ModelChoiceField):

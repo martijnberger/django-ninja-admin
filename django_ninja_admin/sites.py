@@ -1538,7 +1538,15 @@ class NinjaAdminSite:
 
     def _mutation_payload_example(self, model_admin, *, change, partial):
         form_class = model_admin.get_form_class(None, None, change=change)
-        payload = {"data": self._form_data_example(form_class.base_fields, partial=partial)}
+        overrides = model_admin.get_form_schema_field_overrides(None, None, change=change) or {}
+        payload = {
+            "data": self._form_data_example(
+                form_class.base_fields,
+                partial=partial,
+                overrides=overrides,
+                schema_owner=model_admin,
+            )
+        }
         inline_examples = self._inline_payload_example(model_admin, change=change)
         if inline_examples:
             payload["inlines"] = inline_examples
@@ -1546,8 +1554,16 @@ class NinjaAdminSite:
 
     def _bulk_payload_example(self, model_admin):
         form_class = model_admin.get_changelist_form_class(None)
+        overrides = model_admin.get_form_schema_field_overrides(None, change=True) or {}
         row = {"pk": 1}
-        row.update(self._form_data_example(form_class.base_fields, partial=True))
+        row.update(
+            self._form_data_example(
+                form_class.base_fields,
+                partial=True,
+                overrides=overrides,
+                schema_owner=model_admin,
+            )
+        )
         return {"data": [row]}
 
     def _action_payload_example(self, model_admin):
@@ -1573,7 +1589,13 @@ class NinjaAdminSite:
         for inline in model_admin.get_inline_instances(None, check_permissions=False):
             inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
             formset_class = inline.get_formset(None, None, change=change)
-            row = self._form_data_example(formset_class.form.base_fields, partial=False)
+            overrides = inline.get_form_schema_field_overrides(None, None, change=change) or {}
+            row = self._form_data_example(
+                formset_class.form.base_fields,
+                partial=False,
+                overrides=overrides,
+                schema_owner=inline,
+            )
             if not row:
                 continue
             if change:
@@ -1582,7 +1604,8 @@ class NinjaAdminSite:
                 examples[inline_id] = {"add": [row]}
         return examples
 
-    def _form_data_example(self, form_fields, *, partial):
+    def _form_data_example(self, form_fields, *, partial, overrides=None, schema_owner=None):
+        overrides = overrides or {}
         data = {}
         candidates = [
             (name, field)
@@ -1593,13 +1616,24 @@ class NinjaAdminSite:
             if partial and data:
                 break
             if partial or field.required:
-                data[name] = self._form_field_example_value(field)
+                data[name] = self._form_field_example_value(
+                    field,
+                    override=overrides.get(name),
+                    schema_owner=schema_owner,
+                )
         if not data and candidates:
             name, field = candidates[0]
-            data[name] = self._form_field_example_value(field)
+            data[name] = self._form_field_example_value(
+                field,
+                override=overrides.get(name),
+                schema_owner=schema_owner,
+            )
         return data
 
-    def _form_field_example_value(self, field):
+    def _form_field_example_value(self, field, *, override=None, schema_owner=None):
+        if override is not None and schema_owner is not None:
+            field_type, default = schema_owner._normalize_schema_override(override)
+            return schema_owner._schema_type_example(field_type, default)
         if isinstance(field, forms.ModelMultipleChoiceField):
             return [self._relation_form_field_example_value(field)]
         if isinstance(field, forms.ModelChoiceField):

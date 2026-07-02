@@ -4505,14 +4505,14 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
 
 def test_form_schema_field_overrides_drive_parent_bulk_and_inline_schemas(sample):
     class OverridePayloadProductForm(forms.ModelForm):
-        metadata = forms.CharField(required=False)
+        metadata = forms.CharField()
 
         class Meta:
             model = Product
             fields = ("name", "category", "price", "stock_status", "metadata")
 
     class OverridePayloadImageForm(forms.ModelForm):
-        details = forms.CharField(required=False)
+        details = forms.CharField()
 
         class Meta:
             model = ProductImage
@@ -4530,7 +4530,8 @@ def test_form_schema_field_overrides_drive_parent_bulk_and_inline_schemas(sample
         form_schema_field_overrides = {"metadata": dict[str, int], "stock_status": bool}
         inlines = [OverridePayloadInline]
 
-    model_admin = OverridePayloadProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    admin_site = NinjaAdminSite(include_auth=False)
+    model_admin = OverridePayloadProductAdmin(Product, admin_site)
     create_schema = model_admin.get_write_schema(None)
     validated = create_schema.model_validate(
         {
@@ -4546,7 +4547,10 @@ def test_form_schema_field_overrides_drive_parent_bulk_and_inline_schemas(sample
     assert validated.metadata == {"priority": 3}
     create_properties = create_schema.model_json_schema()["properties"]
     assert create_properties["stock_status"]["type"] == "boolean"
-    assert create_properties["metadata"]["anyOf"][0]["additionalProperties"]["type"] == "integer"
+    assert create_properties["metadata"]["additionalProperties"]["type"] == "integer"
+    assert create_schema.model_json_schema()["examples"][0]["metadata"] == {"example": 1}
+    assert create_schema.model_json_schema()["examples"][0]["stock_status"] is True
+    create_schema.model_validate(create_schema.model_json_schema()["examples"][0])
 
     with pytest.raises(PydanticValidationError):
         create_schema.model_validate(
@@ -4562,6 +4566,10 @@ def test_form_schema_field_overrides_drive_parent_bulk_and_inline_schemas(sample
     bulk_schema = model_admin.get_bulk_payload_schema(None)
     bulk_payload = bulk_schema.model_validate({"data": [{"pk": sample.pk, "stock_status": False}]})
     assert bulk_payload.data[0].stock_status is False
+    bulk_row_schema = bulk_schema.model_fields["data"].annotation.__args__[0]
+    assert bulk_row_schema.model_json_schema()["examples"][0]["stock_status"] is True
+    bulk_row_schema.model_validate(bulk_row_schema.model_json_schema()["examples"][0])
+    bulk_schema.model_validate(bulk_schema.model_json_schema()["examples"][0])
     with pytest.raises(PydanticValidationError):
         bulk_schema.model_validate({"data": [{"pk": sample.pk, "stock_status": "in_stock"}]})
 
@@ -4570,9 +4578,23 @@ def test_form_schema_field_overrides_drive_parent_bulk_and_inline_schemas(sample
     inline_row = inline_row_schema.model_validate({"title": "Front", "details": {"priority": 1}})
     assert inline_row.details == {"priority": 1}
     inline_properties = inline_row_schema.model_json_schema()["properties"]
-    assert inline_properties["details"]["anyOf"][0]["additionalProperties"]["type"] == "integer"
+    assert inline_properties["details"]["additionalProperties"]["type"] == "integer"
+    assert inline_row_schema.model_json_schema()["examples"][0]["details"] == {"example": 1}
+    inline_row_schema.model_validate(inline_row_schema.model_json_schema()["examples"][0])
     with pytest.raises(PydanticValidationError):
         inline_row_schema.model_validate({"title": "Front", "details": {"priority": "high"}})
+
+    create_route_example = admin_site._mutation_payload_example(model_admin, change=False, partial=False)
+    assert create_route_example["data"]["metadata"] == {"example": 1}
+    assert create_route_example["data"]["stock_status"] is True
+    create_schema.model_validate(create_route_example["data"])
+    inline_add_example = create_route_example["inlines"]["testapp.productimage"]["add"][0]
+    assert inline_add_example["details"] == {"example": 1}
+    inline_row_schema.model_validate(inline_add_example)
+
+    bulk_route_example = admin_site._bulk_payload_example(model_admin)
+    assert bulk_route_example["data"][0]["stock_status"] is True
+    bulk_schema.model_validate(bulk_route_example)
 
     request = RequestFactory().get("/")
     fields_by_name = {field["name"]: field for field in model_admin.get_form_fields_description(request)}

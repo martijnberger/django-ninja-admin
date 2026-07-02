@@ -53,6 +53,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Reflected explicit form-field string and numeric validator bounds in form
   description metadata, including custom `CharField`, `ComboField`, integer,
   float, and decimal inputs.
+- Generated request schema examples now honor `form_schema_field_overrides` for
+  parent, bulk, inline, and route-level payload examples, and validate against
+  their generated Pydantic schemas.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.

@@ -131,7 +131,12 @@ class InlineModelAdmin(BaseAdmin):
                 required = bool(form_field.required and not getattr(form_field, "disabled", False) and not partial)
                 fields[field_name] = (field_type, ...) if required else (field_type | None, None)
             operation = "Change" if require_pk else "Add"
-            example = self._form_data_example(form_fields, selected_fields=tuple(form_fields), partial=partial)
+            example = self._form_data_example(
+                form_fields,
+                selected_fields=tuple(form_fields),
+                partial=partial,
+                overrides=overrides,
+            )
             if require_pk:
                 example = {"pk": 1, **example}
             cache[cache_key] = create_model(
