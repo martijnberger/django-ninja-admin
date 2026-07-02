@@ -2,7 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.core.exceptions import FieldDoesNotExist
-from django.core.validators import StepValueValidator
+from django.core.validators import FileExtensionValidator, StepValueValidator
 from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 
@@ -388,6 +388,24 @@ def _step_metadata(field):
     return attrs
 
 
+def _file_upload_metadata(field):
+    if not isinstance(field, forms.FileField):
+        return {}
+    attrs = {"allow_empty_file": getattr(field, "allow_empty_file", False)}
+    allowed_extensions = []
+    for validator in getattr(field, "validators", ()):
+        if not isinstance(validator, FileExtensionValidator):
+            continue
+        for extension in getattr(validator, "allowed_extensions", ()) or ():
+            extension = str(extension).lstrip(".").lower()
+            if extension and extension not in allowed_extensions:
+                allowed_extensions.append(extension)
+    if allowed_extensions:
+        attrs["allowed_extensions"] = allowed_extensions
+        attrs["accepted_extensions"] = [f".{extension}" for extension in allowed_extensions]
+    return attrs
+
+
 def field_description(name, field, *, read_only=False, current_value=None, model_field=None):
     widget = field.widget
     attrs = {
@@ -442,7 +460,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     if getattr(field, "decimal_places", None) is not None:
         attrs["decimal_places"] = field.decimal_places
     if isinstance(field, forms.FileField):
-        attrs["allow_empty_file"] = getattr(field, "allow_empty_file", False)
+        attrs.update(_file_upload_metadata(field))
         if isinstance(field, forms.ImageField):
             attrs["image"] = True
             attrs["accepted_content_types"] = ["image/*"]

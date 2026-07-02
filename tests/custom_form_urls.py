@@ -1,4 +1,5 @@
 from django import forms
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.urls import path
 from ninja import Status
@@ -260,7 +261,7 @@ disabled_site.register(Product, DisabledProductAdmin)
 
 
 class RequiredManualProductForm(forms.ModelForm):
-    manual = forms.FileField(required=True)
+    manual = forms.FileField(required=True, validators=[FileExtensionValidator(["pdf", "txt"])])
 
     class Meta:
         model = Product

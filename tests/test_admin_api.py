@@ -5153,7 +5153,31 @@ def test_multipart_file_parts_satisfy_required_file_schema_fields(admin_client, 
     assert "manual" in create_data_schema["required"]
     assert create_data_schema["properties"]["manual"] == {"title": "Manual", "type": "string"}
 
+    form = admin_client.get("/required-file-admin/testapp/product/form")
+    manual_attrs = next(field["attrs"] for field in form.json()["form"]["fields"] if field["name"] == "manual")
+    assert manual_attrs["allowed_extensions"] == ["pdf", "txt"]
+    assert manual_attrs["accepted_extensions"] == [".pdf", ".txt"]
+
     with override_settings(MEDIA_ROOT=tmp_path):
+        invalid = admin_client.post(
+            "/required-file-admin/testapp/product/multipart",
+            data={
+                "data": json.dumps(
+                    {
+                        "name": "Invalid manual extension",
+                        "category": sample.category_id,
+                        "price": "5.00",
+                        "stock_status": "in_stock",
+                    }
+                ),
+                "manual": SimpleUploadedFile("required.exe", b"required", content_type="application/octet-stream"),
+            },
+        )
+
+        assert invalid.status_code == 400
+        assert invalid.json()["errors"]["form"][0]["param"] == "manual"
+        assert not Product.objects.filter(name="Invalid manual extension").exists()
+
         created = admin_client.post(
             "/required-file-admin/testapp/product/multipart",
             data={
