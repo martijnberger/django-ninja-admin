@@ -74,6 +74,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   exercises richer registered-admin workflows including autocomplete,
   filter/search changelists, list-editable bulk updates, inlines, actions,
   multipart file upload, history, custom routes, and view-on-site URLs.
+- Added semantic OpenAPI snapshot coverage for `ErrorItem` and `ErrorResponse`
+  plus representative runtime validation for auth, permission, not-found,
+  request-validation, and protected-delete error bodies.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.

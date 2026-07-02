@@ -57,6 +57,7 @@ from django_ninja_admin.changelist import ChangeList
 from django_ninja_admin.exceptions import AlreadyRegistered, NotRegistered
 from django_ninja_admin.filters import build_filter_spec
 from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
+from django_ninja_admin.schemas import ErrorResponse
 from tests.testapp.models import (
     Category,
     CategoryLimitedLink,
@@ -389,6 +390,102 @@ def test_site_routes_return_typed_auth_errors(db):
     body = response.json()
     assert set(body) == {"errors"}
     assert body["errors"][0]["param"] == "non_field_errors"
+
+
+def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, sample):
+    schema = admin_client.get("/admin-api/openapi.json").json()
+    components = schema["components"]["schemas"]
+
+    assert components["ErrorItem"] == {
+        "properties": {
+            "message": {"title": "Message"},
+            "param": {
+                "default": "non_field_errors",
+                "title": "Param",
+                "type": "string",
+            },
+        },
+        "required": ["message"],
+        "title": "ErrorItem",
+        "type": "object",
+    }
+    assert components["ErrorResponse"]["required"] == ["errors"]
+    assert components["ErrorResponse"]["properties"] == {
+        "errors": {
+            "items": {"$ref": "#/components/schemas/ErrorItem"},
+            "title": "Errors",
+            "type": "array",
+        },
+        "protected": {
+            "anyOf": [
+                {"items": {"type": "string"}, "type": "array"},
+                {"type": "null"},
+            ],
+            "title": "Protected",
+        },
+        "perms_needed": {
+            "anyOf": [
+                {"items": {"type": "string"}, "type": "array"},
+                {"type": "null"},
+            ],
+            "title": "Perms Needed",
+        },
+        "model_count": {
+            "anyOf": [
+                {"additionalProperties": {"type": "integer"}, "type": "object"},
+                {"type": "null"},
+            ],
+            "title": "Model Count",
+        },
+    }
+
+    for path, method, status in [
+        ("/admin-api/apps", "get", "401"),
+        ("/admin-api/testapp/product", "post", "422"),
+        ("/admin-api/testapp/product", "get", "403"),
+        ("/admin-api/testapp/product/{object_id}", "get", "404"),
+        ("/admin-api/testapp/product/{object_id}", "delete", "409"),
+    ]:
+        assert _response_schema_ref(schema["paths"][path][method], status) == "#/components/schemas/ErrorResponse"
+
+
+def test_error_response_runtime_shapes_are_consistent(admin_client, staff_client, sample):
+    def assert_error_body(response, status):
+        assert response.status_code == status
+        body = response.json()
+        ErrorResponse.model_validate(body)
+        assert isinstance(body["errors"], list)
+        assert body["errors"]
+        assert {"message", "param"} <= set(body["errors"][0])
+        return body
+
+    auth_body = assert_error_body(Client().get("/admin-api/apps"), 401)
+    assert auth_body["errors"][0]["param"] == "non_field_errors"
+
+    denied_body = assert_error_body(staff_client().get("/admin-api/testapp/product"), 403)
+    assert denied_body["errors"][0] == {"message": "Permission denied.", "param": "non_field_errors"}
+
+    missing_body = assert_error_body(admin_client.get("/admin-api/testapp/product/999999"), 404)
+    assert missing_body["errors"][0] == {"message": "Not found.", "param": "non_field_errors"}
+
+    invalid_body = assert_error_body(
+        admin_client.post(
+            "/admin-api/testapp/product/actions",
+            data={"action": "not_a_real_action", "selected_ids": [sample.pk]},
+            content_type="application/json",
+        ),
+        422,
+    )
+    assert invalid_body["errors"][0]["param"] == "action"
+
+    ProductReview.objects.create(product=sample, note="Pinned review")
+    protected_body = assert_error_body(admin_client.delete(f"/admin-api/testapp/product/{sample.pk}"), 409)
+    assert protected_body["protected"] == ["Pinned review"]
+    assert protected_body["model_count"] == {
+        "testapp.product": 1,
+        "testapp.product_tags": 2,
+        "testapp.productimage": 1,
+    }
 
 
 def test_permissions_route_reports_site_permission(admin_client):
