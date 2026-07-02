@@ -48,6 +48,8 @@ from django_ninja_admin.utils.forms import (
 )
 from django_ninja_admin.utils.lookup import field_name_for_display
 
+AdminJsonValue = dict[str, Any] | list[Any] | str | int | float | bool | None
+
 
 def _parse_duration_value(value):
     if isinstance(value, str):
@@ -532,7 +534,7 @@ class BaseAdmin:
         if isinstance(field, forms.GenericIPAddressField):
             return IPvAnyAddress
         if isinstance(field, forms.JSONField):
-            return Any
+            return AdminJsonValue
         if isinstance(field, forms.TypedMultipleChoiceField):
             return list[self.get_pydantic_type_for_typed_choice_field(field, choices_as_literal=choices_as_literal)]
         if isinstance(field, forms.MultipleChoiceField):
@@ -970,6 +972,8 @@ class BaseAdmin:
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif isinstance(field, models.BinaryField):
                 custom_fields.append(self._model_field_output_custom_field(field))
+            elif isinstance(field, models.JSONField):
+                custom_fields.append(self._model_field_output_custom_field(field))
             elif self.get_pydantic_pattern_for_model_field(field):
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif self.get_pydantic_string_validator_constraints_for_model_field(field):
@@ -1145,7 +1149,7 @@ class BaseAdmin:
         if isinstance(field, models.GenericIPAddressField):
             return IPvAnyAddress
         if isinstance(field, models.JSONField):
-            return Any
+            return AdminJsonValue
         if isinstance(field, models.BinaryField):
             return str
         registered_type = self.get_registered_pydantic_type_for_model_field(field)

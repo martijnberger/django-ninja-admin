@@ -406,6 +406,8 @@ Completed or mostly complete:
   generated output schemas, including nullable URL fields.
 - Generic IP address model fields now use native Pydantic IP address types in
   generated output and relation-target schemas.
+- JSON model/form fields now use explicit JSON-compatible Pydantic schemas for
+  generated request and response components.
 - Binary model fields now serialize as deterministic base64 strings in JSON
   responses and advertise base64 content metadata in generated output schemas,
   including nullable binary fields.

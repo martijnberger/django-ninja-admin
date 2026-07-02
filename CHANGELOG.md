@@ -26,6 +26,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Tightened generated output and relation-target schemas for
   `GenericIPAddressField` so response and relation input components use native
   Pydantic IP address validation metadata.
+- Tightened JSON field request and response schemas so generated components
+  advertise explicit JSON-compatible values instead of unconstrained payloads.
 - Serialized binary model fields as deterministic base64 strings in JSON output
   and advertised their `contentEncoding`/`contentMediaType` metadata in
   generated response schemas.

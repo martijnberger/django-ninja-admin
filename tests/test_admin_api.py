@@ -6950,6 +6950,70 @@ def test_ip_address_model_fields_have_native_output_and_relation_schemas(db):
 
 
 @isolate_apps("tests.testapp")
+def test_json_model_fields_have_explicit_output_and_write_schemas(db):
+    class JsonRecord(models.Model):
+        payload = models.JSONField(default=dict)
+        optional_payload = models.JSONField(null=True, blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(JsonRecord)
+    model_admin = admin_site.get_model_admin(JsonRecord)
+
+    output_schema = model_admin.get_output_schema()
+    output_json_schema = output_schema.model_json_schema()
+    write_schema = model_admin.get_write_schema(None)
+    write_json_schema = write_schema.model_json_schema()
+    json_value_schema = {
+        "anyOf": [
+            {"additionalProperties": True, "type": "object"},
+            {"items": {}, "type": "array"},
+            {"type": "string"},
+            {"type": "integer"},
+            {"type": "number"},
+            {"type": "boolean"},
+            {"type": "null"},
+        ],
+    }
+
+    assert output_json_schema["properties"]["payload"] == {
+        **json_value_schema,
+        "title": "Payload",
+    }
+    assert output_json_schema["properties"]["optional_payload"] == {
+        **json_value_schema,
+        "default": None,
+        "title": "Optional Payload",
+    }
+    assert write_json_schema["properties"]["payload"] == {
+        **json_value_schema,
+        "title": "Payload",
+    }
+    assert write_json_schema["properties"]["optional_payload"] == {
+        **json_value_schema,
+        "default": None,
+        "title": "Optional Payload",
+    }
+
+    output_schema.model_validate({"id": 1, "payload": {"nested": [1, "two"]}, "optional_payload": None})
+    output_schema.model_validate({"id": 1, "payload": ["nested", 1], "optional_payload": True})
+    write_schema.model_validate({"payload": {"nested": [1, "two"]}, "optional_payload": "value"})
+    with pytest.raises(PydanticValidationError):
+        output_schema.model_validate({"id": 1, "payload": object(), "optional_payload": None})
+    with pytest.raises(PydanticValidationError):
+        write_schema.model_validate({"payload": object(), "optional_payload": None})
+    assert model_admin.serialize_object(
+        JsonRecord(id=1, payload={"nested": [1, "two"]}, optional_payload=None)
+    ) == {
+        "id": 1,
+        "payload": {"nested": [1, "two"]},
+        "optional_payload": None,
+    }
+
+
+@isolate_apps("tests.testapp")
 def test_binary_model_fields_serialize_as_base64_output_strings(db):
     class BinaryAttachment(models.Model):
         payload = models.BinaryField()
