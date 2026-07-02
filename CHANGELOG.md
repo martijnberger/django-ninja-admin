@@ -31,6 +31,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Tightened generated output schema examples for many-to-many target fields and
   Ninja-registered custom model fields so examples validate against their
   generated component schemas.
+- Expanded generated output schema examples for common explicit
+  `schema_field_overrides` types such as UUID, temporal, URL, IP address, and
+  annotated Pydantic types.
 - Serialized binary model fields as deterministic base64 strings in JSON output
   and advertised their `contentEncoding`/`contentMediaType` metadata in
   generated response schemas.

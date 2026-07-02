@@ -2,6 +2,7 @@ import json
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from io import BytesIO
+from typing import Annotated
 from uuid import UUID
 
 import pytest
@@ -33,6 +34,7 @@ from django.utils import timezone
 from ninja import Status
 from ninja.security import SessionAuthIsStaff
 from PIL import Image
+from pydantic import AnyUrl, IPvAnyAddress
 from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin import (
@@ -8645,6 +8647,34 @@ def test_schema_field_overrides_are_included_and_serialize_admin_methods(sample)
 
     assert "custom_note" in model_admin.get_output_schema().model_fields
     assert model_admin.serialize_object(sample)["custom_note"] == "Alpha:in_stock"
+
+
+def test_schema_field_override_examples_validate_common_pydantic_types(db):
+    class ProductAdminWithTypedOverrideExamples(ModelAdmin):
+        schema_field_overrides = {
+            "tracking_id": UUID,
+            "published_on": date,
+            "published_at": datetime,
+            "publish_time": time,
+            "duration": timedelta,
+            "homepage": AnyUrl,
+            "host": IPvAnyAddress,
+            "annotated_tracking_id": Annotated[UUID, "metadata"],
+        }
+
+    model_admin = ProductAdminWithTypedOverrideExamples(Product, NinjaAdminSite(include_auth=False))
+    schema = model_admin.get_output_schema()
+    example = schema.model_json_schema()["examples"][0]
+
+    assert example["tracking_id"] == "00000000-0000-4000-8000-000000000000"
+    assert example["published_on"] == "2026-07-02"
+    assert example["published_at"] == "2026-07-02T12:00:00+00:00"
+    assert example["publish_time"] == "12:00:00"
+    assert example["duration"] == "01:00:00"
+    assert example["homepage"] == "https://example.com/"
+    assert example["host"] == "192.0.2.1"
+    assert example["annotated_tracking_id"] == "00000000-0000-4000-8000-000000000000"
+    schema.model_validate(example)
 
 
 @isolate_apps("tests.testapp")

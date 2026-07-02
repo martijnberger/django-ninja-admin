@@ -921,6 +921,8 @@ class BaseAdmin:
             return default
         origin = get_origin(field_type)
         args = get_args(field_type)
+        if origin is Annotated and args:
+            return self._schema_type_example(args[0], None)
         if origin is Literal and args:
             return args[0]
         if origin in {list, tuple, set}:
@@ -941,6 +943,20 @@ class BaseAdmin:
             return True
         if field_type is Decimal:
             return "9.99"
+        if field_type is UUID:
+            return "00000000-0000-4000-8000-000000000000"
+        if field_type is date:
+            return "2026-07-02"
+        if field_type is datetime:
+            return "2026-07-02T12:00:00+00:00"
+        if field_type is time:
+            return "12:00:00"
+        if field_type is timedelta:
+            return "01:00:00"
+        if field_type is AnyUrl:
+            return "https://example.com/"
+        if field_type is IPvAnyAddress:
+            return "192.0.2.1"
         if field_type is FileFieldValue:
             return {"name": "files/example.dat", "url": "/media/files/example.dat"}
         if field_type is ImageFieldValue:
