@@ -152,6 +152,16 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductAdminOut"]["properties"]["photo"] == {
         "anyOf": [{"$ref": "#/components/schemas/ImageFieldValue"}, {"type": "null"}]
     }
+    assert components["ProductAdminOut"]["properties"]["stock_status"] == {
+        "default": "in_stock",
+        "enum": ["in_stock", "out_of_stock"],
+        "title": "Stock Status",
+        "type": "string",
+    }
+    assert components["ProductAdminOut"]["properties"]["condition"] == {
+        "anyOf": [{"enum": ["new", "used"], "type": "string"}, {"type": "null"}],
+        "title": "Condition",
+    }
     assert components["ProductAdminOut"]["properties"]["tags"] == {
         "default": [],
         "items": {"type": "integer"},

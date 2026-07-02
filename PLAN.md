@@ -343,6 +343,8 @@ Completed or mostly complete:
 - Many-to-many fields now have Pydantic write schemas, typed output schemas,
   JSON-safe change-form values, form relation metadata, output serialization,
   and create/update persistence coverage.
+- Model choice fields now have typed output schemas with enum values where
+  possible, including nullable choice fields.
 - Relation write schemas and OpenAPI examples now infer input types from the
   related primary key or explicit `to_field_name` target.
 - Relation output schemas now infer serialized foreign-key `attname` types from

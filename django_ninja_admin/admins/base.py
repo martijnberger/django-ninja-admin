@@ -873,6 +873,8 @@ class BaseAdmin:
                 custom_fields.append((field.name, FileFieldValue | None, None))
             elif field.remote_field:
                 custom_fields.append(self._relation_output_custom_field(field))
+            elif field.choices:
+                custom_fields.append(self._choice_output_custom_field(field))
             else:
                 fields.append(field.name)
         for field in self.model._meta.fields:
@@ -892,6 +894,14 @@ class BaseAdmin:
         if field.null:
             return field.attname, field_type | None, None
         return field.attname, field_type, ...
+
+    def _choice_output_custom_field(self, field):
+        field_type = self.get_pydantic_type_for_choices(field.choices)
+        if field.null:
+            return field.name, field_type | None, None
+        if field.default is not models.NOT_PROVIDED and not callable(field.default):
+            return field.name, field_type, field.default
+        return field.name, field_type, ...
 
     def _normalize_schema_override(self, value):
         if isinstance(value, tuple):

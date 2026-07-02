@@ -20,6 +20,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   relation form descriptions and relation widget hints.
 - Added related target-field metadata to filter-horizontal/filter-vertical
   dual-select form widget hints.
+- Tightened generated output schemas for model choice fields so response
+  components advertise concrete enum values where possible.
 
 ## 0.1.22 - 2026-07-02
 
