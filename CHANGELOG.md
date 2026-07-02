@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   prefixed bound-field metadata to form descriptions.
 - Added list-editable changelist formset prefix, management-form counts, and
   per-row prefixed bound-field metadata for bulk-edit renderers.
+- Added semantic OpenAPI coverage for changelist and inline formset response
+  metadata components.
 
 ## 0.1.18 - 2026-07-02
 

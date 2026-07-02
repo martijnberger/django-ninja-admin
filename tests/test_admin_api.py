@@ -135,6 +135,8 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "ProductAdminBulkRow",
         "ProductAdminBulkResponse",
         "ListEditingRow",
+        "InlineDescription",
+        "InlineFormsetRowMetadata",
         "ProductAdminInlinePayload",
         "ProductImageInlineOperations",
         "ProductImageInlineAddRow",
@@ -389,6 +391,47 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert _response_schema_ref(paths["/admin-api/view-on-site/{content_type_id}/{object_id}"]["get"], "200") == (
         "#/components/schemas/ViewOnSiteResponse"
     )
+    changelist_response_props = components["ChangelistResponse"]["properties"]
+    assert changelist_response_props["list_editing_formset_prefix"]["anyOf"] == [
+        {"type": "string"},
+        {"type": "null"},
+    ]
+    assert changelist_response_props["list_editing_management_form"]["items"] == {
+        "$ref": "#/components/schemas/FieldDescription"
+    }
+    assert changelist_response_props["list_editing_total_form_count"]["anyOf"] == [
+        {"type": "integer"},
+        {"type": "null"},
+    ]
+    assert changelist_response_props["list_editing_initial_form_count"]["anyOf"] == [
+        {"type": "integer"},
+        {"type": "null"},
+    ]
+    assert changelist_response_props["list_editing_formset"]["items"]["items"] == {
+        "$ref": "#/components/schemas/FieldDescription"
+    }
+    assert changelist_response_props["list_editing_rows"]["items"] == {
+        "$ref": "#/components/schemas/ListEditingRow"
+    }
+    list_editing_row_props = components["ListEditingRow"]["properties"]
+    assert list_editing_row_props["form_prefix"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    assert list_editing_row_props["empty_permitted"]["type"] == "boolean"
+
+    form_response_props = components["FormResponse"]["properties"]
+    assert form_response_props["inlines"]["items"] == {"$ref": "#/components/schemas/InlineDescription"}
+    inline_response_props = components["InlineDescription"]["properties"]
+    assert inline_response_props["management_form"]["items"] == {
+        "$ref": "#/components/schemas/FieldDescription"
+    }
+    assert inline_response_props["empty_form"]["items"] == {"$ref": "#/components/schemas/FieldDescription"}
+    assert inline_response_props["formset_row_metadata"]["items"] == {
+        "$ref": "#/components/schemas/InlineFormsetRowMetadata"
+    }
+    inline_row_metadata_props = components["InlineFormsetRowMetadata"]["properties"]
+    assert inline_row_metadata_props["prefix"]["type"] == "string"
+    assert inline_row_metadata_props["is_initial"]["type"] == "boolean"
+    assert inline_row_metadata_props["empty_permitted"]["type"] == "boolean"
+    assert inline_row_metadata_props["object_id"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
 
     for path, method, statuses in [
         ("/admin-api/apps", "get", {"401", "403"}),
