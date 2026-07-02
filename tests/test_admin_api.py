@@ -2126,6 +2126,34 @@ def test_list_filters_reject_invalid_isnull_values(admin_client, sample, monkeyp
     assert all_values_response.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
 
 
+def test_changelist_direct_lookup_params_prepare_in_and_isnull_values(admin_client, sample):
+    beta = Product.objects.get(name="Beta")
+    Product.objects.filter(pk=sample.pk).update(condition="new")
+
+    in_lookup = admin_client.get(f"/admin-api/testapp/product?id__in={sample.pk},{beta.pk}")
+
+    assert in_lookup.status_code == 200
+    assert in_lookup.json()["config"]["result_count"] == 2
+
+    non_null = admin_client.get("/admin-api/testapp/product?condition__isnull=0")
+    assert non_null.status_code == 200
+    assert non_null.json()["config"]["result_count"] == 1
+    assert non_null.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+    null = admin_client.get("/admin-api/testapp/product?condition__isnull=true")
+    assert null.status_code == 200
+    assert null.json()["config"]["result_count"] == 1
+    assert null.json()["rows"][0]["cells"]["name"] == "Beta"
+
+    invalid_in = admin_client.get("/admin-api/testapp/product?id__in=not-a-number")
+    assert invalid_in.status_code == 400
+    assert invalid_in.json()["errors"] == [{"message": "Invalid lookup value.", "param": "id__in"}]
+
+    invalid_isnull = admin_client.get("/admin-api/testapp/product?condition__isnull=maybe")
+    assert invalid_isnull.status_code == 400
+    assert invalid_isnull.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
+
+
 def test_empty_field_list_filter_validates_values(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
     monkeypatch.setattr(product_admin, "list_filter", (("description", EmptyFieldListFilter),))

@@ -182,10 +182,27 @@ class ChangeList:
             if not self.model_admin.lookup_allowed(key, value, self.request):
                 raise DisallowedModelAdminLookup(f"Filtering by {key!r} is not allowed.")
             try:
-                queryset = queryset.filter(**{key: value})
+                queryset = queryset.filter(**{key: self.prepare_lookup_value(key, value)})
             except (FieldError, TypeError, ValueError, ValidationError) as exc:
                 raise self.lookup_value_error({key: value}, fallback_param=key) from exc
         return queryset
+
+    def prepare_lookup_value(self, key, value):
+        if key.endswith("__in") and isinstance(value, str):
+            return value.split(",")
+        if key.endswith("__isnull"):
+            return self.prepare_isnull_lookup_value(key, value)
+        return value
+
+    def prepare_isnull_lookup_value(self, key, value):
+        if isinstance(value, bool):
+            return value
+        normalized = str(value).lower()
+        if normalized in {"1", "true"}:
+            return True
+        if normalized in {"0", "false"}:
+            return False
+        raise ValueError(f"Invalid boolean lookup value for {key}.")
 
     def lookup_value_error(self, params, *, fallback_param):
         param = next(iter(params), fallback_param)

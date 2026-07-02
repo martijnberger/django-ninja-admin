@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Normalized direct changelist lookup params for comma-separated `__in` values
+  and strict `__isnull` booleans before applying ORM filters.
 - Added a `get_changelist_form_class()` hook and routed bulk list-editable
   row schemas, metadata, and validation through it.
 - Allowed explicit `fields`/`fieldsets` layouts to reference callable readonly
