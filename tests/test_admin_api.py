@@ -3259,6 +3259,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             max_length=3,
             validators=[RegexValidator(r"^[A-Z]{3}$")],
         )
+        tracked_label = forms.CharField(required=False, show_hidden_initial=True)
         unstripped_code = forms.CharField(
             required=False,
             validators=[RegexValidator(r"^[A-Z]{3}$")],
@@ -3303,6 +3304,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             "bounded_price": "4.50",
             "stepped_price": "1.25",
             "product_code": " ABC ",
+            "tracked_label": "Camera label",
             "unstripped_code": "XYZ",
             "sku": "SKU-123",
             "slug": "camera-case",
@@ -3333,6 +3335,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert validated.bounded_price == Decimal("4.50")
     assert validated.stepped_price == Decimal("1.25")
     assert validated.product_code == "ABC"
+    assert validated.tracked_label == "Camera label"
     assert validated.unstripped_code == "XYZ"
     assert validated.sku == "SKU-123"
     assert validated.slug == "camera-case"
@@ -3371,6 +3374,12 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
         for field in model_admin.get_form_fields_description(RequestFactory().get("/"))
     }
     assert fields_by_name["product_code"]["attrs"]["strip"] is True
+    tracked_label_attrs = fields_by_name["tracked_label"]["attrs"]
+    assert tracked_label_attrs["show_hidden_initial"] is True
+    assert tracked_label_attrs["hidden_initial_name"] == "initial-tracked_label"
+    assert tracked_label_attrs["hidden_initial_widget"]["widget"] == "HiddenInput"
+    assert tracked_label_attrs["hidden_initial_widget"]["input_type"] == "hidden"
+    assert tracked_label_attrs["hidden_initial_widget"]["is_hidden"] is True
     assert fields_by_name["unstripped_code"]["attrs"]["strip"] is False
 
     with pytest.raises(PydanticValidationError):

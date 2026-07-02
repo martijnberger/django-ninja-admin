@@ -406,6 +406,17 @@ def _file_upload_metadata(field):
     return attrs
 
 
+def _hidden_initial_metadata(name, field):
+    if not getattr(field, "show_hidden_initial", False):
+        return {}
+    hidden_widget = field.hidden_widget()
+    return {
+        "show_hidden_initial": True,
+        "hidden_initial_name": f"initial-{name}",
+        "hidden_initial_widget": _widget_metadata(hidden_widget),
+    }
+
+
 def field_description(name, field, *, read_only=False, current_value=None, model_field=None):
     widget = field.widget
     attrs = {
@@ -418,6 +429,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         "validators": _validator_names(field),
         **_widget_metadata(widget),
     }
+    attrs.update(_hidden_initial_metadata(name, field))
     if getattr(field, "error_messages", None):
         attrs["error_messages"] = _jsonish_value(field.error_messages)
     validator_details = _validator_details(field)
