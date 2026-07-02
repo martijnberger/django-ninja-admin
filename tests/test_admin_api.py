@@ -6750,6 +6750,49 @@ def test_binary_model_fields_serialize_as_base64_output_strings(db):
     }
 
 
+@isolate_apps("tests.testapp")
+def test_regex_validated_model_fields_have_pattern_output_schemas(db):
+    class InventoryCode(models.Model):
+        slug = models.SlugField(max_length=12)
+        sku = models.CharField(max_length=16, validators=[RegexValidator(r"^SKU-[0-9]+$")])
+        optional_slug = models.SlugField(max_length=12, null=True, blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(InventoryCode)
+    model_admin = admin_site.get_model_admin(InventoryCode)
+
+    output_schema = model_admin.get_output_schema().model_json_schema()
+
+    assert output_schema["properties"]["slug"] == {
+        "maxLength": 12,
+        "pattern": r"^[-a-zA-Z0-9_]+\z",
+        "title": "Slug",
+        "type": "string",
+    }
+    assert output_schema["properties"]["sku"] == {
+        "maxLength": 16,
+        "pattern": r"^SKU-[0-9]+$",
+        "title": "Sku",
+        "type": "string",
+    }
+    assert output_schema["properties"]["optional_slug"] == {
+        "anyOf": [{"maxLength": 12, "pattern": r"^[-a-zA-Z0-9_]+\z", "type": "string"}, {"type": "null"}],
+        "default": None,
+        "title": "Optional Slug",
+    }
+    assert model_admin.serialize_object(
+        InventoryCode(id=1, slug="stock-1", sku="SKU-100", optional_slug=None)
+    ) == {
+        "id": 1,
+        "slug": "stock-1",
+        "sku": "SKU-100",
+        "optional_slug": None,
+    }
+
+
 def test_multipart_payload_uses_pydantic_request_validation(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/multipart",
@@ -7265,11 +7308,13 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
     components = schema["components"]["schemas"]
     assert components["CategorySlugLinkAdminCreateData"]["properties"]["category"] == {
         "maxLength": 100,
+        "pattern": r"^[-a-zA-Z0-9_]+\z",
         "title": "Category",
         "type": "string",
     }
     assert components["CategorySlugLinkAdminOut"]["properties"]["category_id"] == {
         "maxLength": 100,
+        "pattern": r"^[-a-zA-Z0-9_]+\z",
         "title": "Category Id",
         "type": "string",
     }
@@ -7322,12 +7367,14 @@ def test_many_to_many_schemas_preserve_string_target_field_constraints(db):
 
     assert output_schema["properties"]["labels"]["items"] == {
         "maxLength": 12,
+        "pattern": r"^[-a-zA-Z0-9_]+\z",
         "type": "string",
     }
     labels_options = write_schema["properties"]["labels"]["anyOf"]
     labels_array_schema = next(option for option in labels_options if option.get("type") == "array")
     assert labels_array_schema["items"] == {
         "maxLength": 12,
+        "pattern": r"^[-a-zA-Z0-9_]+\z",
         "type": "string",
     }
 

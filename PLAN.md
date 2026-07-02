@@ -389,6 +389,8 @@ Completed or mostly complete:
 - Binary model fields now serialize as deterministic base64 strings in JSON
   responses and advertise base64 content metadata in generated output schemas,
   including nullable binary fields.
+- Model-field regex validators, including `SlugField` patterns, now propagate
+  to generated output schemas and relation target schemas.
 - Blank-but-non-null model fields now have non-null typed output schemas for
   persisted admin response bodies.
 - Relation write schemas and OpenAPI examples now infer input types from the

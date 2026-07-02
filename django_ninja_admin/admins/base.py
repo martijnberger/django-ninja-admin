@@ -597,12 +597,12 @@ class BaseAdmin:
 
     def get_pydantic_pattern_for_form_field(self, field):
         pattern = self.normalize_pydantic_pattern(getattr(field, "regex", None))
-        if pattern:
+        if pattern and self.pydantic_pattern_is_supported(pattern):
             return pattern
         for validator in getattr(field, "validators", ()):
             if isinstance(validator, RegexValidator):
                 pattern = self.normalize_pydantic_pattern(getattr(validator, "regex", None))
-                if pattern:
+                if pattern and self.pydantic_pattern_is_supported(pattern):
                     return pattern
         return None
 
@@ -611,6 +611,13 @@ class BaseAdmin:
         if not isinstance(pattern, str):
             return None
         return pattern.replace(r"\A", "^").replace(r"\Z", r"\z")
+
+    def pydantic_pattern_is_supported(self, pattern):
+        try:
+            TypeAdapter(Annotated[str, Field(pattern=pattern)])
+        except Exception:
+            return False
+        return True
 
     def get_pydantic_type_for_typed_choice_field(self, field, *, choices_as_literal=True):
         coerce = getattr(field, "coerce", None)
@@ -894,6 +901,8 @@ class BaseAdmin:
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif isinstance(field, models.BinaryField):
                 custom_fields.append(self._model_field_output_custom_field(field))
+            elif self.get_pydantic_pattern_for_model_field(field):
+                custom_fields.append(self._model_field_output_custom_field(field))
             elif self.get_pydantic_numeric_bounds_for_model_field(field):
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif field.blank and not field.null:
@@ -929,8 +938,12 @@ class BaseAdmin:
 
     def get_pydantic_constraints_for_model_field(self, field, field_type=None):
         constraints = {}
-        if field_type is str and getattr(field, "max_length", None) is not None:
-            constraints["max_length"] = field.max_length
+        if field_type is str:
+            if getattr(field, "max_length", None) is not None:
+                constraints["max_length"] = field.max_length
+            pattern = self.get_pydantic_pattern_for_model_field(field)
+            if pattern:
+                constraints["pattern"] = pattern
         if isinstance(field, models.EmailField):
             constraints["json_schema_extra"] = {"format": "email"}
         elif isinstance(field, models.URLField):
@@ -962,6 +975,14 @@ class BaseAdmin:
             elif isinstance(validator, MaxValueValidator):
                 bounds["le"] = limit_value
         return bounds
+
+    def get_pydantic_pattern_for_model_field(self, field):
+        for validator in getattr(field, "validators", ()):
+            if isinstance(validator, RegexValidator):
+                pattern = self.normalize_pydantic_pattern(getattr(validator, "regex", None))
+                if pattern and self.pydantic_pattern_is_supported(pattern):
+                    return pattern
+        return None
 
     def _relation_output_custom_field(self, field):
         field_type = self.get_pydantic_type_for_model_output_field(field.target_field)

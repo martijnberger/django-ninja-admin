@@ -23,6 +23,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Serialized binary model fields as deterministic base64 strings in JSON output
   and advertised their `contentEncoding`/`contentMediaType` metadata in
   generated response schemas.
+- Propagated model-field regex validators, including `SlugField` patterns, into
+  generated output schemas and relation target schemas.
 - Expanded the implementation plan's testing, validation, and verification
   section with concrete parity evidence rules, schema/OpenAPI contract gates,
   database/version matrix expectations, performance checks, and release
