@@ -18,6 +18,9 @@ sample-project-smoke:
 parity-report *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/parity_report.py {{args}}
 
+openapi-diff *args:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_diff.py {{args}}
+
 check: lint test package-smoke sample-project-smoke
 
 ci: check

@@ -36,6 +36,8 @@ behavior, or permission boundaries.
 - Run `just postgres-test` for lookup, ordering, transaction, protected-delete,
   constraint, JSON-field, date/time, and facet/count behavior.
 - Review CI results across the supported Django 5.0+ and Python 3.12+ matrix.
+- Run `just openapi-diff <previous-openapi.json> <candidate-openapi.json>` when
+  comparing release candidates or reviewed OpenAPI artifacts.
 - Compare generated OpenAPI semantically for route maps, component names,
   required fields, examples, auth/error responses, multipart request bodies,
   action payload variants, and inline/bulk schemas.

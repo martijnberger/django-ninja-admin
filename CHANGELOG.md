@@ -59,6 +59,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added `just parity-report` to summarize parity-matrix statuses, remaining
   partial/missing rows, and placeholder evidence gaps during release
   verification.
+- Added `just openapi-diff` for semantic OpenAPI contract comparisons across
+  reviewed artifacts or release candidates.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.

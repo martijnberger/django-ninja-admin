@@ -958,7 +958,8 @@ catch admin edge cases before client projects discover them.
 
 ### Verification Tooling Backlog
 
-- Add `just openapi-diff` once the semantic diff helper exists.
+- Keep `just openapi-diff` available for semantic OpenAPI contract reviews
+  between release candidates.
 - Add `just sample-project-full` for the expanded sample project and reserve
   `just sample-project-smoke` for the fast release gate.
 - Add `just generated-client-smoke` for the OpenAPI consumer check.
