@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added row-indexed `403` error details for object-level permission denials
+  during bulk list-editable updates.
 - Added `202` OpenAPI response coverage for custom delete response hooks.
 - Made inline form descriptions include the actual number of extra blank rows
   resolved by dynamic inline formset hooks.

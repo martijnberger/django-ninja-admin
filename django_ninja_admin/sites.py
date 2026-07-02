@@ -1795,6 +1795,7 @@ class NinjaAdminSite:
         queryset = queryset if queryset is not None else model_admin.get_queryset(request)
         validated_rows = []
         row_errors = {}
+        has_permission_errors = False
         seen_pks = set()
         allowed = set(model_admin.list_editable) | {"pk", model_admin.model._meta.pk.name}
         for idx, data in enumerate(payload_data):
@@ -1821,7 +1822,9 @@ class NinjaAdminSite:
                 row_errors[idx] = [{"message": "Object not found.", "param": "pk"}]
                 continue
             if not model_admin.has_change_permission(request, obj):
-                raise PermissionDenied
+                row_errors[idx] = [{"message": "Permission denied.", "param": "pk"}]
+                has_permission_errors = True
+                continue
             form_class = model_admin.get_form_class(request, obj, change=True)
             current = model_data_for_form(obj, list(form_class.base_fields.keys()))
             current.update({key: value for key, value in data.items() if key in allowed})
@@ -1832,6 +1835,8 @@ class NinjaAdminSite:
                 continue
             validated_rows.append((idx, obj, form))
         if row_errors:
+            if has_permission_errors:
+                raise AdminPermissionError(row_errors)
             raise AdminValidationError(row_errors)
 
         results = {}

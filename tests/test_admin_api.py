@@ -5777,6 +5777,7 @@ def test_bulk_update_checks_object_level_change_permission(admin_client, sample,
         content_type="application/json",
     )
     assert response.status_code == 403
+    assert response.json()["errors"] == {"0": [{"message": "Permission denied.", "param": "pk"}]}
     sample.refresh_from_db()
     assert sample.stock_status == "in_stock"
 
