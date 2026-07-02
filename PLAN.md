@@ -596,11 +596,29 @@ Acceptance:
 - A clean Django project can install the package, register realistic models, mount `site.urls`, open docs, and complete the parity matrix.
 - All parity gaps are either implemented or explicitly documented as v2 intentional differences.
 
-## Test Plan
+## Testing, Validation, And Verification Plan
 
 Testing should be treated as a product surface, not a final polish step. The
 goal is to make parity measurable, keep generated OpenAPI trustworthy, and
 catch admin edge cases before client projects discover them.
+
+### Test Principles
+
+- Prefer semantic parity assertions over byte-for-byte JSON comparisons. v2 is
+  intentionally Ninja/Pydantic-native, but equivalent admin behavior should be
+  provable through permissions, querysets, validation results, side effects,
+  log entries, and rendered metadata.
+- Every behavior marked `implemented` in `docs/parity-matrix.md` needs evidence:
+  at least one test, smoke gate, documented intentional contract difference, or
+  source-level reason why the behavior is not applicable.
+- Every wire-shape change should include a request/response schema assertion,
+  an OpenAPI assertion, or both. Schema drift should be visible in review.
+- Tests should preserve the architecture: Pydantic parses, coerces, validates
+  obvious request contract errors, and documents OpenAPI; Django
+  `ModelForm`/formsets remain the authoritative admin persistence validators.
+- New features should usually land with one behavior test, one negative/error
+  test, and one schema or metadata assertion when the public API surface
+  changes.
 
 ### Coverage Sources
 
@@ -612,39 +630,81 @@ catch admin edge cases before client projects discover them.
 - Keep a local parity fixture app with models that exercise the hard cases:
   custom primary keys, `ForeignKey(to_field=...)`, many-to-many fields,
   manual-through many-to-many fields, choices, nullable/blank fields, decimals,
-  files/images, custom forms, custom widgets, inlines, protected relations,
-  object-level permissions, and custom actions.
+  email/URL/IP/UUID/duration fields, JSON fields, files/images, custom forms,
+  custom widgets, inlines, protected relations, object-level permissions, and
+  custom actions.
+- Add focused fixture variants for schema generation: custom Django model fields
+  registered with Ninja `register_field()`, explicit `output_schema`,
+  `schema_field_overrides`, `form_schema_field_overrides`, disabled form
+  fields, readonly/computed fields, file/image fields, and nullable relation
+  targets.
 - Run contract-style semantic comparisons against upstream fixtures where
   practical: same registered model behavior, permissions, filtering/search/order
   results, inline constraints, log entries, and change messages, without
   requiring identical JSON envelopes.
+- Maintain small reusable factories for auth users, object-level permission
+  hooks, inline parent/child records, protected relation graphs, large
+  changelists, uploaded files/images, and custom forms/widgets so new tests do
+  not become brittle one-off setups.
 - Track each upstream behavior in `docs/parity-matrix.md` as `implemented`,
   `partial`, `missing`, or `changed`, with evidence pointing to tests, docs, or
   code.
 
+### Test Tiers
+
+- Unit tests: small reusable pieces such as quote/unquote helpers, lookup
+  validation, filter value preparation, schema type inference, form-field
+  constraint extraction, deleted-object collection, action dispatch, inline
+  operation validation, and error normalization.
+- Schema tests: generated Pydantic models should be tested directly with
+  `model_validate()` and `model_json_schema()` for valid coercions, invalid
+  payloads, exact error locations, examples, optionality, constraints, enum
+  literals, formats, and nullability.
+- Route tests: every built-in endpoint should be exercised through mounted
+  Ninja URLs so auth, request parsing, request state, response serialization,
+  transactions, and exception handlers are tested together.
+- Metadata tests: changelist metadata, form descriptions, inline formset
+  metadata, field/widget attrs, relation hints, readonly values, action
+  metadata, pagination state, facets, and generated query strings should have
+  direct assertions because frontend clients will rely on them.
+- Mutation tests: create, update, partial update, delete, default actions,
+  custom actions, inline operations, multipart writes, and list-editable bulk
+  updates should assert both response bodies and database/log side effects.
+- Smoke tests: package install, public imports, no DRF/drf-spectacular
+  dependencies, sample-project setup, docs availability, OpenAPI availability,
+  and a minimal registered-model workflow should stay in the local and CI gates.
+
 ### Validation Layers
 
-- Unit-test small reusable pieces: quoting utilities, lookup validation,
-  filter value preparation, schema type inference, form-field constraint
-  extraction, deleted-object collection, action dispatch, inline validation,
-  and error normalization.
-- Route-test every built-in endpoint through mounted Ninja URLs so auth,
-  middleware-like request state, request parsing, response serialization, and
-  exception handlers are exercised together.
-- Schema-test Pydantic models directly with `model_validate()` for valid
-  coercions and invalid payloads, including exact error locations for parent
-  data, inline rows, bulk rows, action payloads, multipart JSON parts, and
-  custom field overrides.
+- Pydantic request validation should reject malformed parent `data`, inline
+  operation rows, bulk rows, custom action payloads, multipart JSON parts,
+  unknown fields, invalid relation IDs, invalid enum values, malformed
+  date/time values, file/image clear values, and bad override types before
+  Django forms persist anything.
+- Generated output schemas should be checked against Ninja
+  `ModelSchema`/`create_schema` expectations where feasible: explicit safe
+  field lists, no accidental `__all__`, registered custom field types,
+  relation target types, string/numeric/decimal constraints, email/URL formats,
+  typed choices, nullable fields, file/image metadata, and computed overrides.
 - Form-validation tests should prove that Pydantic parsing does not replace
   admin-grade `ModelForm` and formset validation: forms remain authoritative
   for persistence, cross-field validation, uniqueness, disabled fields,
-  readonly rejection, custom clean methods, and file/image validation.
+  readonly rejection, custom clean methods, model validation, and file/image
+  validation.
+- Inline validation should cover add/change/delete permission failures, unknown
+  IDs, duplicate IDs, change-and-delete conflicts, readonly fields, unknown
+  fields, min/max/extra constraints, custom inline formsets, dynamic inline
+  hooks, and parent rollback when inline validation fails.
 - Mutation tests should assert atomicity: parent saves, inline saves, bulk row
   changes, log entries, and file/image writes should roll back together when
   later validation fails.
 - Permission tests should cover site-level auth, model-level permissions,
   object-level permissions, action permissions, inline add/change/delete
-  permissions, autocomplete remote-model permissions, and `auth=None` APIs.
+  permissions, autocomplete remote-model permissions, history visibility,
+  custom-route auth overrides, multi-auth, and explicit `auth=None` APIs.
+- Error tests should assert status codes, stable error `code` values, field or
+  row locations, protected-object details, permission-needed details, and
+  validation messages where clients need deterministic behavior.
 
 ### OpenAPI And Contract Verification
 
@@ -658,20 +718,25 @@ catch admin edge cases before client projects discover them.
 - Verify read schemas follow Ninja `ModelSchema`/`create_schema` semantics where
   possible, while preserving admin-specific custom fields such as FK labels,
   many-to-many IDs, file/image metadata, typed choice enums, relation target
-  types, and computed fields.
+  types, field constraints, registered custom fields, and computed fields.
 - Verify write schemas are form-derived: required/optional fields, disabled
   fields, partial update optionality, constraints, choice literals, typed
   relation IDs, file/image clearing, inline aliases, bulk rows, and action input
   schemas should all appear in OpenAPI.
 - Keep generated examples realistic enough for client generation and smoke
   tests: examples should validate against their own schemas.
+- Add OpenAPI diff review before beta/stable release candidates, with expected
+  changes called out in release notes and unexpected changes treated as release
+  blockers.
+- Keep stable operation IDs, tags, response maps, schema component names, and
+  error components under test so generated clients can upgrade predictably.
 
 ### Database, Version, And Environment Matrix
 
 - Run the normal local gate with SQLite through `just check`.
 - Run PostgreSQL coverage through `just postgres-test`, especially for lookup
   behavior, ordering, facets/counts, transactions, constraints, protected
-  deletes, JSON fields, and date/time handling.
+  deletes, JSON fields, case sensitivity, and date/time handling.
 - Exercise supported Django versions in CI: Django 5.0, 5.1, 5.2, and supported
   Django 6.0.x when practical, on Python 3.12+.
 - Keep the package smoke test building a wheel, installing into an isolated
@@ -681,31 +746,58 @@ catch admin edge cases before client projects discover them.
   Django project, adding `django_ninja_admin` to `INSTALLED_APPS`, registering a
   model, mounting `site.urls`, opening `/admin-api/docs`, and exercising core
   authenticated routes.
+- Add an expanded sample project before beta that includes realistic relations,
+  inlines, custom actions, file/image fields, list filters, search, ordering,
+  custom auth, and a custom admin route.
 
 ### Performance And Regression Checks
 
-- Add query-count tests for changelist pages with FK columns, callable display
-  columns, many-to-many display columns, filters, facets, autocomplete, and
-  history rows.
+- Add query-count tests for changelist pages with FK columns, relation-path
+  columns, callable display columns, many-to-many display columns, filters,
+  facets, autocomplete, history rows, and form relation labels.
 - Add large-result tests for pagination, show-all behavior, select-across
-  actions, bulk updates, and autocomplete page boundaries.
+  actions, bulk updates, history pagination, date hierarchy, facets, and
+  autocomplete page boundaries.
 - Add regression tests for cache invalidation after model registration,
-  unregistration, global action changes, custom output schema changes, and
-  schema override changes.
+  unregistration, global action changes, custom output schema changes, custom
+  auth changes, custom routes, and schema override changes.
 - Add malformed-input tests for suspicious lookups, invalid ordering, invalid
   pages, invalid `_to_field`, malformed inline payload aliases, duplicate bulk
-  PKs, invalid multipart JSON, and unexpected parent fields.
+  PKs, invalid multipart JSON, unexpected parent fields, invalid action names,
+  and unsupported file/image JSON values.
+- Add migration/log-model checks that verify the package-owned `LogEntry` table
+  can be migrated into a clean project and keeps expected indexes/relations.
+
+### Manual And Exploratory Verification
+
+- Keep a small manual verification script or checklist for opening the sample
+  project docs, inspecting OpenAPI, creating an object, editing it, uploading a
+  file/image, running an action, using autocomplete, deleting an object, and
+  viewing history.
+- Before beta, exercise the API from at least one generated or hand-written
+  client to confirm the OpenAPI contract is practical for consumers.
+- Review frontend-rendering metadata manually for representative add/change
+  forms, inline formsets, changelists, filters, facets, pagination controls,
+  raw-id/autocomplete widgets, file/image widgets, and readonly/computed fields.
+- Periodically compare representative responses with Django admin UI behavior
+  using the same fixture data, especially around changelist links, filter
+  choices, date hierarchy navigation, delete protection, and log messages.
 
 ### Release Verification
 
 - Every implementation slice should run focused tests for the touched behavior
   plus at least one OpenAPI/schema contract test when the wire shape changes.
-- Before each intermediate release, run `just check` and record notable coverage
-  additions in `CHANGELOG.md`.
+- Before each intermediate release, run `just check`, review
+  `docs/parity-matrix.md` for stale evidence, and record notable behavior and
+  coverage additions in `CHANGELOG.md`.
 - Before beta/stable release candidates, additionally run PostgreSQL tests,
   review CI matrix results, rerun the copyright/license audit, inspect the
-  parity matrix for stale evidence, and generate or review OpenAPI contract
+  parity matrix for stale or vague evidence, run package and sample-project
+  smoke tests from the built artifact, and generate or review OpenAPI contract
   diffs.
+- No beta/stable release should ship with an `implemented` parity claim that
+  lacks evidence, an unreviewed OpenAPI diff, a failing smoke test, a known DRF
+  dependency/import regression, or an undocumented intentional v2 difference.
 - Acceptance: a clean Django project can install the package, add
   `django_ninja_admin` to `INSTALLED_APPS`, register realistic models, mount
   `site.urls`, open `/admin-api/docs`, and exercise every parity feature

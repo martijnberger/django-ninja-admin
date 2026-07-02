@@ -20,6 +20,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
   validator constraints.
 - Tightened generated output schemas for email and URL model fields so response
   components preserve `format: email` and `format: uri` metadata.
+- Expanded the implementation plan's testing, validation, and verification
+  section with concrete parity evidence rules, schema/OpenAPI contract gates,
+  database/version matrix expectations, performance checks, and release
+  verification criteria.
 
 ## 0.1.23 - 2026-07-02
 
