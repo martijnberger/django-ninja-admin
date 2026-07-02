@@ -49,6 +49,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_sortable_by(model_admin))
     errors.extend(_check_form_class(model_admin))
     errors.extend(_check_formfield_overrides(model_admin))
+    errors.extend(_check_form_schema_field_overrides(model_admin))
     errors.extend(_check_schema_field_overrides(model_admin))
     errors.extend(_check_form_layout(model_admin))
     errors.extend(_check_prepopulated_fields(model_admin))
@@ -423,6 +424,32 @@ def _check_schema_field_overrides(model_admin):
                     model_admin.__class__,
                     f"The override for '{field_name}' must be a type annotation or a one/two-item tuple.",
                     "E100",
+                )
+            )
+    return errors
+
+
+def _check_form_schema_field_overrides(model_admin):
+    value = getattr(model_admin, "form_schema_field_overrides", {}) or {}
+    if not isinstance(value, Mapping):
+        return [_error(model_admin.__class__, "The value of 'form_schema_field_overrides' must be a mapping.", "E101")]
+
+    errors = []
+    for field_name, override in value.items():
+        if not isinstance(field_name, str):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    "Keys in 'form_schema_field_overrides' must be field names.",
+                    "E102",
+                )
+            )
+        if isinstance(override, tuple) and len(override) not in {1, 2}:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The override for '{field_name}' must be a type annotation or a one/two-item tuple.",
+                    "E103",
                 )
             )
     return errors

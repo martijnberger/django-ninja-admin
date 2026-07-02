@@ -3734,6 +3734,78 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
         )
 
 
+def test_form_schema_field_overrides_drive_parent_bulk_and_inline_schemas(sample):
+    class OverridePayloadProductForm(forms.ModelForm):
+        metadata = forms.CharField(required=False)
+
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status", "metadata")
+
+    class OverridePayloadImageForm(forms.ModelForm):
+        details = forms.CharField(required=False)
+
+        class Meta:
+            model = ProductImage
+            fields = ("title", "details")
+
+    class OverridePayloadInline(TabularInline):
+        model = ProductImage
+        form_class = OverridePayloadImageForm
+        form_schema_field_overrides = {"details": dict[str, int]}
+
+    class OverridePayloadProductAdmin(ModelAdmin):
+        form_class = OverridePayloadProductForm
+        list_display = ("name", "stock_status")
+        list_editable = ("stock_status",)
+        form_schema_field_overrides = {"metadata": dict[str, int], "stock_status": bool}
+        inlines = [OverridePayloadInline]
+
+    model_admin = OverridePayloadProductAdmin(Product, NinjaAdminSite(include_auth=False))
+    create_schema = model_admin.get_write_schema(None)
+    validated = create_schema.model_validate(
+        {
+            "name": "Override payload",
+            "category": sample.category_id,
+            "price": "9.00",
+            "stock_status": True,
+            "metadata": {"priority": 3},
+        }
+    )
+
+    assert validated.stock_status is True
+    assert validated.metadata == {"priority": 3}
+    create_properties = create_schema.model_json_schema()["properties"]
+    assert create_properties["stock_status"]["type"] == "boolean"
+    assert create_properties["metadata"]["anyOf"][0]["additionalProperties"]["type"] == "integer"
+
+    with pytest.raises(PydanticValidationError):
+        create_schema.model_validate(
+            {
+                "name": "Override payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {"priority": "high"},
+            }
+        )
+
+    bulk_schema = model_admin.get_bulk_payload_schema(None)
+    bulk_payload = bulk_schema.model_validate({"data": [{"pk": sample.pk, "stock_status": False}]})
+    assert bulk_payload.data[0].stock_status is False
+    with pytest.raises(PydanticValidationError):
+        bulk_schema.model_validate({"data": [{"pk": sample.pk, "stock_status": "in_stock"}]})
+
+    inline = model_admin.get_inline_instances(None, check_permissions=False)[0]
+    inline_row_schema = inline.get_inline_row_schema(None)
+    inline_row = inline_row_schema.model_validate({"title": "Front", "details": {"priority": 1}})
+    assert inline_row.details == {"priority": 1}
+    inline_properties = inline_row_schema.model_json_schema()["properties"]
+    assert inline_properties["details"]["anyOf"][0]["additionalProperties"]["type"] == "integer"
+    with pytest.raises(PydanticValidationError):
+        inline_row_schema.model_validate({"title": "Front", "details": {"priority": "high"}})
+
+
 def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
     uuid_choice = "550e8400-e29b-41d4-a716-446655440000"
     other_uuid_choice = "550e8400-e29b-41d4-a716-446655440001"
@@ -6684,6 +6756,41 @@ def test_admin_checks_validate_schema_field_overrides(db):
     assert bad_mapping_ids == {"django_ninja_admin.E098"}
     assert bad_key_ids == {"django_ninja_admin.E099"}
     assert bad_tuple_ids == {"django_ninja_admin.E100"}
+
+
+def test_admin_checks_validate_form_schema_field_overrides(db):
+    class ValidFormSchemaOverrideProductAdmin(ModelAdmin):
+        form_schema_field_overrides = {"metadata": dict[str, int], "score": (int,)}
+
+    class BadMappingFormSchemaOverrideProductAdmin(ModelAdmin):
+        form_schema_field_overrides = [("metadata", dict[str, int])]
+
+    class BadKeyFormSchemaOverrideProductAdmin(ModelAdmin):
+        form_schema_field_overrides = {123: str}
+
+    class BadTupleFormSchemaOverrideProductAdmin(ModelAdmin):
+        form_schema_field_overrides = {"metadata": (dict[str, int], None, "extra")}
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidFormSchemaOverrideProductAdmin)
+    bad_mapping_site = NinjaAdminSite(include_auth=False)
+    bad_mapping_site.register(Product, BadMappingFormSchemaOverrideProductAdmin)
+    bad_key_site = NinjaAdminSite(include_auth=False)
+    bad_key_site.register(Product, BadKeyFormSchemaOverrideProductAdmin)
+    bad_tuple_site = NinjaAdminSite(include_auth=False)
+    bad_tuple_site.register(Product, BadTupleFormSchemaOverrideProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_mapping_ids = {error.id for error in bad_mapping_site.get_model_admin(Product).check()}
+    bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
+    bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint(
+        {"django_ninja_admin.E101", "django_ninja_admin.E102", "django_ninja_admin.E103"}
+    )
+    assert bad_mapping_ids == {"django_ninja_admin.E101"}
+    assert bad_key_ids == {"django_ninja_admin.E102"}
+    assert bad_tuple_ids == {"django_ninja_admin.E103"}
 
 
 def test_model_actions_require_model_access(staff_client, sample):

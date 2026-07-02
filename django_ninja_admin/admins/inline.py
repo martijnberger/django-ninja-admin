@@ -92,13 +92,21 @@ class InlineModelAdmin(BaseAdmin):
         cache = getattr(self, "_inline_row_schema_cache", {})
         formset_class = self.get_formset(request, obj, change=change)
         form_fields = formset_class.form.base_fields
-        cache_key = ("inline-row", tuple(form_fields), change, partial, require_pk)
+        overrides = self.get_form_schema_field_overrides(request, obj, change=change) or {}
+        cache_key = (
+            "inline-row",
+            tuple(form_fields),
+            self._schema_override_cache_key(overrides),
+            change,
+            partial,
+            require_pk,
+        )
         if cache_key not in cache:
             fields = {}
             if require_pk:
                 fields["pk"] = (Any, ...)
             for field_name, form_field in form_fields.items():
-                field_type = self.get_pydantic_type_for_form_field(form_field)
+                field_type = self.get_form_schema_field_type(field_name, form_field, overrides=overrides)
                 required = bool(form_field.required and not getattr(form_field, "disabled", False) and not partial)
                 fields[field_name] = (field_type, ...) if required else (field_type | None, None)
             operation = "Change" if require_pk else "Add"
@@ -112,10 +120,10 @@ class InlineModelAdmin(BaseAdmin):
 
     def get_inline_operations_schema(self, request=None, obj=None, *, change=False):
         cache = getattr(self, "_inline_operations_schema_cache", {})
-        cache_key = ("inline-operations", change)
+        add_schema = self.get_inline_row_schema(request, obj, change=change, partial=False, require_pk=False)
+        change_schema = self.get_inline_row_schema(request, obj, change=True, partial=True, require_pk=True)
+        cache_key = ("inline-operations", change, add_schema, change_schema)
         if cache_key not in cache:
-            add_schema = self.get_inline_row_schema(request, obj, change=change, partial=False, require_pk=False)
-            change_schema = self.get_inline_row_schema(request, obj, change=True, partial=True, require_pk=True)
             cache[cache_key] = create_model(
                 f"{self.model.__name__}InlineOperations",
                 __base__=AdminInlineOperationsSchema,

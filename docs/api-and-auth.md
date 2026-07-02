@@ -63,6 +63,32 @@ class ProductAdmin(ModelAdmin):
     form_class = ProductAdminForm
 ```
 
+### Input Field Types: `form_schema_field_overrides`
+
+Use `form_schema_field_overrides` when a form field needs a more precise
+Pydantic request/OpenAPI type than the package can infer automatically. Django
+`ModelForm` validation still remains authoritative for persistence.
+
+```python
+from django import forms
+from django_ninja_admin import ModelAdmin
+
+from shop.models import Product
+
+
+class ProductAdminForm(forms.ModelForm):
+    metadata = forms.CharField(required=False)
+
+    class Meta:
+        model = Product
+        fields = ("name", "category", "price", "metadata")
+
+
+class ProductAdmin(ModelAdmin):
+    form_class = ProductAdminForm
+    form_schema_field_overrides = {"metadata": dict[str, int]}
+```
+
 ### Output Shape: `output_schema`
 
 Use a Pydantic/Ninja schema when you want to own the whole response shape.
@@ -105,6 +131,7 @@ class ProductAdmin(ModelAdmin):
 Use Django-admin-style hooks for behavior:
 
 - `get_form_class(request, obj=None, change=False)`
+- `get_form_schema_field_overrides(request, obj=None, change=False)`
 - `get_output_schema(request=None)`
 - `get_form_description(request, obj=None, **kwargs)`
 - `get_queryset(request)`

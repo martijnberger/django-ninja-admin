@@ -142,19 +142,25 @@ class ModelAdmin(BaseAdmin):
     def get_inline_payload_schema(self, request=None, obj=None, *, change=False, partial=False):
         cache = getattr(self, "_inline_payload_schema_cache", {})
         inline_instances = self.get_inline_instances(request, obj)
+        inline_schemas = tuple(
+            (
+                f"{inline.model._meta.app_label}.{inline.model._meta.model_name}",
+                inline.get_inline_operations_schema(request, obj, change=change),
+            )
+            for inline in inline_instances
+        )
         cache_key = (
             "inline-payload",
-            tuple(f"{inline.model._meta.app_label}.{inline.model._meta.model_name}" for inline in inline_instances),
+            inline_schemas,
             change,
             partial,
         )
         if cache_key not in cache:
             fields = {}
-            for inline in inline_instances:
-                inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
+            for inline_id, inline_schema in inline_schemas:
                 field_name = inline_id.replace(".", "_")
                 fields[field_name] = (
-                    inline.get_inline_operations_schema(request, obj, change=change) | None,
+                    inline_schema | None,
                     Field(default=None, alias=inline_id),
                 )
             cache[cache_key] = create_model(
@@ -167,10 +173,10 @@ class ModelAdmin(BaseAdmin):
 
     def get_mutation_payload_schema(self, request=None, obj=None, *, change=False, partial=False):
         cache = getattr(self, "_mutation_payload_schema_cache", {})
-        cache_key = ("model-mutation", change, partial)
+        data_schema = self.get_write_schema(request, obj, change=change, partial=partial)
+        inline_payload_schema = self.get_inline_payload_schema(request, obj, change=change, partial=partial)
+        cache_key = ("model-mutation", change, partial, data_schema, inline_payload_schema)
         if cache_key not in cache:
-            data_schema = self.get_write_schema(request, obj, change=change, partial=partial)
-            inline_payload_schema = self.get_inline_payload_schema(request, obj, change=change, partial=partial)
             operation = "PartialUpdate" if partial else "Update" if change else "Create"
             cache[cache_key] = create_model(
                 f"{self.model.__name__}Admin{operation}Payload",

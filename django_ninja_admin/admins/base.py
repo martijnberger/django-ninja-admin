@@ -81,6 +81,7 @@ class BaseAdmin:
     fieldsets = None
     form_class = None
     formfield_overrides = {}
+    form_schema_field_overrides = {}
     output_schema = None
     schema_field_overrides = {}
     filter_vertical = ()
@@ -200,17 +201,21 @@ class BaseAdmin:
     def get_schema_field_overrides(self, request=None):
         return self.schema_field_overrides
 
+    def get_form_schema_field_overrides(self, request=None, obj=None, *, change=False):
+        return self.form_schema_field_overrides
+
     def get_write_schema(self, request=None, obj=None, *, change=False, partial=False, fields=None, name_suffix=None):
         cache = getattr(self, "_write_schema_cache", {})
         form_class = self.get_form_class(request, obj, change=change)
         form_fields = form_class.base_fields
         selected_fields = tuple(fields or form_fields.keys())
-        cache_key = ("write", selected_fields, change, partial, name_suffix)
+        overrides = self.get_form_schema_field_overrides(request, obj, change=change) or {}
+        cache_key = ("write", selected_fields, self._schema_override_cache_key(overrides), change, partial, name_suffix)
         if cache_key not in cache:
             schema_fields = {}
             for field_name in selected_fields:
                 form_field = form_fields.get(field_name)
-                field_type = Any if form_field is None else self.get_pydantic_type_for_form_field(form_field)
+                field_type = self.get_form_schema_field_type(field_name, form_field, overrides=overrides)
                 required = bool(
                     form_field
                     and form_field.required
@@ -232,9 +237,9 @@ class BaseAdmin:
 
     def get_mutation_payload_schema(self, request=None, obj=None, *, change=False, partial=False):
         cache = getattr(self, "_mutation_payload_schema_cache", {})
-        cache_key = ("mutation", change, partial)
+        data_schema = self.get_write_schema(request, obj, change=change, partial=partial)
+        cache_key = ("mutation", change, partial, data_schema)
         if cache_key not in cache:
-            data_schema = self.get_write_schema(request, obj, change=change, partial=partial)
             operation = "PartialUpdate" if partial else "Update" if change else "Create"
             cache[cache_key] = create_model(
                 f"{self.model.__name__}Admin{operation}Payload",
@@ -266,7 +271,8 @@ class BaseAdmin:
 
     def get_bulk_payload_schema(self, request=None):
         cache = getattr(self, "_mutation_payload_schema_cache", {})
-        cache_key = ("bulk", tuple(self.list_editable))
+        overrides = self.get_form_schema_field_overrides(request, change=True) or {}
+        cache_key = ("bulk", tuple(self.list_editable), self._schema_override_cache_key(overrides))
         if cache_key not in cache:
             form_fields = {}
             if self.list_editable:
@@ -275,10 +281,11 @@ class BaseAdmin:
             row_fields = {"pk": (Any, ...)}
             for field_name in self.list_editable:
                 form_field = form_fields.get(field_name)
-                field_type = (
-                    Any
-                    if form_field is None
-                    else self.get_pydantic_type_for_form_field(form_field, choices_as_literal=False)
+                field_type = self.get_form_schema_field_type(
+                    field_name,
+                    form_field,
+                    overrides=overrides,
+                    choices_as_literal=False,
                 )
                 row_fields[field_name] = (field_type | None, None)
             row_schema = create_model(
@@ -306,6 +313,22 @@ class BaseAdmin:
             )
             self._mutation_response_schema_cache = cache
         return cache[cache_key]
+
+    def get_form_schema_field_type(
+        self,
+        field_name,
+        form_field,
+        *,
+        overrides=None,
+        choices_as_literal=True,
+    ):
+        if overrides is None:
+            overrides = self.get_form_schema_field_overrides() or {}
+        if field_name in overrides:
+            return self._normalize_schema_override(overrides[field_name])[0]
+        if form_field is None:
+            return Any
+        return self.get_pydantic_type_for_form_field(form_field, choices_as_literal=choices_as_literal)
 
     def get_pydantic_type_for_form_field(self, field, *, choices_as_literal=True):
         field_type = self._get_pydantic_type_for_form_field(field, choices_as_literal=choices_as_literal)
@@ -596,6 +619,9 @@ class BaseAdmin:
             if len(value) == 1:
                 return value[0], None
         return value, None
+
+    def _schema_override_cache_key(self, overrides):
+        return tuple((name, repr(value)) for name, value in overrides.items())
 
     def get_form_fields_description(self, request, obj=None, *, initial=None):
         return form_field_descriptions(
