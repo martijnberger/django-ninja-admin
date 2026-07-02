@@ -1093,14 +1093,29 @@ def _check_inlines(model_admin):
                     "E077",
                 )
             )
-        if not isinstance(getattr(inline_class, "extra", None), int):
-            errors.append(_error(inline_class, "The value of 'extra' must be an integer.", "E073"))
+        extra = getattr(inline_class, "extra", None)
         min_num = getattr(inline_class, "min_num", None)
-        if min_num is not None and not isinstance(min_num, int):
-            errors.append(_error(inline_class, "The value of 'min_num' must be an integer or None.", "E074"))
         max_num = getattr(inline_class, "max_num", None)
-        if max_num is not None and not isinstance(max_num, int):
+        if not _is_integer_option(extra):
+            errors.append(_error(inline_class, "The value of 'extra' must be an integer.", "E073"))
+        elif extra < 0:
+            errors.append(_error(inline_class, "The value of 'extra' must not be negative.", "E106"))
+        if min_num is not None and not _is_integer_option(min_num):
+            errors.append(_error(inline_class, "The value of 'min_num' must be an integer or None.", "E074"))
+        elif min_num is not None and min_num < 0:
+            errors.append(_error(inline_class, "The value of 'min_num' must not be negative.", "E107"))
+        if max_num is not None and not _is_integer_option(max_num):
             errors.append(_error(inline_class, "The value of 'max_num' must be an integer or None.", "E075"))
+        elif max_num is not None and max_num < 0:
+            errors.append(_error(inline_class, "The value of 'max_num' must not be negative.", "E108"))
+        if (
+            _is_integer_option(min_num)
+            and _is_integer_option(max_num)
+            and min_num >= 0
+            and max_num >= 0
+            and min_num > max_num
+        ):
+            errors.append(_error(inline_class, "The value of 'min_num' must not exceed 'max_num'.", "E109"))
         formset = getattr(inline_class, "formset", None)
         if not isinstance(formset, type) or not issubclass(formset, BaseInlineFormSet):
             errors.append(_error(inline_class, "The value of 'formset' must inherit from BaseInlineFormSet.", "E076"))

@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Hardened inline count-option checks to reject boolean, negative, and
+  impossible min/max values before formset construction.
 - Hardened admin pagination checks to reject boolean, zero, and negative
   pagination option values before changelist runtime.
 - Exposed Django widget option-template, checked-attribute, add-id-index, and
