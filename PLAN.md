@@ -45,6 +45,39 @@ urlpatterns = [path("admin-api/", site.urls)]
 - Register Ninja exception handlers for auth, permission denied, not found, validation, protected delete, suspicious lookup/to-field errors, and unexpected errors, returning consistent typed error bodies.
 - Use Ninja's built-in OpenAPI/docs support, stable operation IDs, model tags, dynamic schemas, and rich response maps instead of drf-spectacular hooks.
 
+## Schema Strategy
+
+Use Django Ninja's native Pydantic machinery as the default schema foundation,
+then layer Django-admin-specific behavior only where admin semantics require it.
+
+- Treat Ninja `ModelSchema` / `ninja.orm.create_schema()` semantics as the
+  baseline for read/output schemas. Generated output schemas should use
+  explicit safe field lists, never blanket `__all__`, and should keep admin
+  exclusions such as password fields, readonly/computed fields, relation labels,
+  file/image metadata, many-to-many IDs, and `_to_field`-aware relation values.
+- Keep write/input schemas form-derived rather than model-derived. Admin writes
+  are governed by `ModelForm`, custom form fields, widget cleaning, disabled
+  fields, formsets, inline constraints, and changelist formsets, so generated
+  Pydantic request schemas should parse, coerce, and document request payloads
+  before Django forms remain the authoritative persistence validator.
+- Use normal Pydantic/Ninja customization hooks for explicit contracts:
+  `output_schema` when callers own the whole response shape,
+  `schema_field_overrides` for computed/read fields, and
+  `form_schema_field_overrides` for form/input fields whose type cannot be
+  inferred precisely.
+- Support Ninja's `register_field()` story for custom Django model fields where
+  feasible, and document when projects should use `register_field()` versus
+  admin-specific override hooks.
+- Evaluate Ninja `fields_optional` / `PatchDict` patterns for partial updates,
+  but only adopt them where they preserve admin form semantics, inline payloads,
+  error locations, OpenAPI component names, and existing mutation hooks.
+- Keep generated component names, schema examples, validation-error shapes, and
+  OpenAPI references deterministic so frontend clients can diff contracts
+  between releases.
+- Document that DRF `serializer_class` migration is intentionally out of scope:
+  projects should move to `form_class`, Pydantic/Ninja schemas, field override
+  hooks, and action input/response schemas.
+
 ## Current Parity Status
 
 The package is currently a functional Ninja-native foundation, not a full upstream-parity implementation.
@@ -441,18 +474,35 @@ Acceptance:
 
 Goal: make serialization/deserialization Pydantic-first where feasible, without losing Django form semantics.
 
-- Generate per-model Pydantic request schemas for create, replace, partial update, bulk list-editable update, action payloads, and inline operations.
-- Keep Django `ModelForm`/formset validation as the authoritative persistence validator, but use Pydantic to parse, coerce, and document request bodies before forms run.
-- Support field-type overrides for model fields, form fields, computed display fields, file/image URL fields, and custom admin fields.
-- Distinguish read schemas from write schemas, including readonly fields, excluded fields, password fields, m2m fields, FK labels, and custom output fields.
+- Make Ninja `ModelSchema` / `create_schema()` the explicit read-schema
+  baseline, using admin-safe explicit field lists plus `custom_fields` for
+  admin-specific output such as relation labels, many-to-many IDs, file/image
+  metadata, typed choices, computed fields, and non-null persisted IDs.
+- Generate form-derived Pydantic request schemas for create, replace, partial
+  update, bulk list-editable update, action payloads, and inline operations.
+- Keep Django `ModelForm`/formset validation as the authoritative persistence
+  validator, but use Pydantic to parse, coerce, validate obvious type errors,
+  and document request bodies before forms run.
+- Support field-type overrides for model fields, form fields, computed display
+  fields, file/image URL fields, custom admin fields, and custom Django model
+  fields registered through Ninja `register_field()` where feasible.
+- Distinguish read schemas from write schemas, including readonly fields,
+  excluded fields, password fields, m2m fields, FK labels, custom output fields,
+  disabled form fields, partial-update optionality, and inline operation
+  variants.
 - Make OpenAPI components stable and deterministic across registrations.
 - Add schema cache invalidation when admins are registered/unregistered or output hooks change.
+- Add contract tests that compare generated schema semantics, not only route
+  behavior, for representative models, custom forms, custom actions, inlines,
+  custom field overrides, and file/image routes.
 
 Acceptance:
 
-- OpenAPI shows concrete per-model payloads instead of only `dict[str, Any]`.
+- OpenAPI shows concrete per-model request and response components instead of
+  only `dict[str, Any]`.
 - Pydantic validation errors return consistent typed error bodies.
-- File/image/custom fields have explicit schema tests.
+- File/image/custom fields and custom model/form field overrides have explicit
+  schema tests.
 
 ### Phase 3: Mutation, Inline, And Delete Semantics
 
@@ -520,7 +570,8 @@ Acceptance:
 
 ### Phase 7: Release Hardening
 
-Goal: reach the original "no public release until full parity" bar.
+Goal: reach the beta/stable release bar: full measured parity or explicit v2
+contract differences for every remaining gap.
 
 - Run the full local test suite across Django 5.0, 5.1, 5.2, and supported Django 6.0.x when practical.
 - Test against SQLite and PostgreSQL.
@@ -536,14 +587,125 @@ Acceptance:
 
 ## Test Plan
 
-- Port upstream behavioral coverage: registration, app list/index/context, permission denial, view-on-site, autocomplete, detail, actions, default delete action, select-across, invalid actions, delete/protected delete/bad `to_field`, add/change forms, add/change mutations, pagination, changelist, schema generation, and inline add/change/delete/error cases.
-- Add Ninja-specific tests for OpenAPI generation, docs availability, Pydantic request validation, custom auth callables, `SessionAuthIsStaff`, error response shapes, file/image fields, and no imports from DRF or drf-spectacular.
-- Run contract-style semantic comparisons against upstream fixtures where practical: same registered model behavior, permissions, filtering/search/order results, inline constraints, log entries, and change messages, without requiring identical JSON envelopes.
-- Acceptance: a clean Django project can install the package, add `django_ninja_admin` to `INSTALLED_APPS`, register models, mount `site.urls`, open `/admin-api/docs`, and exercise every parity feature successfully.
+Testing should be treated as a product surface, not a final polish step. The
+goal is to make parity measurable, keep generated OpenAPI trustworthy, and
+catch admin edge cases before client projects discover them.
+
+### Coverage Sources
+
+- Port upstream behavioral coverage: registration, app list/index/context,
+  permission denial, view-on-site, autocomplete, detail, actions, default delete
+  action, select-across, invalid actions, delete/protected delete/bad
+  `_to_field`, add/change forms, add/change mutations, pagination, changelist,
+  schema generation, and inline add/change/delete/error cases.
+- Keep a local parity fixture app with models that exercise the hard cases:
+  custom primary keys, `ForeignKey(to_field=...)`, many-to-many fields,
+  manual-through many-to-many fields, choices, nullable/blank fields, decimals,
+  files/images, custom forms, custom widgets, inlines, protected relations,
+  object-level permissions, and custom actions.
+- Run contract-style semantic comparisons against upstream fixtures where
+  practical: same registered model behavior, permissions, filtering/search/order
+  results, inline constraints, log entries, and change messages, without
+  requiring identical JSON envelopes.
+- Track each upstream behavior in `docs/parity-matrix.md` as `implemented`,
+  `partial`, `missing`, or `changed`, with evidence pointing to tests, docs, or
+  code.
+
+### Validation Layers
+
+- Unit-test small reusable pieces: quoting utilities, lookup validation,
+  filter value preparation, schema type inference, form-field constraint
+  extraction, deleted-object collection, action dispatch, inline validation,
+  and error normalization.
+- Route-test every built-in endpoint through mounted Ninja URLs so auth,
+  middleware-like request state, request parsing, response serialization, and
+  exception handlers are exercised together.
+- Schema-test Pydantic models directly with `model_validate()` for valid
+  coercions and invalid payloads, including exact error locations for parent
+  data, inline rows, bulk rows, action payloads, multipart JSON parts, and
+  custom field overrides.
+- Form-validation tests should prove that Pydantic parsing does not replace
+  admin-grade `ModelForm` and formset validation: forms remain authoritative
+  for persistence, cross-field validation, uniqueness, disabled fields,
+  readonly rejection, custom clean methods, and file/image validation.
+- Mutation tests should assert atomicity: parent saves, inline saves, bulk row
+  changes, log entries, and file/image writes should roll back together when
+  later validation fails.
+- Permission tests should cover site-level auth, model-level permissions,
+  object-level permissions, action permissions, inline add/change/delete
+  permissions, autocomplete remote-model permissions, and `auth=None` APIs.
+
+### OpenAPI And Contract Verification
+
+- Add semantic OpenAPI tests for every built-in route group: site routes,
+  changelist/detail/form routes, create/update/delete routes, multipart routes,
+  bulk routes, action routes, history, autocomplete, and custom admin routes.
+- Snapshot or semantically diff generated OpenAPI components for representative
+  models so component names, required fields, examples, status maps, auth-error
+  maps, validation-error maps, and multipart request bodies cannot drift
+  silently.
+- Verify read schemas follow Ninja `ModelSchema`/`create_schema` semantics where
+  possible, while preserving admin-specific custom fields such as FK labels,
+  many-to-many IDs, file/image metadata, typed choice enums, relation target
+  types, and computed fields.
+- Verify write schemas are form-derived: required/optional fields, disabled
+  fields, partial update optionality, constraints, choice literals, typed
+  relation IDs, file/image clearing, inline aliases, bulk rows, and action input
+  schemas should all appear in OpenAPI.
+- Keep generated examples realistic enough for client generation and smoke
+  tests: examples should validate against their own schemas.
+
+### Database, Version, And Environment Matrix
+
+- Run the normal local gate with SQLite through `just check`.
+- Run PostgreSQL coverage through `just postgres-test`, especially for lookup
+  behavior, ordering, facets/counts, transactions, constraints, protected
+  deletes, JSON fields, and date/time handling.
+- Exercise supported Django versions in CI: Django 5.0, 5.1, 5.2, and supported
+  Django 6.0.x when practical, on Python 3.12+.
+- Keep the package smoke test building a wheel, installing into an isolated
+  target, importing the public API, and checking dependency metadata for absent
+  DRF/drf-spectacular dependencies.
+- Keep the sample-project smoke test installing the built wheel into a clean
+  Django project, adding `django_ninja_admin` to `INSTALLED_APPS`, registering a
+  model, mounting `site.urls`, opening `/admin-api/docs`, and exercising core
+  authenticated routes.
+
+### Performance And Regression Checks
+
+- Add query-count tests for changelist pages with FK columns, callable display
+  columns, many-to-many display columns, filters, facets, autocomplete, and
+  history rows.
+- Add large-result tests for pagination, show-all behavior, select-across
+  actions, bulk updates, and autocomplete page boundaries.
+- Add regression tests for cache invalidation after model registration,
+  unregistration, global action changes, custom output schema changes, and
+  schema override changes.
+- Add malformed-input tests for suspicious lookups, invalid ordering, invalid
+  pages, invalid `_to_field`, malformed inline payload aliases, duplicate bulk
+  PKs, invalid multipart JSON, and unexpected parent fields.
+
+### Release Verification
+
+- Every implementation slice should run focused tests for the touched behavior
+  plus at least one OpenAPI/schema contract test when the wire shape changes.
+- Before each intermediate release, run `just check` and record notable coverage
+  additions in `CHANGELOG.md`.
+- Before beta/stable release candidates, additionally run PostgreSQL tests,
+  review CI matrix results, rerun the copyright/license audit, inspect the
+  parity matrix for stale evidence, and generate or review OpenAPI contract
+  diffs.
+- Acceptance: a clean Django project can install the package, add
+  `django_ninja_admin` to `INSTALLED_APPS`, register realistic models, mount
+  `site.urls`, open `/admin-api/docs`, and exercise every parity feature
+  successfully or see the remaining behavior documented as an intentional v2
+  difference.
 
 ## Assumptions
 
 - This is a v2 package, not a drop-in replacement for existing DRF clients.
-- No public release happens until full parity is implemented and tested.
+- Alpha releases may continue while parity is being built, but beta/stable
+  release candidates require full measured parity or explicit v2 contract
+  differences for every remaining gap.
 - DRF `serializer_class` customizations are intentionally unsupported; use `form_class`, `output_schema`, and/or `schema_field_overrides`.
 - The implementation may reuse/port Django-derived logic with BSD notices and upstream MIT-attributed logic where appropriate.

@@ -25,6 +25,25 @@ just check
   `DJANGO_NINJA_ADMIN_TEST_DATABASE=postgres` and the `POSTGRES_*` connection
   environment variables.
 
+## Extended Verification
+
+Use the broader verification pass before beta/stable release candidates and
+after any change that affects generated schemas, mutation semantics, query
+behavior, or permission boundaries.
+
+- Run focused tests for the changed behavior and at least one OpenAPI/schema
+  contract test when the wire shape changes.
+- Run `just postgres-test` for lookup, ordering, transaction, protected-delete,
+  constraint, JSON-field, date/time, and facet/count behavior.
+- Review CI results across the supported Django 5.0+ and Python 3.12+ matrix.
+- Compare generated OpenAPI semantically for route maps, component names,
+  required fields, examples, auth/error responses, multipart request bodies,
+  action payload variants, and inline/bulk schemas.
+- Inspect `docs/parity-matrix.md` for stale evidence and make sure every
+  remaining gap is still accurate.
+- Re-run the copyright/license audit after substantial Django-derived or
+  upstream-derived ports.
+
 ## Alpha Criteria
 
 - The package installs from a built wheel.
