@@ -432,7 +432,7 @@ class ChangeList:
         return per_page
 
     def can_show_all(self):
-        wants_all = self.params.get("all") in {"1", "true", "True"}
+        wants_all = "all" in self.params
         return wants_all and self.result_count <= self.model_admin.list_max_show_all
 
     def should_show_facets(self):

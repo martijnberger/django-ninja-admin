@@ -45,6 +45,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   default-sorted columns in response metadata.
 - Made list-editable row metadata and bulk updates honor changelist `_to_field`
   row identity.
+- Made changelist show-all mode follow Django admin's presence-based `all`
+  query parameter behavior.
 
 ## 0.1.15 - 2026-07-02
 

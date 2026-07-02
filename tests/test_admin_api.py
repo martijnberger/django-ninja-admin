@@ -1795,6 +1795,14 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     rows_by_name = {row["cells"]["name"]: row for row in show_all_body["rows"]}
     assert [row["index"] for row in show_all_body["rows"]] == [0, 1, 2]
     assert [row["result_index"] for row in show_all_body["rows"]] == [1, 2, 3]
+
+    show_all_by_presence = admin_client.get("/admin-api/testapp/product?all=0")
+    assert show_all_by_presence.status_code == 200
+    show_all_by_presence_body = show_all_by_presence.json()
+    assert show_all_by_presence_body["config"]["show_all"] is True
+    assert show_all_by_presence_body["config"]["pagination_required"] is False
+    assert len(show_all_by_presence_body["rows"]) == show_all_by_presence_body["config"]["result_count"]
+
     alpha_row = rows_by_name["Alpha"]
     content_type = ContentType.objects.get_for_model(Product)
     assert alpha_row["detail_url"] == f"/admin-api/testapp/product/{sample.pk}"
