@@ -2326,13 +2326,30 @@ def test_changelist_exposes_list_editing_row_metadata(admin_client, sample):
     rows = body["list_editing_rows"]
     legacy_formset = body["list_editing_formset"]
 
+    assert body["list_editing_formset_prefix"] == "form"
+    assert body["list_editing_total_form_count"] == 2
+    assert body["list_editing_initial_form_count"] == 2
+    management_fields = {field["name"]: field for field in body["list_editing_management_form"]}
+    assert management_fields["TOTAL_FORMS"]["attrs"]["html_name"] == "form-TOTAL_FORMS"
+    assert management_fields["TOTAL_FORMS"]["attrs"]["value"] == 2
+    assert management_fields["INITIAL_FORMS"]["attrs"]["html_name"] == "form-INITIAL_FORMS"
+    assert management_fields["INITIAL_FORMS"]["attrs"]["value"] == 2
+    assert management_fields["MIN_NUM_FORMS"]["attrs"]["value"] == 0
+    assert management_fields["MAX_NUM_FORMS"]["attrs"]["value"] >= 2
     assert [row["index"] for row in rows] == [0, 1]
     assert [row["pk"] for row in rows] == [row["id"] for row in body["rows"]]
     assert {row["pk_name"] for row in rows} == {"id"}
+    assert [row["form_prefix"] for row in rows] == ["form-0", "form-1"]
+    assert [row["empty_permitted"] for row in rows] == [False, False]
     assert [[field["name"] for field in row["fields"]] for row in rows] == [["stock_status"], ["stock_status"]]
     assert legacy_formset == [row["fields"] for row in rows]
     assert rows[0]["fields"][0]["attrs"]["value"] == "in_stock"
+    assert rows[0]["fields"][0]["attrs"]["form_prefix"] == "form-0"
+    assert rows[0]["fields"][0]["attrs"]["html_name"] == "form-0-stock_status"
+    assert rows[0]["fields"][0]["attrs"]["auto_id"] == "id_form-0-stock_status"
     assert rows[1]["fields"][0]["attrs"]["value"] == "out_of_stock"
+    assert rows[1]["fields"][0]["attrs"]["form_prefix"] == "form-1"
+    assert rows[1]["fields"][0]["attrs"]["html_name"] == "form-1-stock_status"
     assert rows[0]["fields"][0]["attrs"]["choices"] == [
         ["in_stock", "In Stock"],
         ["out_of_stock", "Out of Stock"],

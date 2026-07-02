@@ -102,9 +102,10 @@ Completed or mostly complete:
 - Bulk list-editable updates now resolve target rows through the filtered
   changelist queryset so active filters/search constrain editable rows before
   any writes occur.
-- Changelist responses now expose structured list-editing row metadata with
-  row indexes, primary keys, primary-key field names, and editable field
-  descriptions for frontend bulk formset rendering.
+- Changelist responses now expose structured list-editing formset metadata with
+  formset prefixes, management-form counts, row indexes, primary keys,
+  primary-key field names, and prefixed editable field descriptions for
+  frontend bulk formset rendering.
 - List-editable row metadata and bulk updates now honor changelist `_to_field`
   row identity so editable rows can use validated alternate object fields.
 - Bulk list-editable updates now skip save hooks and empty change-log entries for unchanged rows, and changed rows also skip log creation when `construct_change_message()` returns no messages.
@@ -354,7 +355,7 @@ Completed or mostly complete:
 
 Known non-parity areas:
 
-- Changelist behavior now supports `_to_field` validation/row identity, custom paginator hooks, default ordering metadata including visible custom queryset `order_by()` columns, deterministic primary-key fallback ordering, last-page pagination, row/result indexes, page-result/range metadata, page-choice metadata, presence-style show-all handling, pagination/show-all query strings, search/filter-state clear metadata, direct repeated/comma-separated `__in` and `__isnull` lookup value preparation, facet toggle links, bounded date hierarchy filtering including maximum-year bounds, lowest-useful initial date hierarchy levels, and preservation of unrelated lookup params when resetting stale page/order links, but is still not fully equivalent to upstream `ChangeList`; remaining query-string edge cases, richer result rendering metadata, list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
+- Changelist behavior now supports `_to_field` validation/row identity, custom paginator hooks, default ordering metadata including visible custom queryset `order_by()` columns, deterministic primary-key fallback ordering, last-page pagination, row/result indexes, page-result/range metadata, page-choice metadata, list-editable formset prefixes/management metadata, presence-style show-all handling, pagination/show-all query strings, search/filter-state clear metadata, direct repeated/comma-separated `__in` and `__isnull` lookup value preparation, facet toggle links, bounded date hierarchy filtering including maximum-year bounds, lowest-useful initial date hierarchy levels, and preservation of unrelated lookup params when resetting stale page/order links, but is still not fully equivalent to upstream `ChangeList`; remaining query-string edge cases, richer result rendering metadata, deeper list-editable formset edge cases, additional date hierarchy edge cases, and broader N+1 hardening still need work.
 - Filter handling now covers common Django admin filter families, bounded date filter ranges, and initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_display_links` item-type conflicts, `list_editable` item-type/form-layout conflicts, duplicate `list_editable`/`readonly_fields`, callable readonly field layout names, `list_select_related` mistakes, `date_hierarchy` type/path/field mistakes, pagination and inline option type/range/shape/item mistakes, autocomplete target registration/searchability, text option types, schema override shapes, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action metadata and payload schemas now advertise action names, permission requirements, discriminated per-action input payload variants, and optional custom response schema unions.

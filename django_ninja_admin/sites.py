@@ -23,7 +23,7 @@ from django.core.exceptions import (
 from django.core.paginator import InvalidPage, Paginator
 from django.db import router, transaction
 from django.db.models.base import ModelBase
-from django.forms.models import _get_foreign_key
+from django.forms.models import _get_foreign_key, modelformset_factory
 from django.http import Http404
 from django.http.multipartparser import MultiPartParserError
 from django.utils.functional import LazyObject
@@ -1160,10 +1160,27 @@ class NinjaAdminSite:
         ]
         list_editing_formset = []
         list_editing_rows = []
+        list_editing_formset_prefix = None
+        list_editing_management_form = []
+        list_editing_total_form_count = None
+        list_editing_initial_form_count = None
         if model_admin.list_editable:
+            form_class = model_admin.get_changelist_form_class(request)
+            formset_class = modelformset_factory(model_admin.model, form=form_class, extra=0)
+            page_pks = [obj.pk for obj in changelist.result_list]
+            formset_queryset = model_admin.model._default_manager.filter(pk__in=page_pks)
+            formset = formset_class(queryset=formset_queryset)
+            list_editing_formset_prefix = formset.prefix
+            list_editing_management_form = form_field_descriptions(
+                formset.management_form.__class__,
+                form=formset.management_form,
+            )
+            list_editing_total_form_count = formset.total_form_count()
+            list_editing_initial_form_count = formset.initial_form_count()
             for index, obj in enumerate(changelist.result_list):
                 object_id = changelist.object_id_for(obj)
-                field_descriptions = model_admin.get_changelist_form_fields_description(request, obj)
+                form = form_class(instance=obj, prefix=f"{formset.prefix}-{index}")
+                field_descriptions = model_admin.get_changelist_form_fields_description(request, obj, form=form)
                 editable_fields = [field for field in field_descriptions if field["name"] in model_admin.list_editable]
                 list_editing_formset.append(editable_fields)
                 list_editing_rows.append(
@@ -1171,6 +1188,8 @@ class NinjaAdminSite:
                         "index": index,
                         "pk": object_id,
                         "pk_name": changelist.object_id_field,
+                        "form_prefix": form.prefix,
+                        "empty_permitted": form.empty_permitted,
                         "fields": editable_fields,
                     }
                 )
@@ -1228,6 +1247,10 @@ class NinjaAdminSite:
                 "search_help_text": model_admin.search_help_text,
             },
             "action_form": action_form,
+            "list_editing_formset_prefix": list_editing_formset_prefix,
+            "list_editing_management_form": list_editing_management_form,
+            "list_editing_total_form_count": list_editing_total_form_count,
+            "list_editing_initial_form_count": list_editing_initial_form_count,
             "list_editing_formset": list_editing_formset,
             "list_editing_rows": list_editing_rows,
         }

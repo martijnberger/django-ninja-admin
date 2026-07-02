@@ -280,6 +280,8 @@ class ListEditingRow(Schema):
     index: int
     pk: Any
     pk_name: str
+    form_prefix: str | None = None
+    empty_permitted: bool = False
     fields: list[FieldDescription]
 
 
@@ -288,6 +290,10 @@ class ChangelistResponse(Schema):
     rows: list[Row]
     config: ChangelistConfig
     action_form: list[FieldDescription] = []
+    list_editing_formset_prefix: str | None = None
+    list_editing_management_form: list[FieldDescription] = Field(default_factory=list)
+    list_editing_total_form_count: int | None = None
+    list_editing_initial_form_count: int | None = None
     list_editing_formset: list[list[FieldDescription]] = []
     list_editing_rows: list[ListEditingRow] = []
 
