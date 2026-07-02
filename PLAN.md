@@ -207,6 +207,9 @@ Completed or mostly complete:
   and form descriptions expose structured combo subfield metadata.
 - Form descriptions now expose grouped choice metadata while preserving
   flattened choice values for simple clients.
+- Form descriptions now expose typed choice `coerce` metadata and JSON-safe
+  coerced choice values so frontend clients can align rendered options with
+  generated Pydantic schemas.
 - Pydantic request schemas now validate numeric `step_size` constraints and
   expose OpenAPI `multipleOf` hints when they are not offset, while form
   descriptions include step size and offset metadata.
@@ -673,6 +676,26 @@ catch admin edge cases before client projects discover them.
   `partial`, `missing`, or `changed`, with evidence pointing to tests, docs, or
   code.
 
+### Evidence And Traceability
+
+- Treat `docs/parity-matrix.md` as the parity evidence ledger. Each
+  `implemented` row should name the behavior covered, the fixture or scenario
+  that proves it, and the local test file or smoke gate that would fail if the
+  behavior regressed.
+- Keep `partial` rows explicit about both sides of the boundary: what is
+  already proven and what remains unproven. Avoid broad claims such as
+  "mostly compatible" unless the matrix lists the missing cases.
+- Add a short evidence note to `CHANGELOG.md` for every user-visible contract
+  improvement, especially schema, validation, permission, mutation, and
+  metadata changes. Release notes should be traceable back to tests or a smoke
+  gate.
+- When an upstream behavior is intentionally different in v2, capture the
+  reason, the new contract, and the verification coverage. Intentional
+  differences should not look like untested gaps.
+- Keep a lightweight release-candidate checklist that links to the final
+  parity matrix review, OpenAPI diff review, CI matrix run, PostgreSQL run,
+  sample-project smoke, package smoke, and copyright/license audit.
+
 ### Test Tiers
 
 - Unit tests: small reusable pieces such as quote/unquote helpers, lookup
@@ -696,6 +719,33 @@ catch admin edge cases before client projects discover them.
 - Smoke tests: package install, public imports, no DRF/drf-spectacular
   dependencies, sample-project setup, docs availability, OpenAPI availability,
   and a minimal registered-model workflow should stay in the local and CI gates.
+
+### Required Gates By Change Type
+
+- Schema-generation changes should include direct Pydantic schema assertions,
+  OpenAPI component assertions, mounted-route validation for at least one valid
+  and one invalid payload, and sample examples that validate against the
+  generated schema.
+- Changelist/filter changes should include fixture data that proves result
+  ordering, counts, pagination, query-string metadata, invalid-lookup handling,
+  and at least one query-count or prefetch/select-related assertion when the
+  change touches relation rendering.
+- Mutation changes should include success, validation failure, permission
+  failure, transaction rollback, log/change-message, and hook-order assertions
+  when applicable.
+- Inline changes should include add/change/delete combinations, duplicate or
+  unknown row identities, permission-denied rows, dynamic formset hook behavior,
+  nested error locations, and parent rollback assertions.
+- Permission/auth changes should run through mounted Ninja URLs and cover
+  default staff sessions, anonymous users, non-staff users, object-level hooks,
+  custom auth callables, auth sequences, route-level overrides, and explicit
+  `auth=None` behavior where relevant.
+- File/image/media changes should include JSON mutation behavior, multipart
+  behavior, clear/delete semantics, storage URL edge cases, invalid upload
+  rejection, persisted metadata, and OpenAPI multipart request-body assertions.
+- Documentation-only changes should at least be reviewed against the current
+  parity matrix and changelog. If the documentation changes a public contract,
+  add or update a contract test in the same slice.
 
 ### Validation Layers
 
@@ -753,6 +803,13 @@ catch admin edge cases before client projects discover them.
   blockers.
 - Keep stable operation IDs, tags, response maps, schema component names, and
   error components under test so generated clients can upgrade predictably.
+- Before beta, generate at least one client from the OpenAPI document or run an
+  equivalent schema-consumer smoke test. The goal is to catch contracts that are
+  technically valid OpenAPI but awkward or unusable for real clients.
+- Maintain a small expected-change log for OpenAPI diffs between intermediate
+  releases. A removed field, renamed component, changed required field, changed
+  status map, or changed error shape should be treated as a release decision,
+  not incidental churn.
 
 ### Database, Version, And Environment Matrix
 
@@ -790,6 +847,9 @@ catch admin edge cases before client projects discover them.
   and unsupported file/image JSON values.
 - Add migration/log-model checks that verify the package-owned `LogEntry` table
   can be migrated into a clean project and keeps expected indexes/relations.
+- Track test gaps separately from implementation gaps. Some features may be
+  functionally present but not release-ready until they have PostgreSQL,
+  query-count, OpenAPI, or sample-project coverage.
 
 ### Manual And Exploratory Verification
 
@@ -805,6 +865,10 @@ catch admin edge cases before client projects discover them.
 - Periodically compare representative responses with Django admin UI behavior
   using the same fixture data, especially around changelist links, filter
   choices, date hierarchy navigation, delete protection, and log messages.
+- Use manual verification to discover missing assertions, then convert those
+  findings into automated tests before marking the behavior complete. Manual
+  checks are useful evidence for exploration, but not enough for stable parity
+  claims.
 
 ### Release Verification
 

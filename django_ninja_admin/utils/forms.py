@@ -63,12 +63,18 @@ def _choice_value(value):
     return str(raw) if raw is not None else None
 
 
-def _choice_option(value, label):
+def _choice_option(value, label, *, coerce=None):
     raw = getattr(value, "value", value)
-    return {"value": _choice_value(value), "raw_value": _jsonish_value(raw), "label": str(label)}
+    option = {"value": _choice_value(value), "raw_value": _jsonish_value(raw), "label": str(label)}
+    if coerce is not None:
+        try:
+            option["coerced_value"] = _jsonish_value(coerce(raw))
+        except (TypeError, ValueError):
+            pass
+    return option
 
 
-def _choice_metadata(choices):
+def _choice_metadata(choices, *, coerce=None):
     flat_choices = []
     choice_options = []
     choice_groups = []
@@ -87,12 +93,15 @@ def _choice_metadata(choices):
     for value, label in choices:
         if isinstance(label, (list, tuple)):
             flush_ungrouped()
-            options = [_choice_option(child_value, child_label) for child_value, child_label in label]
+            options = [
+                _choice_option(child_value, child_label, coerce=coerce)
+                for child_value, child_label in label
+            ]
             for option in options:
                 add_flat(option)
             choice_groups.append({"label": str(value), "options": options})
             continue
-        option = _choice_option(value, label)
+        option = _choice_option(value, label, coerce=coerce)
         add_flat(option)
         ungrouped_options.append(option)
     flush_ungrouped()
@@ -704,9 +713,12 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     if input_formats:
         attrs["input_formats"] = input_formats
     if getattr(field, "choices", None):
-        choices, choice_options, choice_groups = _choice_metadata(field.choices)
+        choice_coerce = getattr(field, "coerce", None)
+        choices, choice_options, choice_groups = _choice_metadata(field.choices, coerce=choice_coerce)
         attrs["choices"] = choices
         attrs["choice_options"] = choice_options
+        if choice_coerce is not None:
+            attrs["choice_coerce"] = getattr(choice_coerce, "__name__", str(choice_coerce))
         if choice_groups:
             attrs["choice_groups"] = choice_groups
     attrs.update(_filepath_metadata(field))

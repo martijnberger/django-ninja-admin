@@ -42,6 +42,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.
+- Added typed choice-field metadata for coerced choice values and coerce
+  callable names so form descriptions align with generated Pydantic schemas.
 - Expanded the implementation plan's testing, validation, and verification
   section with concrete parity evidence rules, schema/OpenAPI contract gates,
   database/version matrix expectations, performance checks, and release

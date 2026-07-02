@@ -4782,9 +4782,30 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
         {"value": "2", "raw_value": 2, "label": "Two"},
     ]
     assert fields_by_name["typed_decimal"]["attrs"]["choice_options"] == [
-        {"value": "1.25", "raw_value": "1.25", "label": "One"},
-        {"value": "2.50", "raw_value": "2.50", "label": "Two"},
+        {"value": "1.25", "raw_value": "1.25", "coerced_value": "1.25", "label": "One"},
+        {"value": "2.50", "raw_value": "2.50", "coerced_value": "2.50", "label": "Two"},
     ]
+    assert fields_by_name["typed_decimal"]["attrs"]["choice_coerce"] == "Decimal"
+    assert fields_by_name["typed_number"]["attrs"]["choice_options"] == [
+        {"value": "1", "raw_value": "1", "coerced_value": 1, "label": "One"},
+        {"value": "2", "raw_value": "2", "coerced_value": 2, "label": "Two"},
+    ]
+    assert fields_by_name["typed_number"]["attrs"]["choice_coerce"] == "int"
+    assert fields_by_name["typed_floats"]["attrs"]["choice_options"] == [
+        {"value": "1.5", "raw_value": "1.5", "coerced_value": 1.5, "label": "One"},
+        {"value": "2.5", "raw_value": "2.5", "coerced_value": 2.5, "label": "Two"},
+    ]
+    assert fields_by_name["typed_floats"]["attrs"]["choice_coerce"] == "float"
+    assert fields_by_name["typed_uuid"]["attrs"]["choice_options"] == [
+        {"value": uuid_choice, "raw_value": uuid_choice, "coerced_value": uuid_choice, "label": "One"},
+        {
+            "value": other_uuid_choice,
+            "raw_value": other_uuid_choice,
+            "coerced_value": other_uuid_choice,
+            "label": "Two",
+        },
+    ]
+    assert fields_by_name["typed_uuid"]["attrs"]["choice_coerce"] == "UUID"
     assert fields_by_name["decimal_status"]["attrs"]["choice_options"] == [
         {"value": "1.25", "raw_value": "1.25", "label": "One"},
         {"value": "2.50", "raw_value": "2.50", "label": "Two"},
