@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   radio, checkbox, and other subwidget renderers.
 - Exposed Django `ClearableFileInput` clear-checkbox names, IDs, and labels
   in file and image form descriptions.
+- Exposed Django `BoundField.aria_describedby` metadata for accessible
+  help-text rendering.
 
 ## 0.1.18 - 2026-07-02
 

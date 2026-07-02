@@ -3449,6 +3449,7 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
     assert form.status_code == 200
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
     assert fields_by_name["name"]["attrs"]["help_text"] == "Name from formfield_for_dbfield."
+    assert fields_by_name["name"]["attrs"]["aria_describedby"] == "id_name_helptext"
     assert fields_by_name["name"]["attrs"]["min_length"] == 3
     name_validator_details = fields_by_name["name"]["attrs"]["validator_details"]
     assert {
@@ -3458,6 +3459,7 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
         "message": "",
     } in name_validator_details
     assert fields_by_name["description"]["attrs"]["help_text"] == "Describe the product carefully."
+    assert fields_by_name["description"]["attrs"]["aria_describedby"] == "id_description_helptext"
     assert fields_by_name["description"]["attrs"]["widget"] == "Textarea"
     assert fields_by_name["description"]["attrs"]["widget_attrs"]["data-hook"] == "override"
     assert fields_by_name["description"]["attrs"]["widget_attrs"]["rows"] == 4

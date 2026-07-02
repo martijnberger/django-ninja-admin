@@ -439,6 +439,7 @@ def _bound_field_metadata(bound_field):
         "html_name": bound_field.html_name,
         "auto_id": bound_field.auto_id,
         "id_for_label": bound_field.id_for_label,
+        "aria_describedby": bound_field.aria_describedby,
     }
     if getattr(bound_field.form, "prefix", None):
         attrs["form_prefix"] = bound_field.form.prefix
