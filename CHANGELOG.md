@@ -33,7 +33,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   generated component schemas.
 - Expanded generated output schema examples for common explicit
   `schema_field_overrides` types such as UUID, temporal, URL, IP address, and
-  annotated/container Pydantic types.
+  constrained annotated/container Pydantic types.
 - Serialized binary model fields as deterministic base64 strings in JSON output
   and advertised their `contentEncoding`/`contentMediaType` metadata in
   generated response schemas.

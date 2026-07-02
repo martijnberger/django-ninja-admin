@@ -35,6 +35,7 @@ from ninja import Status
 from ninja.security import SessionAuthIsStaff
 from PIL import Image
 from pydantic import AnyUrl, IPvAnyAddress
+from pydantic import Field as PydanticField
 from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin import (
@@ -8649,7 +8650,14 @@ def test_schema_field_overrides_are_included_and_serialize_admin_methods(sample)
     assert model_admin.serialize_object(sample)["custom_note"] == "Alpha:in_stock"
 
 
+@isolate_apps("tests.testapp")
 def test_schema_field_override_examples_validate_common_pydantic_types(db):
+    class OverrideExample(models.Model):
+        name = models.CharField(max_length=20)
+
+        class Meta:
+            app_label = "testapp"
+
     class ProductAdminWithTypedOverrideExamples(ModelAdmin):
         schema_field_overrides = {
             "tracking_id": UUID,
@@ -8666,9 +8674,14 @@ def test_schema_field_override_examples_validate_common_pydantic_types(db):
             "durations": tuple[timedelta, ...],
             "flags": set[int],
             "nested_scores": dict[str, list[int]],
+            "bounded_count": Annotated[int, PydanticField(ge=2, le=5)],
+            "exclusive_ratio": Annotated[float, PydanticField(gt=1.5, lt=3.5)],
+            "maximum_price": Annotated[Decimal, PydanticField(le=Decimal("5.00"))],
+            "short_code": Annotated[str, PydanticField(min_length=3, max_length=5)],
+            "score_list": Annotated[list[int], PydanticField(min_length=2)],
         }
 
-    model_admin = ProductAdminWithTypedOverrideExamples(Product, NinjaAdminSite(include_auth=False))
+    model_admin = ProductAdminWithTypedOverrideExamples(OverrideExample, NinjaAdminSite(include_auth=False))
     schema = model_admin.get_output_schema()
     example = schema.model_json_schema()["examples"][0]
 
@@ -8686,6 +8699,11 @@ def test_schema_field_override_examples_validate_common_pydantic_types(db):
     assert example["durations"] == ["01:00:00"]
     assert example["flags"] == [1]
     assert example["nested_scores"] == {"example": [1]}
+    assert example["bounded_count"] == 2
+    assert example["exclusive_ratio"] == 2.5
+    assert example["maximum_price"] == "5.00"
+    assert example["short_code"] == "xxx"
+    assert example["score_list"] == [1, 1]
     schema.model_validate(example)
 
 

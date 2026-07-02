@@ -2,6 +2,7 @@ import copy
 from base64 import b64encode
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from math import ceil, floor
 from typing import Annotated, Any, Literal, get_args, get_origin
 from uuid import UUID
 
@@ -922,7 +923,7 @@ class BaseAdmin:
         origin = get_origin(field_type)
         args = get_args(field_type)
         if origin is Annotated and args:
-            return self._schema_type_example(args[0], None)
+            return self._annotated_schema_type_example(field_type, args[0], args[1:])
         if origin is Literal and args:
             return args[0]
         if origin in {list, set}:
@@ -972,6 +973,96 @@ class BaseAdmin:
                 "height": 480,
             }
         return "example"
+
+    def _annotated_schema_type_example(self, field_type, base_type, metadata):
+        candidates = [
+            self._schema_type_example(base_type, None),
+            *self._constraint_example_candidates(base_type, metadata),
+        ]
+        adapter = TypeAdapter(field_type)
+        for candidate in candidates:
+            try:
+                adapter.validate_python(candidate)
+            except Exception:
+                continue
+            return candidate
+        return candidates[0]
+
+    def _constraint_example_candidates(self, base_type, metadata):
+        constraints = self._constraint_metadata(metadata)
+        origin = get_origin(base_type)
+        args = get_args(base_type)
+        if base_type is str:
+            min_length = constraints.get("min_length")
+            max_length = constraints.get("max_length")
+            length = min_length if min_length is not None else 1
+            if max_length is not None:
+                length = min(length, max_length)
+            return ["x" * max(0, length)]
+        if base_type is int:
+            return self._integer_constraint_candidates(constraints)
+        if base_type is float:
+            return self._float_constraint_candidates(constraints)
+        if base_type is Decimal:
+            return self._decimal_constraint_candidates(constraints)
+        if origin in {list, set}:
+            min_length = constraints.get("min_length") or 1
+            item_example = self._schema_type_example(args[0] if args else str, None)
+            return [[item_example for _ in range(min_length)]]
+        return []
+
+    def _constraint_metadata(self, metadata):
+        constraints = {}
+        for item in metadata:
+            for nested in getattr(item, "metadata", ()):
+                constraints.update(self._constraint_metadata((nested,)))
+            for name in ("ge", "gt", "le", "lt", "min_length", "max_length"):
+                value = getattr(item, name, None)
+                if value is not None:
+                    constraints[name] = value
+        return constraints
+
+    def _integer_constraint_candidates(self, constraints):
+        candidates = []
+        if "ge" in constraints:
+            candidates.append(ceil(constraints["ge"]))
+        if "gt" in constraints:
+            candidates.append(floor(constraints["gt"]) + 1)
+        if "le" in constraints:
+            candidates.append(floor(constraints["le"]))
+        if "lt" in constraints:
+            candidates.append(ceil(constraints["lt"]) - 1)
+        return candidates
+
+    def _float_constraint_candidates(self, constraints):
+        return self._ordered_numeric_constraint_candidates(constraints, float, 0.5)
+
+    def _decimal_constraint_candidates(self, constraints):
+        return [
+            str(candidate)
+            for candidate in self._ordered_numeric_constraint_candidates(
+                constraints,
+                Decimal,
+                Decimal("0.01"),
+            )
+        ]
+
+    def _ordered_numeric_constraint_candidates(self, constraints, coerce, exclusive_step):
+        lower = None
+        upper = None
+        if "ge" in constraints:
+            lower = coerce(constraints["ge"])
+        if "gt" in constraints:
+            lower = coerce(constraints["gt"]) + exclusive_step
+        if "le" in constraints:
+            upper = coerce(constraints["le"])
+        if "lt" in constraints:
+            upper = coerce(constraints["lt"]) - exclusive_step
+        candidates = []
+        if lower is not None and upper is not None:
+            candidates.append((lower + upper) / 2)
+        candidates.extend(candidate for candidate in (lower, upper) if candidate is not None)
+        return candidates
 
     def get_output_schema(self, request=None):
         if self.output_schema is not None:
