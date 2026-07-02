@@ -172,6 +172,14 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert set(components["ProductAdminCreateData"]["required"]) == {"name", "category", "price", "stock_status"}
     assert "required" not in components["ProductAdminPartialUpdateData"]
     assert components["ProductAdminCreateData"]["properties"]["stock_status"]["type"] == "string"
+    assert components["ProductAdminPartialUpdateData"]["properties"]["manual"] == {
+        "anyOf": [{"type": "string"}, {"type": "null"}],
+        "title": "Manual",
+    }
+    assert components["ProductAdminPartialUpdateData"]["properties"]["photo"] == {
+        "anyOf": [{"type": "string"}, {"type": "null"}],
+        "title": "Photo",
+    }
     tags_options = components["ProductAdminCreateData"]["properties"]["tags"]["anyOf"]
     tags_schema = next(option for option in tags_options if option.get("type") == "array")
     assert {option["type"] for option in tags_schema["items"]["anyOf"]} == {"integer", "string"}
@@ -5119,6 +5127,24 @@ def test_file_field_can_be_cleared_with_null_payload(admin_client, sample):
     assert json.loads(change_entry.change_message) == [{"changed": {"fields": ["Manual"]}}]
 
 
+def test_file_and_image_fields_reject_non_string_json_payloads(admin_client, sample):
+    invalid_manual = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {"manual": {"name": "manual.txt"}}},
+        content_type="application/json",
+    )
+    invalid_photo = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {"photo": ["photo.png"]}},
+        content_type="application/json",
+    )
+
+    assert invalid_manual.status_code == 422
+    assert invalid_manual.json()["errors"][0]["param"] == "data.manual"
+    assert invalid_photo.status_code == 422
+    assert invalid_photo.json()["errors"][0]["param"] == "data.photo"
+
+
 def test_file_field_can_be_uploaded_with_multipart_payload(admin_client, sample, tmp_path):
     with override_settings(MEDIA_ROOT=tmp_path):
         created = admin_client.post(
@@ -5233,6 +5259,26 @@ def test_image_field_validates_and_uploads_with_multipart_payload(admin_client, 
             "width": 2,
             "height": 3,
         }
+
+        cleared = admin_client.patch(
+            f"/admin-api/testapp/product/{sample.pk}",
+            data={"data": {"photo": None}},
+            content_type="application/json",
+        )
+
+        assert cleared.status_code == 200, cleared.json()
+        assert cleared.json()["data"]["photo"] is None
+        sample.refresh_from_db()
+        assert sample.photo.name == ""
+        assert sample.photo_width is None
+        assert sample.photo_height is None
+        cleared_form = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+        cleared_photo_attrs = next(
+            field["attrs"] for field in cleared_form.json()["form"]["fields"] if field["name"] == "photo"
+        )
+        assert "current_file" not in cleared_photo_attrs
+        clear_entry = LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).latest("action_time")
+        assert json.loads(clear_entry.change_message) == [{"changed": {"fields": ["Photo"]}}]
 
 
 def test_file_field_metadata_handles_storage_without_public_url(admin_client, sample, monkeypatch):

@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Tightened generated Pydantic write schemas for file and image fields from
+  untyped JSON values to string-or-null values and added JSON clear coverage
+  for image fields.
 - Marked multipart `data` and `inlines` OpenAPI string parts with
   `contentMediaType: application/json`.
 - Added mounted-route `ImageField` upload coverage that rejects non-images and
