@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Marked changelist columns as default-sorted when a custom
+  `ModelAdmin.get_queryset()` `order_by()` clause maps to visible list-display
+  columns.
+
 ## 0.1.16 - 2026-07-02
 
 - Added deterministic default OpenAPI operation IDs for custom site/model

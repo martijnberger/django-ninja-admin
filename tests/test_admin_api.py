@@ -1934,6 +1934,11 @@ def test_changelist_preserves_custom_queryset_ordering(db, sample):
 
     assert changelist.ordering == ["-price", "-pk"]
     assert [obj.name for obj in changelist.result_list] == ["Alpha", "Gamma", "Beta"]
+    price_sort = changelist.column_sort_query_strings("price")
+    assert price_sort["sorted"] is True
+    assert price_sort["ascending"] is False
+    assert price_sort["sort_priority"] == 1
+    assert price_sort["remove_sorting_query_string"] is None
 
 
 def test_changelist_row_metadata_honors_object_permissions(staff_client, sample):

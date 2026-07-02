@@ -498,7 +498,7 @@ class ChangeList:
             return [item.strip() for item in ordering_param.split(",") if item.strip()]
         return [
             self.ordering_token(index, "desc" if field.startswith("-") else "asc")
-            for field in self.get_default_ordering()
+            for field in self.ordering
             for index in [self.ordering_column_index(field.removeprefix("-"))]
             if index is not None
         ]
