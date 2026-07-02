@@ -4885,6 +4885,32 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["stock_status"]["attrs"]["option_template_name"] == "django/forms/widgets/radio_option.html"
     assert fields_by_name["stock_status"]["attrs"]["add_id_index"] is True
     assert fields_by_name["stock_status"]["attrs"]["checked_attribute"] == {"checked": True}
+    assert fields_by_name["stock_status"]["attrs"]["bound_subwidgets"] == [
+        {
+            "name": "stock_status",
+            "value": "in_stock",
+            "label": "In Stock",
+            "selected": True,
+            "index": "0",
+            "attrs": {"id": "id_stock_status_0", "required": True, "checked": True},
+            "type": "radio",
+            "template_name": "django/forms/widgets/radio_option.html",
+            "wrap_label": True,
+            "id_for_label": "id_stock_status_0",
+        },
+        {
+            "name": "stock_status",
+            "value": "out_of_stock",
+            "label": "Out of Stock",
+            "selected": False,
+            "index": "1",
+            "attrs": {"id": "id_stock_status_1", "required": True},
+            "type": "radio",
+            "template_name": "django/forms/widgets/radio_option.html",
+            "wrap_label": True,
+            "id_for_label": "id_stock_status_1",
+        },
+    ]
     assert fields_by_name["stock_status"]["attrs"]["radio_orientation"] == VERTICAL
     assert fields_by_name["stock_status"]["attrs"]["radio"] == {
         "app_label": "testapp",

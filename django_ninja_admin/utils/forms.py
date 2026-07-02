@@ -437,6 +437,32 @@ def _bound_field_metadata(bound_field):
     return {key: value for key, value in attrs.items() if value not in (None, "")}
 
 
+def _bound_subwidget_metadata(bound_field):
+    if bound_field is None:
+        return []
+    widget = bound_field.field.widget
+    if not getattr(bound_field.field, "choices", None) and not getattr(widget, "choices", None):
+        return []
+    subwidgets = []
+    for subwidget in bound_field.subwidgets:
+        data = subwidget.data
+        item = {
+            "name": data.get("name"),
+            "value": _jsonish_value(data.get("value")),
+            "label": str(data.get("label", "")),
+            "selected": bool(data.get("selected", False)),
+            "index": str(data.get("index", "")),
+            "attrs": _jsonish_value(data.get("attrs", {})),
+        }
+        for key in ("type", "template_name", "wrap_label"):
+            if key in data:
+                item[key] = _jsonish_value(data[key])
+        if subwidget.id_for_label:
+            item["id_for_label"] = subwidget.id_for_label
+        subwidgets.append({key: value for key, value in item.items() if value not in (None, "")})
+    return subwidgets
+
+
 def _hidden_initial_metadata(name, field, *, bound_field=None):
     if not getattr(field, "show_hidden_initial", False):
         return {}
@@ -469,6 +495,9 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         **_widget_metadata(widget),
     }
     attrs.update(_bound_field_metadata(bound_field))
+    bound_subwidgets = _bound_subwidget_metadata(bound_field)
+    if bound_subwidgets:
+        attrs["bound_subwidgets"] = bound_subwidgets
     attrs.update(_hidden_initial_metadata(name, field, bound_field=bound_field))
     if getattr(field, "error_messages", None):
         attrs["error_messages"] = _jsonish_value(field.error_messages)
