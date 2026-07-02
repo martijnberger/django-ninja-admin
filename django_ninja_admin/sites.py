@@ -1139,7 +1139,7 @@ class NinjaAdminSite:
         if model_admin.list_editable:
             for index, obj in enumerate(changelist.result_list):
                 object_id = changelist.object_id_for(obj)
-                field_descriptions = model_admin.get_form_fields_description(request, obj)
+                field_descriptions = model_admin.get_changelist_form_fields_description(request, obj)
                 editable_fields = [field for field in field_descriptions if field["name"] in model_admin.list_editable]
                 list_editing_formset.append(editable_fields)
                 list_editing_rows.append(
@@ -1854,7 +1854,7 @@ class NinjaAdminSite:
                 row_errors[idx] = [{"message": "Permission denied.", "param": "pk"}]
                 has_permission_errors = True
                 continue
-            form_class = model_admin.get_form_class(request, obj, change=True)
+            form_class = model_admin.get_changelist_form_class(request)
             current = model_data_for_form(obj, list(form_class.base_fields.keys()))
             current.update({key: value for key, value in data.items() if key in allowed})
             current = self._normalize_form_data(form_class, current)

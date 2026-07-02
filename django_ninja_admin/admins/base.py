@@ -138,6 +138,15 @@ class BaseAdmin:
             formfield_callback=lambda db_field, **kwargs: self.formfield_for_dbfield(db_field, request, **kwargs),
         )
 
+    def get_changelist_form_class(self, request):
+        form = self.form_class or forms.ModelForm
+        return modelform_factory(
+            self.model,
+            form=form,
+            fields=tuple(getattr(self, "list_editable", ()) or ()),
+            formfield_callback=lambda db_field, **kwargs: self.formfield_for_dbfield(db_field, request, **kwargs),
+        )
+
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.choices:
             return self.formfield_for_choice_field(db_field, request, **kwargs)
@@ -253,8 +262,10 @@ class BaseAdmin:
         cache = getattr(self, "_mutation_payload_schema_cache", {})
         cache_key = ("bulk", tuple(self.list_editable))
         if cache_key not in cache:
-            form_class = self.get_form_class(request, None, change=True)
-            form_fields = form_class.base_fields
+            form_fields = {}
+            if self.list_editable:
+                form_class = self.get_changelist_form_class(request)
+                form_fields = form_class.base_fields
             row_fields = {"pk": (Any, ...)}
             for field_name in self.list_editable:
                 form_field = form_fields.get(field_name)
@@ -584,6 +595,20 @@ class BaseAdmin:
             readonly_fields=self.get_readonly_fields(request, obj),
             instance=obj,
             initial=initial,
+            model_admin=self,
+            empty_value_display=self.get_empty_value_display(),
+            autocomplete_fields=self.get_autocomplete_fields(request),
+            raw_id_fields=self.raw_id_fields,
+            filter_horizontal=self.filter_horizontal,
+            filter_vertical=self.filter_vertical,
+            radio_fields=self.radio_fields,
+            prepopulated_fields=self.get_prepopulated_fields(request, obj),
+        )
+
+    def get_changelist_form_fields_description(self, request, obj=None):
+        return form_field_descriptions(
+            self.get_changelist_form_class(request),
+            instance=obj,
             model_admin=self,
             empty_value_display=self.get_empty_value_display(),
             autocomplete_fields=self.get_autocomplete_fields(request),

@@ -277,6 +277,41 @@ required_file_site.register(Category, ModelAdmin)
 required_file_site.register(Product, RequiredManualProductAdmin)
 
 
+class BlockingBulkProductForm(forms.ModelForm):
+    class Meta:
+        model = Product
+        fields = ("name", "category", "price", "stock_status")
+
+    def clean(self):
+        raise forms.ValidationError("The change form should not validate list-editable rows.")
+
+
+class BulkStatusForm(forms.ModelForm):
+    stock_status = forms.ChoiceField(
+        choices=(("out_of_stock", "Bulk unavailable"),),
+        help_text="Bulk-only status field.",
+    )
+
+    class Meta:
+        model = Product
+        fields = ("stock_status",)
+
+
+class BulkFormProductAdmin(ModelAdmin):
+    form_class = BlockingBulkProductForm
+    list_display = ("name", "stock_status")
+    list_display_links = ("name",)
+    list_editable = ("stock_status",)
+
+    def get_changelist_form_class(self, request):
+        return BulkStatusForm
+
+
+bulk_form_site = NinjaAdminSite(name="bulk_form_admin", include_auth=False)
+bulk_form_site.register(Category, ModelAdmin)
+bulk_form_site.register(Product, BulkFormProductAdmin)
+
+
 class InlineCodeProductImageForm(forms.ModelForm):
     title = CodeCountField()
 
@@ -310,5 +345,6 @@ urlpatterns = [
     path("scalar-admin/", scalar_site.urls),
     path("disabled-admin/", disabled_site.urls),
     path("required-file-admin/", required_file_site.urls),
+    path("bulk-form-admin/", bulk_form_site.urls),
     path("inline-multivalue-admin/", inline_multivalue_site.urls),
 ]

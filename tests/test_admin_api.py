@@ -5583,6 +5583,42 @@ def test_bulk_update_supports_changelist_to_field_row_identity(admin_client):
     assert category.name == "Updated Cameras"
 
 
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_bulk_update_uses_changelist_form_hook(admin_client, sample):
+    changelist = admin_client.get("/bulk-form-admin/testapp/product")
+
+    assert changelist.status_code == 200
+    fields_by_name = {
+        field["name"]: field
+        for row in changelist.json()["list_editing_rows"]
+        for field in row["fields"]
+    }
+    assert list(fields_by_name) == ["stock_status"]
+    assert fields_by_name["stock_status"]["attrs"]["help_text"] == "Bulk-only status field."
+    assert fields_by_name["stock_status"]["attrs"]["choices"] == [["out_of_stock", "Bulk unavailable"]]
+
+    invalid = admin_client.put(
+        "/bulk-form-admin/testapp/product/bulk",
+        data={"data": [{"pk": sample.pk, "stock_status": "in_stock"}]},
+        content_type="application/json",
+    )
+
+    assert invalid.status_code == 400
+    assert invalid.json()["errors"]["0"][0]["param"] == "stock_status"
+    sample.refresh_from_db()
+    assert sample.stock_status == "in_stock"
+
+    updated = admin_client.put(
+        "/bulk-form-admin/testapp/product/bulk",
+        data={"data": [{"pk": sample.pk, "stock_status": "out_of_stock"}]},
+        content_type="application/json",
+    )
+
+    assert updated.status_code == 200, updated.json()
+    sample.refresh_from_db()
+    assert sample.stock_status == "out_of_stock"
+
+
 @override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_update_routes_support_allowed_to_field(admin_client):
     category = Category.objects.create(name="Cameras", slug="cameras")
