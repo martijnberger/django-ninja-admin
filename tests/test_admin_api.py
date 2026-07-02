@@ -3236,6 +3236,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
         custom_time = forms.TimeField(required=False, input_formats=["%H.%M"])
         custom_datetime = forms.DateTimeField(required=False, input_formats=["%d/%m/%Y %H.%M"])
         duration = forms.DurationField(required=False)
+        review_required = forms.NullBooleanField(required=False)
         release_window = forms.SplitDateTimeField(
             required=False,
             input_date_formats=["%Y-%m-%d"],
@@ -3296,6 +3297,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             "custom_time": "09.30",
             "custom_datetime": "01/07/2026 09.30",
             "duration": "1 02:03:04",
+            "review_required": "unknown",
             "release_window": ["2026-07-01", "09:30"],
             "bounded_name": "Camera",
             "bounded_count": 3,
@@ -3327,6 +3329,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert validated.custom_datetime.minute == 30
     assert validated.custom_datetime.tzinfo is not None
     assert validated.duration == timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert validated.review_required is None
     assert validated.release_window == (date(2026, 7, 1), time(9, 30))
     assert validated.bounded_name == "Camera"
     assert validated.bounded_count == 3
@@ -3356,6 +3359,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert json_schema["custom_date"]["anyOf"][0]["format"] == "date"
     assert json_schema["custom_time"]["anyOf"][0]["format"] == "time"
     assert json_schema["custom_datetime"]["anyOf"][0]["format"] == "date-time"
+    assert {option["type"] for option in json_schema["review_required"]["anyOf"]} == {"boolean", "null"}
     assert json_schema["release_window"]["anyOf"][0]["prefixItems"] == [
         {"format": "date", "type": "string"},
         {"format": "time", "type": "string"},
@@ -3373,6 +3377,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
         field["name"]: field
         for field in model_admin.get_form_fields_description(RequestFactory().get("/"))
     }
+    assert fields_by_name["review_required"]["type"] == "NullBooleanField"
+    assert fields_by_name["review_required"]["attrs"]["null_boolean"] is True
+    assert fields_by_name["review_required"]["attrs"]["widget"] == "NullBooleanSelect"
     assert fields_by_name["product_code"]["attrs"]["strip"] is True
     tracked_label_attrs = fields_by_name["tracked_label"]["attrs"]
     assert tracked_label_attrs["show_hidden_initial"] is True
@@ -3393,11 +3400,12 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
                 "tracking_id": tracking_id,
                 "host": "2001:db8::1",
                 "duration": "1 02:03:04",
+                "review_required": "maybe",
                 "bounded_name": "Camera",
                 "bounded_count": 3,
                 "bounded_price": "4.50",
                 "product_code": "ABC",
-                "unstripped_code": " XYZ ",
+                "unstripped_code": "XYZ",
                 "sku": "SKU-123",
                 "slug": "camera-case",
             }

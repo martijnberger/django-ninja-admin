@@ -61,6 +61,12 @@ def _strip_string_value(value):
     return value
 
 
+def _parse_null_boolean_value(value):
+    if value in ("unknown", ""):
+        return None
+    return value
+
+
 def _form_field_clean_validator(field):
     def validate(value):
         try:
@@ -358,6 +364,8 @@ class BaseAdmin:
             return list[int | str]
         if isinstance(field, ModelChoiceField):
             return int | str
+        if isinstance(field, forms.NullBooleanField):
+            return Annotated[bool | None, BeforeValidator(_parse_null_boolean_value)]
         if isinstance(field, forms.BooleanField):
             return bool
         if isinstance(field, forms.DecimalField):

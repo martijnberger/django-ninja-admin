@@ -432,6 +432,8 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     attrs.update(_hidden_initial_metadata(name, field))
     if getattr(field, "error_messages", None):
         attrs["error_messages"] = _jsonish_value(field.error_messages)
+    if isinstance(field, forms.NullBooleanField):
+        attrs["null_boolean"] = True
     validator_details = _validator_details(field)
     if validator_details:
         attrs["validator_details"] = validator_details

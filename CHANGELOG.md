@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added Pydantic request-schema and form-description support for Django
+  `NullBooleanField` tri-state values.
 - Exposed Django `show_hidden_initial` metadata in form field descriptions,
   including generated hidden initial names and hidden widget details.
 - Added generated OpenAPI request examples for JSON create, update, bulk
