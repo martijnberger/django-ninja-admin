@@ -50,6 +50,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added Django-admin-style deterministic primary-key fallback ordering for
   changelists whose active ordering does not include a non-null unique field
   or unique constraint.
+- Switched changelist date hierarchy filtering to Django-admin-style bounded
+  `gte`/`lt` ranges while preserving the public year/month/day query params.
 
 ## 0.1.15 - 2026-07-02
 

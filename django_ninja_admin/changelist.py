@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import calendar
+from datetime import date, datetime, timedelta
 
+from django.conf import settings
 from django.core.exceptions import FieldDoesNotExist, FieldError, PermissionDenied, ValidationError
 from django.core.paginator import InvalidPage
 from django.db import models
@@ -264,9 +266,44 @@ class ChangeList:
 
     def apply_date_hierarchy(self, queryset, params):
         values = self.get_date_hierarchy_values(params)
-        for part, value in values.items():
-            queryset = queryset.filter(**{f"{self.date_hierarchy_field}__{part}": value})
+        bounds = self.date_hierarchy_bounds(values)
+        if bounds is not None:
+            start, end = bounds
+            queryset = queryset.filter(
+                **{
+                    f"{self.date_hierarchy_field}__gte": start,
+                    f"{self.date_hierarchy_field}__lt": end,
+                }
+            )
         return queryset
+
+    def date_hierarchy_bounds(self, values):
+        if not values:
+            return None
+
+        year = values["year"]
+        month = values.get("month")
+        day = values.get("day")
+        if day is not None:
+            start = self.date_hierarchy_boundary(year, month, day)
+            end = start + timedelta(days=1)
+            return start, end
+        if month is not None:
+            start = self.date_hierarchy_boundary(year, month, 1)
+            if month == 12:
+                end = self.date_hierarchy_boundary(year + 1, 1, 1)
+            else:
+                end = self.date_hierarchy_boundary(year, month + 1, 1)
+            return start, end
+        return self.date_hierarchy_boundary(year, 1, 1), self.date_hierarchy_boundary(year + 1, 1, 1)
+
+    def date_hierarchy_boundary(self, year, month, day):
+        if isinstance(self.date_hierarchy_model_field, models.DateTimeField):
+            value = datetime(year, month, day)
+            if settings.USE_TZ:
+                value = timezone.make_aware(value, timezone.get_current_timezone())
+            return value
+        return date(year, month, day)
 
     def apply_ordering(self, queryset, params):
         ordering = self.get_ordering(params)

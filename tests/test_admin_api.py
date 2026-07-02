@@ -3972,6 +3972,10 @@ def test_changelist_date_hierarchy_uses_active_timezone(admin_client, sample):
     with timezone.override("America/Los_Angeles"):
         response = admin_client.get("/admin-api/testapp/product")
         by_year = admin_client.get("/admin-api/testapp/product?created_at__year=2023")
+        request = RequestFactory().get("/admin-api/testapp/product?created_at__year=2023")
+        request.user = get_user_model().objects.get(username="admin")
+        changelist = ChangeList(request, site.get_model_admin(Product))
+        start, end = changelist.date_hierarchy_bounds({"year": 2023})
 
     assert response.status_code == 200
     hierarchy = response.json()["config"]["date_hierarchy"]
@@ -3987,6 +3991,8 @@ def test_changelist_date_hierarchy_uses_active_timezone(admin_client, sample):
     assert by_year_hierarchy["timezone"] == "America/Los_Angeles"
     assert by_year_hierarchy["level"] == "month"
     assert [choice["value"] for choice in by_year_hierarchy["choices"]] == [12]
+    assert start.isoformat() == "2023-01-01T00:00:00-08:00"
+    assert end.isoformat() == "2024-01-01T00:00:00-08:00"
 
 
 def test_changelist_show_facets_modes(admin_client, sample, monkeypatch):
