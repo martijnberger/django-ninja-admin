@@ -765,6 +765,7 @@ class NinjaAdminSite:
         action_payload_schema = model_admin.get_action_payload_schema(None)
         action_response_schema = model_admin.get_action_response_schema(None)
         create_file_fields = site._file_form_field_names(model_admin, change=False)
+        create_required_file_fields = site._required_file_form_field_names(model_admin, change=False)
         change_file_fields = site._file_form_field_names(model_admin, change=True)
         create_response = {
             200: dict[str, Any],
@@ -834,6 +835,7 @@ class NinjaAdminSite:
                     create_payload_schema,
                     create_file_fields,
                     required_data=True,
+                    required_file_fields=create_required_file_fields,
                 ),
             )
             def create_multipart(request):
@@ -1396,7 +1398,7 @@ class NinjaAdminSite:
         form_class = model_admin.get_form_class(request, obj, change=change)
         return [name for name, field in form_class.base_fields.items() if isinstance(field, forms.FileField)]
 
-    def _multipart_openapi_extra(self, payload_schema, file_fields, *, required_data):
+    def _multipart_openapi_extra(self, payload_schema, file_fields, *, required_data, required_file_fields=()):
         properties = {
             "data": {
                 "type": "string",
@@ -1412,9 +1414,21 @@ class NinjaAdminSite:
         for field_name in file_fields:
             properties[field_name] = {"type": "string", "format": "binary"}
         schema = {"type": "object", "properties": properties}
+        required = []
         if required_data:
-            schema["required"] = ["data"]
+            required.append("data")
+        required.extend(field_name for field_name in file_fields if field_name in required_file_fields)
+        if required:
+            schema["required"] = required
         return {"requestBody": {"required": True, "content": {"multipart/form-data": {"schema": schema}}}}
+
+    def _required_file_form_field_names(self, model_admin, request=None, obj=None, *, change):
+        form_class = model_admin.get_form_class(request, obj, change=change)
+        return [
+            name
+            for name, field in form_class.base_fields.items()
+            if isinstance(field, forms.FileField) and field.required and not getattr(field, "disabled", False)
+        ]
 
     def _multipart_mutation_payload(self, request, payload_schema, file_fields=()):
         data = self._json_form_part(request, "data", default={})

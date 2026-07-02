@@ -14,6 +14,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   validation, avoiding duplicate filename requirements in JSON form parts.
 - Exposed file-extension validator metadata in form descriptions for upload
   controls and covered extension rejection on multipart uploads.
+- Marked required file parts as required in multipart create-route OpenAPI
+  schemas.
 - Marked multipart `data` and `inlines` OpenAPI string parts with
   `contentMediaType: application/json`.
 - Added mounted-route `ImageField` upload coverage that rejects non-images and

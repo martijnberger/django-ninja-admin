@@ -5152,6 +5152,10 @@ def test_multipart_file_parts_satisfy_required_file_schema_fields(admin_client, 
 
     assert "manual" in create_data_schema["required"]
     assert create_data_schema["properties"]["manual"] == {"title": "Manual", "type": "string"}
+    multipart_schema = schema["paths"]["/required-file-admin/testapp/product/multipart"]["post"]["requestBody"][
+        "content"
+    ]["multipart/form-data"]["schema"]
+    assert multipart_schema["required"] == ["data", "manual"]
 
     form = admin_client.get("/required-file-admin/testapp/product/form")
     manual_attrs = next(field["attrs"] for field in form.json()["form"]["fields"] if field["name"] == "manual")
