@@ -88,6 +88,8 @@ Completed or mostly complete:
   `readonly_fields`, and `fieldsets` option shapes before form generation.
 - Admin system checks now validate inline `fields`, `exclude`, and
   `readonly_fields` option items, including unknown fields and duplicates.
+- Admin system checks now validate inline nested `fieldsets` entries,
+  including malformed field declarations, unknown fields, and duplicates.
 - Inline admins now support custom `formset` classes and validate that they inherit from Django's `BaseInlineFormSet`.
 - Inline admin checks now reject `exclude` entries that remove the parent foreign key field from inline forms.
 - Dynamic inline `get_extra()`, `get_min_num()`, and `get_max_num()` hook

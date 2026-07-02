@@ -1168,6 +1168,7 @@ def _check_inline_form_layout_items(inline_class):
     errors.extend(_check_inline_form_option_items(inline_class, "fields", readonly_field_names=readonly_field_names))
     errors.extend(_check_inline_form_option_items(inline_class, "exclude", require_model_field=True))
     errors.extend(_check_inline_readonly_fields(inline_class))
+    errors.extend(_check_inline_fieldsets(inline_class, readonly_field_names=readonly_field_names))
     return errors
 
 
@@ -1239,4 +1240,64 @@ def _check_inline_readonly_fields(inline_class):
                     "E116",
                 )
             )
+    return errors
+
+
+def _check_inline_fieldsets(inline_class, *, readonly_field_names=None):
+    fieldsets = getattr(inline_class, "fieldsets", None)
+    if fieldsets is None or not isinstance(fieldsets, (list, tuple)):
+        return []
+    errors = []
+    seen_fields = set()
+    readonly_field_names = readonly_field_names or set()
+    for index, fieldset in enumerate(fieldsets):
+        if not isinstance(fieldset, (list, tuple)) or len(fieldset) != 2:
+            errors.append(_error(inline_class, f"The value of inline 'fieldsets[{index}]' must be a two-item tuple.", "E117"))
+            continue
+        _name, options = fieldset
+        if not isinstance(options, Mapping):
+            errors.append(
+                _error(inline_class, f"The value of inline 'fieldsets[{index}][1]' must be a dictionary.", "E117")
+            )
+            continue
+        if "fields" not in options:
+            errors.append(
+                _error(
+                    inline_class,
+                    f"The value of inline 'fieldsets[{index}][1]' must contain a 'fields' option.",
+                    "E117",
+                )
+            )
+            continue
+        fields = options["fields"]
+        if not isinstance(fields, (list, tuple)):
+            errors.append(
+                _error(
+                    inline_class,
+                    f"The value of inline 'fieldsets[{index}][1]['fields']' must be a list or tuple.",
+                    "E117",
+                )
+            )
+            continue
+        for field_name in flatten(fields):
+            if not isinstance(field_name, str):
+                errors.append(
+                    _error(inline_class, f"Items in inline 'fieldsets[{index}][1]['fields']' must be strings.", "E113")
+                )
+                continue
+            if field_name in seen_fields:
+                errors.append(_error(inline_class, f"The field '{field_name}' is duplicated in inline 'fieldsets'.", "E115"))
+            seen_fields.add(field_name)
+            if field_name in readonly_field_names:
+                continue
+            field = _model_field(inline_class, field_name)
+            if field is None or not field.editable:
+                errors.append(
+                    _error(
+                        inline_class,
+                        f"The value of inline 'fieldsets' refers to '{field_name}', "
+                        "which is not an editable model field or readonly field.",
+                        "E114",
+                    )
+                )
     return errors
