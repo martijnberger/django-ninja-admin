@@ -41,6 +41,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   links when an allowed object field is requested.
 - Added a Django-admin-style `ModelAdmin.get_paginator()` hook and made
   changelists use it.
+- Added changelist metadata for default `ModelAdmin.ordering` and marked
+  default-sorted columns in response metadata.
 
 ## 0.1.15 - 2026-07-02
 

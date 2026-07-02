@@ -277,7 +277,7 @@ class ChangeList:
         params = params or self.params
         ordering_param = params.get("o")
         if not ordering_param:
-            return []
+            return self.get_default_ordering()
 
         ordering = []
         invalid_fields = []
@@ -299,6 +299,9 @@ class ChangeList:
                 [{"message": f"Invalid ordering field: {', '.join(invalid_fields)}.", "param": "o"}]
             )
         return ordering
+
+    def get_default_ordering(self):
+        return [field for field in self.model_admin.get_ordering(self.request) if isinstance(field, str)]
 
     def ordering_field_from_column(self, column):
         index = int(column) - 1
@@ -354,14 +357,21 @@ class ChangeList:
                 "remove_sorting_query_string": None,
             }
         active_ordering = self.active_ordering_field_columns()
-        other_tokens = [
-            self.ordering_token(active_index, direction)
-            for active_index, direction in active_ordering.items()
-            if active_index != index
-        ]
+        explicit_ordering = bool(self.params.get("o"))
+        other_tokens = (
+            [
+                self.ordering_token(active_index, direction)
+                for active_index, direction in active_ordering.items()
+                if active_index != index
+            ]
+            if explicit_ordering
+            else []
+        )
         active_direction = active_ordering.get(index)
         sort_priority = list(active_ordering).index(index) + 1 if active_direction else None
-        if other_tokens:
+        if not explicit_ordering and active_direction is not None:
+            remove_sorting_query_string = None
+        elif other_tokens:
             remove_sorting_query_string = self.get_query_string({"o": ",".join(other_tokens)})
         else:
             remove_sorting_query_string = self.get_query_string(remove=["o"])
@@ -376,11 +386,8 @@ class ChangeList:
 
     def active_ordering_field_columns(self):
         ordering_param = self.params.get("o")
-        if not ordering_param:
-            return {}
-
         active = {}
-        for token in [item.strip() for item in ordering_param.split(",") if item.strip()]:
+        for token in self.active_ordering_tokens(ordering_param):
             descending = token.startswith("-")
             raw_field = token.removeprefix("-")
             index = self.ordering_column_index(raw_field)
@@ -388,6 +395,16 @@ class ChangeList:
                 continue
             active[index] = "desc" if descending else "asc"
         return active
+
+    def active_ordering_tokens(self, ordering_param=None):
+        if ordering_param:
+            return [item.strip() for item in ordering_param.split(",") if item.strip()]
+        return [
+            self.ordering_token(index, "desc" if field.startswith("-") else "asc")
+            for field in self.get_default_ordering()
+            for index in [self.ordering_column_index(field.removeprefix("-"))]
+            if index is not None
+        ]
 
     def ordering_column_index(self, raw_field):
         if raw_field.isdigit():

@@ -1616,15 +1616,24 @@ def test_changelist_search_filter_and_detail(admin_client, sample):
 def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sample):
     initial = admin_client.get("/admin-api/testapp/product")
     assert initial.status_code == 200
+    initial_body = initial.json()
     assert {
-        item["parameter_name"] for item in initial.json()["config"]["filters"]
+        item["parameter_name"] for item in initial_body["config"]["filters"]
     } == {"stock_status__exact", "price_band"}
-    assert initial.json()["config"]["has_filters"] is True
-    assert initial.json()["config"]["has_active_filters"] is False
-    assert initial.json()["config"]["clear_all_filters_query_string"] is None
-    assert initial.json()["config"]["facets_optional"] is True
-    assert initial.json()["config"]["add_facets_query_string"] == "?_facets=1"
-    assert initial.json()["config"]["remove_facets_query_string"] is None
+    assert initial_body["config"]["has_filters"] is True
+    assert initial_body["config"]["has_active_filters"] is False
+    assert initial_body["config"]["clear_all_filters_query_string"] is None
+    assert initial_body["config"]["facets_optional"] is True
+    assert initial_body["config"]["add_facets_query_string"] == "?_facets=1"
+    assert initial_body["config"]["remove_facets_query_string"] is None
+    assert initial_body["config"]["ordering"] == ["name"]
+    initial_name_column = next(column for column in initial_body["columns"] if column["field"] == "name")
+    assert initial_name_column["sorted"] is True
+    assert initial_name_column["ascending"] is True
+    assert initial_name_column["sort_priority"] == 1
+    assert initial_name_column["ascending_query_string"] == "?o=1"
+    assert initial_name_column["descending_query_string"] == "?o=-1"
+    assert initial_name_column["remove_sorting_query_string"] is None
 
     accessories = Category.objects.create(name="Accessories")
     Product.objects.create(name="Tripod", category=accessories, price="6.00", description="Stable")
