@@ -6885,6 +6885,71 @@ def test_email_and_url_model_fields_have_formatted_output_schemas(db):
 
 
 @isolate_apps("tests.testapp")
+def test_ip_address_model_fields_have_native_output_and_relation_schemas(db):
+    class Host(models.Model):
+        address = models.GenericIPAddressField(primary_key=True)
+        optional_address = models.GenericIPAddressField(null=True, blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    class HostLink(models.Model):
+        host = models.ForeignKey(Host, to_field="address", on_delete=models.CASCADE)
+        hosts = models.ManyToManyField(Host, related_name="host_links", blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(Host)
+    admin_site.register(HostLink)
+    host_admin = admin_site.get_model_admin(Host)
+    link_admin = admin_site.get_model_admin(HostLink)
+
+    host_schema = host_admin.get_output_schema()
+    host_output_schema = host_schema.model_json_schema()
+    link_output_schema = link_admin.get_output_schema().model_json_schema()
+    link_write_schema = link_admin.get_write_schema(None)
+    link_write_json_schema = link_write_schema.model_json_schema()
+
+    assert host_output_schema["properties"]["address"] == {
+        "format": "ipvanyaddress",
+        "title": "Address",
+        "type": "string",
+    }
+    assert host_output_schema["properties"]["optional_address"] == {
+        "anyOf": [{"format": "ipvanyaddress", "type": "string"}, {"type": "null"}],
+        "default": None,
+        "title": "Optional Address",
+    }
+    assert link_write_json_schema["properties"]["host"] == {
+        "format": "ipvanyaddress",
+        "title": "Host",
+        "type": "string",
+    }
+    assert link_output_schema["properties"]["host_id"] == {
+        "format": "ipvanyaddress",
+        "title": "Host Id",
+        "type": "string",
+    }
+    assert link_output_schema["properties"]["hosts"]["items"] == {
+        "format": "ipvanyaddress",
+        "type": "string",
+    }
+
+    host_schema.model_validate({"address": "2001:db8::1", "optional_address": None})
+    link_write_schema.model_validate({"host": "192.0.2.10", "hosts": ["2001:db8::1"]})
+    with pytest.raises(PydanticValidationError):
+        host_schema.model_validate({"address": "not-an-ip", "optional_address": None})
+    with pytest.raises(PydanticValidationError):
+        link_write_schema.model_validate({"host": "not-an-ip", "hosts": ["2001:db8::1"]})
+    assert host_admin.serialize_object(Host(address="2001:db8::1", optional_address=None)) == {
+        "address": "2001:db8::1",
+        "optional_address": None,
+    }
+
+
+@isolate_apps("tests.testapp")
 def test_binary_model_fields_serialize_as_base64_output_strings(db):
     class BinaryAttachment(models.Model):
         payload = models.BinaryField()

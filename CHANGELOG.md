@@ -23,6 +23,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   schemas.
 - Tightened generated output schemas for email and URL model fields so response
   components preserve `format: email` and `format: uri` metadata.
+- Tightened generated output and relation-target schemas for
+  `GenericIPAddressField` so response and relation input components use native
+  Pydantic IP address validation metadata.
 - Serialized binary model fields as deterministic base64 strings in JSON output
   and advertised their `contentEncoding`/`contentMediaType` metadata in
   generated response schemas.

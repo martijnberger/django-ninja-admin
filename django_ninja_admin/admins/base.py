@@ -1142,6 +1142,8 @@ class BaseAdmin:
             return timedelta
         if isinstance(field, models.UUIDField):
             return UUID
+        if isinstance(field, models.GenericIPAddressField):
+            return IPvAnyAddress
         if isinstance(field, models.JSONField):
             return Any
         if isinstance(field, models.BinaryField):
