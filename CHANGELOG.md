@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Exposed Django `BoundField` HTML names, generated IDs, label target IDs, and
+  hidden-initial IDs in form descriptions for frontend renderers.
+
 ## 0.1.17 - 2026-07-02
 
 - Added inline admin checks for malformed nested `fieldsets` entries and

@@ -3635,11 +3635,21 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert fields_by_name["review_required"]["type"] == "NullBooleanField"
     assert fields_by_name["review_required"]["attrs"]["null_boolean"] is True
     assert fields_by_name["review_required"]["attrs"]["widget"] == "NullBooleanSelect"
+    name_attrs = fields_by_name["name"]["attrs"]
+    assert name_attrs["html_name"] == "name"
+    assert name_attrs["auto_id"] == "id_name"
+    assert name_attrs["id_for_label"] == "id_name"
     assert fields_by_name["optional_reference"]["attrs"]["empty_value"] is None
     assert fields_by_name["product_code"]["attrs"]["strip"] is True
     tracked_label_attrs = fields_by_name["tracked_label"]["attrs"]
+    assert tracked_label_attrs["html_name"] == "tracked_label"
+    assert tracked_label_attrs["auto_id"] == "id_tracked_label"
+    assert tracked_label_attrs["id_for_label"] == "id_tracked_label"
+    assert tracked_label_attrs["html_initial_name"] == "initial-tracked_label"
+    assert tracked_label_attrs["html_initial_id"] == "initial-id_tracked_label"
     assert tracked_label_attrs["show_hidden_initial"] is True
     assert tracked_label_attrs["hidden_initial_name"] == "initial-tracked_label"
+    assert tracked_label_attrs["hidden_initial_id"] == "initial-id_tracked_label"
     assert tracked_label_attrs["hidden_initial_widget"]["widget"] == "HiddenInput"
     assert tracked_label_attrs["hidden_initial_widget"]["input_type"] == "hidden"
     assert tracked_label_attrs["hidden_initial_widget"]["is_hidden"] is True

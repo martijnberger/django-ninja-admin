@@ -415,18 +415,43 @@ def _file_upload_metadata(field):
     return attrs
 
 
-def _hidden_initial_metadata(name, field):
+def _bound_field_metadata(bound_field):
+    if bound_field is None:
+        return {}
+    attrs = {
+        "html_name": bound_field.html_name,
+        "auto_id": bound_field.auto_id,
+        "id_for_label": bound_field.id_for_label,
+    }
+    css_classes = bound_field.css_classes()
+    if css_classes:
+        attrs["css_classes"] = css_classes
+    if getattr(bound_field.field, "show_hidden_initial", False):
+        attrs["html_initial_name"] = bound_field.html_initial_name
+        attrs["html_initial_id"] = bound_field.html_initial_id
+    return {key: value for key, value in attrs.items() if value not in (None, "")}
+
+
+def _hidden_initial_metadata(name, field, *, bound_field=None):
     if not getattr(field, "show_hidden_initial", False):
         return {}
+    hidden_initial_name = (
+        bound_field.html_initial_name
+        if bound_field is not None and bound_field.html_initial_name
+        else f"initial-{name}"
+    )
     hidden_widget = field.hidden_widget()
-    return {
+    attrs = {
         "show_hidden_initial": True,
-        "hidden_initial_name": f"initial-{name}",
+        "hidden_initial_name": hidden_initial_name,
         "hidden_initial_widget": _widget_metadata(hidden_widget),
     }
+    if bound_field is not None and bound_field.html_initial_id:
+        attrs["hidden_initial_id"] = bound_field.html_initial_id
+    return attrs
 
 
-def field_description(name, field, *, read_only=False, current_value=None, model_field=None):
+def field_description(name, field, *, read_only=False, current_value=None, model_field=None, bound_field=None):
     widget = field.widget
     attrs = {
         "required": field.required,
@@ -438,7 +463,8 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         "validators": _validator_names(field),
         **_widget_metadata(widget),
     }
-    attrs.update(_hidden_initial_metadata(name, field))
+    attrs.update(_bound_field_metadata(bound_field))
+    attrs.update(_hidden_initial_metadata(name, field, bound_field=bound_field))
     if getattr(field, "error_messages", None):
         attrs["error_messages"] = _jsonish_value(field.error_messages)
     if isinstance(field, forms.NullBooleanField):
@@ -536,6 +562,7 @@ def form_field_descriptions(
             read_only=name in readonly_field_names,
             current_value=current_value,
             model_field=_model_field_for_name(model, name),
+            bound_field=form[name],
         )
         _apply_admin_field_metadata(
             description,
