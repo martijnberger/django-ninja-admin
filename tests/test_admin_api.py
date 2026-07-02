@@ -134,6 +134,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "ProductAdminBulkPayload",
         "ProductAdminBulkRow",
         "ProductAdminBulkResponse",
+        "CellMetadata",
         "ListEditingRow",
         "InlineDescription",
         "InlineFormsetRowMetadata",
@@ -464,6 +465,13 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "#/components/schemas/ViewOnSiteResponse"
     )
     assert components["ViewOnSiteResponse"]["examples"][0] == {"url": "https://example.com/products/1/"}
+    assert components["Row"]["properties"]["cell_metadata"]["additionalProperties"] == {
+        "$ref": "#/components/schemas/CellMetadata"
+    }
+    cell_metadata_props = components["CellMetadata"]["properties"]
+    assert cell_metadata_props["display_value"]["title"] == "Display Value"
+    assert cell_metadata_props["empty"]["type"] == "boolean"
+    assert cell_metadata_props["editable"]["type"] == "boolean"
     changelist_response_props = components["ChangelistResponse"]["properties"]
     assert changelist_response_props["list_editing_formset_prefix"]["anyOf"] == [
         {"type": "string"},
@@ -2307,6 +2315,28 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     rows_by_name = {row["cells"]["name"]: row for row in show_all_body["rows"]}
     assert [row["index"] for row in show_all_body["rows"]] == [0, 1, 2]
     assert [row["result_index"] for row in show_all_body["rows"]] == [1, 2, 3]
+    alpha_name_cell = rows_by_name["Alpha"]["cell_metadata"]["name"]
+    assert alpha_name_cell == {
+        "field": "name",
+        "headerName": "Name",
+        "value": "Alpha",
+        "display_value": "Alpha",
+        "empty": False,
+        "boolean": False,
+        "display_link": True,
+        "sortable": True,
+        "ordering_field": "name",
+        "editable": False,
+        "empty_value_display": "-",
+    }
+    beta_tagline_cell = rows_by_name["Beta"]["cell_metadata"]["tagline"]
+    assert beta_tagline_cell["value"] is None
+    assert beta_tagline_cell["display_value"] == "No description"
+    assert beta_tagline_cell["empty"] is True
+    assert beta_tagline_cell["empty_value_display"] == "No description"
+    beta_stock_cell = rows_by_name["Beta"]["cell_metadata"]["stock_status"]
+    assert beta_stock_cell["editable"] is True
+    assert beta_stock_cell["display_link"] is False
 
     show_all_by_presence = admin_client.get("/admin-api/testapp/product?all=0")
     assert show_all_by_presence.status_code == 200

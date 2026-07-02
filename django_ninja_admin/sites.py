@@ -1153,16 +1153,35 @@ class NinjaAdminSite:
             }
             for field in list_display
         ]
+        columns_by_field = {column["field"]: column for column in columns}
         rows = []
         empty_value = model_admin.get_empty_value_display()
         result_start_index = changelist.page.start_index()
         for index, obj in enumerate(changelist.result_list):
             cells = {}
+            cell_metadata = {}
             for field in list_display:
+                field_key = field_name_for_display(field)
                 value = lookup_field(field, obj, model_admin)
                 display_metadata = display_metadata_for_field(field, model_admin.model, model_admin)
                 field_empty_value = display_metadata["empty_value_display"] or empty_value
-                cells[field_name_for_display(field)] = field_empty_value if value in (None, "") else value
+                is_empty = value in (None, "")
+                display_value = field_empty_value if is_empty else value
+                cells[field_key] = display_value
+                column = columns_by_field[field_key]
+                cell_metadata[field_key] = {
+                    "field": field_key,
+                    "headerName": column["headerName"],
+                    "value": value,
+                    "display_value": display_value,
+                    "empty": is_empty,
+                    "boolean": column["boolean"],
+                    "display_link": column["display_link"],
+                    "sortable": column["sortable"],
+                    "ordering_field": column["ordering_field"],
+                    "editable": field_key in model_admin.list_editable,
+                    "empty_value_display": field_empty_value,
+                }
             object_id = changelist.object_id_for(obj)
             rows.append(
                 {
@@ -1170,6 +1189,7 @@ class NinjaAdminSite:
                     "index": index,
                     "result_index": result_start_index + index,
                     "cells": cells,
+                    "cell_metadata": cell_metadata,
                     **self._changelist_row_metadata(request, model_admin, obj, object_id, changelist.to_field),
                 }
             )

@@ -346,11 +346,26 @@ class Column(Schema):
     remove_sorting_query_string: str | None = None
 
 
+class CellMetadata(Schema):
+    field: str
+    headerName: str
+    value: Any = None
+    display_value: Any = None
+    empty: bool = False
+    boolean: bool = False
+    display_link: bool = False
+    sortable: bool = False
+    ordering_field: str | None = None
+    editable: bool = False
+    empty_value_display: str | None = None
+
+
 class Row(Schema):
     id: Any
     index: int = 0
     result_index: int = 0
     cells: dict[str, Any]
+    cell_metadata: dict[str, CellMetadata] = Field(default_factory=dict)
     detail_url: str | None = None
     change_form_url: str | None = None
     delete_url: str | None = None
