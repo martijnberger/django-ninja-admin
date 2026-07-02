@@ -638,6 +638,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     field_attrs_schema = components["FieldDescription"]["properties"]["attrs"]
     assert field_attrs_schema["description"] == "Django form/admin metadata for frontend renderers."
     field_attrs_example = field_attrs_schema["examples"][0]
+    assert field_attrs_example["ordering_field"] == "name"
     assert field_attrs_example["rendered_attrs"] == {
         "id": "id_name",
         "required": True,
@@ -6024,9 +6025,11 @@ def test_readonly_display_fields_include_values_and_display_metadata(admin_clien
     assert fields_by_name["upper_name"]["attrs"]["label"] == "Upper name"
     assert fields_by_name["upper_name"]["attrs"]["value"] == "ALPHA"
     assert fields_by_name["upper_name"]["attrs"]["read_only"] is True
+    assert fields_by_name["upper_name"]["attrs"]["ordering_field"] == "name"
     assert fields_by_name["has_description"]["attrs"]["label"] == "Has description"
     assert fields_by_name["has_description"]["attrs"]["value"] is True
     assert fields_by_name["has_description"]["attrs"]["boolean"] is True
+    assert fields_by_name["has_description"]["attrs"]["ordering_field"] is None
     assert fields_by_name["subtitle"]["attrs"]["label"] == "Subtitle"
     assert fields_by_name["subtitle"]["attrs"]["value"] == "Nice camera"
     assert fields_by_name["subtitle"]["attrs"]["empty_value_display"] == "No subtitle"

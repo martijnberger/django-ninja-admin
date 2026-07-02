@@ -227,6 +227,7 @@ FIELD_DESCRIPTION_ATTRS_EXAMPLE = {
     "label": "Name",
     "help_text": "Public display name.",
     "widget": "TextInput",
+    "ordering_field": "name",
     "html_name": "name",
     "auto_id": "id_name",
     "id_for_label": "id_name",

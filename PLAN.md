@@ -282,7 +282,9 @@ Completed or mostly complete:
 - Form descriptions now expose effective string and numeric bounds derived from
   explicit form-field validators, including custom `CharField`, `ComboField`,
   integer, float, and decimal inputs.
-- Form descriptions now support callable `readonly_fields`, exposing stable string names, labels, values, and display metadata while accepting them in admin checks.
+- Form descriptions now support callable `readonly_fields`, exposing stable
+  string names, labels, values, and display metadata including boolean,
+  empty-value, and ordering-field hints while accepting them in admin checks.
 - Explicit `fields` and `fieldsets` layouts now treat callable readonly fields
   by their stable display names when validating checks and generating
   `ModelForm` classes.

@@ -71,6 +71,7 @@ def display_metadata_for_field(name, model, model_admin=None):
     return {
         "boolean": bool(getattr(attr, "boolean", False)),
         "empty_value_display": getattr(attr, "empty_value_display", None),
+        "ordering_field": getattr(attr, "admin_order_field", None),
     }
 
 

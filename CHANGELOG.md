@@ -65,6 +65,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   covered custom/object-level permission metadata hooks.
 - Added `just generated-client-smoke` to exercise a clean installed project
   through OpenAPI operation IDs and advertised request examples.
+- Added `@display(ordering=...)` ordering hints to readonly form-field
+  metadata and the `FieldDescription.attrs` OpenAPI example.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.
