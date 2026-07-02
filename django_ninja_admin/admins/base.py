@@ -925,10 +925,15 @@ class BaseAdmin:
             return self._schema_type_example(args[0], None)
         if origin is Literal and args:
             return args[0]
-        if origin in {list, tuple, set}:
+        if origin in {list, set}:
             return [self._schema_type_example(args[0] if args else str, None)]
+        if origin is tuple:
+            if len(args) == 2 and args[1] is Ellipsis:
+                return [self._schema_type_example(args[0], None)]
+            return [self._schema_type_example(arg, None) for arg in args]
         if origin in {dict}:
-            return {"example": True}
+            value_type = args[1] if len(args) > 1 else Any
+            return {"example": self._schema_type_example(value_type, None)}
         if args:
             non_null_args = [arg for arg in args if arg is not type(None)]
             if non_null_args:

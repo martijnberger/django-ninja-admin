@@ -8660,6 +8660,12 @@ def test_schema_field_override_examples_validate_common_pydantic_types(db):
             "homepage": AnyUrl,
             "host": IPvAnyAddress,
             "annotated_tracking_id": Annotated[UUID, "metadata"],
+            "scores": dict[str, int],
+            "tracking_ids": list[UUID],
+            "published_slots": tuple[date, time],
+            "durations": tuple[timedelta, ...],
+            "flags": set[int],
+            "nested_scores": dict[str, list[int]],
         }
 
     model_admin = ProductAdminWithTypedOverrideExamples(Product, NinjaAdminSite(include_auth=False))
@@ -8674,6 +8680,12 @@ def test_schema_field_override_examples_validate_common_pydantic_types(db):
     assert example["homepage"] == "https://example.com/"
     assert example["host"] == "192.0.2.1"
     assert example["annotated_tracking_id"] == "00000000-0000-4000-8000-000000000000"
+    assert example["scores"] == {"example": 1}
+    assert example["tracking_ids"] == ["00000000-0000-4000-8000-000000000000"]
+    assert example["published_slots"] == ["2026-07-02", "12:00:00"]
+    assert example["durations"] == ["01:00:00"]
+    assert example["flags"] == [1]
+    assert example["nested_scores"] == {"example": [1]}
     schema.model_validate(example)
 
 

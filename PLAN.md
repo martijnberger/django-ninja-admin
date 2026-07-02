@@ -434,7 +434,7 @@ Completed or mostly complete:
   component schemas.
 - Generated output examples now include valid values for common explicit
   `schema_field_overrides` types such as UUID, temporal, URL, IP address, and
-  annotated Pydantic types.
+  annotated/container Pydantic types.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Relation form field descriptions now include structured related-model identity,
   selected option labels, target-field type metadata, and mount-aware
