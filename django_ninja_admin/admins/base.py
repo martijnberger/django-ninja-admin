@@ -865,7 +865,7 @@ class BaseAdmin:
             if field.remote_field:
                 data[f"{field.name}_label"] = "Example"
         for field in self.model._meta.many_to_many:
-            data[field.name] = [1]
+            data[field.name] = [self._model_field_example_value(field.target_field)]
         for name, field_type, default in custom_fields:
             data.setdefault(name, self._schema_type_example(field_type, default))
         return data
@@ -911,6 +911,9 @@ class BaseAdmin:
             return {"example": True}
         if isinstance(field, models.BinaryField):
             return "ZXhhbXBsZQ=="
+        registered_type = self.get_registered_pydantic_type_for_model_field(field)
+        if registered_type is not None:
+            return self._schema_type_example(registered_type, None)
         return "example"
 
     def _schema_type_example(self, field_type, default):

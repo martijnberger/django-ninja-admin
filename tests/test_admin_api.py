@@ -7014,6 +7014,49 @@ def test_json_model_fields_have_explicit_output_and_write_schemas(db):
 
 
 @isolate_apps("tests.testapp")
+def test_many_to_many_output_examples_use_related_target_field_values(db):
+    class Label(models.Model):
+        code = models.CharField(max_length=12, primary_key=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    class UuidLabel(models.Model):
+        id = models.UUIDField(primary_key=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    class Article(models.Model):
+        title = models.CharField(max_length=20)
+        labels = models.ManyToManyField(Label, blank=True)
+        uuid_labels = models.ManyToManyField(UuidLabel, blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(Article)
+    model_admin = admin_site.get_model_admin(Article)
+
+    output_schema = model_admin.get_output_schema()
+    output_json_schema = output_schema.model_json_schema()
+    output_example = output_json_schema["examples"][0]
+
+    assert output_json_schema["properties"]["labels"]["items"] == {
+        "maxLength": 12,
+        "type": "string",
+    }
+    assert output_json_schema["properties"]["uuid_labels"]["items"] == {
+        "format": "uuid",
+        "type": "string",
+    }
+    assert output_example["labels"] == ["example"]
+    assert output_example["uuid_labels"] == ["00000000-0000-4000-8000-000000000000"]
+    output_schema.model_validate(output_example)
+
+
+@isolate_apps("tests.testapp")
 def test_binary_model_fields_serialize_as_base64_output_strings(db):
     class BinaryAttachment(models.Model):
         payload = models.BinaryField()
@@ -8635,11 +8678,20 @@ def test_ninja_registered_model_field_types_drive_admin_schema_inference(db):
             class Meta:
                 app_label = "testapp"
 
+        class CustomCollection(models.Model):
+            name = models.CharField(max_length=20)
+            categories = models.ManyToManyField(CustomCategory, related_name="custom_collections", blank=True)
+
+            class Meta:
+                app_label = "testapp"
+
         admin_site = NinjaAdminSite(auth=None, include_auth=False)
         admin_site.register(CustomCategory)
         admin_site.register(CustomProduct)
+        admin_site.register(CustomCollection)
         category_admin = admin_site.get_model_admin(CustomCategory)
         product_admin = admin_site.get_model_admin(CustomProduct)
+        collection_admin = admin_site.get_model_admin(CustomCollection)
 
         assert category_admin.get_pydantic_type_for_model_field(CustomCategory._meta.pk) is int
         assert (
@@ -8652,10 +8704,18 @@ def test_ninja_registered_model_field_types_drive_admin_schema_inference(db):
         category_schema = category_admin.get_output_schema().model_json_schema()
         product_output_schema = product_admin.get_output_schema().model_json_schema()
         product_write_schema = product_admin.get_write_schema(None).model_json_schema()
+        collection_output_schema = collection_admin.get_output_schema().model_json_schema()
 
         assert category_schema["properties"]["code"]["type"] == "integer"
         assert product_output_schema["properties"]["category_id"]["type"] == "integer"
+        assert collection_output_schema["properties"]["categories"]["items"]["type"] == "integer"
         assert product_write_schema["properties"]["category"]["type"] == "integer"
+        assert category_schema["examples"][0]["code"] == 1
+        assert product_output_schema["examples"][0]["category_id"] == 1
+        assert collection_output_schema["examples"][0]["categories"] == [1]
+        category_admin.get_output_schema().model_validate(category_schema["examples"][0])
+        product_admin.get_output_schema().model_validate(product_output_schema["examples"][0])
+        collection_admin.get_output_schema().model_validate(collection_output_schema["examples"][0])
 
         category = CustomCategory(code=7, name="Custom")
         product = CustomProduct(id=1, name="Example", category=category)
