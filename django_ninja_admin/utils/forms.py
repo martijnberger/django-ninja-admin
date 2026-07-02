@@ -452,6 +452,20 @@ def _bound_field_metadata(bound_field):
     return {key: value for key, value in attrs.items() if value not in (None, "")}
 
 
+def _rendered_widget_attrs(bound_field):
+    if bound_field is None:
+        return {}
+    widget = bound_field.field.widget
+    try:
+        attrs = {}
+        if bound_field.auto_id and "id" not in getattr(widget, "attrs", {}):
+            attrs["id"] = bound_field.auto_id
+        render_attrs = bound_field.build_widget_attrs(attrs, widget)
+        return _jsonish_value(widget.build_attrs(getattr(widget, "attrs", {}), render_attrs))
+    except Exception:
+        return {}
+
+
 def _bound_subwidget_metadata(bound_field):
     if bound_field is None:
         return []
@@ -539,6 +553,9 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         **_widget_metadata(widget),
     }
     attrs.update(_bound_field_metadata(bound_field))
+    rendered_attrs = _rendered_widget_attrs(bound_field)
+    if rendered_attrs:
+        attrs["rendered_attrs"] = rendered_attrs
     bound_subwidgets = _bound_subwidget_metadata(bound_field)
     if bound_subwidgets:
         attrs["bound_subwidgets"] = bound_subwidgets

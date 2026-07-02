@@ -3419,6 +3419,9 @@ def test_disabled_form_fields_are_optional_in_write_schema(admin_client, sample)
     assert fields_by_name["name"]["attrs"]["required"] is True
     assert fields_by_name["name"]["attrs"]["disabled"] is True
     assert fields_by_name["name"]["attrs"]["initial"] == "Server named product"
+    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["id"] == "id_name"
+    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["required"] is True
+    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["disabled"] is True
 
     created = admin_client.post(
         "/disabled-admin/testapp/product",
@@ -3450,6 +3453,9 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
     assert fields_by_name["name"]["attrs"]["help_text"] == "Name from formfield_for_dbfield."
     assert fields_by_name["name"]["attrs"]["aria_describedby"] == "id_name_helptext"
+    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["id"] == "id_name"
+    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["required"] is True
+    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["aria-describedby"] == "id_name_helptext"
     assert fields_by_name["name"]["attrs"]["min_length"] == 3
     name_validator_details = fields_by_name["name"]["attrs"]["validator_details"]
     assert {
@@ -3463,6 +3469,13 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
     assert fields_by_name["description"]["attrs"]["widget"] == "Textarea"
     assert fields_by_name["description"]["attrs"]["widget_attrs"]["data-hook"] == "override"
     assert fields_by_name["description"]["attrs"]["widget_attrs"]["rows"] == 4
+    assert fields_by_name["description"]["attrs"]["rendered_attrs"]["id"] == "id_description"
+    assert fields_by_name["description"]["attrs"]["rendered_attrs"]["data-hook"] == "override"
+    assert fields_by_name["description"]["attrs"]["rendered_attrs"]["rows"] == 4
+    assert (
+        fields_by_name["description"]["attrs"]["rendered_attrs"]["aria-describedby"]
+        == "id_description_helptext"
+    )
     assert fields_by_name["stock_status"]["attrs"]["choices"] == [["in_stock", "Available"]]
     assert fields_by_name["stock_status"]["attrs"]["widget"] == "RadioSelect"
     assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"

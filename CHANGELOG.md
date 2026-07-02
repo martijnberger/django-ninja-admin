@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Exposed concrete rendered child input names, IDs, attrs, and values for
   compound widgets such as `SplitDateTimeWidget` and `SelectDateWidget`.
+- Exposed Django-style rendered widget attrs combining static widget attrs with
+  generated IDs, required/disabled flags, and ARIA help-text links.
 
 ## 0.1.19 - 2026-07-02
 
