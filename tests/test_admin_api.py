@@ -404,6 +404,69 @@ def test_docs_and_openapi_require_site_auth(db):
         assert body["errors"] == [{"message": "Authentication required.", "param": "non_field_errors"}]
 
 
+@override_settings(
+    MIDDLEWARE=[
+        "django.contrib.sessions.middleware.SessionMiddleware",
+        "django.middleware.csrf.CsrfViewMiddleware",
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+    ]
+)
+def test_session_bootstrap_login_csrf_mutation_and_logout(db, sample):
+    user = get_user_model().objects.create_user("bootstrap-admin", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    client = Client(enforce_csrf_checks=True)
+
+    csrf_response = client.get("/admin-api/csrf")
+    assert csrf_response.status_code == 200
+    csrf_token = csrf_response.json()["csrf_token"]
+    assert csrf_token
+    assert client.get("/admin-api/apps").status_code == 401
+
+    bad_login = client.post(
+        "/admin-api/login",
+        data={"username": "bootstrap-admin", "password": "wrong"},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert bad_login.status_code == 400
+    ErrorResponse.model_validate(bad_login.json())
+    assert bad_login.json()["errors"] == [
+        {"message": "Invalid username or password.", "param": "username"}
+    ]
+
+    login_response = client.post(
+        "/admin-api/login",
+        data={"username": "bootstrap-admin", "password": "pw"},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=csrf_token,
+    )
+    assert login_response.status_code == 200
+    login_body = login_response.json()
+    assert login_body["is_authenticated"] is True
+    assert login_body["is_staff"] is True
+    assert login_body["has_permission"] is True
+    assert login_body["csrf_token"]
+
+    mutation = client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {"description": "Bootstrapped session"}},
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=login_body["csrf_token"],
+    )
+    assert mutation.status_code == 200
+    sample.refresh_from_db()
+    assert sample.description == "Bootstrapped session"
+
+    logout_response = client.post(
+        "/admin-api/logout",
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=login_body["csrf_token"],
+    )
+    assert logout_response.status_code == 200
+    assert logout_response.json()["is_authenticated"] is False
+    assert client.get("/admin-api/apps").status_code == 401
+
+
 def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, sample):
     schema = admin_client.get("/admin-api/openapi.json").json()
     components = schema["components"]["schemas"]
@@ -496,6 +559,49 @@ def test_error_response_runtime_shapes_are_consistent(admin_client, staff_client
         422,
     )
     assert invalid_body["errors"][0]["param"] == "action"
+
+    form_body = assert_error_body(
+        admin_client.post(
+            "/admin-api/testapp/product",
+            data={
+                "data": {
+                    "name": "Bad category",
+                    "category": 999999,
+                    "price": "9.00",
+                    "stock_status": "in_stock",
+                }
+            },
+            content_type="application/json",
+        ),
+        400,
+    )
+    assert form_body["errors"][0]["param"] == "category"
+
+    inline_body = assert_error_body(
+        admin_client.patch(
+            f"/admin-api/testapp/product/{sample.pk}",
+            data={
+                "data": {},
+                "inlines": {"testapp.productimage": {"change": [{"pk": 999999, "title": "Ghost"}]}},
+            },
+            content_type="application/json",
+        ),
+        400,
+    )
+    assert inline_body["errors"][0] == {
+        "message": "Unknown inline object.",
+        "param": "inlines.testapp.productimage.change.0.pk",
+    }
+
+    bulk_body = assert_error_body(
+        admin_client.put(
+            "/admin-api/testapp/product/bulk",
+            data={"data": [{"pk": 999999, "stock_status": "in_stock"}]},
+            content_type="application/json",
+        ),
+        400,
+    )
+    assert bulk_body["errors"][0] == {"message": "Object not found.", "param": "data.0.pk"}
 
     ProductReview.objects.create(product=sample, note="Pinned review")
     protected_body = assert_error_body(admin_client.delete(f"/admin-api/testapp/product/{sample.pk}"), 409)
@@ -3595,8 +3701,9 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
         content_type="application/json",
     )
     assert invalid.status_code == 400
-    assert invalid.json()["errors"]["form"][0]["param"] == "name"
-    assert invalid.json()["errors"]["form"][0]["message"] == ["Forbidden product name."]
+    ErrorResponse.model_validate(invalid.json())
+    assert invalid.json()["errors"][0]["param"] == "name"
+    assert invalid.json()["errors"][0]["message"] == ["Forbidden product name."]
 
     created = admin_client.post(
         "/custom-form-admin/testapp/product",
@@ -4053,7 +4160,8 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
         content_type="application/json",
     )
     assert invalid_category.status_code == 400
-    assert invalid_category.json()["errors"]["form"][0]["param"] == "category"
+    ErrorResponse.model_validate(invalid_category.json())
+    assert invalid_category.json()["errors"][0]["param"] == "category"
 
     created = admin_client.post(
         "/custom-formfield-admin/testapp/product",
@@ -6917,7 +7025,8 @@ def test_multipart_file_parts_satisfy_required_file_schema_fields(admin_client, 
         )
 
         assert invalid.status_code == 400
-        assert invalid.json()["errors"]["form"][0]["param"] == "manual"
+        ErrorResponse.model_validate(invalid.json())
+        assert invalid.json()["errors"][0]["param"] == "manual"
         assert not Product.objects.filter(name="Invalid manual extension").exists()
 
         created = admin_client.post(
@@ -7012,7 +7121,8 @@ def test_image_field_validates_and_uploads_with_multipart_payload(admin_client, 
 
         assert invalid.status_code == 400
         invalid_body = invalid.json()
-        assert invalid_body["errors"]["form"][0]["param"] == "photo"
+        ErrorResponse.model_validate(invalid_body)
+        assert invalid_body["errors"][0]["param"] == "photo"
         assert Product.objects.get(pk=sample.pk).photo.name == ""
 
         uploaded = _uploaded_png("cover.png", size=(2, 3))
@@ -7893,7 +8003,8 @@ def test_bulk_update_uses_changelist_form_hook(admin_client, sample):
     )
 
     assert invalid.status_code == 400
-    assert invalid.json()["errors"]["0"][0]["param"] == "stock_status"
+    ErrorResponse.model_validate(invalid.json())
+    assert invalid.json()["errors"][0]["param"] == "data.0.stock_status"
     sample.refresh_from_db()
     assert sample.stock_status == "in_stock"
 
@@ -8694,7 +8805,7 @@ def test_bulk_update_checks_object_level_change_permission(admin_client, sample,
         content_type="application/json",
     )
     assert response.status_code == 403
-    assert response.json()["errors"] == {"0": [{"message": "Permission denied.", "param": "pk"}]}
+    assert response.json()["errors"] == [{"message": "Permission denied.", "param": "data.0.pk"}]
     sample.refresh_from_db()
     assert sample.stock_status == "in_stock"
 
@@ -8758,7 +8869,7 @@ def test_bulk_update_is_limited_to_filtered_changelist_queryset(admin_client, sa
     )
 
     assert response.status_code == 400
-    assert response.json()["errors"]["0"] == [{"message": "Object not found.", "param": "pk"}]
+    assert response.json()["errors"] == [{"message": "Object not found.", "param": "data.0.pk"}]
     sample.refresh_from_db()
     beta.refresh_from_db()
     assert sample.stock_status == "in_stock"
@@ -8779,8 +8890,8 @@ def test_bulk_update_returns_all_server_side_row_errors(admin_client, sample):
 
     assert response.status_code == 400
     errors = response.json()["errors"]
-    assert errors["0"][0]["param"] == "stock_status"
-    assert errors["1"] == [{"message": "Object not found.", "param": "pk"}]
+    assert errors[0]["param"] == "data.0.stock_status"
+    assert errors[1] == {"message": "Object not found.", "param": "data.1.pk"}
     sample.refresh_from_db()
     assert sample.stock_status == "in_stock"
     assert not LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).exists()
@@ -8915,8 +9026,11 @@ def test_inline_mutations_reject_unknown_and_readonly_fields(admin_client, sampl
         content_type="application/json",
     )
     assert readonly_response.status_code == 400
-    assert readonly_response.json()["errors"]["testapp.productimage"]["change"]["0"] == [
-        {"message": "Unknown or readonly inline field.", "param": "title"}
+    assert readonly_response.json()["errors"] == [
+        {
+            "message": "Unknown or readonly inline field.",
+            "param": "inlines.testapp.productimage.change.0.title",
+        }
     ]
     image.refresh_from_db()
     assert image.title == "Front"
@@ -9088,16 +9202,24 @@ def test_inline_mutation_aggregates_server_side_row_errors(admin_client, sample)
     )
 
     assert response.status_code == 400
-    errors = response.json()["errors"]["testapp.productimage"]
-    assert errors["change"]["0"] == [
-        {
-            "message": "Inline object cannot be changed and deleted in the same request.",
-            "param": "pk",
-        }
-    ]
-    assert errors["change"]["2"] == [{"message": "Duplicate inline change pk.", "param": "pk"}]
-    assert errors["change"]["3"] == [{"message": "Unknown inline object.", "param": "pk"}]
-    assert errors["delete"]["1"] == [{"message": "Unknown inline object.", "param": "pk"}]
+    errors = response.json()["errors"]
+    assert {
+        "message": "Inline object cannot be changed and deleted in the same request.",
+        "param": "inlines.testapp.productimage.change.0.pk",
+    } in errors
+    assert {
+        "message": "Duplicate inline change pk.",
+        "param": "inlines.testapp.productimage.change.2.pk",
+    } in errors
+    assert {
+        "message": "Unknown inline object.",
+        "param": "inlines.testapp.productimage.change.3.pk",
+    } in errors
+    assert {
+        "message": "Unknown inline object.",
+        "param": "inlines.testapp.productimage.delete.1.pk",
+    } in errors
+    assert len(errors) == 4
     image.refresh_from_db()
     other.refresh_from_db()
     sample.refresh_from_db()
@@ -9118,7 +9240,9 @@ def test_inline_mutation_rolls_back_parent_save_for_unknown_inline_object(admin_
     )
 
     assert response.status_code == 400
-    assert response.json()["errors"]["testapp.productimage"]["change"]["0"][0]["message"] == "Unknown inline object."
+    assert response.json()["errors"] == [
+        {"message": "Unknown inline object.", "param": "inlines.testapp.productimage.change.0.pk"}
+    ]
     sample.refresh_from_db()
     assert str(sample.price) == "12.50"
     assert not LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).exists()

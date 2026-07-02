@@ -27,7 +27,9 @@ urlpatterns = [
 ```
 
 The mounted API exposes `/docs` and `/openapi.json` under the mounted prefix.
-For example, the snippet above exposes `/admin-api/docs`.
+For example, the snippet above exposes `/admin-api/docs`. These schema and docs
+routes use the site auth unless the site is explicitly created with
+`auth=None`.
 
 ## Ninja-Native Customization Hooks
 
@@ -269,6 +271,18 @@ from django_ninja_admin import NinjaAdminSite
 
 admin_site = NinjaAdminSite()
 ```
+
+For browser clients using the default session auth, the built-in bootstrap
+routes are:
+
+- `GET /csrf`: returns `{csrf_token}` and asks Django to issue a CSRF cookie.
+- `POST /login`: accepts `{username, password}`, logs in an active staff user,
+  and returns the current permission state plus a fresh `csrf_token`.
+- `POST /logout`: logs out the current authenticated session.
+
+Use the returned CSRF token as `X-CSRFToken` on session-authenticated mutation
+requests. Projects should keep Django's session middleware, authentication
+middleware, and CSRF middleware enabled for browser deployments.
 
 Pass any Django Ninja auth callable or sequence of auth callables to customize
 authentication:

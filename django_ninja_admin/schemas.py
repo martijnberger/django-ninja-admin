@@ -57,6 +57,24 @@ class ErrorResponse(Schema):
     model_count: dict[str, int] | None = None
 
 
+class CsrfTokenResponse(Schema):
+    csrf_token: str
+
+
+class SessionLoginPayload(Schema):
+    username: str
+    password: str
+
+
+class SessionResponse(Schema):
+    is_authenticated: bool
+    is_active: bool
+    is_staff: bool
+    is_superuser: bool
+    has_permission: bool
+    csrf_token: str
+
+
 class MessageResponse(Schema):
     model_config = ConfigDict(json_schema_extra={"examples": [{"detail": "Object deleted."}]})
 

@@ -11,8 +11,10 @@ from weakref import WeakSet
 from asgiref.sync import async_to_sync
 from django import forms
 from django.apps import apps
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth import authenticate, get_user_model
+from django.contrib.auth import login as auth_login
+from django.contrib.auth import logout as auth_logout
+from django.contrib.auth.models import AnonymousUser, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import (
@@ -28,6 +30,7 @@ from django.db.models.base import ModelBase
 from django.forms.models import _get_foreign_key, modelformset_factory
 from django.http import Http404
 from django.http.multipartparser import MultiPartParserError
+from django.middleware.csrf import get_token
 from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
 from django.utils.text import capfirst
@@ -55,10 +58,13 @@ from django_ninja_admin.schemas import (
     AppSummary,
     AutocompleteResponse,
     ChangelistResponse,
+    CsrfTokenResponse,
     ErrorResponse,
     FormResponse,
     HistoryResponse,
     PermissionsResponse,
+    SessionLoginPayload,
+    SessionResponse,
     SiteContext,
     ViewOnSiteResponse,
 )
@@ -543,6 +549,17 @@ class NinjaAdminSite:
                 return True
         return False
 
+    def _session_state(self, request):
+        user = request.user
+        return {
+            "is_authenticated": user.is_authenticated,
+            "is_active": getattr(user, "is_active", False),
+            "is_staff": getattr(user, "is_staff", False),
+            "is_superuser": getattr(user, "is_superuser", False),
+            "has_permission": self.has_permission(request),
+            "csrf_token": get_token(request),
+        }
+
     def _history_content_type_ids(self, request, *, app_label=None, model_name=None):
         if model_name and not app_label:
             raise AdminValidationError(
@@ -618,6 +635,55 @@ class NinjaAdminSite:
     def _register_site_routes(self, router):
         site = self
         auth_errors = site._auth_error_responses()
+
+        @router.get(
+            "/csrf",
+            auth=None,
+            response={200: CsrfTokenResponse},
+            operation_id="admin_csrf",
+        )
+        def csrf(request):
+            return {"csrf_token": get_token(request)}
+
+        @router.post(
+            "/login",
+            auth=None,
+            response={
+                200: SessionResponse,
+                400: ErrorResponse,
+                403: ErrorResponse,
+                422: ErrorResponse,
+            },
+            operation_id="admin_login",
+        )
+        def login(request, payload: SessionLoginPayload):
+            user = authenticate(request, username=payload.username, password=payload.password)
+            if user is None:
+                raise AdminValidationError(
+                    [{"message": "Invalid username or password.", "param": "username"}]
+                )
+            request.user = user
+            if not site.has_permission(request):
+                raise PermissionDenied
+            auth_login(request, user)
+            request.user = user
+            return site._session_state(request)
+
+        @router.post(
+            "/logout",
+            auth=site.auth,
+            response={
+                200: SessionResponse,
+                **auth_errors,
+                403: ErrorResponse,
+                422: ErrorResponse,
+            },
+            operation_id="admin_logout",
+        )
+        def logout(request):
+            auth_logout(request)
+            request.user = AnonymousUser()
+            return site._session_state(request)
 
         @router.get(
             "/apps",
