@@ -31,6 +31,7 @@ from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 from django_ninja_admin.utils.forms import (
+    fieldset_layout_description,
     file_value_metadata,
     form_field_descriptions,
     form_media_description,
@@ -745,6 +746,7 @@ class BaseAdmin:
         initial = self.get_changeform_initial_data(request) if obj is None else None
         form_class = self.get_form_class(request, obj, change=obj is not None)
         form = form_class(instance=obj, initial=initial)
+        fieldsets = self.get_fieldsets(request, obj)
         permissions = {
             "has_add_permission": self.has_add_permission(request),
             "has_change_permission": self.has_change_permission(request, obj),
@@ -756,7 +758,8 @@ class BaseAdmin:
             "readonly_fields": [field_name_for_display(field) for field in self.get_readonly_fields(request, obj)],
             "fields": self.get_form_fields_description(request, obj, initial=initial),
             "media": form_media_description(form),
-            "fieldsets": list(self.get_fieldsets(request, obj)),
+            "fieldsets": list(fieldsets),
+            "fieldset_layout": fieldset_layout_description(fieldsets),
             "prepopulated": dict(self.get_prepopulated_fields(request, obj)),
             "permissions": permissions,
             "save_as": getattr(self, "save_as", False),

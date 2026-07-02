@@ -122,12 +122,25 @@ class FormMediaDescription(Schema):
     js: list[str] = Field(default_factory=list)
 
 
+class FieldsetRow(Schema):
+    fields: list[str]
+
+
+class FieldsetDescription(Schema):
+    name: str | None = None
+    classes: list[str] = Field(default_factory=list)
+    description: str | None = None
+    fields: list[str] = Field(default_factory=list)
+    rows: list[FieldsetRow] = Field(default_factory=list)
+
+
 class FormDescription(Schema):
     model: str
     readonly_fields: list[str]
     fields: list[FieldDescription]
     media: FormMediaDescription = Field(default_factory=FormMediaDescription)
     fieldsets: list[Any]
+    fieldset_layout: list[FieldsetDescription] = Field(default_factory=list)
     prepopulated: dict[str, Any]
     permissions: PermissionMap
     save_as: bool = False
@@ -153,6 +166,7 @@ class InlineDescription(Schema):
     model: str
     readonly_fields: list[str]
     fieldsets: list[Any]
+    fieldset_layout: list[FieldsetDescription] = Field(default_factory=list)
     prepopulated: dict[str, Any]
     media: FormMediaDescription = Field(default_factory=FormMediaDescription)
     permissions: PermissionMap

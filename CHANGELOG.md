@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   generated IDs, required/disabled flags, and ARIA help-text links.
 - Exposed rendered grouped choice optgroup metadata, including group labels and
   per-option render attrs/selection state.
+- Added normalized parent and inline fieldset layout metadata with section
+  names, classes, descriptions, flattened fields, and row groupings.
 - Added a concrete OpenAPI example for `FieldDescription.attrs` showing
   bound-field, rendered-attr, and rendered-subwidget metadata.
 

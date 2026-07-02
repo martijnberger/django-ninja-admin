@@ -199,6 +199,35 @@ def form_media_description(form):
     }
 
 
+def fieldset_layout_description(fieldsets):
+    return [
+        {
+            "name": str(name) if name is not None else None,
+            "classes": [str(class_name) for class_name in _fieldset_classes(options.get("classes", ()))],
+            "description": str(options["description"]) if options.get("description") is not None else None,
+            "fields": [field for row in _fieldset_rows(options.get("fields", ())) for field in row["fields"]],
+            "rows": _fieldset_rows(options.get("fields", ())),
+        }
+        for name, options in fieldsets
+    ]
+
+
+def _fieldset_classes(classes):
+    if classes in (None, ""):
+        return []
+    if isinstance(classes, str):
+        return [classes]
+    return list(classes)
+
+
+def _fieldset_rows(fields):
+    rows = []
+    for item in fields:
+        row_fields = item if isinstance(item, (list, tuple)) else (item,)
+        rows.append({"fields": [field_name_for_display(field) for field in row_fields]})
+    return rows
+
+
 def _validator_names(field):
     return [validator.__class__.__name__ for validator in getattr(field, "validators", ())]
 

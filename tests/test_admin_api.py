@@ -419,7 +419,19 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
 
     form_response_props = components["FormResponse"]["properties"]
     assert form_response_props["inlines"]["items"] == {"$ref": "#/components/schemas/InlineDescription"}
+    form_description_props = components["FormDescription"]["properties"]
+    assert form_description_props["fieldset_layout"]["items"] == {
+        "$ref": "#/components/schemas/FieldsetDescription"
+    }
+    fieldset_description_props = components["FieldsetDescription"]["properties"]
+    assert fieldset_description_props["name"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    assert fieldset_description_props["classes"]["items"] == {"type": "string"}
+    assert fieldset_description_props["rows"]["items"] == {"$ref": "#/components/schemas/FieldsetRow"}
+    assert components["FieldsetRow"]["properties"]["fields"]["items"] == {"type": "string"}
     inline_response_props = components["InlineDescription"]["properties"]
+    assert inline_response_props["fieldset_layout"]["items"] == {
+        "$ref": "#/components/schemas/FieldsetDescription"
+    }
     assert inline_response_props["management_form"]["items"] == {
         "$ref": "#/components/schemas/FieldDescription"
     }
@@ -5220,6 +5232,15 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     assert inline["extra"] == 2
     assert inline["min_num"] == 1
     assert inline["max_num"] == 5
+    assert inline["fieldset_layout"] == [
+        {
+            "name": None,
+            "classes": [],
+            "description": None,
+            "fields": ["id", "product", "title"],
+            "rows": [{"fields": ["id"]}, {"fields": ["product"]}, {"fields": ["title"]}],
+        }
+    ]
     assert inline["formset_prefix"] == "images"
     assert inline["total_form_count"] == 3
     assert inline["initial_form_count"] == 1
@@ -5471,7 +5492,16 @@ def test_explicit_form_layouts_accept_callable_readonly_field_names(db, sample):
 
     class ReadonlyLayoutProductAdmin(ModelAdmin):
         readonly_fields = ("upper_name", callable_summary)
-        fieldsets = ((None, {"fields": ("name", "callable_summary", "upper_name")}),)
+        fieldsets = (
+            (
+                "Main",
+                {
+                    "fields": (("name", "upper_name"), "callable_summary"),
+                    "classes": ("wide", "collapse"),
+                    "description": "Primary product fields.",
+                },
+            ),
+        )
 
         @display(description="Upper name")
         def upper_name(self, obj):
@@ -5491,7 +5521,25 @@ def test_explicit_form_layouts_accept_callable_readonly_field_names(db, sample):
     form = model_admin.get_form_description(request, sample)["form"]
     fields_by_name = {field["name"]: field for field in form["fields"]}
 
-    assert form["fieldsets"] == [(None, {"fields": ("name", "callable_summary", "upper_name")})]
+    assert form["fieldsets"] == [
+        (
+            "Main",
+            {
+                "fields": (("name", "upper_name"), "callable_summary"),
+                "classes": ("wide", "collapse"),
+                "description": "Primary product fields.",
+            },
+        )
+    ]
+    assert form["fieldset_layout"] == [
+        {
+            "name": "Main",
+            "classes": ["wide", "collapse"],
+            "description": "Primary product fields.",
+            "fields": ["name", "upper_name", "callable_summary"],
+            "rows": [{"fields": ["name", "upper_name"]}, {"fields": ["callable_summary"]}],
+        }
+    ]
     assert fields_by_name["callable_summary"]["attrs"]["label"] == "Callable summary"
     assert fields_by_name["callable_summary"]["attrs"]["value"] == "Alpha:in_stock"
     assert fields_by_name["upper_name"]["attrs"]["value"] == "ALPHA"

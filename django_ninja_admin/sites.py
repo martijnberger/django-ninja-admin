@@ -61,6 +61,7 @@ from django_ninja_admin.schemas import (
 from django_ninja_admin.utils.deletion import deletion_error_payload
 from django_ninja_admin.utils.format_error import format_error
 from django_ninja_admin.utils.forms import (
+    fieldset_layout_description,
     form_errors,
     form_field_descriptions,
     form_media_description,
@@ -1334,10 +1335,12 @@ class NinjaAdminSite:
                     queryset = inline.model.objects.none()
             formset = formset_class(instance=obj, queryset=queryset)
             initial_form_count = formset.initial_form_count()
+            fieldsets = inline.get_fieldsets(request, obj)
             inline_desc = {
                 "model": f"{inline.model._meta.app_label}.{inline.model._meta.model_name}",
                 "readonly_fields": list(inline.get_readonly_fields(request, obj)),
-                "fieldsets": list(inline.get_fieldsets(request, obj)),
+                "fieldsets": list(fieldsets),
+                "fieldset_layout": fieldset_layout_description(fieldsets),
                 "prepopulated": dict(inline.get_prepopulated_fields(request, obj)),
                 "media": form_media_description(formset_class.form()),
                 "permissions": {
