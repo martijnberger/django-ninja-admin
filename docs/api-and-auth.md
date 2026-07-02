@@ -137,6 +137,8 @@ Use Django-admin-style hooks for behavior:
 - `get_output_schema(request=None)`
 - `get_form_description(request, obj=None, **kwargs)`
 - `get_queryset(request)`
+- `list_prefetch_related` / `get_list_prefetch_related(request)` for
+  changelist columns that intentionally touch many-valued relations.
 - `save_form(request, form, change)`
 - `save_model(request, obj, form, change)`
 - `save_related(request, form, inline_results, change)`

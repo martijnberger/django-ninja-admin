@@ -34,6 +34,7 @@ class ChangeList:
         self.list_display_links = model_admin.get_list_display_links(request, self.list_display)
         self.list_filter = tuple(model_admin.get_list_filter(request))
         self.list_select_related = model_admin.get_list_select_related(request)
+        self.list_prefetch_related = tuple(model_admin.get_list_prefetch_related(request) or ())
         self.search_fields = tuple(model_admin.get_search_fields(request))
         self.sortable_by = tuple(model_admin.get_sortable_by(request))
         self.to_field = self.get_to_field()
@@ -104,6 +105,7 @@ class ChangeList:
 
         queryset = self.model_admin.get_queryset(self.request)
         queryset = self.apply_select_related(queryset)
+        queryset = self.apply_prefetch_related(queryset)
         for filter_spec in filter_specs:
             try:
                 queryset = filter_spec.queryset(self.request, queryset)
@@ -115,6 +117,11 @@ class ChangeList:
         queryset = self.apply_search(queryset, params)
         if apply_ordering:
             queryset = self.apply_ordering(queryset, params)
+        return queryset
+
+    def apply_prefetch_related(self, queryset):
+        if self.list_prefetch_related:
+            return queryset.prefetch_related(*self.list_prefetch_related)
         return queryset
 
     def apply_select_related(self, queryset):

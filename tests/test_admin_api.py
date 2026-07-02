@@ -1142,6 +1142,33 @@ def test_admin_checks_validate_list_select_related(db):
     assert len(bad_path_errors) == 3
 
 
+def test_admin_checks_validate_list_prefetch_related(db):
+    class ValidProductAdmin(ModelAdmin):
+        list_prefetch_related = ("tags", "category__products")
+
+    class BadTypeProductAdmin(ModelAdmin):
+        list_prefetch_related = "tags"
+
+    class BadPathProductAdmin(ModelAdmin):
+        list_prefetch_related = ("price", "missing")
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidProductAdmin)
+    valid_errors = valid_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E118", "django_ninja_admin.E119"})
+
+    bad_type_site = NinjaAdminSite(include_auth=False)
+    bad_type_site.register(Product, BadTypeProductAdmin)
+    bad_type_errors = bad_type_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    assert {error.id for error in bad_type_errors} == {"django_ninja_admin.E118"}
+
+    bad_path_site = NinjaAdminSite(include_auth=False)
+    bad_path_site.register(Product, BadPathProductAdmin)
+    bad_path_errors = bad_path_site.check(app_configs=[django_apps.get_app_config("testapp")])
+    assert {error.id for error in bad_path_errors} == {"django_ninja_admin.E119"}
+    assert len(bad_path_errors) == 2
+
+
 def test_admin_checks_validate_sortable_by(db):
     class ValidSortableProductAdmin(ModelAdmin):
         list_display = ("name", "price")
@@ -2789,6 +2816,35 @@ def test_changelist_auto_selects_relation_path_list_display_fields(db, sample):
         rendered = [obj.category.name for obj in changelist.result_list]
 
     assert rendered == ["Cameras", "Cameras", "Cameras"]
+    assert len(queries) == 0
+
+
+def test_changelist_applies_list_prefetch_related_for_callable_display(db, sample):
+    @display(description="Tag names")
+    def tag_names(obj):
+        return ", ".join(sorted(tag.name for tag in obj.tags.all()))
+
+    class PrefetchProductAdmin(ModelAdmin):
+        list_display = ("name", tag_names)
+        list_prefetch_related = ("tags",)
+        ordering = ("name",)
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, PrefetchProductAdmin)
+    user = get_user_model().objects.create_user("query-admin-prefetch", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+    model_admin = admin_site.get_model_admin(Product)
+
+    changelist = ChangeList(request, model_admin)
+
+    assert changelist.list_prefetch_related == ("tags",)
+    assert changelist.queryset._prefetch_related_lookups == ("tags",)
+    with CaptureQueriesContext(connection) as queries:
+        rendered = [tag_names(obj) for obj in changelist.result_list]
+
+    assert rendered == ["Compact, Featured", ""]
     assert len(queries) == 0
 
 

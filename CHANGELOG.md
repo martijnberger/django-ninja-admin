@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added `ModelAdmin.list_prefetch_related` / `get_list_prefetch_related()` for
+  changelist relation prefetching, with system checks and query-count coverage
+  for callable many-to-many display columns.
+
 ## 0.1.20 - 2026-07-02
 
 - Exposed concrete rendered child input names, IDs, attrs, and values for

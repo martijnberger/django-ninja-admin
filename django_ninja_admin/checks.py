@@ -40,6 +40,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_sequence_option(model_admin, "filter_horizontal"))
     errors.extend(_check_sequence_option(model_admin, "filter_vertical"))
     errors.extend(_check_list_select_related(model_admin))
+    errors.extend(_check_list_prefetch_related(model_admin))
     errors.extend(_check_pagination_options(model_admin))
     errors.extend(_check_paginator(model_admin))
     errors.extend(_check_boolean_options(model_admin))
@@ -803,6 +804,63 @@ def _check_select_related_path(model_admin, field_path):
                     model_admin.__class__,
                     f"The value of 'list_select_related' refers to unknown relation '{field_path}'.",
                     "E046",
+                )
+            ]
+        opts = related_model._meta
+    return []
+
+
+def _check_list_prefetch_related(model_admin):
+    value = getattr(model_admin, "list_prefetch_related", ())
+    if value in (None, False):
+        return []
+    if not isinstance(value, (list, tuple)):
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'list_prefetch_related' must be a list or tuple.",
+                "E118",
+            )
+        ]
+
+    errors = []
+    for item in value:
+        if not isinstance(item, str):
+            errors.append(_error(model_admin.__class__, "Items in 'list_prefetch_related' must be strings.", "E118"))
+            continue
+        errors.extend(_check_prefetch_related_path(model_admin, item))
+    return errors
+
+
+def _check_prefetch_related_path(model_admin, field_path):
+    opts = model_admin.model._meta
+    for path_part in field_path.split("__"):
+        try:
+            field = opts.get_field(path_part)
+        except FieldDoesNotExist:
+            return [
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_prefetch_related' refers to unknown field '{field_path}'.",
+                    "E119",
+                )
+            ]
+        if not getattr(field, "is_relation", False):
+            return [
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_prefetch_related' refers to '{field_path}', "
+                    "which is not a prefetch_related relation.",
+                    "E119",
+                )
+            ]
+        related_model = getattr(field, "related_model", None)
+        if related_model is None:
+            return [
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_prefetch_related' refers to unknown relation '{field_path}'.",
+                    "E119",
                 )
             ]
         opts = related_model._meta

@@ -33,6 +33,7 @@ class ModelAdmin(BaseAdmin):
     list_display_links = ()
     list_filter = ()
     list_select_related = False
+    list_prefetch_related = ()
     list_per_page = 100
     list_max_show_all = 200
     list_editable = ()
@@ -61,6 +62,7 @@ class ModelAdmin(BaseAdmin):
         "list_editable",
         "exclude",
         "show_full_result_count",
+        "list_prefetch_related",
         "list_per_page",
         "list_max_show_all",
         "date_hierarchy",
@@ -217,6 +219,9 @@ class ModelAdmin(BaseAdmin):
 
     def get_list_select_related(self, request):
         return self.list_select_related
+
+    def get_list_prefetch_related(self, request):
+        return self.list_prefetch_related
 
     def get_changelist(self, request, **kwargs):
         from django_ninja_admin.changelist import ChangeList
