@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Capped changelist date-hierarchy bounds at the maximum representable year so
+  `9999` year/month/day filters return typed responses instead of overflowing.
 - Added row-indexed `403` error details for object-level permission denials
   during bulk list-editable updates.
 - Added `202` OpenAPI response coverage for custom delete response hooks.

@@ -266,15 +266,16 @@ class ChangeList:
 
     def apply_date_hierarchy(self, queryset, params):
         values = self.get_date_hierarchy_values(params)
+        return self.apply_date_hierarchy_bounds(queryset, values)
+
+    def apply_date_hierarchy_bounds(self, queryset, values):
         bounds = self.date_hierarchy_bounds(values)
         if bounds is not None:
             start, end = bounds
-            queryset = queryset.filter(
-                **{
-                    f"{self.date_hierarchy_field}__gte": start,
-                    f"{self.date_hierarchy_field}__lt": end,
-                }
-            )
+            filters = {f"{self.date_hierarchy_field}__gte": start}
+            if end is not None:
+                filters[f"{self.date_hierarchy_field}__lt"] = end
+            queryset = queryset.filter(**filters)
         return queryset
 
     def date_hierarchy_bounds(self, values):
@@ -286,16 +287,22 @@ class ChangeList:
         day = values.get("day")
         if day is not None:
             start = self.date_hierarchy_boundary(year, month, day)
-            end = start + timedelta(days=1)
+            try:
+                end = start + timedelta(days=1)
+            except OverflowError:
+                end = None
             return start, end
         if month is not None:
             start = self.date_hierarchy_boundary(year, month, 1)
-            if month == 12:
+            if year == date.max.year and month == 12:
+                end = None
+            elif month == 12:
                 end = self.date_hierarchy_boundary(year + 1, 1, 1)
             else:
                 end = self.date_hierarchy_boundary(year, month + 1, 1)
             return start, end
-        return self.date_hierarchy_boundary(year, 1, 1), self.date_hierarchy_boundary(year + 1, 1, 1)
+        end = None if year == date.max.year else self.date_hierarchy_boundary(year + 1, 1, 1)
+        return self.date_hierarchy_boundary(year, 1, 1), end
 
     def date_hierarchy_boundary(self, year, month, day):
         if isinstance(self.date_hierarchy_model_field, models.DateTimeField):
@@ -700,10 +707,8 @@ class ChangeList:
         values = self.select_date_hierarchy_level(values, field)
         year_param, month_param, day_param = self.date_hierarchy_param_names
         queryset = self.date_queryset()
-        if "year" in values:
-            queryset = queryset.filter(**{year_param: values["year"]})
-        if "month" in values:
-            queryset = queryset.filter(**{month_param: values["month"]})
+        filter_values = {key: value for key, value in values.items() if key in {"year", "month"}}
+        queryset = self.apply_date_hierarchy_bounds(queryset, filter_values)
 
         if "year" not in values:
             level = "year"

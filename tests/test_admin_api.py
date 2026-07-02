@@ -4064,6 +4064,28 @@ def test_changelist_date_hierarchy_uses_active_timezone(admin_client, sample):
     assert end.isoformat() == "2024-01-01T00:00:00-08:00"
 
 
+def test_changelist_date_hierarchy_handles_max_year_bounds(admin_client, sample):
+    year = admin_client.get("/admin-api/testapp/product?created_at__year=9999")
+    day = admin_client.get(
+        "/admin-api/testapp/product?created_at__year=9999&created_at__month=12&created_at__day=31"
+    )
+
+    assert year.status_code == 200
+    assert year.json()["config"]["result_count"] == 0
+    assert day.status_code == 200
+    assert day.json()["config"]["result_count"] == 0
+
+    request = RequestFactory().get(
+        "/admin-api/testapp/product?created_at__year=9999&created_at__month=12&created_at__day=31"
+    )
+    request.user = get_user_model().objects.get(username="admin")
+    changelist = ChangeList(request, site.get_model_admin(Product))
+    start, end = changelist.date_hierarchy_bounds({"year": 9999, "month": 12, "day": 31})
+
+    assert start.isoformat().startswith("9999-12-31T00:00:00")
+    assert end is None
+
+
 def test_changelist_show_facets_modes(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
 
