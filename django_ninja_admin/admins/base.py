@@ -1083,23 +1083,17 @@ class BaseAdmin:
                 custom_fields.append(self._relation_output_custom_field(field))
             elif field.choices:
                 custom_fields.append(self._choice_output_custom_field(field))
-            elif isinstance(field, models.DecimalField):
-                custom_fields.append(self._model_field_output_custom_field(field))
-            elif isinstance(field, (models.EmailField, models.URLField)):
-                custom_fields.append(self._model_field_output_custom_field(field))
-            elif isinstance(field, models.BinaryField):
-                custom_fields.append(self._model_field_output_custom_field(field))
-            elif isinstance(field, models.JSONField):
-                custom_fields.append(self._model_field_output_custom_field(field))
-            elif self.get_pydantic_pattern_for_model_field(field):
-                custom_fields.append(self._model_field_output_custom_field(field))
-            elif self.get_pydantic_string_validator_constraints_for_model_field(field):
-                custom_fields.append(self._model_field_output_custom_field(field))
-            elif self.get_pydantic_step_constraint_for_model_field(field):
-                custom_fields.append(self._model_field_output_custom_field(field))
-            elif self.get_pydantic_numeric_bounds_for_model_field(field):
-                custom_fields.append(self._model_field_output_custom_field(field))
-            elif field.blank and not field.null:
+            elif (
+                isinstance(
+                    field,
+                    (models.DecimalField, models.EmailField, models.URLField, models.BinaryField, models.JSONField),
+                )
+                or self.get_pydantic_pattern_for_model_field(field)
+                or self.get_pydantic_string_validator_constraints_for_model_field(field)
+                or self.get_pydantic_step_constraint_for_model_field(field)
+                or self.get_pydantic_numeric_bounds_for_model_field(field)
+                or (field.blank and not field.null)
+            ):
                 custom_fields.append(self._model_field_output_custom_field(field))
             else:
                 fields.append(field.name)

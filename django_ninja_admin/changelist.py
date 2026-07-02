@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+from contextlib import suppress
 from datetime import date, datetime, timedelta
 
 from django.conf import settings
@@ -146,10 +147,8 @@ class ChangeList:
                     related_fields.append(related_path)
                 continue
             field = None
-            try:
+            with suppress(FieldDoesNotExist):
                 field = self.model._meta.get_field(field_name)
-            except FieldDoesNotExist:
-                pass
             if isinstance(field, (models.ForeignKey, models.OneToOneField)) and field.name not in related_fields:
                 related_fields.append(field.name)
                 continue
@@ -558,9 +557,9 @@ class ChangeList:
                 return raw_field
             return None
         for index, field_name in enumerate(self.list_display, start=1):
-            if field_name_for_display(field_name) == raw_field or self.get_ordering_field(field_name) == raw_field:
-                if self.get_ordering_field(field_name):
-                    return str(index)
+            ordering_field = self.get_ordering_field(field_name)
+            if (field_name_for_display(field_name) == raw_field or ordering_field == raw_field) and ordering_field:
+                return str(index)
         return None
 
     def ordering_token(self, index, direction):

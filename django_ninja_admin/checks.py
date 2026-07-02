@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from contextlib import suppress
 
 from django.core import checks
 from django.core.exceptions import FieldDoesNotExist
@@ -124,10 +125,8 @@ def _check_display_options(model_admin):
             continue
         field = None
         if "__" in item:
-            try:
+            with suppress(FieldDoesNotExist):
                 field = single_valued_model_field_from_path(model_admin.model, item)
-            except FieldDoesNotExist:
-                pass
         elif _field_or_attr_exists(model_admin, item):
             field = _model_field(model_admin, item)
 

@@ -1,3 +1,4 @@
+from contextlib import suppress
 from decimal import Decimal
 
 from django import forms
@@ -67,10 +68,8 @@ def _choice_option(value, label, *, coerce=None):
     raw = getattr(value, "value", value)
     option = {"value": _choice_value(value), "raw_value": _jsonish_value(raw), "label": str(label)}
     if coerce is not None:
-        try:
+        with suppress(TypeError, ValueError):
             option["coerced_value"] = _jsonish_value(coerce(raw))
-        except (TypeError, ValueError):
-            pass
     return option
 
 

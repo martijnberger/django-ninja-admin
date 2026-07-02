@@ -7,10 +7,7 @@ def format_error(errors):
             if not isinstance(messages, (list, tuple)):
                 messages = [messages]
             for message in messages:
-                if hasattr(message, "messages"):
-                    text = message.messages
-                else:
-                    text = str(message)
+                text = message.messages if hasattr(message, "messages") else str(message)
                 formatted.append({"message": text, "param": field})
     elif isinstance(errors, (list, tuple)):
         for message in errors:
