@@ -77,6 +77,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added semantic OpenAPI snapshot coverage for `ErrorItem` and `ErrorResponse`
   plus representative runtime validation for auth, permission, not-found,
   request-validation, and protected-delete error bodies.
+- Added mounted `delete_selected` coverage for `select_across` over filtered
+  changelists with object-level delete permission denial, preserving
+  all-or-nothing action behavior.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.

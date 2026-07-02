@@ -8466,6 +8466,30 @@ def test_delete_selected_returns_object_permission_needed_details(admin_client, 
     assert Product.objects.filter(pk=sample.pk).exists()
 
 
+def test_delete_selected_select_across_checks_filtered_object_permissions(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    beta = Product.objects.get(name="Beta")
+
+    def has_delete_permission(request, obj=None):
+        return obj is None or obj.pk != beta.pk
+
+    monkeypatch.setattr(product_admin, "has_delete_permission", has_delete_permission)
+
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions?stock_status__exact=out_of_stock",
+        data={"action": "delete_selected", "selected_ids": [sample.pk], "select_across": True},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 403
+    body = response.json()
+    assert body["errors"][0]["param"] == "selected_ids"
+    assert body["perms_needed"] == ["product"]
+    assert body["model_count"]["testapp.product"] == 1
+    assert Product.objects.filter(pk=sample.pk).exists()
+    assert Product.objects.filter(pk=beta.pk).exists()
+
+
 def test_action_payload_uses_pydantic_request_validation(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/actions",

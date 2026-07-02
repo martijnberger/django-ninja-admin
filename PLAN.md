@@ -148,6 +148,9 @@ Completed or mostly complete:
 - Direct delete and default `delete_selected` return structured protected-object and permission-needed details.
 - Collected-object delete permission checks now honor object-level delete hooks, including the default `delete_selected` action.
 - Direct delete now returns structured permission-needed details when object-level delete hooks deny the target row.
+- Default `delete_selected` now has mounted coverage for `select_across` over a
+  filtered queryset when an object-level delete hook denies one of the expanded
+  rows, preserving all-or-nothing behavior.
 - Model detail/form/update/delete routes now support allowed `_to_field`
   lookups and reject bad `_to_field` references with typed validation errors.
 - Changelist routes now support allowed `_to_field` lookups by validating the
