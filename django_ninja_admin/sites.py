@@ -1,7 +1,10 @@
 import json
 import re
+from decimal import Decimal
 from functools import wraps
-from typing import Any
+from types import UnionType
+from typing import Any, Literal, Union, get_args, get_origin
+from uuid import UUID
 from weakref import WeakSet
 
 from django import forms
@@ -820,6 +823,9 @@ class NinjaAdminSite:
             response=create_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_create",
+            openapi_extra=site._json_request_examples_extra(
+                create=site._mutation_payload_example(model_admin, change=False, partial=False)
+            ),
         )
         def create(request, payload: create_payload_schema):
             return site._create_object(request, model_admin, payload)
@@ -860,6 +866,9 @@ class NinjaAdminSite:
             },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_action",
+            openapi_extra=site._json_request_examples_extra(
+                action=site._action_payload_example(model_admin),
+            ),
         )
         def actions_view(request, payload: action_payload_schema):
             if not model_admin.has_view_or_change_permission(request):
@@ -878,6 +887,9 @@ class NinjaAdminSite:
             },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_bulk_update",
+            openapi_extra=site._json_request_examples_extra(
+                bulk_update=site._bulk_payload_example(model_admin),
+            ),
         )
         def bulk_update(request, payload: bulk_payload_schema):
             if not model_admin.has_change_permission(request):
@@ -939,6 +951,9 @@ class NinjaAdminSite:
             response=change_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_partial_update",
+            openapi_extra=site._json_request_examples_extra(
+                partial_update=site._mutation_payload_example(model_admin, change=True, partial=True)
+            ),
         )
         def update(
             request,
@@ -953,6 +968,9 @@ class NinjaAdminSite:
             response=change_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_update",
+            openapi_extra=site._json_request_examples_extra(
+                update=site._mutation_payload_example(model_admin, change=True, partial=False)
+            ),
         )
         def replace(
             request,
@@ -1397,6 +1415,175 @@ class NinjaAdminSite:
     def _file_form_field_names(self, model_admin, request=None, obj=None, *, change):
         form_class = model_admin.get_form_class(request, obj, change=change)
         return [name for name, field in form_class.base_fields.items() if isinstance(field, forms.FileField)]
+
+    def _json_request_examples_extra(self, **examples):
+        openapi_examples = {
+            name: {"summary": name.replace("_", " ").title(), "value": value}
+            for name, value in examples.items()
+            if value is not None
+        }
+        if not openapi_examples:
+            return {}
+        return {
+            "requestBody": {
+                "content": {
+                    "application/json": {
+                        "examples": openapi_examples,
+                    }
+                }
+            }
+        }
+
+    def _mutation_payload_example(self, model_admin, *, change, partial):
+        form_class = model_admin.get_form_class(None, None, change=change)
+        payload = {"data": self._form_data_example(form_class.base_fields, partial=partial)}
+        inline_examples = self._inline_payload_example(model_admin, change=change)
+        if inline_examples:
+            payload["inlines"] = inline_examples
+        return payload
+
+    def _bulk_payload_example(self, model_admin):
+        form_class = model_admin.get_changelist_form_class(None)
+        row = {"pk": 1}
+        row.update(self._form_data_example(form_class.base_fields, partial=True))
+        return {"data": [row]}
+
+    def _action_payload_example(self, model_admin):
+        model_actions = model_admin._get_base_actions()
+        if not model_actions:
+            return {"action": "action_name", "selected_ids": [1], "select_across": False}
+        func, name, _description = next(
+            (
+                model_action
+                for model_action in model_actions
+                if getattr(model_action[0], "action_input_schema", None) is not None
+            ),
+            model_actions[0],
+        )
+        payload = {"action": name, "selected_ids": [1], "select_across": False}
+        input_schema = getattr(func, "action_input_schema", None)
+        if input_schema is not None:
+            payload["data"] = self._pydantic_model_example(input_schema)
+        return payload
+
+    def _inline_payload_example(self, model_admin, *, change):
+        examples = {}
+        for inline in model_admin.get_inline_instances(None, check_permissions=False):
+            inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
+            formset_class = inline.get_formset(None, None, change=change)
+            row = self._form_data_example(formset_class.form.base_fields, partial=False)
+            if not row:
+                continue
+            if change:
+                examples[inline_id] = {"change": [{"pk": 1, **row}], "delete": [2]}
+            else:
+                examples[inline_id] = {"add": [row]}
+        return examples
+
+    def _form_data_example(self, form_fields, *, partial):
+        data = {}
+        candidates = [
+            (name, field)
+            for name, field in form_fields.items()
+            if not getattr(field, "disabled", False) and not isinstance(field, forms.FileField)
+        ]
+        for name, field in candidates:
+            if partial and data:
+                break
+            if partial or field.required:
+                data[name] = self._form_field_example_value(field)
+        if not data and candidates:
+            name, field = candidates[0]
+            data[name] = self._form_field_example_value(field)
+        return data
+
+    def _form_field_example_value(self, field):
+        if isinstance(field, forms.ModelMultipleChoiceField):
+            return [1]
+        if isinstance(field, forms.ModelChoiceField):
+            return 1
+        if isinstance(field, forms.TypedMultipleChoiceField | forms.MultipleChoiceField):
+            return [self._choice_example_value(field.choices)]
+        if isinstance(field, forms.TypedChoiceField | forms.ChoiceField):
+            return self._choice_example_value(field.choices)
+        if isinstance(field, forms.BooleanField):
+            return True
+        if isinstance(field, forms.DecimalField):
+            return "9.99"
+        if isinstance(field, forms.IntegerField):
+            return 1
+        if isinstance(field, forms.FloatField):
+            return 1.5
+        if isinstance(field, forms.JSONField):
+            return {"key": "value"}
+        if isinstance(field, forms.UUIDField):
+            return "550e8400-e29b-41d4-a716-446655440000"
+        if isinstance(field, forms.GenericIPAddressField):
+            return "192.0.2.1"
+        if isinstance(field, forms.EmailField):
+            return "admin@example.com"
+        if isinstance(field, forms.URLField):
+            return "https://example.com/"
+        if isinstance(field, forms.SplitDateTimeField):
+            return ["2026-07-02", "09:30:00"]
+        if isinstance(field, forms.DateTimeField):
+            return "2026-07-02T09:30:00Z"
+        if isinstance(field, forms.DateField):
+            return "2026-07-02"
+        if isinstance(field, forms.TimeField):
+            return "09:30:00"
+        if isinstance(field, forms.DurationField):
+            return "1 00:00:00"
+        return "example"
+
+    def _choice_example_value(self, choices):
+        for value, label in choices:
+            if isinstance(label, (list, tuple)):
+                nested = self._choice_example_value(label)
+                if nested is not None:
+                    return nested
+                continue
+            if value not in ("", None):
+                return self._json_example_value(value)
+        return "example"
+
+    def _pydantic_model_example(self, schema):
+        return {
+            name: self._annotation_example_value(field.annotation)
+            for name, field in schema.model_fields.items()
+            if field.is_required()
+        }
+
+    def _annotation_example_value(self, annotation):
+        origin = get_origin(annotation)
+        args = get_args(annotation)
+        if origin is Literal:
+            return self._json_example_value(args[0]) if args else "example"
+        if origin in {Union, UnionType} and args:
+            return self._annotation_example_value(next((arg for arg in args if arg is not type(None)), args[0]))
+        if origin in {list, set, tuple, frozenset}:
+            return [self._annotation_example_value(args[0])] if args else ["example"]
+        if origin is dict:
+            value_type = args[1] if len(args) > 1 else str
+            return {"key": self._annotation_example_value(value_type)}
+        if annotation is bool:
+            return True
+        if annotation is int:
+            return 1
+        if annotation is float:
+            return 1.5
+        if annotation is Decimal:
+            return "1.00"
+        if annotation is UUID:
+            return "550e8400-e29b-41d4-a716-446655440000"
+        return "example"
+
+    def _json_example_value(self, value):
+        if isinstance(value, Decimal | UUID):
+            return str(value)
+        if isinstance(value, str | int | float | bool) or value is None:
+            return value
+        return str(value)
 
     def _multipart_openapi_extra(self, payload_schema, file_fields, *, required_data, required_file_fields=()):
         properties = {

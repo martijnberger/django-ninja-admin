@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added generated OpenAPI request examples for JSON create, update, bulk
+  list-editable, and action routes.
 - Added `form_schema_field_overrides` for parent, inline, and list-editable
   Pydantic request schemas and form descriptions, plus system checks for
   malformed declarations.

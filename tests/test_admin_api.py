@@ -106,6 +106,16 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert schema_body["paths"]["/admin-api/testapp/product"]["post"]["requestBody"]["content"]["application/json"][
         "schema"
     ] == {"$ref": "#/components/schemas/ProductAdminCreatePayload"}
+    create_examples = schema_body["paths"]["/admin-api/testapp/product"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["examples"]
+    assert create_examples["create"]["value"]["data"] == {
+        "name": "example",
+        "category": 1,
+        "price": "9.99",
+        "stock_status": "in_stock",
+    }
+    assert create_examples["create"]["value"]["inlines"] == {"testapp.productimage": {"add": [{"title": "example"}]}}
     multipart_schema = schema_body["paths"]["/admin-api/testapp/product/multipart"]["post"]["requestBody"]["content"][
         "multipart/form-data"
     ]["schema"]
@@ -223,6 +233,26 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "content"
     ]["application/json"]["schema"]
     assert {"$ref": "#/components/schemas/StockStatusActionResult"} in action_response_schema["anyOf"]
+    action_example = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["examples"]["action"]["value"]
+    assert action_example == {
+        "action": "set_stock_status",
+        "selected_ids": [1],
+        "select_across": False,
+        "data": {"status": "in_stock"},
+    }
+    bulk_example = schema_body["paths"]["/admin-api/testapp/product/bulk"]["put"]["requestBody"]["content"][
+        "application/json"
+    ]["examples"]["bulk_update"]["value"]
+    assert bulk_example == {"data": [{"pk": 1, "stock_status": "in_stock"}]}
+    patch_example = schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["patch"]["requestBody"]["content"][
+        "application/json"
+    ]["examples"]["partial_update"]["value"]
+    assert patch_example["data"] == {"name": "example"}
+    assert patch_example["inlines"] == {
+        "testapp.productimage": {"change": [{"pk": 1, "title": "example"}], "delete": [2]}
+    }
 
 
 def test_site_routes_return_typed_auth_errors(db):

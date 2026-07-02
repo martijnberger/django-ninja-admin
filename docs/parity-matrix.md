@@ -28,7 +28,7 @@ Statuses:
 | `GET /history` | partial | History route, log model, app/model/object/action filter, permission-filter tests, client-controlled page/page-size pagination, per-row model identity/object links, and Django-style change-message text | Broader upstream history fixture comparisons |
 | `GET /autocomplete` | partial | Permission-hardened route plus rich pagination metadata, remote `get_paginator()` and `get_search_fields()` hook coverage, many-to-many source-field tests, and non-PK `ForeignKey(to_field=...)` option IDs | Additional remote-field and permission edge cases |
 | `GET /view-on-site/{content_type_id}/{object_id}` | implemented | Route, permission, callable hook, external URL tests, configured Site-domain URLs, and request-host fallback when Site is missing | Upstream fixture comparisons |
-| Docs/OpenAPI routes | partial | `/docs`, `/openapi.json`, semantic model-route contract tests, auth-aware built-in/model route maps, and custom-route success/error response maps | Full docs examples and broader snapshots |
+| Docs/OpenAPI routes | partial | `/docs`, `/openapi.json`, semantic model-route contract tests, generated JSON mutation examples, auth-aware built-in/model route maps, and custom-route success/error response maps | Full docs examples and broader snapshots |
 
 ## Registry, Model Admins, And Checks
 
@@ -89,7 +89,7 @@ Statuses:
 | Custom auth and `auth=None` | implemented | Auth contract tests, multi-auth mounted-route tests, auth-none site-route tests, and auth docs | More project-level examples |
 | Typed error bodies | partial | Exception handlers, Ninja validation handler, runtime auth-error tests, and built-in/model/custom route OpenAPI error maps including conditional `401` responses | Full error schema snapshots |
 | Stable operation IDs/tags | partial | Explicit and generated operation IDs plus semantic OpenAPI contract tests for core site/model routes and custom site/model routes, including multi-method uniqueness | Broader custom-route snapshot tests |
-| Per-model request/response contracts | partial | Output, write payload, mutation/bulk response, inline operation, multipart JSON part media hints plus required file parts, discriminated action payload/input/response, global action cache invalidation, and auth-aware response-map schemas in OpenAPI | Broader Phase 6 snapshots and examples |
+| Per-model request/response contracts | partial | Output, write payload, generated create/update/bulk/action request examples, mutation/bulk response, inline operation, multipart JSON part media hints plus required file parts, discriminated action payload/input/response, global action cache invalidation, and auth-aware response-map schemas in OpenAPI | Broader Phase 6 snapshots and examples |
 
 ## Release Hardening
 
