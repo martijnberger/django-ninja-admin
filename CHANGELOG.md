@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   metadata components.
 - Exposed Django `BoundWidget` option metadata in form descriptions for
   radio, checkbox, and other subwidget renderers.
+- Exposed Django `ClearableFileInput` clear-checkbox names, IDs, and labels
+  in file and image form descriptions.
 
 ## 0.1.18 - 2026-07-02
 

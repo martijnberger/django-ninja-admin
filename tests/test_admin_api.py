@@ -4937,10 +4937,18 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["manual"]["attrs"]["needs_multipart_form"] is True
     assert fields_by_name["manual"]["attrs"]["blank"] is True
     assert fields_by_name["manual"]["attrs"]["upload_to"] == "manuals"
+    assert fields_by_name["manual"]["attrs"]["clearable_file_input"] is True
+    assert fields_by_name["manual"]["attrs"]["initial_text"] == "Currently"
+    assert fields_by_name["manual"]["attrs"]["input_text"] == "Change"
+    assert fields_by_name["manual"]["attrs"]["clear_checkbox_label"] == "Clear"
+    assert fields_by_name["manual"]["attrs"]["clear_checkbox_name"] == "manual-clear"
+    assert fields_by_name["manual"]["attrs"]["clear_checkbox_id"] == "manual_id"
     assert fields_by_name["photo"]["type"] == "ImageField"
     assert fields_by_name["photo"]["attrs"]["needs_multipart_form"] is True
     assert fields_by_name["photo"]["attrs"]["image"] is True
     assert fields_by_name["photo"]["attrs"]["accepted_content_types"] == ["image/*"]
+    assert fields_by_name["photo"]["attrs"]["clear_checkbox_name"] == "photo-clear"
+    assert fields_by_name["photo"]["attrs"]["clear_checkbox_id"] == "photo_id"
     assert fields_by_name["photo"]["attrs"]["upload_to"] == "photos"
     assert fields_by_name["photo"]["attrs"]["width_field"] == "photo_width"
     assert fields_by_name["photo"]["attrs"]["height_field"] == "photo_height"
@@ -6064,6 +6072,9 @@ def test_file_field_metadata_handles_storage_without_public_url(admin_client, sa
 
     assert change_form.status_code == 200
     assert manual_attrs["current_file"] == {"name": "manuals/alpha.pdf", "url": None}
+    assert manual_attrs["clearable_file_input"] is True
+    assert manual_attrs["clear_checkbox_name"] == "manual-clear"
+    assert manual_attrs["clear_checkbox_id"] == "manual_id"
 
 
 @isolate_apps("tests.testapp")

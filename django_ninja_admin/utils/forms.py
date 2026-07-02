@@ -418,6 +418,20 @@ def _file_upload_metadata(field):
     return attrs
 
 
+def _clearable_file_widget_metadata(name, widget, *, bound_field=None):
+    if not isinstance(widget, forms.ClearableFileInput):
+        return {}
+    html_name = bound_field.html_name if bound_field is not None else name
+    return {
+        "clearable_file_input": True,
+        "initial_text": str(widget.initial_text),
+        "input_text": str(widget.input_text),
+        "clear_checkbox_label": str(widget.clear_checkbox_label),
+        "clear_checkbox_name": widget.clear_checkbox_name(html_name),
+        "clear_checkbox_id": widget.clear_checkbox_id(html_name),
+    }
+
+
 def _bound_field_metadata(bound_field):
     if bound_field is None:
         return {}
@@ -548,6 +562,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         attrs["decimal_places"] = field.decimal_places
     if isinstance(field, forms.FileField):
         attrs.update(_file_upload_metadata(field))
+        attrs.update(_clearable_file_widget_metadata(name, field.widget, bound_field=bound_field))
         if isinstance(field, forms.ImageField):
             attrs["image"] = True
             attrs["accepted_content_types"] = ["image/*"]
