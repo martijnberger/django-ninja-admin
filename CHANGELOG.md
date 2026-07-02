@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.18 - 2026-07-02
+
 - Exposed Django `BoundField` HTML names, generated IDs, label target IDs, and
   hidden-initial IDs in form descriptions for frontend renderers.
 
