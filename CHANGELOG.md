@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   per-option render attrs/selection state.
 - Added normalized parent and inline fieldset layout metadata with section
   names, classes, descriptions, flattened fields, and row groupings.
+- Added concrete OpenAPI examples for typed admin error response bodies,
+  including validation, permission, and protected-delete shapes.
 - Added a concrete OpenAPI example for `FieldDescription.attrs` showing
   bound-field, rendered-attr, and rendered-subwidget metadata.
 

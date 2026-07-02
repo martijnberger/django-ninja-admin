@@ -453,6 +453,12 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "aria-describedby": "id_name_helptext",
     }
     assert field_attrs_example["rendered_subwidgets"][0]["name"] == "release_window_0"
+    error_examples = components["ErrorResponse"]["examples"]
+    assert error_examples[0] == {"errors": [{"param": "name", "message": ["This field is required."]}]}
+    assert error_examples[1]["errors"] == [{"param": "non_field_errors", "message": "Permission denied."}]
+    assert error_examples[2]["protected"] == ["Protected review: Nice camera"]
+    assert error_examples[2]["perms_needed"] == ["Can delete product review"]
+    assert error_examples[2]["model_count"] == {"product reviews": 1}
 
     for path, method, statuses in [
         ("/admin-api/apps", "get", {"401", "403"}),

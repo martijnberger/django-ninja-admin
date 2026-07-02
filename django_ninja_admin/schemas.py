@@ -30,6 +30,25 @@ class ErrorItem(Schema):
 
 
 class ErrorResponse(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "errors": [{"param": "name", "message": ["This field is required."]}],
+                },
+                {
+                    "errors": [{"param": "non_field_errors", "message": "Permission denied."}],
+                },
+                {
+                    "errors": [{"param": "delete", "message": "Cannot delete selected objects."}],
+                    "protected": ["Protected review: Nice camera"],
+                    "perms_needed": ["Can delete product review"],
+                    "model_count": {"product reviews": 1},
+                },
+            ]
+        }
+    )
+
     errors: list[ErrorItem]
     protected: list[str] | None = None
     perms_needed: list[str] | None = None
@@ -37,6 +56,8 @@ class ErrorResponse(Schema):
 
 
 class MessageResponse(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"detail": "Object deleted."}]})
+
     detail: str
 
 
