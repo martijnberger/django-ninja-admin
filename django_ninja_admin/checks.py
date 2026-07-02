@@ -325,10 +325,18 @@ def _check_show_facets(model_admin):
 
 
 def _check_text_options(model_admin):
+    errors = []
     search_help_text = getattr(model_admin, "search_help_text", None)
     if search_help_text is not None and not isinstance(search_help_text, str):
-        return [_error(model_admin.__class__, "The value of 'search_help_text' must be a string or None.", "E089")]
-    return []
+        errors.append(
+            _error(model_admin.__class__, "The value of 'search_help_text' must be a string or None.", "E089")
+        )
+    empty_value_display = getattr(model_admin, "empty_value_display", None)
+    if empty_value_display is not None and not isinstance(empty_value_display, str):
+        errors.append(
+            _error(model_admin.__class__, "The value of 'empty_value_display' must be a string or None.", "E097")
+        )
+    return errors
 
 
 def _display_item_in(item, candidates):

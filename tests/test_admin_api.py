@@ -991,6 +991,25 @@ def test_admin_checks_validate_search_help_text_option(db):
     assert bad_ids == {"django_ninja_admin.E089"}
 
 
+def test_admin_checks_validate_empty_value_display_option(db):
+    class ValidEmptyValueProductAdmin(ModelAdmin):
+        empty_value_display = "No value"
+
+    class BadEmptyValueProductAdmin(ModelAdmin):
+        empty_value_display = 123
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidEmptyValueProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadEmptyValueProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+
+    assert "django_ninja_admin.E097" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E097"}
+
+
 def test_admin_checks_allow_relation_path_date_hierarchy(db):
     class RelatedDateHierarchyImageAdmin(ModelAdmin):
         date_hierarchy = "product__created_at"
