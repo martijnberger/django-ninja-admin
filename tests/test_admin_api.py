@@ -1913,6 +1913,29 @@ def test_changelist_ordering_adds_deterministic_pk_fallback(admin_client, sample
     assert unique_ordering.json()["config"]["ordering"] == ["id"]
 
 
+def test_changelist_preserves_custom_queryset_ordering(db, sample):
+    class QuerysetOrderedProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        list_display_links = ("name",)
+
+        def get_queryset(self, request):
+            return super().get_queryset(request).order_by("-price")
+
+    Product.objects.create(name="Gamma", category=sample.category, price="8.00")
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, QuerysetOrderedProductAdmin)
+    model_admin = admin_site.get_model_admin(Product)
+    user = get_user_model().objects.create_user("queryset-ordering-admin", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+
+    changelist = ChangeList(request, model_admin)
+
+    assert changelist.ordering == ["-price", "-pk"]
+    assert [obj.name for obj in changelist.result_list] == ["Alpha", "Gamma", "Beta"]
+
+
 def test_changelist_row_metadata_honors_object_permissions(staff_client, sample):
     response = staff_client("view_product").get("/admin-api/testapp/product?q=Alpha")
 

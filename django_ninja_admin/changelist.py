@@ -41,6 +41,7 @@ class ChangeList:
         self.date_hierarchy_field = self.get_date_hierarchy_field()
         self.filter_specs = self.get_filters(self.params)
         self.has_filters = any(filter_spec.has_output() for filter_spec in self.filter_specs)
+        self.ordering = []
         self.queryset = self.get_queryset(self.params, self.filter_specs)
         self.show_full_result_count = bool(getattr(model_admin, "show_full_result_count", True))
         self.full_result_count = model_admin.get_queryset(request).count() if self.show_full_result_count else None
@@ -57,7 +58,6 @@ class ChangeList:
         self.page_num = 1 if self.show_all else self.get_page_number()
         self.page = self.get_page()
         self.result_list = list(self.page.object_list)
-        self.ordering = self.get_ordering(self.params)
 
     def get_filters(self, params):
         filter_specs = []
@@ -306,16 +306,17 @@ class ChangeList:
         return date(year, month, day)
 
     def apply_ordering(self, queryset, params):
-        ordering = self.get_ordering(params)
+        ordering = self.get_ordering(params, queryset=queryset)
+        self.ordering = ordering
         if ordering:
             return queryset.order_by(*ordering)
         return queryset
 
-    def get_ordering(self, params=None):
+    def get_ordering(self, params=None, *, queryset=None):
         params = params or self.params
         ordering_param = params.get("o")
         if not ordering_param:
-            return self.get_deterministic_ordering(self.get_default_ordering())
+            return self.get_deterministic_ordering(self.get_queryset_ordering(self.get_default_ordering(), queryset))
 
         ordering = []
         invalid_fields = []
@@ -336,11 +337,27 @@ class ChangeList:
             raise AdminValidationError(
                 [{"message": f"Invalid ordering field: {', '.join(invalid_fields)}.", "param": "o"}]
             )
-        return self.get_deterministic_ordering(ordering)
+        return self.get_deterministic_ordering(self.get_queryset_ordering(ordering, queryset))
 
     def get_default_ordering(self):
         ordering = self.model_admin.get_ordering(self.request) or self.model._meta.ordering
         return [field for field in ordering if isinstance(field, str)]
+
+    def get_queryset_ordering(self, ordering, queryset=None):
+        ordering = list(ordering)
+        if queryset is None:
+            return ordering
+        queryset_ordering = [field for field in queryset.query.order_by if isinstance(field, str)]
+        if not queryset_ordering or queryset_ordering == self.get_default_ordering():
+            return ordering
+        seen_fields = {field.lstrip("-") for field in ordering}
+        for field in queryset_ordering:
+            field_name = field.lstrip("-")
+            if field_name in seen_fields:
+                continue
+            ordering.append(field)
+            seen_fields.add(field_name)
+        return ordering
 
     def get_deterministic_ordering(self, ordering):
         ordering = list(ordering)

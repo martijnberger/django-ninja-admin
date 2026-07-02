@@ -59,6 +59,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   messages.
 - Made autocomplete pagination use the remote model admin's
   `get_paginator()` hook.
+- Preserved string `order_by()` clauses from custom `ModelAdmin.get_queryset()`
+  implementations in changelist ordering before applying deterministic
+  primary-key fallback ordering.
 
 ## 0.1.15 - 2026-07-02
 
