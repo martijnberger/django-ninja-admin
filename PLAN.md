@@ -386,6 +386,9 @@ Completed or mostly complete:
   related primary key or explicit `to_field_name` target.
 - Relation output schemas now infer serialized foreign-key `attname` types from
   the related target field, including non-PK `to_field` relations.
+- Admin-owned model-field type inference now honors Ninja `register_field()`
+  mappings for custom field internal types, including custom primary keys,
+  relation output IDs, and form-derived relation inputs.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Relation form field descriptions now include structured related-model identity,
   selected option labels, target-field type metadata, and mount-aware

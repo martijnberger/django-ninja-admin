@@ -961,7 +961,15 @@ class BaseAdmin:
             return UUID
         if isinstance(field, models.JSONField):
             return Any
+        registered_type = self.get_registered_pydantic_type_for_model_field(field)
+        if registered_type is not None:
+            return registered_type
         return str
+
+    def get_registered_pydantic_type_for_model_field(self, field):
+        from ninja.orm.fields import TYPES
+
+        return TYPES.get(field.get_internal_type())
 
     def _schema_override_cache_key(self, overrides):
         return tuple((name, repr(value)) for name, value in overrides.items())

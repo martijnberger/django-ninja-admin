@@ -7845,6 +7845,70 @@ def test_schema_field_overrides_are_included_and_serialize_admin_methods(sample)
     assert model_admin.serialize_object(sample)["custom_note"] == "Alpha:in_stock"
 
 
+@isolate_apps("tests.testapp")
+def test_ninja_registered_model_field_types_drive_admin_schema_inference(db):
+    from ninja.orm import register_field
+    from ninja.orm.fields import TYPES
+
+    class AdminRegisteredCodeField(models.Field):
+        def get_internal_type(self):
+            return "AdminRegisteredCodeField"
+
+        def db_type(self, connection):
+            return "integer"
+
+    sentinel = object()
+    previous_type = TYPES.get("AdminRegisteredCodeField", sentinel)
+    register_field("AdminRegisteredCodeField", int)
+
+    try:
+        class CustomCategory(models.Model):
+            code = AdminRegisteredCodeField(primary_key=True)
+            name = models.CharField(max_length=20)
+
+            class Meta:
+                app_label = "testapp"
+
+        class CustomProduct(models.Model):
+            name = models.CharField(max_length=20)
+            category = models.ForeignKey(CustomCategory, on_delete=models.CASCADE)
+
+            class Meta:
+                app_label = "testapp"
+
+        admin_site = NinjaAdminSite(auth=None, include_auth=False)
+        admin_site.register(CustomCategory)
+        admin_site.register(CustomProduct)
+        category_admin = admin_site.get_model_admin(CustomCategory)
+        product_admin = admin_site.get_model_admin(CustomProduct)
+
+        assert category_admin.get_pydantic_type_for_model_field(CustomCategory._meta.pk) is int
+        assert (
+            product_admin.get_pydantic_type_for_model_field(
+                CustomProduct._meta.get_field("category").target_field
+            )
+            is int
+        )
+
+        category_schema = category_admin.get_output_schema().model_json_schema()
+        product_output_schema = product_admin.get_output_schema().model_json_schema()
+        product_write_schema = product_admin.get_write_schema(None).model_json_schema()
+
+        assert category_schema["properties"]["code"]["type"] == "integer"
+        assert product_output_schema["properties"]["category_id"]["type"] == "integer"
+        assert product_write_schema["properties"]["category"]["type"] == "integer"
+
+        category = CustomCategory(code=7, name="Custom")
+        product = CustomProduct(id=1, name="Example", category=category)
+        assert category_admin.serialize_object(category)["code"] == 7
+        assert product_admin.serialize_object(product)["category_id"] == 7
+    finally:
+        if previous_type is sentinel:
+            TYPES.pop("AdminRegisteredCodeField", None)
+        else:
+            TYPES["AdminRegisteredCodeField"] = previous_type
+
+
 def test_admin_checks_validate_schema_field_overrides(db):
     class ValidSchemaOverrideProductAdmin(ModelAdmin):
         schema_field_overrides = {"custom_note": (str, None), "score": (int,)}

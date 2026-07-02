@@ -91,6 +91,23 @@ class ProductAdmin(ModelAdmin):
     form_schema_field_overrides = {"metadata": dict[str, int]}
 ```
 
+### Custom Model Fields: `register_field`
+
+Use Ninja's `register_field()` when a custom Django model field has a stable
+Python/OpenAPI type that should apply anywhere that field is exposed through
+model-derived schemas, relation IDs, or form-derived relation inputs.
+
+```python
+from ninja.orm import register_field
+
+
+register_field("MoneyField", str)
+```
+
+Use `schema_field_overrides` or `form_schema_field_overrides` instead when the
+admin endpoint needs a different read or write contract from the model field's
+general project-wide type.
+
 ### Output Shape: `output_schema`
 
 Use a Pydantic/Ninja schema when you want to own the whole response shape.
