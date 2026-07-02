@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.20 - 2026-07-02
+
 - Exposed concrete rendered child input names, IDs, attrs, and values for
   compound widgets such as `SplitDateTimeWidget` and `SelectDateWidget`.
 - Exposed Django-style rendered widget attrs combining static widget attrs with
