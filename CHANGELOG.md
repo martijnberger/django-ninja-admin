@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added inline admin checks for malformed `fields`, `exclude`, and
+  `readonly_fields` option items, including unknown fields and duplicates.
 - Added inline admin checks for malformed `fields`, `exclude`,
   `readonly_fields`, and `fieldsets` option shapes.
 - Hardened inline admin checks to reject non-boolean `can_delete` and

@@ -772,6 +772,70 @@ def test_admin_checks_validate_inline_form_layout_option_shapes(db):
     }
 
 
+def test_admin_checks_validate_inline_form_layout_option_items(db):
+    class ValidInline(TabularInline):
+        model = ProductImage
+        fields = ("title",)
+        exclude = ()
+        readonly_fields = ()
+
+    class BadItemInline(TabularInline):
+        model = ProductImage
+        fields = (123,)
+        exclude = (123,)
+        readonly_fields = (123,)
+
+    class BadUnknownInline(TabularInline):
+        model = ProductImage
+        fields = ("missing",)
+        exclude = ("missing",)
+        readonly_fields = ("missing",)
+
+    class BadDuplicateInline(TabularInline):
+        model = ProductImage
+        fields = ("title", "title")
+        exclude = ("title", "title")
+        readonly_fields = ("title", "title")
+
+    class ValidInlineProductAdmin(ModelAdmin):
+        inlines = [ValidInline]
+
+    class BadItemInlineProductAdmin(ModelAdmin):
+        inlines = [BadItemInline]
+
+    class BadUnknownInlineProductAdmin(ModelAdmin):
+        inlines = [BadUnknownInline]
+
+    class BadDuplicateInlineProductAdmin(ModelAdmin):
+        inlines = [BadDuplicateInline]
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidInlineProductAdmin)
+    bad_item_site = NinjaAdminSite(include_auth=False)
+    bad_item_site.register(Product, BadItemInlineProductAdmin)
+    bad_unknown_site = NinjaAdminSite(include_auth=False)
+    bad_unknown_site.register(Product, BadUnknownInlineProductAdmin)
+    bad_duplicate_site = NinjaAdminSite(include_auth=False)
+    bad_duplicate_site.register(Product, BadDuplicateInlineProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_item_ids = [error.id for error in bad_item_site.get_model_admin(Product).check()]
+    bad_unknown_ids = [error.id for error in bad_unknown_site.get_model_admin(Product).check()]
+    bad_duplicate_ids = [error.id for error in bad_duplicate_site.get_model_admin(Product).check()]
+
+    assert valid_ids.isdisjoint(
+        {
+            "django_ninja_admin.E113",
+            "django_ninja_admin.E114",
+            "django_ninja_admin.E115",
+            "django_ninja_admin.E116",
+        }
+    )
+    assert bad_item_ids == ["django_ninja_admin.E113", "django_ninja_admin.E113", "django_ninja_admin.E116"]
+    assert bad_unknown_ids == ["django_ninja_admin.E114", "django_ninja_admin.E114", "django_ninja_admin.E116"]
+    assert bad_duplicate_ids == ["django_ninja_admin.E115", "django_ninja_admin.E115", "django_ninja_admin.E115"]
+
+
 def test_inline_admin_supports_custom_formset_classes(db):
     class CustomInlineFormSet(BaseInlineFormSet):
         pass

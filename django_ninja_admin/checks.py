@@ -1086,6 +1086,7 @@ def _check_inlines(model_admin):
             fk = None
         for option in ("fields", "exclude", "readonly_fields", "fieldsets"):
             errors.extend(_check_inline_sequence_option(inline_class, option))
+        errors.extend(_check_inline_form_layout_items(inline_class))
         exclude = getattr(inline_class, "exclude", None)
         if fk is not None and isinstance(exclude, (list, tuple)) and fk.name in exclude:
             errors.append(
@@ -1150,3 +1151,92 @@ def _check_inline_sequence_option(inline_class, option):
     if not isinstance(value, (list, tuple)):
         return [_error(inline_class, f"The value of '{option}' must be a list or tuple.", "E112")]
     return []
+
+
+def _check_inline_form_layout_items(inline_class):
+    errors = []
+    readonly_fields = getattr(inline_class, "readonly_fields", None) or ()
+    readonly_field_names = (
+        {
+            field_name_for_display(field)
+            for field in readonly_fields
+            if callable(field) or (isinstance(field, str) and _field_or_attr_exists(inline_class, field))
+        }
+        if isinstance(readonly_fields, (list, tuple))
+        else set()
+    )
+    errors.extend(_check_inline_form_option_items(inline_class, "fields", readonly_field_names=readonly_field_names))
+    errors.extend(_check_inline_form_option_items(inline_class, "exclude", require_model_field=True))
+    errors.extend(_check_inline_readonly_fields(inline_class))
+    return errors
+
+
+def _check_inline_form_option_items(
+    inline_class,
+    option,
+    *,
+    readonly_field_names=None,
+    require_model_field=False,
+):
+    items = getattr(inline_class, option, None) or ()
+    if not isinstance(items, (list, tuple)):
+        return []
+    if option == "fields":
+        items = flatten(items)
+    errors = []
+    seen_fields = set()
+    readonly_field_names = readonly_field_names or set()
+    for item in items:
+        if not isinstance(item, str):
+            errors.append(_error(inline_class, f"Items in inline '{option}' must be strings.", "E113"))
+            continue
+        if item in seen_fields:
+            errors.append(_error(inline_class, f"The field '{item}' is duplicated in inline '{option}'.", "E115"))
+        seen_fields.add(item)
+        if item in readonly_field_names:
+            continue
+        field = _model_field(inline_class, item)
+        if field is None:
+            message = (
+                f"The value of inline '{option}' refers to unknown field '{item}'."
+                if require_model_field
+                else f"The value of inline '{option}' refers to '{item}', "
+                "which is not an editable model field or readonly field."
+            )
+            errors.append(_error(inline_class, message, "E114"))
+        elif option == "fields" and not field.editable:
+            errors.append(
+                _error(
+                    inline_class,
+                    f"The value of inline '{option}' includes non-editable field '{item}'.",
+                    "E114",
+                )
+            )
+    return errors
+
+
+def _check_inline_readonly_fields(inline_class):
+    readonly_fields = getattr(inline_class, "readonly_fields", None) or ()
+    if not isinstance(readonly_fields, (list, tuple)):
+        return []
+    errors = []
+    seen_fields = set()
+    for item in readonly_fields:
+        item_key = field_name_for_display(item)
+        if item_key in seen_fields:
+            errors.append(
+                _error(inline_class, f"The field '{item_key}' is duplicated in inline 'readonly_fields'.", "E115")
+            )
+        seen_fields.add(item_key)
+        if callable(item):
+            continue
+        if not isinstance(item, str) or not _field_or_attr_exists(inline_class, item):
+            errors.append(
+                _error(
+                    inline_class,
+                    f"The value of inline 'readonly_fields' refers to '{item}', "
+                    "which is not a field, method, or attribute.",
+                    "E116",
+                )
+            )
+    return errors
