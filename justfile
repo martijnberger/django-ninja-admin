@@ -15,6 +15,9 @@ package-smoke:
 sample-project-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/sample_project_smoke.py
 
+generated-client-smoke:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/generated_client_smoke.py
+
 parity-report *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/parity_report.py {{args}}
 

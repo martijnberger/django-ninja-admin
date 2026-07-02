@@ -38,6 +38,8 @@ behavior, or permission boundaries.
 - Review CI results across the supported Django 5.0+ and Python 3.12+ matrix.
 - Run `just openapi-diff <previous-openapi.json> <candidate-openapi.json>` when
   comparing release candidates or reviewed OpenAPI artifacts.
+- Run `just generated-client-smoke` to prove a clean installed project can use
+  OpenAPI operation IDs and request examples for core model workflows.
 - Compare generated OpenAPI semantically for route maps, component names,
   required fields, examples, auth/error responses, multipart request bodies,
   action payload variants, and inline/bulk schemas.
