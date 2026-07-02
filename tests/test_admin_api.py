@@ -15,7 +15,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import Storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.paginator import Paginator
-from django.core.validators import MaxLengthValidator, MinLengthValidator, RegexValidator
+from django.core.validators import MaxLengthValidator, MinLengthValidator, RegexValidator, StepValueValidator
 from django.db import connection, models
 from django.forms.models import BaseInlineFormSet
 from django.http import QueryDict
@@ -6860,6 +6860,83 @@ def test_string_length_model_validators_drive_output_and_relation_schemas(db):
         "code": "ABCD",
         "optional_code": None,
     }
+
+
+@isolate_apps("tests.testapp")
+def test_step_value_model_validators_drive_output_and_relation_schemas(db):
+    class StepCode(models.Model):
+        code = models.IntegerField(primary_key=True, validators=[StepValueValidator(5)])
+
+        class Meta:
+            app_label = "testapp"
+
+    class StepCodeLink(models.Model):
+        code = models.ForeignKey(StepCode, to_field="code", on_delete=models.CASCADE)
+        codes = models.ManyToManyField(StepCode, related_name="step_links", blank=True)
+        quantity = models.IntegerField(validators=[StepValueValidator(5)])
+        nullable_quantity = models.IntegerField(null=True, blank=True, validators=[StepValueValidator(2)])
+        ratio = models.FloatField(validators=[StepValueValidator(0.25)])
+        price = models.DecimalField(max_digits=8, decimal_places=2, validators=[StepValueValidator(Decimal("0.05"))])
+        offset_quantity = models.IntegerField(validators=[StepValueValidator(5, offset=1)])
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(StepCode)
+    admin_site.register(StepCodeLink)
+    code_admin = admin_site.get_model_admin(StepCode)
+    link_admin = admin_site.get_model_admin(StepCodeLink)
+
+    code_output_schema = code_admin.get_output_schema().model_json_schema()
+    link_output_schema = link_admin.get_output_schema().model_json_schema()
+    link_write_schema = link_admin.get_write_schema(None).model_json_schema()
+
+    assert code_output_schema["properties"]["code"] == {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
+        "multipleOf": 5,
+        "title": "Code",
+        "type": "integer",
+    }
+    assert link_write_schema["properties"]["code"] == {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
+        "multipleOf": 5,
+        "title": "Code",
+        "type": "integer",
+    }
+    assert link_output_schema["properties"]["code_id"] == {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
+        "multipleOf": 5,
+        "title": "Code Id",
+        "type": "integer",
+    }
+    assert link_output_schema["properties"]["codes"]["items"] == {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
+        "multipleOf": 5,
+        "type": "integer",
+    }
+    quantity_schema = link_output_schema["properties"]["quantity"]
+    assert quantity_schema["type"] == "integer"
+    assert quantity_schema["multipleOf"] == 5
+    nullable_quantity_options = link_output_schema["properties"]["nullable_quantity"]["anyOf"]
+    nullable_quantity_integer = next(option for option in nullable_quantity_options if option.get("type") == "integer")
+    assert nullable_quantity_integer["multipleOf"] == 2
+    assert {"type": "null"} in nullable_quantity_options
+    assert link_output_schema["properties"]["ratio"] == {
+        "multipleOf": 0.25,
+        "title": "Ratio",
+        "type": "number",
+    }
+    price_number_schema = next(
+        option for option in link_output_schema["properties"]["price"]["anyOf"] if option.get("type") == "number"
+    )
+    assert price_number_schema["multipleOf"] == 0.05
+    assert "multipleOf" not in link_output_schema["properties"]["offset_quantity"]
+    assert code_admin.serialize_object(StepCode(code=10)) == {"code": 10}
 
 
 def test_multipart_payload_uses_pydantic_request_validation(admin_client, sample):

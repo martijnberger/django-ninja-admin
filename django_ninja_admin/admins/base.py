@@ -589,11 +589,11 @@ class BaseAdmin:
             return False
 
     def pydantic_step_value(self, field, value):
-        if isinstance(field, forms.DecimalField):
+        if isinstance(field, (forms.DecimalField, models.DecimalField)):
             return Decimal(str(value))
-        if isinstance(field, forms.IntegerField):
+        if isinstance(field, (forms.IntegerField, models.IntegerField)):
             return int(value)
-        if isinstance(field, forms.FloatField):
+        if isinstance(field, (forms.FloatField, models.FloatField)):
             return float(value)
         return value
 
@@ -907,6 +907,8 @@ class BaseAdmin:
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif self.get_pydantic_string_validator_constraints_for_model_field(field):
                 custom_fields.append(self._model_field_output_custom_field(field))
+            elif self.get_pydantic_step_constraint_for_model_field(field):
+                custom_fields.append(self._model_field_output_custom_field(field))
             elif self.get_pydantic_numeric_bounds_for_model_field(field):
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif field.blank and not field.null:
@@ -964,6 +966,7 @@ class BaseAdmin:
             if getattr(field, "decimal_places", None) is not None:
                 constraints["decimal_places"] = field.decimal_places
         constraints.update(self.get_pydantic_numeric_bounds_for_model_field(field))
+        constraints.update(self.get_pydantic_step_constraint_for_model_field(field))
         return constraints
 
     def get_pydantic_numeric_bounds_for_model_field(self, field):
@@ -980,6 +983,18 @@ class BaseAdmin:
             elif isinstance(validator, MaxValueValidator):
                 bounds["le"] = limit_value
         return bounds
+
+    def get_pydantic_step_constraint_for_model_field(self, field):
+        step_validator = self.get_step_value_validator(field)
+        if step_validator is None or not self.step_validator_has_zero_offset(step_validator):
+            return {}
+        limit_value = getattr(step_validator, "limit_value", None)
+        if callable(limit_value):
+            try:
+                limit_value = limit_value()
+            except Exception:
+                return {}
+        return {"multiple_of": self.pydantic_step_value(field, limit_value)}
 
     def get_pydantic_string_validator_constraints_for_model_field(self, field):
         constraints = {}
