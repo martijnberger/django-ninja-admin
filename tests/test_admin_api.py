@@ -2135,6 +2135,14 @@ def test_changelist_direct_lookup_params_prepare_in_and_isnull_values(admin_clie
     assert in_lookup.status_code == 200
     assert in_lookup.json()["config"]["result_count"] == 2
 
+    repeated_in_lookup = admin_client.get(f"/admin-api/testapp/product?id__in={sample.pk}&id__in={beta.pk}")
+    assert repeated_in_lookup.status_code == 200
+    assert repeated_in_lookup.json()["config"]["result_count"] == 2
+
+    mixed_in_lookup = admin_client.get(f"/admin-api/testapp/product?id__in={sample.pk}&id__in={beta.pk},999999")
+    assert mixed_in_lookup.status_code == 200
+    assert mixed_in_lookup.json()["config"]["result_count"] == 2
+
     non_null = admin_client.get("/admin-api/testapp/product?condition__isnull=0")
     assert non_null.status_code == 200
     assert non_null.json()["config"]["result_count"] == 1

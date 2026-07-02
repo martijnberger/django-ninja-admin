@@ -222,8 +222,9 @@ Completed or mostly complete:
 - Related list filters now hide when they have only one non-empty choice, still apply hidden-filter query params, and expose their real lookup keys, matching Django admin's output threshold.
 - Related list filters now expose many-to-many empty-relation choices and related-only filters preserve related-admin ordering while limiting choices to used relations.
 - Empty-value list filters now validate `__isempty` values and return typed lookup errors for invalid input.
-- Direct changelist lookup params now normalize comma-separated `__in` values
-  and strict `__isnull` booleans before applying remaining ORM filters.
+- Direct changelist lookup params now normalize comma-separated and repeated
+  `__in` values plus strict `__isnull` booleans before applying remaining ORM
+  filters.
 - Simple list filters now hide when `lookups()` returns no choices, matching Django admin.
 - Changelist facet handling now has mounted-route coverage for `ShowFacets.NEVER`, `ALLOW`, and `ALWAYS`.
 - Field-based `list_filter` tuple entries now validate as two-item `(field, FieldListFilter)` declarations at check and runtime boundaries.
@@ -320,7 +321,7 @@ Completed or mostly complete:
 
 Known non-parity areas:
 
-- Changelist behavior now supports `_to_field` validation/row identity, custom paginator hooks, default ordering metadata including visible custom queryset `order_by()` columns, deterministic primary-key fallback ordering, last-page pagination, row/result indexes, page-result/range metadata, page-choice metadata, presence-style show-all handling, pagination/show-all query strings, search/filter-state clear metadata, direct `__in`/`__isnull` lookup value preparation, facet toggle links, bounded date hierarchy filtering including maximum-year bounds, lowest-useful initial date hierarchy levels, and preservation of unrelated lookup params when resetting stale page/order links, but is still not fully equivalent to upstream `ChangeList`; remaining query-string edge cases, richer result rendering metadata, list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
+- Changelist behavior now supports `_to_field` validation/row identity, custom paginator hooks, default ordering metadata including visible custom queryset `order_by()` columns, deterministic primary-key fallback ordering, last-page pagination, row/result indexes, page-result/range metadata, page-choice metadata, presence-style show-all handling, pagination/show-all query strings, search/filter-state clear metadata, direct repeated/comma-separated `__in` and `__isnull` lookup value preparation, facet toggle links, bounded date hierarchy filtering including maximum-year bounds, lowest-useful initial date hierarchy levels, and preservation of unrelated lookup params when resetting stale page/order links, but is still not fully equivalent to upstream `ChangeList`; remaining query-string edge cases, richer result rendering metadata, list-editable formset parity, additional date hierarchy edge cases, and broader N+1 hardening still need work.
 - Filter handling now covers common Django admin filter families, bounded date filter ranges, and initial facets, but it still needs semantic comparison against Django/upstream edge cases and richer facet/count behavior.
 - System checks now cover common invalid configurations, many-to-many `list_display` mistakes, `list_display_links` item-type conflicts, `list_editable` item-type/form-layout conflicts, duplicate `list_editable`/`readonly_fields`, callable readonly field layout names, `list_select_related` mistakes, `date_hierarchy` type/path/field mistakes, autocomplete target registration/searchability, and relation/widget option conflicts, but they do not yet match Django's complete check coverage or IDs.
 - Action metadata and payload schemas now advertise action names, permission requirements, discriminated per-action input payload variants, and optional custom response schema unions.

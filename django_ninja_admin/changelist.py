@@ -176,7 +176,7 @@ class ChangeList:
         return "__".join(related_parts) if related_parts else None
 
     def apply_remaining_lookup_params(self, queryset, params, filter_specs):
-        for key, value in params.items():
+        for key, value in self.remaining_lookup_items(params):
             if key in self.expected_special_params(filter_specs) or value in ("", None):
                 continue
             if not self.model_admin.lookup_allowed(key, value, self.request):
@@ -187,7 +187,26 @@ class ChangeList:
                 raise self.lookup_value_error({key: value}, fallback_param=key) from exc
         return queryset
 
+    def remaining_lookup_items(self, params):
+        if not hasattr(params, "lists"):
+            yield from params.items()
+            return
+        for key, values in params.lists():
+            if key.endswith("__in"):
+                yield key, values
+            else:
+                yield key, values[-1] if values else None
+
     def prepare_lookup_value(self, key, value):
+        if isinstance(value, (list, tuple)):
+            values = []
+            for item in value:
+                prepared = self.prepare_lookup_value(key, item)
+                if key.endswith("__in") and isinstance(prepared, list):
+                    values.extend(prepared)
+                else:
+                    values.append(prepared)
+            return values
         if key.endswith("__in") and isinstance(value, str):
             return value.split(",")
         if key.endswith("__isnull"):
