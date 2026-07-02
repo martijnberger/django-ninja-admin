@@ -5055,11 +5055,36 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     assert inline["extra"] == 2
     assert inline["min_num"] == 1
     assert inline["max_num"] == 5
+    assert inline["formset_prefix"] == "images"
+    assert inline["total_form_count"] == 3
+    assert inline["initial_form_count"] == 1
+    management_fields = {field["name"]: field for field in inline["management_form"]}
+    assert management_fields["TOTAL_FORMS"]["attrs"]["html_name"] == "images-TOTAL_FORMS"
+    assert management_fields["TOTAL_FORMS"]["attrs"]["value"] == 3
+    assert management_fields["INITIAL_FORMS"]["attrs"]["html_name"] == "images-INITIAL_FORMS"
+    assert management_fields["INITIAL_FORMS"]["attrs"]["value"] == 1
+    assert management_fields["MIN_NUM_FORMS"]["attrs"]["value"] == 1
+    assert management_fields["MAX_NUM_FORMS"]["attrs"]["value"] == 5
+    assert [row["prefix"] for row in inline["formset_row_metadata"]] == ["images-0", "images-1", "images-2"]
+    assert [row["is_initial"] for row in inline["formset_row_metadata"]] == [True, False, False]
+    assert inline["formset_row_metadata"][0]["object_id"] == str(ProductImage.objects.get(product=sample).pk)
     title_values = [
         next(field for field in row if field["name"] == "title")["attrs"].get("value")
         for row in inline["formset"]
     ]
     assert title_values == ["Front", None, None]
+    first_row_fields = {field["name"]: field for field in inline["formset"][0]}
+    assert first_row_fields["title"]["attrs"]["form_prefix"] == "images-0"
+    assert first_row_fields["title"]["attrs"]["html_name"] == "images-0-title"
+    assert first_row_fields["title"]["attrs"]["auto_id"] == "id_images-0-title"
+    assert first_row_fields["title"]["attrs"]["id_for_label"] == "id_images-0-title"
+    assert first_row_fields["id"]["attrs"]["html_name"] == "images-0-id"
+    assert first_row_fields["DELETE"]["attrs"]["html_name"] == "images-0-DELETE"
+    assert first_row_fields["product"]["attrs"]["html_name"] == "images-0-product"
+    assert inline["empty_form_prefix"] == "images-__prefix__"
+    empty_form_fields = {field["name"]: field for field in inline["empty_form"]}
+    assert empty_form_fields["title"]["attrs"]["html_name"] == "images-__prefix__-title"
+    assert empty_form_fields["title"]["attrs"]["auto_id"] == "id_images-__prefix__-title"
 
     add_response = admin_client.get("/admin-api/testapp/product/form")
 
@@ -5067,7 +5092,18 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     add_inline = next(item for item in add_response.json()["inlines"] if item["model"] == "testapp.productimage")
     assert add_inline["extra"] == 4
     assert add_inline["min_num"] == 1
+    assert add_inline["formset_prefix"] == "images"
+    assert add_inline["total_form_count"] == 5
+    assert add_inline["initial_form_count"] == 0
     assert len(add_inline["formset"]) == 5
+    assert [row["prefix"] for row in add_inline["formset_row_metadata"]] == [
+        "images-0",
+        "images-1",
+        "images-2",
+        "images-3",
+        "images-4",
+    ]
+    assert all(row["is_initial"] is False for row in add_inline["formset_row_metadata"])
 
 
 def test_form_description_rejects_invalid_dynamic_inline_count_hooks(admin_client, sample, monkeypatch):

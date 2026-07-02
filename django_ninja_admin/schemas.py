@@ -111,6 +111,14 @@ class FormDescription(Schema):
     autocomplete_fields: list[str] = []
 
 
+class InlineFormsetRowMetadata(Schema):
+    index: int
+    prefix: str
+    is_initial: bool
+    empty_permitted: bool
+    object_id: str | None = None
+
+
 class InlineDescription(Schema):
     model: str
     readonly_fields: list[str]
@@ -118,6 +126,13 @@ class InlineDescription(Schema):
     prepopulated: dict[str, Any]
     media: FormMediaDescription = Field(default_factory=FormMediaDescription)
     permissions: PermissionMap
+    formset_prefix: str | None = None
+    management_form: list[FieldDescription] = Field(default_factory=list)
+    total_form_count: int | None = None
+    initial_form_count: int | None = None
+    empty_form_prefix: str | None = None
+    empty_form: list[FieldDescription] = Field(default_factory=list)
+    formset_row_metadata: list[InlineFormsetRowMetadata] = Field(default_factory=list)
     extra: int = 3
     min_num: int | None = None
     max_num: int | None = None

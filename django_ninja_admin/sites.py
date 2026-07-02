@@ -60,7 +60,13 @@ from django_ninja_admin.schemas import (
 )
 from django_ninja_admin.utils.deletion import deletion_error_payload
 from django_ninja_admin.utils.format_error import format_error
-from django_ninja_admin.utils.forms import form_errors, form_media_description, formset_errors, model_data_for_form
+from django_ninja_admin.utils.forms import (
+    form_errors,
+    form_field_descriptions,
+    form_media_description,
+    formset_errors,
+    model_data_for_form,
+)
 from django_ninja_admin.utils.lookup import (
     display_metadata_for_field,
     field_name_for_display,
@@ -1296,6 +1302,15 @@ class NinjaAdminSite:
             count_options = inline.get_formset_count_options(request, obj)
             formset_class = inline.get_formset(request, obj, change=obj is not None, count_options=count_options)
             queryset = inline.model.objects.none()
+            if obj is not None:
+                fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
+                related_name = fk.remote_field.accessor_name
+                try:
+                    queryset = getattr(obj, related_name).all()
+                except AttributeError:
+                    queryset = inline.model.objects.none()
+            formset = formset_class(instance=obj, queryset=queryset)
+            initial_form_count = formset.initial_form_count()
             inline_desc = {
                 "model": f"{inline.model._meta.app_label}.{inline.model._meta.model_name}",
                 "readonly_fields": list(inline.get_readonly_fields(request, obj)),
@@ -1308,6 +1323,16 @@ class NinjaAdminSite:
                     "has_delete_permission": inline.has_delete_permission(request, obj),
                     "has_view_permission": inline.has_view_permission(request, obj),
                 },
+                "formset_prefix": formset.prefix,
+                "management_form": form_field_descriptions(
+                    formset.management_form.__class__,
+                    form=formset.management_form,
+                ),
+                "total_form_count": formset.total_form_count(),
+                "initial_form_count": initial_form_count,
+                "empty_form_prefix": formset.empty_form.prefix,
+                "empty_form": inline.get_form_fields_description(request, None, form=formset.empty_form),
+                "formset_row_metadata": [],
                 "extra": count_options["extra"],
                 "min_num": count_options["min_num"],
                 "max_num": count_options["max_num"],
@@ -1318,19 +1343,18 @@ class NinjaAdminSite:
                 "admin_style": inline.admin_style,
                 "formset": [],
             }
-            if obj is not None:
-                fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
-                related_name = fk.remote_field.accessor_name
-                try:
-                    queryset = getattr(obj, related_name).all()
-                    related_instances = list(queryset)
-                except AttributeError:
-                    related_instances = []
-                for instance in related_instances:
-                    inline_desc["formset"].append(inline.get_form_fields_description(request, instance))
-            formset = formset_class(instance=obj, queryset=queryset)
-            for _form in formset.extra_forms:
-                inline_desc["formset"].append(inline.get_form_fields_description(request, None))
+            for index, form in enumerate(formset.forms):
+                form_obj = form.instance if getattr(form.instance, "pk", None) else None
+                inline_desc["formset"].append(inline.get_form_fields_description(request, form_obj, form=form))
+                row_metadata = {
+                    "index": index,
+                    "prefix": form.prefix,
+                    "is_initial": index < initial_form_count,
+                    "empty_permitted": form.empty_permitted,
+                }
+                if form_obj is not None:
+                    row_metadata["object_id"] = str(form_obj.pk)
+                inline_desc["formset_row_metadata"].append(row_metadata)
             inlines.append(inline_desc)
         data["inlines"] = inlines
         return FormResponse.model_validate(data).model_dump(mode="json")

@@ -640,9 +640,11 @@ class BaseAdmin:
     def _schema_override_cache_key(self, overrides):
         return tuple((name, repr(value)) for name, value in overrides.items())
 
-    def get_form_fields_description(self, request, obj=None, *, initial=None):
+    def get_form_fields_description(self, request, obj=None, *, initial=None, form=None):
+        form_class = form.__class__ if form is not None else self.get_form_class(request, obj, change=obj is not None)
         descriptions = form_field_descriptions(
-            self.get_form_class(request, obj, change=obj is not None),
+            form_class,
+            form=form,
             readonly_fields=self.get_readonly_fields(request, obj),
             instance=obj,
             initial=initial,
@@ -662,9 +664,11 @@ class BaseAdmin:
             change=obj is not None,
         )
 
-    def get_changelist_form_fields_description(self, request, obj=None):
+    def get_changelist_form_fields_description(self, request, obj=None, *, form=None):
+        form_class = form.__class__ if form is not None else self.get_changelist_form_class(request)
         descriptions = form_field_descriptions(
-            self.get_changelist_form_class(request),
+            form_class,
+            form=form,
             instance=obj,
             model_admin=self,
             empty_value_display=self.get_empty_value_display(),

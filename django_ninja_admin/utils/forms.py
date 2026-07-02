@@ -5,6 +5,7 @@ from django.core.exceptions import FieldDoesNotExist
 from django.core.validators import FileExtensionValidator, StepValueValidator
 from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
+from django.utils.functional import Promise
 
 from django_ninja_admin.utils.format_error import format_error
 from django_ninja_admin.utils.lookup import (
@@ -94,6 +95,8 @@ def _choice_metadata(choices):
 
 
 def _jsonish_value(value):
+    if isinstance(value, Promise):
+        return str(value)
     if callable(value):
         return None
     if isinstance(value, Decimal):
@@ -137,7 +140,7 @@ def _relation_metadata(field):
         "multiple": isinstance(field, ModelMultipleChoiceField),
     }
     if isinstance(field, ModelChoiceField):
-        attrs["empty_label"] = field.empty_label
+        attrs["empty_label"] = _jsonish_value(field.empty_label)
     return attrs
 
 
@@ -423,6 +426,8 @@ def _bound_field_metadata(bound_field):
         "auto_id": bound_field.auto_id,
         "id_for_label": bound_field.id_for_label,
     }
+    if getattr(bound_field.form, "prefix", None):
+        attrs["form_prefix"] = bound_field.form.prefix
     css_classes = bound_field.css_classes()
     if css_classes:
         attrs["css_classes"] = css_classes
@@ -455,7 +460,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     widget = field.widget
     attrs = {
         "required": field.required,
-        "label": field.label or name.replace("_", " ").title(),
+        "label": str(field.label) if field.label else name.replace("_", " ").title(),
         "help_text": str(field.help_text or ""),
         "read_only": read_only,
         "disabled": getattr(field, "disabled", False),
@@ -532,6 +537,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
 def form_field_descriptions(
     form_class,
     *,
+    form=None,
     readonly_fields=(),
     instance=None,
     initial=None,
@@ -544,8 +550,11 @@ def form_field_descriptions(
     radio_fields=None,
     prepopulated_fields=None,
 ):
-    form = form_class(instance=instance, initial=initial)
-    model = getattr(getattr(form_class, "_meta", None), "model", None)
+    if form is None:
+        form = form_class(instance=instance, initial=initial)
+    model = getattr(getattr(form, "_meta", None), "model", None)
+    if model is None:
+        model = getattr(getattr(form_class, "_meta", None), "model", None)
     autocomplete_fields = set(autocomplete_fields or ())
     raw_id_fields = set(raw_id_fields or ())
     filter_horizontal = set(filter_horizontal or ())
@@ -589,6 +598,8 @@ def form_field_descriptions(
                 **_model_field_metadata(model_field),
                 **display_metadata,
             }
+            if getattr(form, "prefix", None):
+                readonly_attrs["form_prefix"] = form.prefix
             if instance is not None:
                 value = _readonly_value(readonly_field, instance, model_admin, model_field)
                 field_empty_value = display_metadata["empty_value_display"] or empty_value_display

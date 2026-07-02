@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added inline formset prefix, management-form, empty-form, and per-row
+  prefixed bound-field metadata to form descriptions.
+
 ## 0.1.18 - 2026-07-02
 
 - Exposed Django `BoundField` HTML names, generated IDs, label target IDs, and
