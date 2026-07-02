@@ -154,7 +154,7 @@ Completed or mostly complete:
   requested field and emitting row IDs/object links that use the alternate
   object field.
 - History listing now filters by caller-visible models and object-level view/change permissions before pagination and supports app/model/object/action filters plus client-controlled page/page-size pagination, typed bad-param handling, structured model identity, and object detail/form links on each viewable row.
-- Autocomplete now returns typed not-found responses for invalid pages, exposes richer pagination metadata, and has coverage for many-to-many source fields.
+- Autocomplete now returns typed not-found responses for invalid pages, exposes richer pagination metadata, and has coverage for many-to-many source fields and source-field `limit_choices_to` filtering.
 - View-on-site route coverage now includes callable hooks that return absolute or protocol-relative external URLs.
 - View-on-site now returns absolute URLs from the configured Site domain and falls back to the request host when that Site row is missing.
 - Change messages include field labels and inline add/change/delete entries for history/log consumers.

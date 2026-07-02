@@ -4,7 +4,7 @@ from ninja.security import APIKeyHeader
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite
 from django_ninja_admin.schemas import ErrorResponse
-from tests.testapp.models import Category, CategorySlugLink, Product
+from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product
 
 
 class ProductStatsResponse(Schema):
@@ -100,6 +100,11 @@ class EditableSlugCategoryAdmin(SearchableCategoryAdmin):
 
 
 class CategorySlugLinkAdmin(ModelAdmin):
+    list_display = ("name", "category")
+    autocomplete_fields = ("category",)
+
+
+class CategoryLimitedLinkAdmin(ModelAdmin):
     list_display = ("name", "category")
     autocomplete_fields = ("category",)
 
@@ -210,6 +215,7 @@ custom_site.register(Product, CustomProductAdmin)
 slug_autocomplete_site = NinjaAdminSite(name="slug_autocomplete_admin", include_auth=False)
 slug_autocomplete_site.register(Category, SearchableCategoryAdmin)
 slug_autocomplete_site.register(CategorySlugLink, CategorySlugLinkAdmin)
+slug_autocomplete_site.register(CategoryLimitedLink, CategoryLimitedLinkAdmin)
 
 slug_editable_site = NinjaAdminSite(name="slug_editable_admin", include_auth=False)
 slug_editable_site.register(Category, EditableSlugCategoryAdmin)

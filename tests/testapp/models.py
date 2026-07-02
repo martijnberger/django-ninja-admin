@@ -24,6 +24,19 @@ class CategorySlugLink(models.Model):
         return self.name
 
 
+class CategoryLimitedLink(models.Model):
+    name = models.CharField(max_length=100)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name="limited_links",
+        limit_choices_to={"slug__startswith": "public"},
+    )
+
+    def __str__(self):
+        return self.name
+
+
 class Tag(models.Model):
     name = models.CharField(max_length=100)
 

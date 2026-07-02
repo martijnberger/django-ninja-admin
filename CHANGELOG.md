@@ -67,6 +67,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   through OpenAPI operation IDs and advertised request examples.
 - Added `@display(ordering=...)` ordering hints to readonly form-field
   metadata and the `FieldDescription.attrs` OpenAPI example.
+- Added mounted autocomplete coverage for source-field `limit_choices_to`
+  constraints, including form metadata, OpenAPI relation schemas, selected
+  options, detail serialization, and filtered autocomplete results.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.

@@ -57,7 +57,15 @@ from django_ninja_admin.changelist import ChangeList
 from django_ninja_admin.exceptions import AlreadyRegistered, NotRegistered
 from django_ninja_admin.filters import build_filter_spec
 from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
-from tests.testapp.models import Category, CategorySlugLink, Product, ProductImage, ProductReview, Tag
+from tests.testapp.models import (
+    Category,
+    CategoryLimitedLink,
+    CategorySlugLink,
+    Product,
+    ProductImage,
+    ProductReview,
+    Tag,
+)
 
 
 @pytest.fixture
@@ -8046,6 +8054,90 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
 
     assert response.status_code == 200
     assert response.json()["results"] == [{"id": "cameras", "text": "Cameras"}]
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_autocomplete_applies_source_field_limit_choices_to(admin_client):
+    public = Category.objects.create(name="Public Cameras", slug="public-cameras")
+    Category.objects.create(name="Private Cameras", slug="private-cameras")
+    link = CategoryLimitedLink.objects.create(name="Limited", category=public)
+    source_model_name = CategoryLimitedLink._meta.model_name
+
+    add_form = admin_client.get("/slug-autocomplete-admin/testapp/categorylimitedlink/form")
+    assert add_form.status_code == 200
+    add_fields_by_name = {field["name"]: field for field in add_form.json()["form"]["fields"]}
+    category_attrs = add_fields_by_name["category"]["attrs"]
+    assert category_attrs["limit_choices_to"] == {"slug__startswith": "public"}
+    assert category_attrs["to_field_name"] == "id"
+    assert category_attrs["to_field_class"] == "BigAutoField"
+    assert category_attrs["to_field_internal_type"] == "BigAutoField"
+    assert category_attrs["to_field_attname"] == "id"
+    assert category_attrs["multiple"] is False
+    assert category_attrs["autocomplete"] == {
+        "app_label": "testapp",
+        "model_name": source_model_name,
+        "field_name": "category",
+        "related_model": "testapp.category",
+        "related_app_label": "testapp",
+        "related_model_name": "category",
+        "related_object_name": "Category",
+        "related_verbose_name": "category",
+        "related_verbose_name_plural": "categorys",
+        "to_field_name": "id",
+        "to_field_class": "BigAutoField",
+        "to_field_internal_type": "BigAutoField",
+        "to_field_attname": "id",
+        "multiple": False,
+        "url": "/slug-autocomplete-admin/autocomplete",
+        "query": {
+            "app_label": "testapp",
+            "model_name": source_model_name,
+            "field_name": "category",
+        },
+    }
+
+    change_form = admin_client.get(f"/slug-autocomplete-admin/testapp/categorylimitedlink/{link.pk}/form")
+    assert change_form.status_code == 200
+    change_fields_by_name = {field["name"]: field for field in change_form.json()["form"]["fields"]}
+    assert change_fields_by_name["category"]["attrs"]["value"] == public.pk
+    assert change_fields_by_name["category"]["attrs"]["selected_options"] == [
+        {"id": str(public.pk), "text": "Public Cameras"}
+    ]
+
+    openapi = admin_client.get("/slug-autocomplete-admin/openapi.json")
+    assert openapi.status_code == 200
+    schema = openapi.json()
+    components = schema["components"]["schemas"]
+    assert components["CategoryLimitedLinkAdminCreateData"]["properties"]["category"] == {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
+        "title": "Category",
+        "type": "integer",
+    }
+    assert components["CategoryLimitedLinkAdminOut"]["properties"]["category_id"] == {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
+        "title": "Category Id",
+        "type": "integer",
+    }
+
+    detail = admin_client.get(f"/slug-autocomplete-admin/testapp/categorylimitedlink/{link.pk}")
+    assert detail.status_code == 200
+    assert detail.json()["category_id"] == public.pk
+    assert detail.json()["category_label"] == "Public Cameras"
+
+    response = admin_client.get(
+        "/slug-autocomplete-admin/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": source_model_name,
+            "field_name": "category",
+            "term": "Cam",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"] == [{"id": str(public.pk), "text": "Public Cameras"}]
 
 
 @isolate_apps("tests.testapp")
