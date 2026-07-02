@@ -20,6 +20,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   validator constraints.
 - Tightened generated output schemas for email and URL model fields so response
   components preserve `format: email` and `format: uri` metadata.
+- Serialized binary model fields as deterministic base64 strings in JSON output
+  and advertised their `contentEncoding`/`contentMediaType` metadata in
+  generated response schemas.
 - Expanded the implementation plan's testing, validation, and verification
   section with concrete parity evidence rules, schema/OpenAPI contract gates,
   database/version matrix expectations, performance checks, and release

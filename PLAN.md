@@ -386,6 +386,9 @@ Completed or mostly complete:
   generated output schemas, including nullable positive integer fields.
 - Email and URL model fields now preserve OpenAPI `format` metadata in
   generated output schemas, including nullable URL fields.
+- Binary model fields now serialize as deterministic base64 strings in JSON
+  responses and advertise base64 content metadata in generated output schemas,
+  including nullable binary fields.
 - Blank-but-non-null model fields now have non-null typed output schemas for
   persisted admin response bodies.
 - Relation write schemas and OpenAPI examples now infer input types from the

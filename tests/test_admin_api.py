@@ -6708,6 +6708,48 @@ def test_email_and_url_model_fields_have_formatted_output_schemas(db):
     }
 
 
+@isolate_apps("tests.testapp")
+def test_binary_model_fields_serialize_as_base64_output_strings(db):
+    class BinaryAttachment(models.Model):
+        payload = models.BinaryField()
+        optional_payload = models.BinaryField(null=True, blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(BinaryAttachment)
+    model_admin = admin_site.get_model_admin(BinaryAttachment)
+
+    output_schema = model_admin.get_output_schema().model_json_schema()
+
+    assert output_schema["properties"]["payload"] == {
+        "contentEncoding": "base64",
+        "contentMediaType": "application/octet-stream",
+        "title": "Payload",
+        "type": "string",
+    }
+    assert output_schema["properties"]["optional_payload"] == {
+        "anyOf": [
+            {
+                "contentEncoding": "base64",
+                "contentMediaType": "application/octet-stream",
+                "type": "string",
+            },
+            {"type": "null"},
+        ],
+        "default": None,
+        "title": "Optional Payload",
+    }
+    assert model_admin.serialize_object(
+        BinaryAttachment(id=1, payload=b"\xff\x00", optional_payload=None)
+    ) == {
+        "id": 1,
+        "payload": "/wA=",
+        "optional_payload": None,
+    }
+
+
 def test_multipart_payload_uses_pydantic_request_validation(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/multipart",

@@ -1,4 +1,5 @@
 import copy
+from base64 import b64encode
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Annotated, Any, Literal, get_args, get_origin
@@ -72,6 +73,12 @@ def _parse_null_boolean_value(value):
     if value in ("unknown", ""):
         return None
     return value
+
+
+def _base64_binary_value(value):
+    if value is None:
+        return None
+    return b64encode(bytes(value)).decode("ascii")
 
 
 def _form_field_clean_validator(field):
@@ -885,6 +892,8 @@ class BaseAdmin:
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif isinstance(field, (models.EmailField, models.URLField)):
                 custom_fields.append(self._model_field_output_custom_field(field))
+            elif isinstance(field, models.BinaryField):
+                custom_fields.append(self._model_field_output_custom_field(field))
             elif self.get_pydantic_numeric_bounds_for_model_field(field):
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif field.blank and not field.null:
@@ -926,6 +935,11 @@ class BaseAdmin:
             constraints["json_schema_extra"] = {"format": "email"}
         elif isinstance(field, models.URLField):
             constraints["json_schema_extra"] = {"format": "uri"}
+        elif isinstance(field, models.BinaryField):
+            constraints["json_schema_extra"] = {
+                "contentEncoding": "base64",
+                "contentMediaType": "application/octet-stream",
+            }
         if isinstance(field, models.DecimalField):
             if getattr(field, "max_digits", None) is not None:
                 constraints["max_digits"] = field.max_digits
@@ -1002,6 +1016,8 @@ class BaseAdmin:
             return UUID
         if isinstance(field, models.JSONField):
             return Any
+        if isinstance(field, models.BinaryField):
+            return str
         registered_type = self.get_registered_pydantic_type_for_model_field(field)
         if registered_type is not None:
             return registered_type
@@ -1098,7 +1114,10 @@ class BaseAdmin:
                 data[field.name] = file_value_metadata(value)
                 continue
             field_key = field.attname if field.remote_field else field.name
-            data[field_key] = field.value_from_object(obj)
+            field_value = field.value_from_object(obj)
+            if isinstance(field, models.BinaryField):
+                field_value = _base64_binary_value(field_value)
+            data[field_key] = field_value
             if field.remote_field and value is not None:
                 data[f"{field.name}_label"] = str(value)
         for field in obj._meta.many_to_many:
