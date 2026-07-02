@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   display columns.
 - Filtered autocomplete results through object-level remote
   `has_view_permission(request, obj)` checks before pagination.
+- Filtered history rows for existing objects through object-level view/change
+  permissions before pagination.
 
 ## 0.1.20 - 2026-07-02
 

@@ -5744,6 +5744,51 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     assert bad_page_size.json()["errors"] == [{"message": "Invalid page size.", "param": "per_page"}]
 
 
+def test_history_filters_object_level_permissions(admin_client, sample, monkeypatch):
+    actor = get_user_model().objects.create_user("history-object-actor", password="pw", is_staff=True)
+    product_admin = site.get_model_admin(Product)
+    product_ct = ContentType.objects.get_for_model(Product, for_concrete_model=False)
+    hidden = Product.objects.create(name="Hidden history", category=sample.category, price="5.00")
+    visible_entry = LogEntry.objects.create(
+        user=actor,
+        content_type=product_ct,
+        object_id=str(sample.pk),
+        object_repr=str(sample),
+        action_flag=CHANGE,
+        change_message=json.dumps([{"changed": {"fields": ["Name"]}}]),
+    )
+    LogEntry.objects.create(
+        user=actor,
+        content_type=product_ct,
+        object_id=str(hidden.pk),
+        object_repr=str(hidden),
+        action_flag=CHANGE,
+        change_message=json.dumps([{"changed": {"fields": ["Name"]}}]),
+    )
+
+    def has_object_permission(request, obj=None):
+        return obj is None or obj.pk != hidden.pk
+
+    monkeypatch.setattr(product_admin, "has_view_permission", has_object_permission)
+    monkeypatch.setattr(product_admin, "has_change_permission", has_object_permission)
+
+    response = admin_client.get("/admin-api/history", {"app_label": "testapp", "model": "product"})
+
+    assert response.status_code == 200
+    assert response.json()["pagination"]["count"] == 1
+    assert [item["id"] for item in response.json()["results"]] == [visible_entry.pk]
+    assert response.json()["results"][0]["object_repr"] == "Alpha"
+
+    hidden_response = admin_client.get(
+        "/admin-api/history",
+        {"app_label": "testapp", "model": "product", "object_id": str(hidden.pk)},
+    )
+
+    assert hidden_response.status_code == 200
+    assert hidden_response.json()["pagination"]["count"] == 0
+    assert hidden_response.json()["results"] == []
+
+
 def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, sample):
     user = get_user_model().objects.create_user("widget-admin", password="pw", is_staff=True)
     user.user_permissions.set(Permission.objects.all())

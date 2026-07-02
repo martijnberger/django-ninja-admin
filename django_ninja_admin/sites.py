@@ -522,6 +522,20 @@ class NinjaAdminSite:
         object_url = f"{admin_base_path}/{opts.app_label}/{opts.model_name}/{quote(item.object_id)}"
         return {"detail_url": object_url, "change_form_url": f"{object_url}/form"}
 
+    def _history_item_is_visible(self, request, item):
+        content_type = item.content_type
+        model_class = content_type.model_class() if content_type is not None else None
+        if model_class is None or not item.object_id:
+            return True
+        try:
+            model_admin = self.get_model_admin(model_class)
+            obj = model_admin.get_object(request, item.object_id)
+        except (LookupError, NotRegistered, ValidationError, ValueError):
+            return True
+        if obj is None:
+            return True
+        return model_admin.has_view_permission(request, obj) or model_admin.has_change_permission(request, obj)
+
     def _register_site_routes(self, router):
         site = self
         auth_errors = site._auth_error_responses()
@@ -610,6 +624,7 @@ class NinjaAdminSite:
                 qs = qs.filter(object_id=object_id)
             if action_flag is not None:
                 qs = qs.filter(action_flag=action_flag)
+            qs = [item for item in qs if site._history_item_is_visible(request, item)]
             paginator = site.paginator(qs, per_page)
             try:
                 page_obj = paginator.page(page)
