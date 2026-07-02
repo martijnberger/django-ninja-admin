@@ -683,6 +683,63 @@ catch admin edge cases before client projects discover them.
   semantics: object-level permission denial, malformed lookup input,
   unsupported `_to_field`, stale inline IDs, duplicate bulk rows, multipart
   parse failures, protected deletes, and rollback after late validation.
+- Bias toward proving the same contract from multiple angles when the behavior
+  is generated or lazy: direct helper tests for inference, mounted-route tests
+  for integration, OpenAPI tests for clients, and installed-wheel smoke tests
+  for packaging.
+- Test the negative space deliberately. A strong v2 contract should prove that
+  unknown fields, over-posted inline aliases, forbidden actions, invalid
+  relation targets, stale objects, and denied permissions fail before partial
+  state leaks into the database.
+- Keep verification executable. Whenever the plan says "review", prefer a
+  named `just` recipe, pytest marker, script, generated artifact, or checklist
+  item that can be re-run by another maintainer.
+
+### Verification Lanes
+
+Use several complementary verification lanes instead of treating the full test
+suite as the only source of confidence.
+
+- Implementation lane: focused unit, schema, route, and mutation tests added in
+  the same slice as the code change. This lane should be fast enough to run
+  repeatedly while developing.
+- Contract lane: OpenAPI component/route assertions, semantic OpenAPI diffs,
+  generated examples, generated-client smoke, stable operation IDs, and typed
+  error-shape checks.
+- Parity lane: `docs/parity-matrix.md`, upstream-equivalent fixture scenarios,
+  behavior comparisons, and explicit notes for intentional v2 differences.
+- Installation lane: wheel build, isolated install, dependency metadata checks,
+  migrations, app loading, public imports, `/admin-api/docs`, and
+  `/admin-api/openapi.json`.
+- Environment lane: SQLite by default, PostgreSQL for ORM-sensitive behavior,
+  and supported Django/Python matrix coverage before beta/stable claims.
+- Exploratory lane: manual sample-project walkthroughs and API-client trials
+  that discover gaps, followed by automated regression tests before any parity
+  status is upgraded.
+- Performance lane: query-count and large-result guardrails for changelist,
+  filters, facets, autocomplete, history, inline form descriptions, and bulk
+  actions.
+
+### Evidence Levels
+
+Not every feature needs the same proof immediately, but each status should mean
+something concrete.
+
+- Prototype evidence: direct helper or schema tests prove the local behavior,
+  but mounted-route, OpenAPI, package, or parity evidence is still missing.
+  These rows remain `partial`.
+- Route evidence: mounted Ninja tests cover auth, parsing, serialization,
+  transactions, and exception handling for the behavior. This is the minimum
+  bar for most user-facing endpoint claims.
+- Contract evidence: OpenAPI/schema assertions prove the advertised contract
+  matches the runtime behavior. This is required before client-visible schema
+  changes are considered release-ready.
+- Parity evidence: upstream-equivalent fixture behavior is covered or an
+  intentional v2 difference is documented. This is required before claiming
+  full parity for a row.
+- Release evidence: the feature survives package smoke, sample-project smoke,
+  and the relevant CI/database gates from an installed artifact. This is
+  required before beta/stable release claims.
 
 ### Coverage Sources
 
@@ -980,6 +1037,42 @@ extensions tested explicitly where we diverge.
   duplicate IDs, unexpected action payload keys, and unexpected query params
   where the admin contract promises strictness.
 
+### Validation Scenario Matrix
+
+Build and maintain a small matrix of validation scenarios so new features are
+checked consistently across layers.
+
+- Parent writes: create, replace, partial update, custom `form_class`,
+  disabled fields, readonly fields, unknown fields, uniqueness, model
+  validation, save hooks, response hooks, and rollback after late failures.
+- Inline writes: add/change/delete in one payload, duplicate IDs, stale IDs,
+  unknown inline aliases, unknown row fields, readonly fields, dynamic
+  `get_extra()` / `get_min_num()` / `get_max_num()` hooks, custom formsets,
+  permission denial, and parent rollback.
+- Bulk list-editable writes: filtered queryset constraints, `_to_field` row
+  identity, unchanged rows, duplicate row IDs, unknown row IDs, strict row
+  schemas, hook order, log-entry creation, and rollback after aggregate
+  validation errors.
+- Actions: missing selections, invalid action names, hidden actions, custom
+  action permissions, object-level permissions, `select_across`, filtered
+  querysets, custom Pydantic action input, custom action responses, default
+  delete action, protected deletes, and all-or-nothing side effects.
+- Reads: detail serialization, changelist serialization, relation labels,
+  many-to-many IDs, computed fields, `display()` metadata, file/image metadata,
+  custom `output_schema`, and object-level view/change filtering.
+- Queries: search, ordering, filters, facets, date hierarchy, pagination,
+  preserved query strings, invalid lookup names, invalid lookup values,
+  unsupported `_to_field`, and suspicious lookup rejection.
+- Site routes: apps, app detail, context, permissions, history,
+  autocomplete, view-on-site, custom routes, auth overrides, explicit
+  `auth=None`, and multi-auth.
+- Error paths: 400 request contract errors, 401 auth failures, 403 permission
+  failures, 404 missing objects, 409 protected deletes/conflicts, 422
+  Pydantic validation errors, and normalized unexpected errors.
+- Multipart paths: file upload, image upload, required file fields, malformed
+  JSON form parts, clearable file/image values, storage URL failures, image
+  dimension persistence, and OpenAPI multipart request bodies.
+
 ### OpenAPI And Contract Verification
 
 - Add semantic OpenAPI tests for every built-in route group: site routes,
@@ -1018,6 +1111,27 @@ extensions tested explicitly where we diverge.
   OpenAPI document instead of hard-coding route URLs. This catches accidental
   operation-ID churn and proves advertised examples are useful to consumers.
 
+### Verification Artifacts
+
+Keep lightweight artifacts for important verification passes so releases can be
+audited without re-discovering context.
+
+- Store or attach normalized OpenAPI documents for release candidates and
+  intermediate releases that intentionally change the public contract.
+- Store semantic OpenAPI diff summaries with expected changes annotated by
+  route/component/status code/example.
+- Store parity reports for release candidates, including counts by status,
+  rows lacking evidence, and the list of remaining `partial` rows.
+- Store package-smoke and sample-project smoke logs for release candidates,
+  especially the wheel path, installed version, Django version, Python version,
+  and exercised routes.
+- Store PostgreSQL/database gate summaries when they are run, including the
+  database backend, Django version, and any skipped environment-sensitive tests.
+- Keep manual walkthrough notes short and structured: scenario, expected
+  behavior, observed behavior, follow-up test added or gap recorded.
+- For any intentional v2 contract difference, keep the before/after behavior,
+  rationale, and test coverage in the parity matrix or release notes.
+
 ### Gate Profiles
 
 Use named gate profiles so local development stays fast while release evidence
@@ -1038,6 +1152,50 @@ keeps getting stronger.
   installed-wheel sample-project verification from the candidate artifact.
 - Exploratory gate: manual sample-project walkthrough plus notes converted
   into tests before a parity claim is upgraded.
+
+### Maturity Gates
+
+Use release maturity labels to make the verification bar explicit.
+
+- Alpha/intermediate releases may ship with `partial` parity rows, but must run
+  `just check`, `just parity-report`, package smoke, and sample-project smoke
+  locally or in CI. Release notes should state that parity remains incomplete.
+- Late-alpha releases should add `just sample-project-full`,
+  `just generated-client-smoke`, and a reviewed OpenAPI diff for any public
+  contract changes since the previous release.
+- Beta candidates require no `missing` parity rows, no `implemented` rows
+  lacking evidence, reviewed remaining `partial` rows, generated-client smoke,
+  expanded sample-project verification, and PostgreSQL coverage for
+  ORM-sensitive features.
+- Stable candidates require every parity row to be `implemented` or
+  intentionally `changed`, with evidence; reviewed OpenAPI diffs; passing CI
+  matrix for supported Django/Python versions; installed-wheel sample-project
+  verification; PostgreSQL verification; and no known DRF/drf-spectacular
+  import/dependency regression.
+- Emergency patch releases may run a narrower gate only when the fix is
+  clearly scoped and the skipped gates are recorded in the release notes with a
+  follow-up verification task.
+
+### CI And Automation Plan
+
+- Keep the default pull-request gate close to `just check` so contributors get
+  fast feedback: lint, full SQLite tests, package smoke, and sample-project
+  smoke.
+- Add a contract job that runs semantic OpenAPI diff validation against the
+  previous reviewed artifact when contract fixtures are present.
+- Add an installed-wheel job that builds once, installs that wheel into clean
+  sample projects, and runs docs/OpenAPI/sample workflows from the artifact.
+- Add a PostgreSQL job for ORM-sensitive tests and run it on release branches,
+  nightly, and before beta/stable candidates.
+- Add a generated-client job before beta so a schema consumer exercises route
+  discovery, operation IDs, request bodies, response maps, and examples.
+- Add a parity-report job that fails only on objective release-blocking
+  conditions for the current maturity level: missing evidence for
+  `implemented` rows, unexpected `missing` rows for beta, or unresolved
+  non-intentional gaps for stable.
+- Add artifact upload for OpenAPI JSON, OpenAPI diff summaries, parity reports,
+  package-smoke logs, sample-project logs, and PostgreSQL summaries on release
+  candidate runs.
 
 ### Database, Version, And Environment Matrix
 
