@@ -391,6 +391,9 @@ Completed or mostly complete:
   including nullable binary fields.
 - Model-field regex validators, including `SlugField` patterns, now propagate
   to generated output schemas and relation target schemas.
+- Model-field string length validators now propagate to generated output
+  schemas and relation target schemas, including stricter `MaxLengthValidator`
+  limits and explicit `MinLengthValidator` limits.
 - Blank-but-non-null model fields now have non-null typed output schemas for
   persisted admin response bodies.
 - Relation write schemas and OpenAPI examples now infer input types from the

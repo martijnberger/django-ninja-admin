@@ -15,7 +15,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import Storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.paginator import Paginator
-from django.core.validators import RegexValidator
+from django.core.validators import MaxLengthValidator, MinLengthValidator, RegexValidator
 from django.db import connection, models
 from django.forms.models import BaseInlineFormSet
 from django.http import QueryDict
@@ -6790,6 +6790,75 @@ def test_regex_validated_model_fields_have_pattern_output_schemas(db):
         "slug": "stock-1",
         "sku": "SKU-100",
         "optional_slug": None,
+    }
+
+
+@isolate_apps("tests.testapp")
+def test_string_length_model_validators_drive_output_and_relation_schemas(db):
+    class LengthCode(models.Model):
+        code = models.CharField(
+            max_length=20,
+            primary_key=True,
+            validators=[MinLengthValidator(4), MaxLengthValidator(12)],
+        )
+        optional_code = models.CharField(
+            max_length=20,
+            validators=[MinLengthValidator(3)],
+            null=True,
+            blank=True,
+        )
+
+        class Meta:
+            app_label = "testapp"
+
+    class LengthCodeLink(models.Model):
+        code = models.ForeignKey(LengthCode, to_field="code", on_delete=models.CASCADE)
+        codes = models.ManyToManyField(LengthCode, related_name="code_links", blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(LengthCode)
+    admin_site.register(LengthCodeLink)
+    code_admin = admin_site.get_model_admin(LengthCode)
+    link_admin = admin_site.get_model_admin(LengthCodeLink)
+
+    code_output_schema = code_admin.get_output_schema().model_json_schema()
+    link_output_schema = link_admin.get_output_schema().model_json_schema()
+    link_write_schema = link_admin.get_write_schema(None).model_json_schema()
+
+    assert code_output_schema["properties"]["code"] == {
+        "maxLength": 12,
+        "minLength": 4,
+        "title": "Code",
+        "type": "string",
+    }
+    assert code_output_schema["properties"]["optional_code"] == {
+        "anyOf": [{"maxLength": 20, "minLength": 3, "type": "string"}, {"type": "null"}],
+        "default": None,
+        "title": "Optional Code",
+    }
+    assert link_write_schema["properties"]["code"] == {
+        "maxLength": 12,
+        "minLength": 4,
+        "title": "Code",
+        "type": "string",
+    }
+    assert link_output_schema["properties"]["code_id"] == {
+        "maxLength": 12,
+        "minLength": 4,
+        "title": "Code Id",
+        "type": "string",
+    }
+    assert link_output_schema["properties"]["codes"]["items"] == {
+        "maxLength": 12,
+        "minLength": 4,
+        "type": "string",
+    }
+    assert code_admin.serialize_object(LengthCode(code="ABCD", optional_code=None)) == {
+        "code": "ABCD",
+        "optional_code": None,
     }
 
 

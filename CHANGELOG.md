@@ -25,6 +25,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   generated response schemas.
 - Propagated model-field regex validators, including `SlugField` patterns, into
   generated output schemas and relation target schemas.
+- Propagated model-field string length validators into generated output schemas
+  and relation target schemas, including stricter `MaxLengthValidator` limits
+  and explicit `MinLengthValidator` limits.
 - Expanded the implementation plan's testing, validation, and verification
   section with concrete parity evidence rules, schema/OpenAPI contract gates,
   database/version matrix expectations, performance checks, and release

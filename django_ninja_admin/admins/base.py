@@ -10,7 +10,9 @@ from django.contrib.auth import get_permission_codename
 from django.core.exceptions import FieldDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import (
+    MaxLengthValidator,
     MaxValueValidator,
+    MinLengthValidator,
     MinValueValidator,
     RegexValidator,
     StepValueValidator,
@@ -903,6 +905,8 @@ class BaseAdmin:
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif self.get_pydantic_pattern_for_model_field(field):
                 custom_fields.append(self._model_field_output_custom_field(field))
+            elif self.get_pydantic_string_validator_constraints_for_model_field(field):
+                custom_fields.append(self._model_field_output_custom_field(field))
             elif self.get_pydantic_numeric_bounds_for_model_field(field):
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif field.blank and not field.null:
@@ -941,6 +945,7 @@ class BaseAdmin:
         if field_type is str:
             if getattr(field, "max_length", None) is not None:
                 constraints["max_length"] = field.max_length
+            constraints.update(self.get_pydantic_string_validator_constraints_for_model_field(field))
             pattern = self.get_pydantic_pattern_for_model_field(field)
             if pattern:
                 constraints["pattern"] = pattern
@@ -975,6 +980,24 @@ class BaseAdmin:
             elif isinstance(validator, MaxValueValidator):
                 bounds["le"] = limit_value
         return bounds
+
+    def get_pydantic_string_validator_constraints_for_model_field(self, field):
+        constraints = {}
+        field_max_length = getattr(field, "max_length", None)
+        for validator in getattr(field, "validators", ()):
+            limit_value = getattr(validator, "limit_value", None)
+            if callable(limit_value):
+                try:
+                    limit_value = limit_value()
+                except Exception:
+                    continue
+            if isinstance(validator, MinLengthValidator):
+                constraints["min_length"] = max(constraints.get("min_length", limit_value), limit_value)
+            elif isinstance(validator, MaxLengthValidator) and (
+                field_max_length is None or limit_value < field_max_length
+            ):
+                constraints["max_length"] = min(constraints.get("max_length", limit_value), limit_value)
+        return constraints
 
     def get_pydantic_pattern_for_model_field(self, field):
         for validator in getattr(field, "validators", ()):
