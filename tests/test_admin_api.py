@@ -231,10 +231,15 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert set_status_payload["properties"]["action"]["const"] == "set_stock_status"
     assert set_status_payload["properties"]["data"] == {"$ref": "#/components/schemas/StockStatusActionData"}
     assert set(set_status_payload["required"]) == {"action", "data"}
-    action_response_schema = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["responses"]["200"][
-        "content"
-    ]["application/json"]["schema"]
+    action_responses = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["responses"]
+    action_response_schema = action_responses["200"]["content"]["application/json"]["schema"]
     assert {"$ref": "#/components/schemas/StockStatusActionResult"} in action_response_schema["anyOf"]
+    assert action_responses["202"]["content"]["application/json"]["schema"] == {
+        "additionalProperties": True,
+        "title": "Response",
+        "type": "object",
+    }
+    assert "content" not in action_responses["204"]
     action_example = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["requestBody"]["content"][
         "application/json"
     ]["examples"]["action"]["value"]
@@ -6884,6 +6889,26 @@ def test_actions_support_custom_return_values_empty_selection_and_select_across(
     )
     assert select_across.status_code == 200
     assert select_across.json() == {"names": ["Beta"]}
+
+
+def test_actions_can_return_custom_status(admin_client, sample, monkeypatch):
+    from tests.testapp.admin import ProductAdmin
+
+    @action(description="Report names", permissions=["view"])
+    def status_report_names(self, request, queryset):
+        names = list(queryset.order_by("name").values_list("name", flat=True))
+        return Status(202, {"hook": "action", "names": names})
+
+    monkeypatch.setattr(ProductAdmin, "report_names", status_report_names)
+
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "report_names", "selected_ids": [sample.pk]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 202
+    assert response.json() == {"hook": "action", "names": ["Alpha"]}
 
 
 def test_actions_reject_invalid_selected_ids(admin_client, sample):

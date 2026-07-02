@@ -21,6 +21,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   source verbose names, and related-model identity.
 - Added a concrete OpenAPI example for `FieldDescription.attrs` showing
   bound-field, rendered-attr, and rendered-subwidget metadata.
+- Advertised common custom action `Status` success responses in OpenAPI and
+  covered `202` action returns.
 
 ## 0.1.19 - 2026-07-02
 

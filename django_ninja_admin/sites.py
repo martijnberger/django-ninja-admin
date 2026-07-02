@@ -774,6 +774,16 @@ class NinjaAdminSite:
         bulk_response_schema = model_admin.get_bulk_response_schema(None)
         action_payload_schema = model_admin.get_action_payload_schema(None)
         action_response_schema = model_admin.get_action_response_schema(None)
+        action_response = {
+            200: action_response_schema,
+            202: dict[str, Any],
+            204: None,
+            **auth_errors,
+            400: ErrorResponse,
+            403: ErrorResponse,
+            409: ErrorResponse,
+            422: ErrorResponse,
+        }
         create_file_fields = site._file_form_field_names(model_admin, change=False)
         create_required_file_fields = site._required_file_form_field_names(model_admin, change=False)
         change_file_fields = site._file_form_field_names(model_admin, change=True)
@@ -863,14 +873,7 @@ class NinjaAdminSite:
 
         @router.post(
             f"{prefix}/actions",
-            response={
-                200: action_response_schema,
-                **auth_errors,
-                400: ErrorResponse,
-                403: ErrorResponse,
-                409: ErrorResponse,
-                422: ErrorResponse,
-            },
+            response=action_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_action",
             openapi_extra=site._json_request_examples_extra(
