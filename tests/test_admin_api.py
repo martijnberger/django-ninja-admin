@@ -6610,6 +6610,41 @@ def test_schema_field_overrides_are_included_and_serialize_admin_methods(sample)
     assert model_admin.serialize_object(sample)["custom_note"] == "Alpha:in_stock"
 
 
+def test_admin_checks_validate_schema_field_overrides(db):
+    class ValidSchemaOverrideProductAdmin(ModelAdmin):
+        schema_field_overrides = {"custom_note": (str, None), "score": (int,)}
+
+    class BadMappingSchemaOverrideProductAdmin(ModelAdmin):
+        schema_field_overrides = [("custom_note", str)]
+
+    class BadKeySchemaOverrideProductAdmin(ModelAdmin):
+        schema_field_overrides = {123: str}
+
+    class BadTupleSchemaOverrideProductAdmin(ModelAdmin):
+        schema_field_overrides = {"custom_note": (str, None, "extra")}
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidSchemaOverrideProductAdmin)
+    bad_mapping_site = NinjaAdminSite(include_auth=False)
+    bad_mapping_site.register(Product, BadMappingSchemaOverrideProductAdmin)
+    bad_key_site = NinjaAdminSite(include_auth=False)
+    bad_key_site.register(Product, BadKeySchemaOverrideProductAdmin)
+    bad_tuple_site = NinjaAdminSite(include_auth=False)
+    bad_tuple_site.register(Product, BadTupleSchemaOverrideProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_mapping_ids = {error.id for error in bad_mapping_site.get_model_admin(Product).check()}
+    bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
+    bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint(
+        {"django_ninja_admin.E098", "django_ninja_admin.E099", "django_ninja_admin.E100"}
+    )
+    assert bad_mapping_ids == {"django_ninja_admin.E098"}
+    assert bad_key_ids == {"django_ninja_admin.E099"}
+    assert bad_tuple_ids == {"django_ninja_admin.E100"}
+
+
 def test_model_actions_require_model_access(staff_client, sample):
     client = staff_client()
     response = client.post(
