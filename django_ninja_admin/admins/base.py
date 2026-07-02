@@ -46,6 +46,12 @@ def _validate_email_value(value):
     return value
 
 
+def _strip_string_value(value):
+    if isinstance(value, str):
+        return value.strip()
+    return value
+
+
 def _form_field_clean_validator(field):
     def validate(value):
         try:
@@ -307,6 +313,8 @@ class BaseAdmin:
         metadata = []
         if constraints:
             metadata.append(Field(**constraints))
+        if getattr(field, "strip", False):
+            metadata.append(BeforeValidator(_strip_string_value))
         if self.should_clean_with_pydantic(field):
             metadata.append(AfterValidator(_form_field_clean_validator(field)))
         if metadata:

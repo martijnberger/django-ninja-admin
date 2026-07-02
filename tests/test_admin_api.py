@@ -3223,7 +3223,17 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             decimal_places=2,
         )
         stepped_price = forms.DecimalField(required=False, step_size=Decimal("0.25"), max_digits=4, decimal_places=2)
-        product_code = forms.RegexField(required=False, regex=r"^[A-Z]{3}$", min_length=3, max_length=3)
+        product_code = forms.CharField(
+            required=False,
+            min_length=3,
+            max_length=3,
+            validators=[RegexValidator(r"^[A-Z]{3}$")],
+        )
+        unstripped_code = forms.CharField(
+            required=False,
+            validators=[RegexValidator(r"^[A-Z]{3}$")],
+            strip=False,
+        )
         sku = forms.CharField(required=False, validators=[RegexValidator(r"^SKU-[0-9]+$")])
         slug = forms.SlugField(required=False)
 
@@ -3262,7 +3272,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             "offset_count": 3,
             "bounded_price": "4.50",
             "stepped_price": "1.25",
-            "product_code": "ABC",
+            "product_code": " ABC ",
+            "unstripped_code": "XYZ",
             "sku": "SKU-123",
             "slug": "camera-case",
         }
@@ -3292,6 +3303,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert validated.bounded_price == Decimal("4.50")
     assert validated.stepped_price == Decimal("1.25")
     assert validated.product_code == "ABC"
+    assert validated.unstripped_code == "XYZ"
     assert validated.sku == "SKU-123"
     assert validated.slug == "camera-case"
 
@@ -3320,8 +3332,37 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert json_schema["bounded_price"]["anyOf"][1]["pattern"]
     assert json_schema["stepped_price"]["anyOf"][0]["multipleOf"] == 0.25
     assert json_schema["product_code"]["anyOf"][0]["pattern"] == "^[A-Z]{3}$"
+    assert json_schema["unstripped_code"]["anyOf"][0]["pattern"] == "^[A-Z]{3}$"
     assert json_schema["sku"]["anyOf"][0]["pattern"] == "^SKU-[0-9]+$"
     assert json_schema["slug"]["anyOf"][0]["pattern"].endswith(r"\z")
+
+    fields_by_name = {
+        field["name"]: field
+        for field in model_admin.get_form_fields_description(RequestFactory().get("/"))
+    }
+    assert fields_by_name["product_code"]["attrs"]["strip"] is True
+    assert fields_by_name["unstripped_code"]["attrs"]["strip"] is False
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "metadata": {},
+                "tracking_id": tracking_id,
+                "host": "2001:db8::1",
+                "duration": "1 02:03:04",
+                "bounded_name": "Camera",
+                "bounded_count": 3,
+                "bounded_price": "4.50",
+                "product_code": "ABC",
+                "unstripped_code": " XYZ ",
+                "sku": "SKU-123",
+                "slug": "camera-case",
+            }
+        )
 
     with pytest.raises(PydanticValidationError):
         schema.model_validate(

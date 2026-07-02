@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Applied Django-style `CharField.strip` handling in generated Pydantic request
+  schemas before constraints run and exposed `strip` in form descriptions.
 - Forbid unknown parent `data` fields in generated create/update Pydantic
   request schemas instead of letting Django forms ignore them.
 - Added admin system checks for malformed `schema_field_overrides` hook
