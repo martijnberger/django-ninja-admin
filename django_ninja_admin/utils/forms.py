@@ -93,10 +93,7 @@ def _choice_metadata(choices, *, coerce=None):
     for value, label in choices:
         if isinstance(label, (list, tuple)):
             flush_ungrouped()
-            options = [
-                _choice_option(child_value, child_label, coerce=coerce)
-                for child_value, child_label in label
-            ]
+            options = [_choice_option(child_value, child_label, coerce=coerce) for child_value, child_label in label]
             for option in options:
                 add_flat(option)
             choice_groups.append({"label": str(value), "options": options})
@@ -209,10 +206,7 @@ def form_media_description(form):
     media = form.media
     css = media._css
     return {
-        "css": {
-            medium: [_media_asset_path(media, asset) for asset in css[medium]]
-            for medium in sorted(css)
-        },
+        "css": {medium: [_media_asset_path(media, asset) for asset in css[medium]] for medium in sorted(css)},
         "js": [_media_asset_path(media, asset) for asset in media._js],
     }
 
@@ -404,10 +398,7 @@ def _select_date_metadata(name, field, current_value):
             "day": widget.day_field % name,
         },
         "years": [_jsonish_value(year) for year in widget.years],
-        "months": [
-            {"value": _jsonish_value(value), "label": str(label)}
-            for value, label in widget.months.items()
-        ],
+        "months": [{"value": _jsonish_value(value), "label": str(label)} for value, label in widget.months.items()],
         "days": list(range(1, 32)),
         "empty_choices": {
             "year": {"value": _jsonish_value(widget.year_none_value[0]), "label": str(widget.year_none_value[1])},
@@ -995,9 +986,7 @@ def _relation_target_field_metadata(model, to_field_name):
     metadata = {
         "to_field_class": field.__class__.__name__,
         "to_field_internal_type": (
-            field.get_internal_type()
-            if hasattr(field, "get_internal_type")
-            else field.__class__.__name__
+            field.get_internal_type() if hasattr(field, "get_internal_type") else field.__class__.__name__
         ),
     }
     if getattr(field, "attname", None):
@@ -1063,9 +1052,7 @@ def _prepopulated_source_metadata(source_model, field_name):
     if field is not None:
         metadata["label"] = str(field.verbose_name)
         metadata["internal_type"] = (
-            field.get_internal_type()
-            if hasattr(field, "get_internal_type")
-            else field.__class__.__name__
+            field.get_internal_type() if hasattr(field, "get_internal_type") else field.__class__.__name__
         )
     return metadata
 

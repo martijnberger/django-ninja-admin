@@ -18,4 +18,3 @@ def format_error(errors):
     else:
         formatted.append({"message": str(errors), "param": "non_field_errors"})
     return formatted
-

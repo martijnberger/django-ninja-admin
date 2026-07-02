@@ -659,9 +659,7 @@ class NinjaAdminSite:
         def login(request, payload: SessionLoginPayload):
             user = authenticate(request, username=payload.username, password=payload.password)
             if user is None:
-                raise AdminValidationError(
-                    [{"message": "Invalid username or password.", "param": "username"}]
-                )
+                raise AdminValidationError([{"message": "Invalid username or password.", "param": "username"}])
             request.user = user
             if not site.has_permission(request):
                 raise PermissionDenied
@@ -716,11 +714,7 @@ class NinjaAdminSite:
         )
         def permissions(request):
             user = request.user
-            model_permissions = [
-                model
-                for app in site.get_app_list(request)
-                for model in app["models"]
-            ]
+            model_permissions = [model for app in site.get_app_list(request) for model in app["models"]]
             return {
                 "is_authenticated": user.is_authenticated,
                 "is_active": user.is_active,
@@ -1365,8 +1359,7 @@ class NinjaAdminSite:
                 "attrs": {
                     "required": True,
                     "choices": [
-                        (item["action"], str(item["description"]))
-                        for item in model_admin.get_action_choices(request)
+                        (item["action"], str(item["description"])) for item in model_admin.get_action_choices(request)
                     ],
                 },
             },
@@ -1409,9 +1402,7 @@ class NinjaAdminSite:
                         "fields": editable_fields,
                     }
                 )
-        model_field_names = [
-            field for field in list_display if self._model_has_field(model_admin.model, field)
-        ]
+        model_field_names = [field for field in list_display if self._model_has_field(model_admin.model, field)]
         ordering_field_columns = {
             field_name_for_display(field): column for field, column in changelist.ordering_field_columns.items()
         }
@@ -1516,10 +1507,7 @@ class NinjaAdminSite:
                 continue
             current = request.GET.get(field_name)
             values = (
-                model_admin.get_queryset(request)
-                .order_by(field_name)
-                .values_list(field_name, flat=True)
-                .distinct()
+                model_admin.get_queryset(request).order_by(field_name).values_list(field_name, flat=True).distinct()
             )
             choices = []
             for value in values:
@@ -2235,8 +2223,7 @@ class NinjaAdminSite:
         if not formset.is_valid():
             raise AdminValidationError({inline_id: {"formset": formset_errors(formset)}})
         deleted_objects = [
-            {"id": existing_by_pk[pk].pk, "_object_repr": str(existing_by_pk[pk])}
-            for pk in delete_values
+            {"id": existing_by_pk[pk].pk, "_object_repr": str(existing_by_pk[pk])} for pk in delete_values
         ]
         formset.save()
         changed_objects = []

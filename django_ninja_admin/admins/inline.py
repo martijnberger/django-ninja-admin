@@ -82,9 +82,7 @@ class InlineModelAdmin(BaseAdmin):
         excluded_fields.update(self.get_readonly_fields(request, obj) or ())
         excluded_fields.add(fk.name)
         fields = [
-            field
-            for field in flatten_fieldsets(self.get_fieldsets(request, obj))
-            if field not in excluded_fields
+            field for field in flatten_fieldsets(self.get_fieldsets(request, obj)) if field not in excluded_fields
         ]
         return modelform_factory(
             self.model,
@@ -181,10 +179,7 @@ class InlineModelAdmin(BaseAdmin):
             if field.remote_field and field.remote_field.model != self.parent_model:
                 opts = field.remote_field.model._meta
                 break
-        return any(
-            request.user.has_perm(f"{opts.app_label}.{get_permission_codename(perm, opts)}")
-            for perm in perms
-        )
+        return any(request.user.has_perm(f"{opts.app_label}.{get_permission_codename(perm, opts)}") for perm in perms)
 
     def has_add_permission(self, request, obj=None):
         if self.opts.auto_created:

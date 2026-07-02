@@ -47,7 +47,6 @@ packages = ["django_ninja_admin"]
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
 python_files = ["test_*.py", "*_tests.py"]
-addopts = "-q"
 
 [tool.ruff]
 target-version = "py312"

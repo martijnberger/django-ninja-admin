@@ -11,9 +11,7 @@ from django.utils.translation import gettext_lazy as _
 
 NULL_BOOLEAN_FIELD = getattr(models, "NullBooleanField", None)
 BOOLEAN_FIELD_TYPES = (
-    (models.BooleanField,)
-    if NULL_BOOLEAN_FIELD is None
-    else (models.BooleanField, NULL_BOOLEAN_FIELD)
+    (models.BooleanField,) if NULL_BOOLEAN_FIELD is None else (models.BooleanField, NULL_BOOLEAN_FIELD)
 )
 
 

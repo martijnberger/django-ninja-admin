@@ -302,9 +302,7 @@ class ChangeList:
         if {"year", "month", "day"} <= set(values):
             max_day = calendar.monthrange(values["year"], values["month"])[1]
             if values["day"] > max_day:
-                raise AdminValidationError(
-                    [{"message": "Invalid day.", "param": f"{self.date_hierarchy_field}__day"}]
-                )
+                raise AdminValidationError([{"message": "Invalid day.", "param": f"{self.date_hierarchy_field}__day"}])
         return values
 
     def apply_date_hierarchy(self, queryset, params):

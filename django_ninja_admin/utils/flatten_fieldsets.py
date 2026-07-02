@@ -6,4 +6,3 @@ def flatten_fieldsets(fieldsets):
     for _, opts in fieldsets:
         field_names.extend(flatten(opts.get("fields", [])))
     return field_names
-

@@ -9,6 +9,12 @@ postgres-test *args:
 lint:
     UV_CACHE_DIR=.uv-cache uv run ruff check .
 
+format:
+    UV_CACHE_DIR=.uv-cache uv run ruff format .
+
+format-check:
+    UV_CACHE_DIR=.uv-cache uv run ruff format --check .
+
 package-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/package_smoke.py
 
@@ -27,6 +33,6 @@ parity-report *args:
 openapi-diff *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_diff.py {{args}}
 
-check: lint test package-smoke sample-project-smoke
+check: lint format-check test package-smoke sample-project-smoke generated-client-smoke
 
 ci: check

@@ -280,15 +280,11 @@ def _check_pagination_options(model_admin):
     if not _is_integer_option(list_per_page):
         errors.append(_error(model_admin.__class__, "The value of 'list_per_page' must be an integer.", "E067"))
     elif list_per_page < 1:
-        errors.append(
-            _error(model_admin.__class__, "The value of 'list_per_page' must be greater than zero.", "E104")
-        )
+        errors.append(_error(model_admin.__class__, "The value of 'list_per_page' must be greater than zero.", "E104"))
     if not _is_integer_option(list_max_show_all):
         errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must be an integer.", "E068"))
     elif list_max_show_all < 0:
-        errors.append(
-            _error(model_admin.__class__, "The value of 'list_max_show_all' must not be negative.", "E105")
-        )
+        errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must not be negative.", "E105"))
     return errors
 
 
@@ -645,9 +641,7 @@ def _check_form_option_items(model_admin, option, *, require_model_field=False):
         if option in {"fields", "exclude"}:
             if item in seen_fields:
                 code = "E065" if option == "fields" else "E080"
-                errors.append(
-                    _error(model_admin.__class__, f"The field '{item}' is duplicated in '{option}'.", code)
-                )
+                errors.append(_error(model_admin.__class__, f"The field '{item}' is duplicated in '{option}'.", code))
             seen_fields.add(item)
         if require_model_field and _model_field(model_admin, item) is None:
             errors.append(
@@ -708,8 +702,7 @@ def _check_prepopulated_fields(model_admin):
                 errors.append(
                     _error(
                         model_admin.__class__,
-                        f"The value of 'prepopulated_fields[{field_name!r}]' refers to unknown field "
-                        f"'{source_field}'.",
+                        f"The value of 'prepopulated_fields[{field_name!r}]' refers to unknown field '{source_field}'.",
                         "E054",
                     )
                 )

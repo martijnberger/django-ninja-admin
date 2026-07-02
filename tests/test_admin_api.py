@@ -244,9 +244,10 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     mutation_data_options = mutation_response_schema["properties"]["data"]["anyOf"]
     assert {"$ref": "#/components/schemas/ProductAdminMutationData"} in mutation_data_options
     assert any(option.get("type") == "object" for option in mutation_data_options)
-    assert components["ProductAdminMutationData"]["properties"]["name"] == components["ProductAdminOut"]["properties"][
-        "name"
-    ]
+    assert (
+        components["ProductAdminMutationData"]["properties"]["name"]
+        == components["ProductAdminOut"]["properties"]["name"]
+    )
     assert components["ProductAdminMutationData"].get("additionalProperties") is True
     mutation_response_example = components["ProductAdminMutationResponse"]["examples"][0]
     assert mutation_response_example["data"]["name"] == "example"
@@ -302,9 +303,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductAdminBulkRow"]["required"] == ["pk"]
     assert components["ProductAdminBulkRow"]["additionalProperties"] is False
     assert components["ProductAdminBulkRow"]["examples"][0] == {"pk": 1, "stock_status": "in_stock"}
-    assert components["ProductAdminBulkPayload"]["examples"][0] == {
-        "data": [{"pk": 1, "stock_status": "in_stock"}]
-    }
+    assert components["ProductAdminBulkPayload"]["examples"][0] == {"data": [{"pk": 1, "stock_status": "in_stock"}]}
     bulk_response_schema = components["ProductAdminBulkResponse"]
     assert bulk_response_schema["required"] == ["data"]
     assert bulk_response_schema["properties"]["data"]["additionalProperties"] == {
@@ -430,9 +429,7 @@ def test_session_bootstrap_login_csrf_mutation_and_logout(db, sample):
     )
     assert bad_login.status_code == 400
     ErrorResponse.model_validate(bad_login.json())
-    assert bad_login.json()["errors"] == [
-        {"message": "Invalid username or password.", "param": "username"}
-    ]
+    assert bad_login.json()["errors"] == [{"message": "Invalid username or password.", "param": "username"}]
 
     login_response = client.post(
         "/admin-api/login",
@@ -880,9 +877,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert changelist_response_props["list_editing_formset"]["items"]["items"] == {
         "$ref": "#/components/schemas/FieldDescription"
     }
-    assert changelist_response_props["list_editing_rows"]["items"] == {
-        "$ref": "#/components/schemas/ListEditingRow"
-    }
+    assert changelist_response_props["list_editing_rows"]["items"] == {"$ref": "#/components/schemas/ListEditingRow"}
     list_editing_row_props = components["ListEditingRow"]["properties"]
     assert list_editing_row_props["form_prefix"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert list_editing_row_props["empty_permitted"]["type"] == "boolean"
@@ -890,21 +885,15 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     form_response_props = components["FormResponse"]["properties"]
     assert form_response_props["inlines"]["items"] == {"$ref": "#/components/schemas/InlineDescription"}
     form_description_props = components["FormDescription"]["properties"]
-    assert form_description_props["fieldset_layout"]["items"] == {
-        "$ref": "#/components/schemas/FieldsetDescription"
-    }
+    assert form_description_props["fieldset_layout"]["items"] == {"$ref": "#/components/schemas/FieldsetDescription"}
     fieldset_description_props = components["FieldsetDescription"]["properties"]
     assert fieldset_description_props["name"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert fieldset_description_props["classes"]["items"] == {"type": "string"}
     assert fieldset_description_props["rows"]["items"] == {"$ref": "#/components/schemas/FieldsetRow"}
     assert components["FieldsetRow"]["properties"]["fields"]["items"] == {"type": "string"}
     inline_response_props = components["InlineDescription"]["properties"]
-    assert inline_response_props["fieldset_layout"]["items"] == {
-        "$ref": "#/components/schemas/FieldsetDescription"
-    }
-    assert inline_response_props["management_form"]["items"] == {
-        "$ref": "#/components/schemas/FieldDescription"
-    }
+    assert inline_response_props["fieldset_layout"]["items"] == {"$ref": "#/components/schemas/FieldsetDescription"}
+    assert inline_response_props["management_form"]["items"] == {"$ref": "#/components/schemas/FieldDescription"}
     assert inline_response_props["empty_form"]["items"] == {"$ref": "#/components/schemas/FieldDescription"}
     assert inline_response_props["formset_row_metadata"]["items"] == {
         "$ref": "#/components/schemas/InlineFormsetRowMetadata"
@@ -962,11 +951,9 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         assert statuses <= set(operation["responses"])
         for status in statuses:
             assert _response_schema_ref(operation, status) == "#/components/schemas/ErrorResponse"
-    delete_success_schema = (
-        paths["/admin-api/testapp/product/{object_id}"]["delete"]["responses"]["200"]["content"]["application/json"][
-            "schema"
-        ]
-    )
+    delete_success_schema = paths["/admin-api/testapp/product/{object_id}"]["delete"]["responses"]["200"]["content"][
+        "application/json"
+    ]["schema"]
     assert delete_success_schema["type"] == "object"
     assert delete_success_schema["additionalProperties"] is True
 
@@ -2528,9 +2515,10 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     initial = admin_client.get("/admin-api/testapp/product")
     assert initial.status_code == 200
     initial_body = initial.json()
-    assert {
-        item["parameter_name"] for item in initial_body["config"]["filters"]
-    } == {"stock_status__exact", "price_band"}
+    assert {item["parameter_name"] for item in initial_body["config"]["filters"]} == {
+        "stock_status__exact",
+        "price_band",
+    }
     assert initial_body["config"]["has_filters"] is True
     assert initial_body["config"]["has_active_filters"] is False
     assert initial_body["config"]["clear_all_filters_query_string"] is None
@@ -2552,9 +2540,7 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     related_filtered = admin_client.get(f"/admin-api/testapp/product?category__id__exact={sample.category_id}")
     assert related_filtered.status_code == 200
     assert related_filtered.json()["config"]["result_count"] == 2
-    assert "category__id__exact" in {
-        item["parameter_name"] for item in related_filtered.json()["config"]["filters"]
-    }
+    assert "category__id__exact" in {item["parameter_name"] for item in related_filtered.json()["config"]["filters"]}
 
     simple_filtered = admin_client.get("/admin-api/testapp/product?price_band=cheap")
     assert simple_filtered.status_code == 200
@@ -2608,9 +2594,7 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     for filter_description in paginated_body["config"]["filters"]:
         generated_query_strings.extend(choice["query_string"] for choice in filter_description["choices"])
     generated_query_strings.extend(
-        column["ascending_query_string"]
-        for column in paginated_body["columns"]
-        if column["ascending_query_string"]
+        column["ascending_query_string"] for column in paginated_body["columns"] if column["ascending_query_string"]
     )
     generated_query_strings.extend(
         choice["query_string"] for choice in paginated_body["config"]["date_hierarchy"]["choices"]
@@ -4114,10 +4098,7 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
     assert fields_by_name["description"]["attrs"]["rendered_attrs"]["id"] == "id_description"
     assert fields_by_name["description"]["attrs"]["rendered_attrs"]["data-hook"] == "override"
     assert fields_by_name["description"]["attrs"]["rendered_attrs"]["rows"] == 4
-    assert (
-        fields_by_name["description"]["attrs"]["rendered_attrs"]["aria-describedby"]
-        == "id_description_helptext"
-    )
+    assert fields_by_name["description"]["attrs"]["rendered_attrs"]["aria-describedby"] == "id_description_helptext"
     assert fields_by_name["stock_status"]["attrs"]["choices"] == [["in_stock", "Available"]]
     assert fields_by_name["stock_status"]["attrs"]["widget"] == "RadioSelect"
     assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
@@ -4407,8 +4388,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert json_schema["slug"]["anyOf"][0]["pattern"].endswith(r"\z")
 
     fields_by_name = {
-        field["name"]: field
-        for field in model_admin.get_form_fields_description(RequestFactory().get("/"))
+        field["name"]: field for field in model_admin.get_form_fields_description(RequestFactory().get("/"))
     }
     assert fields_by_name["review_required"]["type"] == "NullBooleanField"
     assert fields_by_name["review_required"]["attrs"]["null_boolean"] is True
@@ -4957,25 +4937,23 @@ def test_form_schema_field_overrides_drive_parent_bulk_and_inline_schemas(sample
 
     request = RequestFactory().get("/")
     fields_by_name = {field["name"]: field for field in model_admin.get_form_fields_description(request)}
-    assert fields_by_name["metadata"]["attrs"]["input_schema_override"]["schema"]["additionalProperties"][
-        "type"
-    ] == "integer"
+    assert (
+        fields_by_name["metadata"]["attrs"]["input_schema_override"]["schema"]["additionalProperties"]["type"]
+        == "integer"
+    )
     assert fields_by_name["stock_status"]["attrs"]["input_schema_override"]["schema"]["type"] == "boolean"
     assert "input_schema_override" not in fields_by_name["name"]["attrs"]
 
     changelist_fields_by_name = {
-        field["name"]: field
-        for field in model_admin.get_changelist_form_fields_description(request)
+        field["name"]: field for field in model_admin.get_changelist_form_fields_description(request)
     }
     assert changelist_fields_by_name["stock_status"]["attrs"]["input_schema_override"]["schema"]["type"] == "boolean"
 
-    inline_fields_by_name = {
-        field["name"]: field
-        for field in inline.get_form_fields_description(request, None)
-    }
-    assert inline_fields_by_name["details"]["attrs"]["input_schema_override"]["schema"]["additionalProperties"][
-        "type"
-    ] == "integer"
+    inline_fields_by_name = {field["name"]: field for field in inline.get_form_fields_description(request, None)}
+    assert (
+        inline_fields_by_name["details"]["attrs"]["input_schema_override"]["schema"]["additionalProperties"]["type"]
+        == "integer"
+    )
 
 
 def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
@@ -5086,8 +5064,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
     assert json_schema["typed_uuid"]["anyOf"][0]["enum"] == [uuid_choice, other_uuid_choice]
 
     fields_by_name = {
-        field["name"]: field
-        for field in model_admin.get_form_fields_description(RequestFactory().get("/"))
+        field["name"]: field for field in model_admin.get_form_fields_description(RequestFactory().get("/"))
     }
     assert fields_by_name["status_override"]["attrs"]["choices"] == [("draft", "Draft"), ("live", "Live")]
     assert fields_by_name["status_override"]["attrs"]["choice_options"] == [
@@ -5464,9 +5441,7 @@ def test_changelist_facets_and_date_hierarchy(admin_client, sample):
     assert by_month.json()["config"]["date_hierarchy"]["back_query_string"] == "?created_at__year=2024"
     assert by_month.json()["config"]["date_hierarchy"]["choices"][0]["value"] == 15
 
-    by_day = admin_client.get(
-        "/admin-api/testapp/product?created_at__year=2024&created_at__month=1&created_at__day=15"
-    )
+    by_day = admin_client.get("/admin-api/testapp/product?created_at__year=2024&created_at__month=1&created_at__day=15")
     assert by_day.status_code == 200
     assert by_day.json()["config"]["date_hierarchy"]["back_query_string"] == (
         "?created_at__year=2024&created_at__month=1"
@@ -5493,9 +5468,7 @@ def test_changelist_date_hierarchy_selects_lowest_useful_initial_level(admin_cli
     assert same_year_hierarchy["params"] == {"year": 2024}
     assert same_year_hierarchy["clear_query_string"] == "?"
     assert same_year_hierarchy["back_query_string"] == "?"
-    assert [
-        (choice["value"], choice["query_string"]) for choice in same_year_hierarchy["choices"]
-    ] == [
+    assert [(choice["value"], choice["query_string"]) for choice in same_year_hierarchy["choices"]] == [
         (1, "?created_at__year=2024&created_at__month=1"),
         (2, "?created_at__year=2024&created_at__month=2"),
     ]
@@ -5509,9 +5482,7 @@ def test_changelist_date_hierarchy_selects_lowest_useful_initial_level(admin_cli
     assert same_month_hierarchy["params"] == {"year": 2024, "month": 1}
     assert same_month_hierarchy["clear_query_string"] == "?"
     assert same_month_hierarchy["back_query_string"] == "?created_at__year=2024"
-    assert [
-        (choice["value"], choice["query_string"]) for choice in same_month_hierarchy["choices"]
-    ] == [
+    assert [(choice["value"], choice["query_string"]) for choice in same_month_hierarchy["choices"]] == [
         (15, "?created_at__year=2024&created_at__month=1&created_at__day=15"),
         (20, "?created_at__year=2024&created_at__month=1&created_at__day=20"),
     ]
@@ -5549,9 +5520,7 @@ def test_changelist_date_hierarchy_uses_active_timezone(admin_client, sample):
 
 def test_changelist_date_hierarchy_handles_max_year_bounds(admin_client, sample):
     year = admin_client.get("/admin-api/testapp/product?created_at__year=9999")
-    day = admin_client.get(
-        "/admin-api/testapp/product?created_at__year=9999&created_at__month=12&created_at__day=31"
-    )
+    day = admin_client.get("/admin-api/testapp/product?created_at__year=9999&created_at__month=12&created_at__day=31")
 
     assert year.status_code == 200
     assert year.json()["config"]["result_count"] == 0
@@ -5727,9 +5696,7 @@ def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):
 
     bad_filter_value = admin_client.get("/admin-api/testapp/product?category__id__exact=not-an-id")
     assert bad_filter_value.status_code == 400
-    assert bad_filter_value.json()["errors"] == [
-        {"message": "Invalid lookup value.", "param": "category__id__exact"}
-    ]
+    assert bad_filter_value.json()["errors"] == [{"message": "Invalid lookup value.", "param": "category__id__exact"}]
 
     bad_direct_value = admin_client.get("/admin-api/testapp/product?price=not-a-decimal")
     assert bad_direct_value.status_code == 400
@@ -6099,8 +6066,7 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     assert [row["is_initial"] for row in inline["formset_row_metadata"]] == [True, False, False]
     assert inline["formset_row_metadata"][0]["object_id"] == str(ProductImage.objects.get(product=sample).pk)
     title_values = [
-        next(field for field in row if field["name"] == "title")["attrs"].get("value")
-        for row in inline["formset"]
+        next(field for field in row if field["name"] == "title")["attrs"].get("value") for row in inline["formset"]
     ]
     assert title_values == ["Front", None, None]
     first_row_fields = {field["name"]: field for field in inline["formset"][0]}
@@ -6438,10 +6404,9 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
         )
         for item in global_history.json()["results"]
     } == {("testapp.product", "testapp", "product", "product", "products")}
-    assert {
-        (item["detail_url"], item["change_form_url"])
-        for item in global_history.json()["results"]
-    } == {(f"/admin-api/testapp/product/{sample.pk}", f"/admin-api/testapp/product/{sample.pk}/form")}
+    assert {(item["detail_url"], item["change_form_url"]) for item in global_history.json()["results"]} == {
+        (f"/admin-api/testapp/product/{sample.pk}", f"/admin-api/testapp/product/{sample.pk}/form")
+    }
 
     paged = client.get("/admin-api/history", {"per_page": 1, "page": 2})
     assert paged.status_code == 200
@@ -6481,9 +6446,7 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
 
     excessive_page_size = client.get("/admin-api/history", {"per_page": 101})
     assert excessive_page_size.status_code == 400
-    assert excessive_page_size.json()["errors"] == [
-        {"message": "Page size cannot exceed 100.", "param": "per_page"}
-    ]
+    assert excessive_page_size.json()["errors"] == [{"message": "Page size cannot exceed 100.", "param": "per_page"}]
 
 
 def test_history_uses_queryset_pagination_for_global_permissions(admin_client, sample, monkeypatch):
@@ -6714,10 +6677,7 @@ def test_form_description_exposes_multiwidget_metadata(db):
             "template_name": "django/forms/widgets/time.html",
         },
     ]
-    assert any(
-        detail.get("pattern") == "^[A-Z]{3}$"
-        for detail in code_field["attrs"]["validator_details"]
-    )
+    assert any(detail.get("pattern") == "^[A-Z]{3}$" for detail in code_field["attrs"]["validator_details"])
 
 
 def test_form_description_exposes_select_date_widget_metadata(db):
@@ -6839,9 +6799,7 @@ def test_form_description_exposes_filepath_field_metadata(db, tmp_path):
 
     model_admin = FilePathProductAdmin(Product, NinjaAdminSite(include_auth=False))
     request = RequestFactory().get("/")
-    field = next(
-        item for item in model_admin.get_form_fields_description(request) if item["name"] == "file_path"
-    )
+    field = next(item for item in model_admin.get_form_fields_description(request) if item["name"] == "file_path")
 
     attrs = field["attrs"]
     choice_values = [value for value, _label in attrs["choices"]]
@@ -6875,9 +6833,7 @@ def test_form_description_exposes_combo_field_metadata(db):
 
     model_admin = ComboProductAdmin(Product, NinjaAdminSite(include_auth=False))
     request = RequestFactory().get("/")
-    field = next(
-        item for item in model_admin.get_form_fields_description(request) if item["name"] == "combo_code"
-    )
+    field = next(item for item in model_admin.get_form_fields_description(request) if item["name"] == "combo_code")
 
     attrs = field["attrs"]
     assert field["type"] == "ComboField"
@@ -6885,10 +6841,7 @@ def test_form_description_exposes_combo_field_metadata(db):
     assert attrs["combo_fields"][0]["index"] == 0
     assert attrs["combo_fields"][0]["attrs"]["max_length"] == 5
     assert attrs["combo_fields"][1]["index"] == 1
-    assert any(
-        detail.get("pattern") == "^[A-Z]+$"
-        for detail in attrs["combo_fields"][1]["attrs"]["validator_details"]
-    )
+    assert any(detail.get("pattern") == "^[A-Z]+$" for detail in attrs["combo_fields"][1]["attrs"]["validator_details"])
 
 
 def test_form_description_exposes_numeric_step_metadata(db):
@@ -6906,10 +6859,7 @@ def test_form_description_exposes_numeric_step_metadata(db):
 
     model_admin = StepProductAdmin(Product, NinjaAdminSite(include_auth=False))
     request = RequestFactory().get("/")
-    fields_by_name = {
-        item["name"]: item
-        for item in model_admin.get_form_fields_description(request)
-    }
+    fields_by_name = {item["name"]: item for item in model_admin.get_form_fields_description(request)}
 
     assert fields_by_name["stepped_count"]["attrs"]["step_size"] == 2
     assert "step_offset" not in fields_by_name["stepped_count"]["attrs"]
@@ -7428,9 +7378,7 @@ def test_json_model_fields_have_explicit_output_and_write_schemas(db):
         output_schema.model_validate({"id": 1, "payload": object(), "optional_payload": None})
     with pytest.raises(PydanticValidationError):
         write_schema.model_validate({"payload": object(), "optional_payload": None})
-    assert model_admin.serialize_object(
-        JsonRecord(id=1, payload={"nested": [1, "two"]}, optional_payload=None)
-    ) == {
+    assert model_admin.serialize_object(JsonRecord(id=1, payload={"nested": [1, "two"]}, optional_payload=None)) == {
         "id": 1,
         "payload": {"nested": [1, "two"]},
         "optional_payload": None,
@@ -7513,9 +7461,7 @@ def test_binary_model_fields_serialize_as_base64_output_strings(db):
         "default": None,
         "title": "Optional Payload",
     }
-    assert model_admin.serialize_object(
-        BinaryAttachment(id=1, payload=b"\xff\x00", optional_payload=None)
-    ) == {
+    assert model_admin.serialize_object(BinaryAttachment(id=1, payload=b"\xff\x00", optional_payload=None)) == {
         "id": 1,
         "payload": "/wA=",
         "optional_payload": None,
@@ -7555,9 +7501,7 @@ def test_regex_validated_model_fields_have_pattern_output_schemas(db):
         "default": None,
         "title": "Optional Slug",
     }
-    assert model_admin.serialize_object(
-        InventoryCode(id=1, slug="stock-1", sku="SKU-100", optional_slug=None)
-    ) == {
+    assert model_admin.serialize_object(InventoryCode(id=1, slug="stock-1", sku="SKU-100", optional_slug=None)) == {
         "id": 1,
         "slug": "stock-1",
         "sku": "SKU-100",
@@ -7951,9 +7895,7 @@ def test_changelist_routes_support_allowed_to_field(admin_client):
 
     bad_field = admin_client.get("/slug-autocomplete-admin/testapp/category?_to_field=name")
     assert bad_field.status_code == 400
-    assert bad_field.json()["errors"] == [
-        {"message": "The field 'name' cannot be referenced.", "param": "_to_field"}
-    ]
+    assert bad_field.json()["errors"] == [{"message": "The field 'name' cannot be referenced.", "param": "_to_field"}]
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
@@ -7987,11 +7929,7 @@ def test_bulk_update_uses_changelist_form_hook(admin_client, sample):
     changelist = admin_client.get("/bulk-form-admin/testapp/product")
 
     assert changelist.status_code == 200
-    fields_by_name = {
-        field["name"]: field
-        for row in changelist.json()["list_editing_rows"]
-        for field in row["fields"]
-    }
+    fields_by_name = {field["name"]: field for row in changelist.json()["list_editing_rows"] for field in row["fields"]}
     assert list(fields_by_name) == ["stock_status"]
     assert fields_by_name["stock_status"]["attrs"]["help_text"] == "Bulk-only status field."
     assert fields_by_name["stock_status"]["attrs"]["choices"] == [["out_of_stock", "Bulk unavailable"]]
@@ -8424,9 +8362,10 @@ def test_related_list_filters_use_remote_to_field_values(admin_client, monkeypat
     filtered_category_filter = next(
         item for item in filtered.json()["config"]["filters"] if item["parameter_name"] == "category__slug__exact"
     )
-    assert next(choice for choice in filtered_category_filter["choices"] if choice["display"] == "Cameras")[
-        "selected"
-    ] is True
+    assert (
+        next(choice for choice in filtered_category_filter["choices"] if choice["display"] == "Cameras")["selected"]
+        is True
+    )
 
     monkeypatch.setattr(link_admin, "list_filter", (("category", RelatedOnlyFieldListFilter),))
     related_only = admin_client.get("/slug-autocomplete-admin/testapp/categorysluglink")
@@ -9352,6 +9291,7 @@ def test_ninja_registered_model_field_types_drive_admin_schema_inference(db):
     register_field("AdminRegisteredCodeField", int)
 
     try:
+
         class CustomCategory(models.Model):
             code = AdminRegisteredCodeField(primary_key=True)
             name = models.CharField(max_length=20)
@@ -9383,9 +9323,7 @@ def test_ninja_registered_model_field_types_drive_admin_schema_inference(db):
 
         assert category_admin.get_pydantic_type_for_model_field(CustomCategory._meta.pk) is int
         assert (
-            product_admin.get_pydantic_type_for_model_field(
-                CustomProduct._meta.get_field("category").target_field
-            )
+            product_admin.get_pydantic_type_for_model_field(CustomProduct._meta.get_field("category").target_field)
             is int
         )
 
@@ -9443,9 +9381,7 @@ def test_admin_checks_validate_schema_field_overrides(db):
     bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
     bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint(
-        {"django_ninja_admin.E098", "django_ninja_admin.E099", "django_ninja_admin.E100"}
-    )
+    assert valid_ids.isdisjoint({"django_ninja_admin.E098", "django_ninja_admin.E099", "django_ninja_admin.E100"})
     assert bad_mapping_ids == {"django_ninja_admin.E098"}
     assert bad_key_ids == {"django_ninja_admin.E099"}
     assert bad_tuple_ids == {"django_ninja_admin.E100"}
@@ -9478,9 +9414,7 @@ def test_admin_checks_validate_form_schema_field_overrides(db):
     bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
     bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint(
-        {"django_ninja_admin.E101", "django_ninja_admin.E102", "django_ninja_admin.E103"}
-    )
+    assert valid_ids.isdisjoint({"django_ninja_admin.E101", "django_ninja_admin.E102", "django_ninja_admin.E103"})
     assert bad_mapping_ids == {"django_ninja_admin.E101"}
     assert bad_key_ids == {"django_ninja_admin.E102"}
     assert bad_tuple_ids == {"django_ninja_admin.E103"}

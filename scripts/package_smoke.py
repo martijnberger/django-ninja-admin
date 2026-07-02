@@ -88,6 +88,7 @@ from django_ninja_admin import (
 package_file = Path(django_ninja_admin.__file__).resolve()
 install_root = Path({str(install_dir)!r}).resolve()
 assert str(package_file).startswith(str(install_root)), package_file
+assert (package_file.parent / "py.typed").is_file()
 assert django_ninja_admin.site is site
 assert NinjaAdminSite is not None
 assert ModelAdmin is not None

@@ -7,4 +7,3 @@ class DjangoNinjaAdminConfig(AppConfig):
     default_site = "django_ninja_admin.sites.NinjaAdminSite"
     name = "django_ninja_admin"
     verbose_name = _("Django Ninja Admin")
-

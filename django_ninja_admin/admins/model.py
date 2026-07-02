@@ -216,10 +216,7 @@ class ModelAdmin(BaseAdmin):
             return None
         if change:
             return inline_example
-        return {
-            inline_id: {"add": operations.get("add", [])}
-            for inline_id, operations in inline_example.items()
-        }
+        return {inline_id: {"add": operations.get("add", [])} for inline_id, operations in inline_example.items()}
 
     def get_model_perms(self, request):
         return {
@@ -305,9 +302,7 @@ class ModelAdmin(BaseAdmin):
                     return f"{field_name}__icontains", None, may_have_duplicates
                 prev_field = field
                 if hasattr(field, "path_infos"):
-                    may_have_duplicates = may_have_duplicates or any(
-                        path_info.m2m for path_info in field.path_infos
-                    )
+                    may_have_duplicates = may_have_duplicates or any(path_info.m2m for path_info in field.path_infos)
                     opts = field.path_infos[-1].to_opts
             return f"{field_name}__icontains", None, may_have_duplicates
 
@@ -316,9 +311,7 @@ class ModelAdmin(BaseAdmin):
         if search_fields and search_term:
             orm_lookups = [construct_search(str(field)) for field in search_fields]
             str_aliases = {
-                orm_lookup: alias
-                for orm_lookup, alias, _lookup_may_have_duplicates in orm_lookups
-                if alias is not None
+                orm_lookup: alias for orm_lookup, alias, _lookup_may_have_duplicates in orm_lookups if alias is not None
             }
             if str_aliases:
                 queryset = queryset.alias(**str_aliases)

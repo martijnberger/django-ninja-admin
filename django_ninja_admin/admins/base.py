@@ -147,15 +147,9 @@ class BaseAdmin:
         if self.fields:
             return self.fields
         exclude = set(self.get_exclude(request, obj) or [])
-        fields = [
-            field.name
-            for field in self.model._meta.fields
-            if field.editable and field.name not in exclude
-        ]
+        fields = [field.name for field in self.model._meta.fields if field.editable and field.name not in exclude]
         fields += [
-            field.name
-            for field in self.model._meta.many_to_many
-            if field.editable and field.name not in exclude
+            field.name for field in self.model._meta.many_to_many if field.editable and field.name not in exclude
         ]
         return fields
 
@@ -252,10 +246,7 @@ class BaseAdmin:
                 form_field = form_fields.get(field_name)
                 field_type = self.get_form_schema_field_type(field_name, form_field, overrides=overrides)
                 required = bool(
-                    form_field
-                    and form_field.required
-                    and not getattr(form_field, "disabled", False)
-                    and not partial
+                    form_field and form_field.required and not getattr(form_field, "disabled", False) and not partial
                 )
                 if required:
                     schema_fields[field_name] = (field_type, ...)
@@ -291,9 +282,7 @@ class BaseAdmin:
             cache[cache_key] = create_model(
                 f"{self.model.__name__}Admin{operation}Payload",
                 __base__=Schema,
-                __config__=ConfigDict(
-                    json_schema_extra={"examples": [{"data": self._schema_example(data_schema)}]}
-                ),
+                __config__=ConfigDict(json_schema_extra={"examples": [{"data": self._schema_example(data_schema)}]}),
                 data=(data_schema, ...),
                 inlines=(dict[str, Any] | None, None),
             )
@@ -359,9 +348,7 @@ class BaseAdmin:
             cache[cache_key] = create_model(
                 f"{self.model.__name__}AdminBulkPayload",
                 __base__=Schema,
-                __config__=ConfigDict(
-                    json_schema_extra={"examples": [{"data": [self._schema_example(row_schema)]}]}
-                ),
+                __config__=ConfigDict(json_schema_extra={"examples": [{"data": [self._schema_example(row_schema)]}]}),
                 data=(list[row_schema], ...),
             )
             self._mutation_payload_schema_cache = cache
@@ -1541,9 +1528,7 @@ class BaseAdmin:
                 if inline_model is not None:
                     registered_models.add(inline_model)
         related_objects = (
-            field
-            for field in self.opts.get_fields(include_hidden=True)
-            if field.auto_created and not field.concrete
+            field for field in self.opts.get_fields(include_hidden=True) if field.auto_created and not field.concrete
         )
         for related_object in related_objects:
             related_model = related_object.related_model

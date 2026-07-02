@@ -8,4 +8,3 @@ def quote(s):
 
 def unquote(s):
     return urlunquote(str(s))
-

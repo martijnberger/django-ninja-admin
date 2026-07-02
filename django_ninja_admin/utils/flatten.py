@@ -4,4 +4,3 @@ def flatten(fields):
             yield from flatten(field)
         else:
             yield field
-
