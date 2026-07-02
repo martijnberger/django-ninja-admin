@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.21 - 2026-07-02
+
 - Added `ModelAdmin.list_prefetch_related` / `get_list_prefetch_related()` for
   changelist relation prefetching, including string and `Prefetch` object
   support, system checks, and query-count coverage for callable many-to-many
