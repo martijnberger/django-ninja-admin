@@ -1084,8 +1084,10 @@ def _check_inlines(model_admin):
         except ValueError as exc:
             errors.append(_error(inline_class, str(exc), "E033"))
             fk = None
+        for option in ("fields", "exclude", "readonly_fields", "fieldsets"):
+            errors.extend(_check_inline_sequence_option(inline_class, option))
         exclude = getattr(inline_class, "exclude", None)
-        if fk is not None and exclude is not None and fk.name in exclude:
+        if fk is not None and isinstance(exclude, (list, tuple)) and fk.name in exclude:
             errors.append(
                 _error(
                     inline_class,
@@ -1139,3 +1141,12 @@ def _check_inlines(model_admin):
                         )
                     )
     return errors
+
+
+def _check_inline_sequence_option(inline_class, option):
+    value = getattr(inline_class, option, None)
+    if value is None:
+        return []
+    if not isinstance(value, (list, tuple)):
+        return [_error(inline_class, f"The value of '{option}' must be a list or tuple.", "E112")]
+    return []

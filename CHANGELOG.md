@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added inline admin checks for malformed `fields`, `exclude`,
+  `readonly_fields`, and `fieldsets` option shapes.
 - Hardened inline admin checks to reject non-boolean `can_delete` and
   `show_change_link` option values.
 - Validated dynamic inline `get_extra()`, `get_min_num()`, and `get_max_num()`

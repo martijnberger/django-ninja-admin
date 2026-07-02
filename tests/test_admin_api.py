@@ -733,6 +733,45 @@ def test_admin_checks_validate_inline_boolean_options(db):
     assert bad_ids == {"django_ninja_admin.E110", "django_ninja_admin.E111"}
 
 
+def test_admin_checks_validate_inline_form_layout_option_shapes(db):
+    class ValidInline(TabularInline):
+        model = ProductImage
+        fields = ("title",)
+        exclude = ()
+        readonly_fields = ()
+        fieldsets = (("Main", {"fields": ("title",)}),)
+
+    class BadInline(TabularInline):
+        model = ProductImage
+        fields = "title"
+        exclude = "title"
+        readonly_fields = "title"
+        fieldsets = "main"
+
+    class ValidInlineProductAdmin(ModelAdmin):
+        inlines = [ValidInline]
+
+    class BadInlineProductAdmin(ModelAdmin):
+        inlines = [BadInline]
+
+    valid_site = NinjaAdminSite(include_auth=False)
+    valid_site.register(Product, ValidInlineProductAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadInlineProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_errors = bad_site.get_model_admin(Product).check()
+
+    assert "django_ninja_admin.E112" not in valid_ids
+    assert [error.id for error in bad_errors] == ["django_ninja_admin.E112"] * 4
+    assert {error.msg for error in bad_errors} == {
+        "The value of 'fields' must be a list or tuple.",
+        "The value of 'exclude' must be a list or tuple.",
+        "The value of 'readonly_fields' must be a list or tuple.",
+        "The value of 'fieldsets' must be a list or tuple.",
+    }
+
+
 def test_inline_admin_supports_custom_formset_classes(db):
     class CustomInlineFormSet(BaseInlineFormSet):
         pass
