@@ -96,7 +96,7 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | Ruff/pytest local gates | implemented | `just lint`, `just test`, `just check`, `.github/workflows/ci.yml` | Keep CI and local gates aligned |
-| Package build/install smoke | implemented | `scripts/package_smoke.py`, `scripts/sample_project_smoke.py`, `just package-smoke`, and `just sample-project-smoke` | Expand sample project scenarios as parity grows |
+| Package build/install smoke | implemented | `scripts/package_smoke.py`, `scripts/sample_project_smoke.py`, `scripts/sample_project_full.py`, `just package-smoke`, `just sample-project-smoke`, and `just sample-project-full` | Expand sample project scenarios as parity grows |
 | Parity report tooling | implemented | `scripts/parity_report.py`, `tests/test_parity_report.py`, and `just parity-report` | Expand into linked evidence checks as the matrix grows |
 | OpenAPI diff tooling | implemented | `scripts/openapi_diff.py`, `tests/test_openapi_diff.py`, and `just openapi-diff` | Use reviewed OpenAPI artifacts before beta/stable release candidates |
 | OpenAPI consumer smoke | implemented | `scripts/generated_client_smoke.py` and `just generated-client-smoke` exercise a built wheel from a clean Django project using operation IDs and advertised examples | Broaden to generated clients and additional route groups |

@@ -470,6 +470,10 @@ Completed or mostly complete:
 - Local release gates now use `just` for lint, tests, package smoke, and aggregate checks.
 - Package smoke tooling builds the wheel, installs it into an isolated target, verifies public API imports, and checks dependency metadata for absent DRF/drf-spectacular dependencies.
 - Sample-project smoke tooling installs the built wheel into a temporary Django project, registers a model, mounts `site.urls`, opens docs/OpenAPI, and exercises the registered model app list/changelist.
+- Full sample-project tooling installs the built wheel into a richer temporary
+  Django project and exercises autocomplete, filters/search, list-editable bulk
+  updates, inlines, actions, multipart file upload, history, custom routes, and
+  view-on-site URLs.
 - Release hardening docs now include a changelog and explicit alpha/beta/stable checklist.
 - GitHub Actions now runs the `just` gates across Django 5.0, 5.1, 5.2, and an experimental 6.0 lane on Python 3.12+.
 - CI now has a PostgreSQL lane using env-driven test database settings and `just postgres-test`.
@@ -1102,7 +1106,7 @@ keeps getting stronger.
 
 - Keep `just openapi-diff` available for semantic OpenAPI contract reviews
   between release candidates.
-- Add `just sample-project-full` for the expanded sample project and reserve
+- Keep `just sample-project-full` for the expanded sample project and reserve
   `just sample-project-smoke` for the fast release gate.
 - Keep `just generated-client-smoke` available for the OpenAPI consumer check.
 - Keep `just parity-report` available to summarize parity-matrix statuses,

@@ -21,6 +21,11 @@ just check
 - `just sample-project-smoke` to install the built wheel into a temporary
   Django project, register a model, mount `site.urls`, open docs/OpenAPI, and
   exercise authenticated model discovery.
+- `just sample-project-full` is available as the broader installed-wheel sample
+  project gate for release candidates. It exercises richer registered-admin
+  workflows including autocomplete, list filters/search, list-editable bulk
+  updates, inlines, actions, multipart file upload, history, custom routes, and
+  view-on-site URLs.
 - CI also runs `just postgres-test` against PostgreSQL; local use requires
   `DJANGO_NINJA_ADMIN_TEST_DATABASE=postgres` and the `POSTGRES_*` connection
   environment variables.
@@ -50,6 +55,10 @@ behavior, or permission boundaries.
   comparing release candidates or reviewed OpenAPI artifacts.
 - Run `just generated-client-smoke` to prove a clean installed project can use
   OpenAPI operation IDs and request examples for core model workflows.
+- Run `just sample-project-full` to exercise the expanded installed-wheel
+  sample project before beta/stable release candidates and after broad changes
+  to forms, inlines, actions, filtering, file uploads, history, or custom
+  routes.
 - Compare generated OpenAPI semantically for route maps, component names,
   required fields, examples, auth/error responses, multipart request bodies,
   action payload variants, and inline/bulk schemas.

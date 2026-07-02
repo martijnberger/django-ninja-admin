@@ -70,6 +70,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added mounted autocomplete coverage for source-field `limit_choices_to`
   constraints, including form metadata, OpenAPI relation schemas, selected
   options, detail serialization, and filtered autocomplete results.
+- Added `just sample-project-full`, an installed-wheel sample project gate that
+  exercises richer registered-admin workflows including autocomplete,
+  filter/search changelists, list-editable bulk updates, inlines, actions,
+  multipart file upload, history, custom routes, and view-on-site URLs.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.
