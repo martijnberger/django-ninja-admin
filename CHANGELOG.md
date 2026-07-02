@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   names, classes, descriptions, flattened fields, and row groupings.
 - Added concrete OpenAPI examples for typed admin error response bodies,
   including validation, permission, and protected-delete shapes.
+- Expanded filter-horizontal/filter-vertical metadata with stacking state,
+  source verbose names, and related-model identity.
 - Added a concrete OpenAPI example for `FieldDescription.attrs` showing
   bound-field, rendered-attr, and rendered-subwidget metadata.
 

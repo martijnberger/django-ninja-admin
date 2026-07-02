@@ -836,21 +836,11 @@ def _apply_admin_field_metadata(
     if name in filter_horizontal:
         attrs["admin_widget"] = "filter_horizontal"
         if source_model is not None:
-            attrs["filtered_select"] = {
-                "app_label": source_model._meta.app_label,
-                "model_name": source_model._meta.model_name,
-                "field_name": name,
-                "direction": "horizontal",
-            }
+            attrs["filtered_select"] = _filtered_select_metadata(source_model, name, direction="horizontal")
     if name in filter_vertical:
         attrs["admin_widget"] = "filter_vertical"
         if source_model is not None:
-            attrs["filtered_select"] = {
-                "app_label": source_model._meta.app_label,
-                "model_name": source_model._meta.model_name,
-                "field_name": name,
-                "direction": "vertical",
-            }
+            attrs["filtered_select"] = _filtered_select_metadata(source_model, name, direction="vertical")
     if name in radio_fields:
         attrs["admin_widget"] = "radio"
         attrs["radio_orientation"] = radio_fields[name]
@@ -875,6 +865,30 @@ def _source_field_identity(source_model, field_name):
         "model_name": source_model._meta.model_name,
         "field_name": field_name,
     }
+
+
+def _filtered_select_metadata(source_model, field_name, *, direction):
+    metadata = {
+        **_source_field_identity(source_model, field_name),
+        "direction": direction,
+        "is_stacked": direction == "vertical",
+    }
+    field = _model_field_for_name(source_model, field_name)
+    if field is not None:
+        metadata["verbose_name"] = str(getattr(field, "verbose_name", field_name))
+        remote_model = getattr(getattr(field, "remote_field", None), "model", None)
+        if remote_model is not None:
+            remote_opts = remote_model._meta
+            metadata.update(
+                {
+                    "related_model": f"{remote_opts.app_label}.{remote_opts.model_name}",
+                    "related_app_label": remote_opts.app_label,
+                    "related_model_name": remote_opts.model_name,
+                    "related_verbose_name": str(remote_opts.verbose_name),
+                    "related_verbose_name_plural": str(remote_opts.verbose_name_plural),
+                }
+            )
+    return metadata
 
 
 def _prepopulated_source_metadata(source_model, field_name):
