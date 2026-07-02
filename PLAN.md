@@ -388,6 +388,8 @@ Completed or mostly complete:
   related primary key or explicit `to_field_name` target.
 - Relation output schemas now infer serialized foreign-key `attname` types from
   the related target field, including non-PK `to_field` relations.
+- Relation target-field constraints such as string `max_length` now propagate to
+  foreign-key write schemas and many-to-many output/write item schemas.
 - Admin-owned model-field type inference now honors Ninja `register_field()`
   mappings for custom field internal types, including custom primary keys,
   relation output IDs, and form-derived relation inputs.

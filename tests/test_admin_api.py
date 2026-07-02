@@ -7157,6 +7157,7 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
     schema = openapi.json()
     components = schema["components"]["schemas"]
     assert components["CategorySlugLinkAdminCreateData"]["properties"]["category"] == {
+        "maxLength": 100,
         "title": "Category",
         "type": "string",
     }
@@ -7187,6 +7188,41 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
 
     assert response.status_code == 200
     assert response.json()["results"] == [{"id": "cameras", "text": "Cameras"}]
+
+
+@isolate_apps("tests.testapp")
+def test_many_to_many_schemas_preserve_string_target_field_constraints(db):
+    class ArticleLabel(models.Model):
+        code = models.SlugField(max_length=12, primary_key=True)
+        name = models.CharField(max_length=20)
+
+        class Meta:
+            app_label = "testapp"
+
+    class Article(models.Model):
+        title = models.CharField(max_length=30)
+        labels = models.ManyToManyField(ArticleLabel, blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(Article)
+    model_admin = admin_site.get_model_admin(Article)
+
+    output_schema = model_admin.get_output_schema().model_json_schema()
+    write_schema = model_admin.get_write_schema(None).model_json_schema()
+
+    assert output_schema["properties"]["labels"]["items"] == {
+        "maxLength": 12,
+        "type": "string",
+    }
+    labels_options = write_schema["properties"]["labels"]["anyOf"]
+    labels_array_schema = next(option for option in labels_options if option.get("type") == "array")
+    assert labels_array_schema["items"] == {
+        "maxLength": 12,
+        "type": "string",
+    }
 
 
 def test_autocomplete_filters_object_level_view_permissions(admin_client, sample, monkeypatch):

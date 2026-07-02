@@ -12,6 +12,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   form-derived relation input schemas.
 - Tightened generated output schemas for decimal model fields so response
   components preserve `max_digits` and `decimal_places` precision constraints.
+- Tightened relation-target schemas so string target constraints such as
+  `max_length` are preserved for foreign-key write payloads and many-to-many
+  output/write item schemas.
 
 ## 0.1.23 - 2026-07-02
 

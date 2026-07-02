@@ -477,9 +477,9 @@ class BaseAdmin:
 
     def _get_pydantic_type_for_form_field(self, field, *, choices_as_literal=True):
         if isinstance(field, ModelMultipleChoiceField):
-            return list[self.get_pydantic_type_for_model_field(self.get_model_choice_target_field(field))]
+            return list[self.get_pydantic_type_for_model_output_field(self.get_model_choice_target_field(field))]
         if isinstance(field, ModelChoiceField):
-            return self.get_pydantic_type_for_model_field(self.get_model_choice_target_field(field))
+            return self.get_pydantic_type_for_model_output_field(self.get_model_choice_target_field(field))
         if isinstance(field, forms.NullBooleanField):
             return Annotated[bool | None, BeforeValidator(_parse_null_boolean_value)]
         if isinstance(field, forms.BooleanField):
@@ -885,7 +885,9 @@ class BaseAdmin:
             if field.remote_field and field.name != "password":
                 custom_fields.append((f"{field.name}_label", str, None))
         for field in self.model._meta.many_to_many:
-            custom_fields.append((field.name, list[self.get_pydantic_type_for_model_field(field.target_field)], []))
+            custom_fields.append(
+                (field.name, list[self.get_pydantic_type_for_model_output_field(field.target_field)], [])
+            )
         custom_fields.extend(
             (name, field_type, default)
             for name, value in overrides.items()
