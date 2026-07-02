@@ -8,7 +8,13 @@ from django import forms
 from django.contrib.auth import get_permission_codename
 from django.core.exceptions import FieldDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.core.validators import RegexValidator, StepValueValidator, validate_email
+from django.core.validators import (
+    MaxValueValidator,
+    MinValueValidator,
+    RegexValidator,
+    StepValueValidator,
+    validate_email,
+)
 from django.db import models
 from django.forms import modelform_factory
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
@@ -877,6 +883,8 @@ class BaseAdmin:
                 custom_fields.append(self._choice_output_custom_field(field))
             elif isinstance(field, models.DecimalField):
                 custom_fields.append(self._model_field_output_custom_field(field))
+            elif self.get_pydantic_numeric_bounds_for_model_field(field):
+                custom_fields.append(self._model_field_output_custom_field(field))
             elif field.blank and not field.null:
                 custom_fields.append(self._model_field_output_custom_field(field))
             else:
@@ -896,10 +904,19 @@ class BaseAdmin:
         return self._output_schema_for_fields(tuple(fields), tuple(custom_fields))
 
     def _model_field_output_custom_field(self, field):
-        return field.name, self.get_pydantic_type_for_model_output_field(field), ...
+        field_type = self.get_pydantic_type_for_model_output_field(field)
+        if field.null:
+            return field.name, field_type | None, None
+        return field.name, field_type, ...
 
     def get_pydantic_type_for_model_output_field(self, field):
         field_type = self.get_pydantic_type_for_model_field(field)
+        constraints = self.get_pydantic_constraints_for_model_field(field, field_type)
+        if constraints:
+            return Annotated[field_type, Field(**constraints)]
+        return field_type
+
+    def get_pydantic_constraints_for_model_field(self, field, field_type=None):
         constraints = {}
         if field_type is str and getattr(field, "max_length", None) is not None:
             constraints["max_length"] = field.max_length
@@ -908,9 +925,23 @@ class BaseAdmin:
                 constraints["max_digits"] = field.max_digits
             if getattr(field, "decimal_places", None) is not None:
                 constraints["decimal_places"] = field.decimal_places
-        if constraints:
-            return Annotated[field_type, Field(**constraints)]
-        return field_type
+        constraints.update(self.get_pydantic_numeric_bounds_for_model_field(field))
+        return constraints
+
+    def get_pydantic_numeric_bounds_for_model_field(self, field):
+        bounds = {}
+        for validator in getattr(field, "validators", ()):
+            limit_value = getattr(validator, "limit_value", None)
+            if callable(limit_value):
+                try:
+                    limit_value = limit_value()
+                except Exception:
+                    continue
+            if isinstance(validator, MinValueValidator):
+                bounds["ge"] = limit_value
+            elif isinstance(validator, MaxValueValidator):
+                bounds["le"] = limit_value
+        return bounds
 
     def _relation_output_custom_field(self, field):
         field_type = self.get_pydantic_type_for_model_output_field(field.target_field)

@@ -15,6 +15,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Tightened relation-target schemas so string target constraints such as
   `max_length` are preserved for foreign-key write payloads and many-to-many
   output/write item schemas.
+- Tightened generated output schemas for bounded numeric model fields, including
+  nullable positive integer fields, so response components preserve min/max
+  validator constraints.
 
 ## 0.1.23 - 2026-07-02
 

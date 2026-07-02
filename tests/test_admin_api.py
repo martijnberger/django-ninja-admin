@@ -147,6 +147,8 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "ImageFieldValue",
     } <= set(components)
     assert components["ProductAdminOut"]["properties"]["id"] == {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
         "title": "Id",
         "type": "integer",
     }
@@ -162,6 +164,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductAdminOut"]["properties"]["photo"] == {
         "anyOf": [{"$ref": "#/components/schemas/ImageFieldValue"}, {"type": "null"}]
     }
+    photo_width_options = components["ProductAdminOut"]["properties"]["photo_width"]["anyOf"]
+    photo_width_integer_schema = next(option for option in photo_width_options if option.get("type") == "integer")
+    assert photo_width_integer_schema["minimum"] == 0
+    assert photo_width_integer_schema["maximum"] == 9223372036854775807
+    assert {"type": "null"} in photo_width_options
     assert components["ProductAdminOut"]["properties"]["stock_status"] == {
         "default": "in_stock",
         "enum": ["in_stock", "out_of_stock"],
@@ -179,7 +186,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert "description" in components["ProductAdminOut"]["required"]
     assert components["ProductAdminOut"]["properties"]["tags"] == {
         "default": [],
-        "items": {"type": "integer"},
+        "items": {
+            "maximum": 9223372036854775807,
+            "minimum": -9223372036854775808,
+            "type": "integer",
+        },
         "title": "Tags",
         "type": "array",
     }
@@ -246,6 +257,8 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert set(components["ProductAdminCreateData"]["required"]) == {"name", "category", "price", "stock_status"}
     assert "required" not in components["ProductAdminPartialUpdateData"]
     assert components["ProductAdminCreateData"]["properties"]["category"] == {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
         "title": "Category",
         "type": "integer",
     }
@@ -260,7 +273,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     }
     tags_options = components["ProductAdminCreateData"]["properties"]["tags"]["anyOf"]
     tags_schema = next(option for option in tags_options if option.get("type") == "array")
-    assert tags_schema["items"] == {"type": "integer"}
+    assert tags_schema["items"] == {
+        "maximum": 9223372036854775807,
+        "minimum": -9223372036854775808,
+        "type": "integer",
+    }
     price_options = components["ProductAdminCreateData"]["properties"]["price"]["anyOf"]
     assert any(option.get("type") == "number" for option in price_options)
     assert components["ProductAdminBulkRow"]["required"] == ["pk"]
