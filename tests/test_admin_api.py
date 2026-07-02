@@ -15,7 +15,14 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import Storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.paginator import Paginator
-from django.core.validators import MaxLengthValidator, MinLengthValidator, RegexValidator, StepValueValidator
+from django.core.validators import (
+    MaxLengthValidator,
+    MaxValueValidator,
+    MinLengthValidator,
+    MinValueValidator,
+    RegexValidator,
+    StepValueValidator,
+)
 from django.db import connection, models
 from django.forms.models import BaseInlineFormSet
 from django.http import QueryDict
@@ -3860,6 +3867,20 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             required=False,
         )
         bounded_count = forms.IntegerField(required=False, min_value=2, max_value=5)
+        validator_bounded_count = forms.IntegerField(
+            required=False,
+            validators=[MinValueValidator(2), MaxValueValidator(5)],
+        )
+        validator_bounded_ratio = forms.FloatField(
+            required=False,
+            validators=[MinValueValidator(0.5), MaxValueValidator(2.5)],
+        )
+        mixed_bound_count = forms.IntegerField(
+            required=False,
+            min_value=4,
+            max_value=8,
+            validators=[MinValueValidator(2), MaxValueValidator(10)],
+        )
         stepped_count = forms.IntegerField(required=False, step_size=2)
         offset_count = forms.IntegerField(required=False, min_value=1, step_size=2)
         bounded_price = forms.DecimalField(
@@ -3868,6 +3889,12 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             max_value=Decimal("9.99"),
             max_digits=4,
             decimal_places=2,
+        )
+        validator_bounded_price = forms.DecimalField(
+            required=False,
+            max_digits=5,
+            decimal_places=2,
+            validators=[MinValueValidator(Decimal("1.00")), MaxValueValidator(Decimal("9.99"))],
         )
         stepped_price = forms.DecimalField(required=False, step_size=Decimal("0.25"), max_digits=4, decimal_places=2)
         product_code = forms.CharField(
@@ -3920,9 +3947,13 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             "validator_bounded_name": "Camera",
             "validator_combo_code": "CODE",
             "bounded_count": 3,
+            "validator_bounded_count": 3,
+            "validator_bounded_ratio": 1.5,
+            "mixed_bound_count": 5,
             "stepped_count": 4,
             "offset_count": 3,
             "bounded_price": "4.50",
+            "validator_bounded_price": "4.50",
             "stepped_price": "1.25",
             "product_code": " ABC ",
             "tracked_label": "Camera label",
@@ -3955,9 +3986,13 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert validated.validator_bounded_name == "Camera"
     assert validated.validator_combo_code == "CODE"
     assert validated.bounded_count == 3
+    assert validated.validator_bounded_count == 3
+    assert validated.validator_bounded_ratio == 1.5
+    assert validated.mixed_bound_count == 5
     assert validated.stepped_count == 4
     assert validated.offset_count == 3
     assert validated.bounded_price == Decimal("4.50")
+    assert validated.validator_bounded_price == Decimal("4.50")
     assert validated.stepped_price == Decimal("1.25")
     assert validated.product_code == "ABC"
     assert validated.tracked_label == "Camera label"
@@ -3974,6 +4009,13 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert json_schema["validator_combo_code"]["anyOf"][0]["minLength"] == 4
     assert json_schema["bounded_count"]["anyOf"][0]["maximum"] == 5
     assert json_schema["bounded_count"]["anyOf"][0]["minimum"] == 2
+    assert json_schema["validator_bounded_count"]["anyOf"][0]["maximum"] == 5
+    assert json_schema["validator_bounded_count"]["anyOf"][0]["minimum"] == 2
+    assert json_schema["validator_bounded_ratio"]["anyOf"][0]["type"] == "number"
+    assert json_schema["validator_bounded_ratio"]["anyOf"][0]["maximum"] == 2.5
+    assert json_schema["validator_bounded_ratio"]["anyOf"][0]["minimum"] == 0.5
+    assert json_schema["mixed_bound_count"]["anyOf"][0]["maximum"] == 8
+    assert json_schema["mixed_bound_count"]["anyOf"][0]["minimum"] == 4
     assert json_schema["stepped_count"]["anyOf"][0]["multipleOf"] == 2
     assert json_schema["offset_count"]["anyOf"][0]["minimum"] == 1
     assert "multipleOf" not in json_schema["offset_count"]["anyOf"][0]
@@ -3993,6 +4035,9 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert json_schema["bounded_price"]["anyOf"][0]["maximum"] == 9.99
     assert json_schema["bounded_price"]["anyOf"][0]["minimum"] == 1.0
     assert json_schema["bounded_price"]["anyOf"][1]["pattern"]
+    assert json_schema["validator_bounded_price"]["anyOf"][0]["maximum"] == 9.99
+    assert json_schema["validator_bounded_price"]["anyOf"][0]["minimum"] == 1.0
+    assert json_schema["validator_bounded_price"]["anyOf"][1]["pattern"]
     assert json_schema["stepped_price"]["anyOf"][0]["multipleOf"] == 0.25
     assert json_schema["product_code"]["anyOf"][0]["pattern"] == "^[A-Z]{3}$"
     assert json_schema["unstripped_code"]["anyOf"][0]["pattern"] == "^[A-Z]{3}$"
@@ -4057,6 +4102,19 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
                 "stock_status": "in_stock",
                 "validator_bounded_name": "toolong-name",
                 "validator_combo_code": "ABC",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "validator_bounded_count": 6,
+                "validator_bounded_ratio": 3.0,
+                "validator_bounded_price": "10.00",
             }
         )
 

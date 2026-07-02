@@ -501,10 +501,10 @@ class BaseAdmin:
             return bool
         if isinstance(field, forms.DecimalField):
             return Decimal
-        if isinstance(field, forms.IntegerField):
-            return int
         if isinstance(field, forms.FloatField):
             return float
+        if isinstance(field, forms.IntegerField):
+            return int
         if isinstance(field, forms.ComboField):
             return self.get_pydantic_type_for_combo_field(field)
         if isinstance(field, forms.SplitDateTimeField):
@@ -561,6 +561,11 @@ class BaseAdmin:
                 constraints["ge"] = field.min_value
             if getattr(field, "max_value", None) is not None:
                 constraints["le"] = field.max_value
+            validator_constraints = self.get_pydantic_numeric_validator_constraints_for_form_field(field)
+            if "ge" in validator_constraints:
+                constraints["ge"] = max(constraints.get("ge", validator_constraints["ge"]), validator_constraints["ge"])
+            if "le" in validator_constraints:
+                constraints["le"] = min(constraints.get("le", validator_constraints["le"]), validator_constraints["le"])
         if isinstance(field, forms.DecimalField):
             if getattr(field, "max_digits", None) is not None:
                 constraints["max_digits"] = field.max_digits
@@ -580,6 +585,27 @@ class BaseAdmin:
                 return validator
         return None
 
+    def get_pydantic_numeric_validator_constraints_for_form_field(self, field):
+        constraints = {}
+        for validator in getattr(field, "validators", ()):
+            limit_value = getattr(validator, "limit_value", None)
+            if callable(limit_value):
+                try:
+                    limit_value = limit_value()
+                except Exception:
+                    continue
+            if isinstance(validator, MinValueValidator):
+                constraints["ge"] = max(
+                    constraints.get("ge", limit_value),
+                    self.pydantic_numeric_bound_value(field, limit_value),
+                )
+            elif isinstance(validator, MaxValueValidator):
+                constraints["le"] = min(
+                    constraints.get("le", limit_value),
+                    self.pydantic_numeric_bound_value(field, limit_value),
+                )
+        return constraints
+
     def step_validator_has_zero_offset(self, validator):
         offset = getattr(validator, "offset", None)
         if offset is None:
@@ -596,6 +622,15 @@ class BaseAdmin:
             return int(value)
         if isinstance(field, (forms.FloatField, models.FloatField)):
             return float(value)
+        return value
+
+    def pydantic_numeric_bound_value(self, field, value):
+        if isinstance(field, forms.DecimalField):
+            return Decimal(str(value))
+        if isinstance(field, forms.FloatField):
+            return float(value)
+        if isinstance(field, forms.IntegerField):
+            return int(value)
         return value
 
     def get_pydantic_string_validator_constraints_for_form_field(self, field):

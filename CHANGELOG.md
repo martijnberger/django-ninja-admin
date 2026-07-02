@@ -33,6 +33,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Propagated explicit form-field string length validators into generated
   Pydantic request schemas, including stricter `MaxLengthValidator` limits and
   `MinLengthValidator` limits on custom `CharField` and `ComboField` inputs.
+- Propagated explicit form-field numeric validators into generated Pydantic
+  request schemas, including custom integer, float, and decimal fields, and
+  fixed custom `FloatField` inputs to advertise OpenAPI `number` schemas.
 - Expanded the implementation plan's testing, validation, and verification
   section with concrete parity evidence rules, schema/OpenAPI contract gates,
   database/version matrix expectations, performance checks, and release
