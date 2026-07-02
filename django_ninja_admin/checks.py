@@ -1252,7 +1252,9 @@ def _check_inline_fieldsets(inline_class, *, readonly_field_names=None):
     readonly_field_names = readonly_field_names or set()
     for index, fieldset in enumerate(fieldsets):
         if not isinstance(fieldset, (list, tuple)) or len(fieldset) != 2:
-            errors.append(_error(inline_class, f"The value of inline 'fieldsets[{index}]' must be a two-item tuple.", "E117"))
+            errors.append(
+                _error(inline_class, f"The value of inline 'fieldsets[{index}]' must be a two-item tuple.", "E117")
+            )
             continue
         _name, options = fieldset
         if not isinstance(options, Mapping):
@@ -1286,7 +1288,9 @@ def _check_inline_fieldsets(inline_class, *, readonly_field_names=None):
                 )
                 continue
             if field_name in seen_fields:
-                errors.append(_error(inline_class, f"The field '{field_name}' is duplicated in inline 'fieldsets'.", "E115"))
+                errors.append(
+                    _error(inline_class, f"The field '{field_name}' is duplicated in inline 'fieldsets'.", "E115")
+                )
             seen_fields.add(field_name)
             if field_name in readonly_field_names:
                 continue

@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.17 - 2026-07-02
+
 - Added inline admin checks for malformed nested `fieldsets` entries and
   duplicate or unknown fieldset fields.
 - Added inline admin checks for malformed `fields`, `exclude`, and
