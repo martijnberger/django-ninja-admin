@@ -345,6 +345,8 @@ Completed or mostly complete:
   and create/update persistence coverage.
 - Model choice fields now have typed output schemas with enum values where
   possible, including nullable choice fields.
+- Model primary keys now have non-null typed output schemas for persisted admin
+  response bodies.
 - Relation write schemas and OpenAPI examples now infer input types from the
   related primary key or explicit `to_field_name` target.
 - Relation output schemas now infer serialized foreign-key `attname` types from

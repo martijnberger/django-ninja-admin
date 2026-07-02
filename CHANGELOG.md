@@ -22,6 +22,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   dual-select form widget hints.
 - Tightened generated output schemas for model choice fields so response
   components advertise concrete enum values where possible.
+- Tightened generated output schemas for model primary keys so persisted admin
+  responses advertise non-null typed IDs.
 
 ## 0.1.22 - 2026-07-02
 

@@ -146,6 +146,11 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "FileFieldValue",
         "ImageFieldValue",
     } <= set(components)
+    assert components["ProductAdminOut"]["properties"]["id"] == {
+        "title": "Id",
+        "type": "integer",
+    }
+    assert "id" in components["ProductAdminOut"]["required"]
     assert components["ProductAdminOut"]["properties"]["manual"] == {
         "anyOf": [{"$ref": "#/components/schemas/FileFieldValue"}, {"type": "null"}]
     }
