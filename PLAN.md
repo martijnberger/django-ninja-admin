@@ -384,6 +384,8 @@ Completed or mostly complete:
   constraints in generated output schemas.
 - Bounded numeric model fields now preserve min/max validator constraints in
   generated output schemas, including nullable positive integer fields.
+- Email and URL model fields now preserve OpenAPI `format` metadata in
+  generated output schemas, including nullable URL fields.
 - Blank-but-non-null model fields now have non-null typed output schemas for
   persisted admin response bodies.
 - Relation write schemas and OpenAPI examples now infer input types from the

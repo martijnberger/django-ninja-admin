@@ -18,6 +18,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Tightened generated output schemas for bounded numeric model fields, including
   nullable positive integer fields, so response components preserve min/max
   validator constraints.
+- Tightened generated output schemas for email and URL model fields so response
+  components preserve `format: email` and `format: uri` metadata.
 
 ## 0.1.23 - 2026-07-02
 

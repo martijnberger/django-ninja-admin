@@ -883,6 +883,8 @@ class BaseAdmin:
                 custom_fields.append(self._choice_output_custom_field(field))
             elif isinstance(field, models.DecimalField):
                 custom_fields.append(self._model_field_output_custom_field(field))
+            elif isinstance(field, (models.EmailField, models.URLField)):
+                custom_fields.append(self._model_field_output_custom_field(field))
             elif self.get_pydantic_numeric_bounds_for_model_field(field):
                 custom_fields.append(self._model_field_output_custom_field(field))
             elif field.blank and not field.null:
@@ -920,6 +922,10 @@ class BaseAdmin:
         constraints = {}
         if field_type is str and getattr(field, "max_length", None) is not None:
             constraints["max_length"] = field.max_length
+        if isinstance(field, models.EmailField):
+            constraints["json_schema_extra"] = {"format": "email"}
+        elif isinstance(field, models.URLField):
+            constraints["json_schema_extra"] = {"format": "uri"}
         if isinstance(field, models.DecimalField):
             if getattr(field, "max_digits", None) is not None:
                 constraints["max_digits"] = field.max_digits

@@ -6660,6 +6660,54 @@ def test_image_field_has_typed_schema_and_image_metadata(db):
     }
 
 
+@isolate_apps("tests.testapp")
+def test_email_and_url_model_fields_have_formatted_output_schemas(db):
+    class Contact(models.Model):
+        email = models.EmailField()
+        website = models.URLField()
+        backup_url = models.URLField(null=True, blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(Contact)
+    model_admin = admin_site.get_model_admin(Contact)
+
+    output_schema = model_admin.get_output_schema().model_json_schema()
+
+    assert output_schema["properties"]["email"] == {
+        "format": "email",
+        "maxLength": 254,
+        "title": "Email",
+        "type": "string",
+    }
+    assert output_schema["properties"]["website"] == {
+        "format": "uri",
+        "maxLength": 200,
+        "title": "Website",
+        "type": "string",
+    }
+    assert output_schema["properties"]["backup_url"] == {
+        "anyOf": [{"format": "uri", "maxLength": 200, "type": "string"}, {"type": "null"}],
+        "default": None,
+        "title": "Backup Url",
+    }
+    assert model_admin.serialize_object(
+        Contact(
+            id=1,
+            email="user@example.com",
+            website="https://example.com/",
+            backup_url=None,
+        )
+    ) == {
+        "id": 1,
+        "email": "user@example.com",
+        "website": "https://example.com/",
+        "backup_url": None,
+    }
+
+
 def test_multipart_payload_uses_pydantic_request_validation(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/multipart",
