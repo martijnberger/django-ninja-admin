@@ -43,6 +43,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   changelists use it.
 - Added changelist metadata for default `ModelAdmin.ordering` and marked
   default-sorted columns in response metadata.
+- Made list-editable row metadata and bulk updates honor changelist `_to_field`
+  row identity.
 
 ## 0.1.15 - 2026-07-02
 

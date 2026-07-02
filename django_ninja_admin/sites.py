@@ -875,8 +875,14 @@ class NinjaAdminSite:
         def bulk_update(request, payload: bulk_payload_schema):
             if not model_admin.has_change_permission(request):
                 raise PermissionDenied
-            cl_queryset = site._filtered_queryset(request, model_admin)
-            return site._bulk_update(request, model_admin, payload, queryset=cl_queryset)
+            changelist = model_admin.get_changelist_instance(request)
+            return site._bulk_update(
+                request,
+                model_admin,
+                payload,
+                queryset=changelist.queryset,
+                object_id_field=changelist.object_id_field,
+            )
 
         self._register_custom_routes(
             router,
@@ -1123,16 +1129,16 @@ class NinjaAdminSite:
         list_editing_formset = []
         list_editing_rows = []
         if model_admin.list_editable:
-            pk_name = model_admin.model._meta.pk.name
             for index, obj in enumerate(changelist.result_list):
+                object_id = changelist.object_id_for(obj)
                 field_descriptions = model_admin.get_form_fields_description(request, obj)
                 editable_fields = [field for field in field_descriptions if field["name"] in model_admin.list_editable]
                 list_editing_formset.append(editable_fields)
                 list_editing_rows.append(
                     {
                         "index": index,
-                        "pk": obj.pk,
-                        "pk_name": pk_name,
+                        "pk": object_id,
+                        "pk_name": changelist.object_id_field,
                         "fields": editable_fields,
                     }
                 )
@@ -1769,7 +1775,7 @@ class NinjaAdminSite:
                 continue
             formset_data[f"{prefix}-{index}-{name}"] = value
 
-    def _bulk_update(self, request, model_admin, payload, *, queryset=None):
+    def _bulk_update(self, request, model_admin, payload, *, queryset=None, object_id_field=None):
         payload_data = [
             item.model_dump(mode="python", exclude_unset=True) if hasattr(item, "model_dump") else item
             for item in payload.data
@@ -1800,7 +1806,7 @@ class NinjaAdminSite:
                     }
                 ]
                 continue
-            obj = self._bulk_object_from_queryset(queryset, pk)
+            obj = self._bulk_object_from_queryset(queryset, pk, object_id_field=object_id_field)
             if obj is None:
                 row_errors[idx] = [{"message": "Object not found.", "param": "pk"}]
                 continue
@@ -1830,8 +1836,8 @@ class NinjaAdminSite:
                 results[str(idx)] = model_admin.serialize_object(obj, request)
         return {"data": results}
 
-    def _bulk_object_from_queryset(self, queryset, pk):
-        field = queryset.model._meta.pk
+    def _bulk_object_from_queryset(self, queryset, pk, *, object_id_field=None):
+        field = queryset.model._meta.pk if object_id_field is None else queryset.model._meta.get_field(object_id_field)
         try:
             object_id = field.to_python(pk)
             return queryset.get(**{field.name: object_id})

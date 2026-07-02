@@ -5174,6 +5174,32 @@ def test_changelist_routes_support_allowed_to_field(admin_client):
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_bulk_update_supports_changelist_to_field_row_identity(admin_client):
+    category = Category.objects.create(name="Cameras", slug="cameras")
+
+    changelist = admin_client.get("/slug-editable-admin/testapp/category?_to_field=slug&o=2")
+
+    assert changelist.status_code == 200
+    body = changelist.json()
+    assert body["config"]["to_field"] == "slug"
+    assert body["config"]["object_id_field"] == "slug"
+    assert body["rows"][0]["id"] == "cameras"
+    assert body["list_editing_rows"][0]["pk"] == "cameras"
+    assert body["list_editing_rows"][0]["pk_name"] == "slug"
+
+    response = admin_client.put(
+        "/slug-editable-admin/testapp/category/bulk?_to_field=slug",
+        data={"data": [{"pk": "cameras", "name": "Updated Cameras"}]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["data"]["0"]["name"] == "Updated Cameras"
+    category.refresh_from_db()
+    assert category.name == "Updated Cameras"
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_update_routes_support_allowed_to_field(admin_client):
     category = Category.objects.create(name="Cameras", slug="cameras")
 

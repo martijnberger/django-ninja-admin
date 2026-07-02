@@ -93,6 +93,12 @@ class SearchableCategoryAdmin(ModelAdmin):
     search_fields = ("name", "slug")
 
 
+class EditableSlugCategoryAdmin(SearchableCategoryAdmin):
+    list_display_links = ("slug",)
+    list_editable = ("name",)
+    ordering = ("slug",)
+
+
 class CategorySlugLinkAdmin(ModelAdmin):
     list_display = ("name", "category")
     autocomplete_fields = ("category",)
@@ -205,6 +211,10 @@ slug_autocomplete_site = NinjaAdminSite(name="slug_autocomplete_admin", include_
 slug_autocomplete_site.register(Category, SearchableCategoryAdmin)
 slug_autocomplete_site.register(CategorySlugLink, CategorySlugLinkAdmin)
 
+slug_editable_site = NinjaAdminSite(name="slug_editable_admin", include_auth=False)
+slug_editable_site.register(Category, EditableSlugCategoryAdmin)
+slug_editable_site.register(CategorySlugLink, CategorySlugLinkAdmin)
+
 
 class MultiAuthAdminSite(NinjaAdminSite):
     def whoami(self, request):
@@ -254,6 +264,7 @@ public_permissions_site = NinjaAdminSite(name="public_permissions_admin", auth=N
 urlpatterns = [
     path("custom-admin/", custom_site.urls),
     path("slug-autocomplete-admin/", slug_autocomplete_site.urls),
+    path("slug-editable-admin/", slug_editable_site.urls),
     path("multi-auth-admin/", multi_auth_site.urls),
     path("context-admin/", context_site.urls),
     path("locked-context-admin/", locked_context_site.urls),
