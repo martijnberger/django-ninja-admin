@@ -167,8 +167,8 @@ class NinjaAdminSite:
     def get_model_admin(self, model):
         try:
             return self._registry[model]
-        except KeyError:
-            raise NotRegistered(f"The model {model.__name__} is not registered.")
+        except KeyError as exc:
+            raise NotRegistered(f"The model {model.__name__} is not registered.") from exc
 
     def add_action(self, action, name=None):
         name = name or action.__name__
@@ -307,7 +307,7 @@ class NinjaAdminSite:
             page = paginator.page(page_number)
             return page, page.object_list, page.has_other_pages()
         except (ValueError, InvalidPage) as exc:
-            raise HttpError(404, f"Invalid page ({page_value}): {exc}")
+            raise HttpError(404, f"Invalid page ({page_value}): {exc}") from exc
 
     @property
     def urls(self):
@@ -569,8 +569,8 @@ class NinjaAdminSite:
             try:
                 model = apps.get_model(app_label, model_name)
                 model_admin = self.get_model_admin(model)
-            except (LookupError, NotRegistered):
-                raise Http404
+            except (LookupError, NotRegistered) as exc:
+                raise Http404 from exc
             if not model_admin.has_view_or_change_permission(request):
                 raise PermissionDenied
             return [ContentType.objects.get_for_model(model, for_concrete_model=False).pk]
@@ -784,8 +784,8 @@ class NinjaAdminSite:
             paginator = site.paginator(qs, per_page)
             try:
                 page_obj = paginator.page(page)
-            except InvalidPage:
-                raise Http404
+            except InvalidPage as exc:
+                raise Http404 from exc
             results = []
             for item in page_obj.object_list:
                 try:
@@ -853,8 +853,8 @@ class NinjaAdminSite:
                 source_field = source_model._meta.get_field(field_name)
                 remote_model = source_field.remote_field.model
                 model_admin = site.get_model_admin(remote_model)
-            except (AttributeError, LookupError, NotRegistered):
-                raise Http404
+            except (AttributeError, LookupError, NotRegistered) as exc:
+                raise Http404 from exc
             if field_name not in source_admin.get_autocomplete_fields(request):
                 raise Http404
             if not source_admin.has_view_or_change_permission(request):
@@ -885,8 +885,8 @@ class NinjaAdminSite:
             paginator = model_admin.get_paginator(request, qs, per_page)
             try:
                 page_obj = paginator.page(page)
-            except InvalidPage:
-                raise Http404
+            except InvalidPage as exc:
+                raise Http404 from exc
             return {
                 "results": [{"id": str(getattr(obj, to_field_name)), "text": str(obj)} for obj in page_obj.object_list],
                 "pagination": {
@@ -922,8 +922,8 @@ class NinjaAdminSite:
                 obj = model_admin.get_object(request, unquote(object_id))
                 if obj is None:
                     raise Http404
-            except (ObjectDoesNotExist, ValueError, ValidationError, NotRegistered):
-                raise Http404
+            except (ObjectDoesNotExist, ValueError, ValidationError, NotRegistered) as exc:
+                raise Http404 from exc
             if not model_admin.has_view_or_change_permission(request, obj):
                 raise PermissionDenied
             if callable(model_admin.view_on_site):
@@ -1986,7 +1986,7 @@ class NinjaAdminSite:
             return default
         try:
             return json.loads(raw_value)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as exc:
             raise NinjaValidationError(
                 [
                     {
@@ -1995,7 +1995,7 @@ class NinjaAdminSite:
                         "type": "json_invalid",
                     }
                 ]
-            )
+            ) from exc
 
     def _raise_request_validation(self, exc):
         errors = []
@@ -2015,7 +2015,7 @@ class NinjaAdminSite:
         else:
             try:
                 parts = request.parse_file_upload(request.META, request)
-            except MultiPartParserError:
+            except MultiPartParserError as exc:
                 raise NinjaValidationError(
                     [
                         {
@@ -2024,7 +2024,7 @@ class NinjaAdminSite:
                             "type": "multipart_invalid",
                         }
                     ]
-                )
+                ) from exc
         setattr(request, cache_name, parts)
         return parts
 

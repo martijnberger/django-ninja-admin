@@ -570,8 +570,8 @@ class ChangeList:
         value = self.params.get("pp") or self.model_admin.list_per_page
         try:
             per_page = int(value)
-        except (TypeError, ValueError):
-            raise AdminValidationError([{"message": "Invalid page size.", "param": "pp"}])
+        except (TypeError, ValueError) as exc:
+            raise AdminValidationError([{"message": "Invalid page size.", "param": "pp"}]) from exc
         if per_page < 1:
             raise AdminValidationError([{"message": "Invalid page size.", "param": "pp"}])
         return per_page
@@ -597,8 +597,8 @@ class ChangeList:
             return self.paginator.num_pages
         try:
             page_number = int(value)
-        except (TypeError, ValueError):
-            raise Http404(f"Invalid page ({value}).")
+        except (TypeError, ValueError) as exc:
+            raise Http404(f"Invalid page ({value}).") from exc
         if page_number < 1:
             raise Http404(f"Invalid page ({value}).")
         return page_number
@@ -607,7 +607,7 @@ class ChangeList:
         try:
             return self.paginator.page(self.page_num)
         except InvalidPage as exc:
-            raise Http404(f"Invalid page ({self.page_num}): {exc}")
+            raise Http404(f"Invalid page ({self.page_num}): {exc}") from exc
 
     def get_page_range(self):
         if not self.pagination_required:
