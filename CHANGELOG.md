@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   changelist relation prefetching, including string and `Prefetch` object
   support, system checks, and query-count coverage for callable many-to-many
   display columns.
+- Filtered autocomplete results through object-level remote
+  `has_view_permission(request, obj)` checks before pagination.
 
 ## 0.1.20 - 2026-07-02
 

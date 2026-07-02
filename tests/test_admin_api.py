@@ -6926,6 +6926,37 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
     assert response.json()["results"] == [{"id": "cameras", "text": "Cameras"}]
 
 
+def test_autocomplete_filters_object_level_view_permissions(admin_client, sample, monkeypatch):
+    category_admin = site.get_model_admin(Category)
+    hidden = Category.objects.create(name="Hidden")
+
+    def has_view_permission(request, obj=None):
+        return obj is None or obj.pk != hidden.pk
+
+    monkeypatch.setattr(category_admin, "has_view_permission", has_view_permission)
+
+    response = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "category",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"] == [{"id": str(sample.category_id), "text": "Cameras"}]
+    assert response.json()["pagination"] == {
+        "more": False,
+        "count": 1,
+        "num_pages": 1,
+        "page": 1,
+        "per_page": 20,
+        "has_next": False,
+        "has_previous": False,
+    }
+
+
 def test_actions_use_filtered_changelist_queryset(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/actions?stock_status__exact=out_of_stock",

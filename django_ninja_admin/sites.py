@@ -81,6 +81,12 @@ DEFAULT_AUTH = object()
 CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
 
 
+class _AutocompleteResultList(list):
+    def __init__(self, model, values):
+        super().__init__(values)
+        self.model = model
+
+
 class NinjaAdminSite:
     admin_class = ModelAdmin
     paginator = Paginator
@@ -699,7 +705,11 @@ class NinjaAdminSite:
                 qs = qs.distinct()
             if not qs.ordered:
                 qs = qs.order_by(remote_model._meta.pk.name)
-            paginator = model_admin.get_paginator(request, qs, 20)
+            visible_results = _AutocompleteResultList(
+                remote_model,
+                (obj for obj in qs if model_admin.has_view_permission(request, obj)),
+            )
+            paginator = model_admin.get_paginator(request, visible_results, 20)
             try:
                 page_obj = paginator.page(page)
             except InvalidPage:
