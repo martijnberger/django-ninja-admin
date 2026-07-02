@@ -280,6 +280,15 @@ def _widget_metadata(widget):
         metadata["format"] = widget.format
     if hasattr(widget, "needs_multipart_form"):
         metadata["needs_multipart_form"] = widget.needs_multipart_form
+    if getattr(widget, "option_template_name", None):
+        metadata["option_template_name"] = widget.option_template_name
+    if hasattr(widget, "add_id_index"):
+        metadata["add_id_index"] = bool(widget.add_id_index)
+    checked_attribute = getattr(widget, "checked_attribute", None)
+    if checked_attribute:
+        metadata["checked_attribute"] = _jsonish_value(checked_attribute)
+    if getattr(widget, "supports_microseconds", True) is False:
+        metadata["supports_microseconds"] = False
     return metadata
 
 

@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Exposed Django widget option-template, checked-attribute, add-id-index, and
+  microsecond-support metadata in form descriptions.
 - Exposed Django form field `empty_value` metadata in form descriptions.
 - Added Pydantic request-schema and form-description support for Django
   `NullBooleanField` tri-state values.

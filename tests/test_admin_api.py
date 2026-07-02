@@ -4560,6 +4560,9 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     ]
     assert fields_by_name["stock_status"]["attrs"]["default"] == "in_stock"
     assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
+    assert fields_by_name["stock_status"]["attrs"]["option_template_name"] == "django/forms/widgets/radio_option.html"
+    assert fields_by_name["stock_status"]["attrs"]["add_id_index"] is True
+    assert fields_by_name["stock_status"]["attrs"]["checked_attribute"] == {"checked": True}
     assert fields_by_name["stock_status"]["attrs"]["radio_orientation"] == VERTICAL
     assert fields_by_name["stock_status"]["attrs"]["radio"] == {
         "app_label": "testapp",
@@ -5150,6 +5153,7 @@ def test_form_description_exposes_multiwidget_metadata(db):
     assert attrs["widget"] == "SplitDateTimeWidget"
     assert attrs["template_name"] == "django/forms/widgets/splitdatetime.html"
     assert attrs["use_fieldset"] is True
+    assert attrs["supports_microseconds"] is False
     assert attrs["input_formats"] == [
         {"index": 0, "input_formats": ["%Y-%m-%d"]},
         {"index": 1, "input_formats": ["%H:%M"]},
@@ -5166,6 +5170,7 @@ def test_form_description_exposes_multiwidget_metadata(db):
             "input_type": "text",
             "format": "%Y-%m-%d",
             "needs_multipart_form": False,
+            "supports_microseconds": False,
         },
         {
             "name_suffix": "_1",
@@ -5178,6 +5183,7 @@ def test_form_description_exposes_multiwidget_metadata(db):
             "input_type": "text",
             "format": "%H:%M",
             "needs_multipart_form": False,
+            "supports_microseconds": False,
         },
     ]
     assert any(
