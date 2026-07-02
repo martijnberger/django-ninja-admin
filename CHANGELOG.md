@@ -54,6 +54,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `gte`/`lt` ranges while preserving the public year/month/day query params.
 - Added an admin system check that rejects non-string `date_hierarchy`
   configurations before field-path resolution.
+- Aligned bulk list-editable updates with direct change routes by skipping
+  empty change-log entries when `construct_change_message()` returns no
+  messages.
 
 ## 0.1.15 - 2026-07-02
 

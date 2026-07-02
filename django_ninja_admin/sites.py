@@ -1831,7 +1831,9 @@ class NinjaAdminSite:
                     updated = model_admin.save_form(request, form, change=True)
                     model_admin.save_model(request, updated, form, change=True)
                     model_admin.save_related(request, form, {}, change=True)
-                    model_admin.log_change(request, updated, model_admin.construct_change_message(request, form))
+                    change_message = model_admin.construct_change_message(request, form)
+                    if change_message:
+                        model_admin.log_change(request, updated, change_message)
                     obj = updated
                 results[str(idx)] = model_admin.serialize_object(obj, request)
         return {"data": results}

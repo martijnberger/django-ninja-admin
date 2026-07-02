@@ -5754,6 +5754,39 @@ def test_bulk_update_skips_unchanged_rows(admin_client, sample, monkeypatch):
     assert beta.stock_status == "out_of_stock"
 
 
+def test_bulk_update_skips_empty_change_log_entries(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    save_calls = []
+    log_calls = []
+    original_save_model = product_admin.save_model
+    original_log_change = product_admin.log_change
+
+    def save_model(request, obj, form, change):
+        save_calls.append(obj.pk)
+        return original_save_model(request, obj, form, change)
+
+    def log_change(request, obj, message):
+        log_calls.append((obj.pk, message))
+        return original_log_change(request, obj, message)
+
+    monkeypatch.setattr(product_admin, "save_model", save_model)
+    monkeypatch.setattr(product_admin, "log_change", log_change)
+    monkeypatch.setattr(product_admin, "construct_change_message", lambda request, form: [])
+
+    response = admin_client.put(
+        "/admin-api/testapp/product/bulk",
+        data={"data": [{"pk": sample.pk, "stock_status": "out_of_stock"}]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert save_calls == [sample.pk]
+    assert log_calls == []
+    assert not LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).exists()
+    sample.refresh_from_db()
+    assert sample.stock_status == "out_of_stock"
+
+
 def test_inline_mutations_check_inline_permissions(staff_client, sample):
     client = staff_client("change_product")
     image = ProductImage.objects.get(product=sample)
