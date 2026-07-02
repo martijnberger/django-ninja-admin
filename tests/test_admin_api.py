@@ -152,6 +152,12 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductAdminOut"]["properties"]["photo"] == {
         "anyOf": [{"$ref": "#/components/schemas/ImageFieldValue"}, {"type": "null"}]
     }
+    assert components["ProductAdminOut"]["properties"]["tags"] == {
+        "default": [],
+        "items": {"type": "integer"},
+        "title": "Tags",
+        "type": "array",
+    }
     output_example = components["ProductAdminOut"]["examples"][0]
     assert output_example["id"] == 1
     assert output_example["name"] == "example"

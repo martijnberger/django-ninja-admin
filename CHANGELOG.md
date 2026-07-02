@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Tightened generated output schemas for many-to-many fields so response
+  components advertise arrays of related target-field values instead of
+  unconstrained arrays.
+
 ## 0.1.22 - 2026-07-02
 
 - Added typed `PermissionsResponse` OpenAPI output and concrete success

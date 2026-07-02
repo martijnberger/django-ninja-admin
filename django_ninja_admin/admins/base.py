@@ -860,7 +860,7 @@ class BaseAdmin:
             if field.remote_field and field.name != "password":
                 custom_fields.append((f"{field.name}_label", str, None))
         for field in self.model._meta.many_to_many:
-            custom_fields.append((field.name, list[object], []))
+            custom_fields.append((field.name, list[self.get_pydantic_type_for_model_field(field.target_field)], []))
         custom_fields.extend(
             (name, field_type, default)
             for name, value in overrides.items()
@@ -875,6 +875,39 @@ class BaseAdmin:
             if len(value) == 1:
                 return value[0], None
         return value, None
+
+    def get_pydantic_type_for_model_field(self, field):
+        if isinstance(
+            field,
+            models.AutoField
+            | models.BigAutoField
+            | models.SmallAutoField
+            | models.IntegerField
+            | models.BigIntegerField
+            | models.PositiveIntegerField
+            | models.PositiveSmallIntegerField
+            | models.SmallIntegerField,
+        ):
+            return int
+        if isinstance(field, models.BooleanField):
+            return bool
+        if isinstance(field, models.DecimalField):
+            return Decimal
+        if isinstance(field, models.FloatField):
+            return float
+        if isinstance(field, models.DateTimeField):
+            return datetime
+        if isinstance(field, models.DateField):
+            return date
+        if isinstance(field, models.TimeField):
+            return time
+        if isinstance(field, models.DurationField):
+            return timedelta
+        if isinstance(field, models.UUIDField):
+            return UUID
+        if isinstance(field, models.JSONField):
+            return Any
+        return str
 
     def _schema_override_cache_key(self, overrides):
         return tuple((name, repr(value)) for name, value in overrides.items())

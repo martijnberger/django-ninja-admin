@@ -340,7 +340,9 @@ Completed or mostly complete:
   controls, with multipart rejection coverage for disallowed extensions.
 - Multipart create-route OpenAPI schemas now mark required file parts as
   required alongside the JSON `data` part.
-- Many-to-many fields now have Pydantic write schemas, JSON-safe change-form values, form relation metadata, output serialization, and create/update persistence coverage.
+- Many-to-many fields now have Pydantic write schemas, typed output schemas,
+  JSON-safe change-form values, form relation metadata, output serialization,
+  and create/update persistence coverage.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Relation form field descriptions now include structured related-model identity,
   selected option labels, and mount-aware endpoint/query metadata for
