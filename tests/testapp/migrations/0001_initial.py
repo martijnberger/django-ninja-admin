@@ -67,6 +67,17 @@ class Migration(migrations.Migration):
                 ),
                 ("description", models.TextField(blank=True)),
                 ("manual", models.FileField(blank=True, upload_to="manuals")),
+                (
+                    "photo",
+                    models.ImageField(
+                        blank=True,
+                        height_field="photo_height",
+                        upload_to="photos",
+                        width_field="photo_width",
+                    ),
+                ),
+                ("photo_width", models.PositiveIntegerField(blank=True, editable=False, null=True)),
+                ("photo_height", models.PositiveIntegerField(blank=True, editable=False, null=True)),
                 ("tags", models.ManyToManyField(blank=True, related_name="products", to="testapp.tag")),
                 (
                     "category",

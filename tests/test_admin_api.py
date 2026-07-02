@@ -1,6 +1,7 @@
 import json
 from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
+from io import BytesIO
 from uuid import UUID
 
 import pytest
@@ -24,6 +25,7 @@ from django.test.utils import CaptureQueriesContext, isolate_apps
 from django.utils import timezone
 from ninja import Status
 from ninja.security import SessionAuthIsStaff
+from PIL import Image
 from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin import (
@@ -108,6 +110,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "multipart/form-data"
     ]["schema"]
     assert multipart_schema["properties"]["manual"] == {"type": "string", "format": "binary"}
+    assert multipart_schema["properties"]["photo"] == {"type": "string", "format": "binary"}
     assert multipart_schema["required"] == ["data"]
     assert {
         "ProductAdminCreateData",
@@ -126,9 +129,13 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "ProductImageInlineChangeRow",
         "ProductAdminActionPayload",
         "FileFieldValue",
+        "ImageFieldValue",
     } <= set(components)
     assert components["ProductAdminOut"]["properties"]["manual"] == {
         "anyOf": [{"$ref": "#/components/schemas/FileFieldValue"}, {"type": "null"}]
+    }
+    assert components["ProductAdminOut"]["properties"]["photo"] == {
+        "anyOf": [{"$ref": "#/components/schemas/ImageFieldValue"}, {"type": "null"}]
     }
     mutation_response_schema = components["ProductAdminMutationResponse"]
     assert mutation_response_schema["required"] == ["data"]
@@ -388,6 +395,12 @@ def _request_schema_ref(operation):
 
 def _response_schema_ref(operation, status):
     return operation["responses"][status]["content"]["application/json"]["schema"]["$ref"]
+
+
+def _uploaded_png(name="photo.png", *, size=(2, 3), color=(255, 0, 0)):
+    stream = BytesIO()
+    Image.new("RGB", size, color).save(stream, format="PNG")
+    return SimpleUploadedFile(name, stream.getvalue(), content_type="image/png")
 
 
 def test_admin_checks_accept_valid_test_admins(db):
@@ -4322,6 +4335,13 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["manual"]["attrs"]["needs_multipart_form"] is True
     assert fields_by_name["manual"]["attrs"]["blank"] is True
     assert fields_by_name["manual"]["attrs"]["upload_to"] == "manuals"
+    assert fields_by_name["photo"]["type"] == "ImageField"
+    assert fields_by_name["photo"]["attrs"]["needs_multipart_form"] is True
+    assert fields_by_name["photo"]["attrs"]["image"] is True
+    assert fields_by_name["photo"]["attrs"]["accepted_content_types"] == ["image/*"]
+    assert fields_by_name["photo"]["attrs"]["upload_to"] == "photos"
+    assert fields_by_name["photo"]["attrs"]["width_field"] == "photo_width"
+    assert fields_by_name["photo"]["attrs"]["height_field"] == "photo_height"
     assert fields_by_name["tags"]["type"] == "ModelMultipleChoiceField"
     assert fields_by_name["tags"]["attrs"]["related_model"] == "testapp.tag"
     assert fields_by_name["tags"]["attrs"]["related_app_label"] == "testapp"
@@ -5146,6 +5166,71 @@ def test_file_field_can_be_uploaded_with_multipart_payload(admin_client, sample,
         change_entry = LogEntry.objects.filter(object_id=str(product.pk), action_flag=CHANGE).latest("action_time")
         changed_fields = json.loads(change_entry.change_message)[0]["changed"]["fields"]
         assert set(changed_fields) == {"Description", "Manual"}
+
+
+def test_image_field_validates_and_uploads_with_multipart_payload(admin_client, sample, tmp_path):
+    with override_settings(MEDIA_ROOT=tmp_path):
+        invalid = admin_client.patch(
+            f"/admin-api/testapp/product/{sample.pk}/multipart",
+            data=encode_multipart(
+                BOUNDARY,
+                {
+                    "data": json.dumps({"description": "Invalid image upload"}),
+                    "photo": SimpleUploadedFile("not-image.txt", b"not an image", content_type="text/plain"),
+                },
+            ),
+            content_type=MULTIPART_CONTENT,
+        )
+
+        assert invalid.status_code == 400
+        invalid_body = invalid.json()
+        assert invalid_body["errors"]["form"][0]["param"] == "photo"
+        assert Product.objects.get(pk=sample.pk).photo.name == ""
+
+        uploaded = _uploaded_png("cover.png", size=(2, 3))
+        changed = admin_client.patch(
+            f"/admin-api/testapp/product/{sample.pk}/multipart",
+            data=encode_multipart(
+                BOUNDARY,
+                {
+                    "data": json.dumps({"description": "Image uploaded"}),
+                    "photo": uploaded,
+                },
+            ),
+            content_type=MULTIPART_CONTENT,
+        )
+
+        assert changed.status_code == 200, changed.json()
+        sample.refresh_from_db()
+        assert sample.description == "Image uploaded"
+        assert sample.photo.name.startswith("photos/cover")
+        assert sample.photo_width == 2
+        assert sample.photo_height == 3
+        assert (tmp_path / sample.photo.name).exists()
+        assert changed.json()["data"]["photo"] == {
+            "name": sample.photo.name,
+            "url": f"/media/{sample.photo.name}",
+            "width": 2,
+            "height": 3,
+        }
+
+        detail = admin_client.get(f"/admin-api/testapp/product/{sample.pk}")
+        assert detail.status_code == 200
+        assert detail.json()["photo"] == {
+            "name": sample.photo.name,
+            "url": f"/media/{sample.photo.name}",
+            "width": 2,
+            "height": 3,
+        }
+
+        change_form = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+        photo_attrs = next(field["attrs"] for field in change_form.json()["form"]["fields"] if field["name"] == "photo")
+        assert photo_attrs["current_file"] == {
+            "name": sample.photo.name,
+            "url": f"/media/{sample.photo.name}",
+            "width": 2,
+            "height": 3,
+        }
 
 
 def test_file_field_metadata_handles_storage_without_public_url(admin_client, sample, monkeypatch):

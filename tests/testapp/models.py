@@ -58,6 +58,14 @@ class Product(models.Model):
     )
     description = models.TextField(blank=True)
     manual = models.FileField(upload_to="manuals", blank=True)
+    photo = models.ImageField(
+        upload_to="photos",
+        width_field="photo_width",
+        height_field="photo_height",
+        blank=True,
+    )
+    photo_width = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    photo_height = models.PositiveIntegerField(null=True, blank=True, editable=False)
 
     def __str__(self):
         return self.name
