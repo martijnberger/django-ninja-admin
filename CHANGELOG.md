@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added structured form choice options with typed `raw_value` metadata while
+  preserving the existing display-oriented `choices` pairs.
 - Made custom model actions honor object-level permission hooks before
   dispatching selected changelist rows.
 - Marked changelist columns as default-sorted when a custom

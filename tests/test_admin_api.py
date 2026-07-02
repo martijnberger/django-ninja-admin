@@ -3693,6 +3693,10 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
         for field in model_admin.get_form_fields_description(RequestFactory().get("/"))
     }
     assert fields_by_name["status_override"]["attrs"]["choices"] == [("draft", "Draft"), ("live", "Live")]
+    assert fields_by_name["status_override"]["attrs"]["choice_options"] == [
+        {"value": "draft", "raw_value": "draft", "label": "Draft"},
+        {"value": "live", "raw_value": "live", "label": "Live"},
+    ]
     assert "choice_groups" not in fields_by_name["status_override"]["attrs"]
     assert fields_by_name["grouped_status"]["attrs"]["choices"] == [
         ("draft", "Draft"),
@@ -3702,9 +3706,24 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
     assert fields_by_name["grouped_status"]["attrs"]["choice_groups"] == [
         {
             "label": "Publishing",
-            "options": [{"value": "draft", "label": "Draft"}, {"value": "live", "label": "Live"}],
+            "options": [
+                {"value": "draft", "raw_value": "draft", "label": "Draft"},
+                {"value": "live", "raw_value": "live", "label": "Live"},
+            ],
         },
-        {"label": "Archive", "options": [{"value": "archived", "label": "Archived"}]},
+        {
+            "label": "Archive",
+            "options": [{"value": "archived", "raw_value": "archived", "label": "Archived"}],
+        },
+    ]
+    assert fields_by_name["numeric_flags"]["attrs"]["choices"] == [("1", "One"), ("2", "Two")]
+    assert fields_by_name["numeric_flags"]["attrs"]["choice_options"] == [
+        {"value": "1", "raw_value": 1, "label": "One"},
+        {"value": "2", "raw_value": 2, "label": "Two"},
+    ]
+    assert fields_by_name["typed_decimal"]["attrs"]["choice_options"] == [
+        {"value": "1.25", "raw_value": "1.25", "label": "One"},
+        {"value": "2.50", "raw_value": "2.50", "label": "Two"},
     ]
 
     assert validated.status_override == "draft"

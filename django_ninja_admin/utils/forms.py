@@ -56,16 +56,19 @@ def _choice_value(value):
 
 
 def _choice_option(value, label):
-    return {"value": _choice_value(value), "label": str(label)}
+    raw = getattr(value, "value", value)
+    return {"value": _choice_value(value), "raw_value": _jsonish_value(raw), "label": str(label)}
 
 
 def _choice_metadata(choices):
     flat_choices = []
+    choice_options = []
     choice_groups = []
     ungrouped_options = []
 
     def add_flat(option):
         flat_choices.append((option["value"], option["label"]))
+        choice_options.append(option)
 
     def flush_ungrouped():
         nonlocal ungrouped_options
@@ -86,8 +89,8 @@ def _choice_metadata(choices):
         ungrouped_options.append(option)
     flush_ungrouped()
     if len(choice_groups) > 1 or any(group["label"] for group in choice_groups):
-        return flat_choices, choice_groups
-    return flat_choices, []
+        return flat_choices, choice_options, choice_groups
+    return flat_choices, choice_options, []
 
 
 def _jsonish_value(value):
@@ -411,8 +414,9 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     if input_formats:
         attrs["input_formats"] = input_formats
     if getattr(field, "choices", None):
-        choices, choice_groups = _choice_metadata(field.choices)
+        choices, choice_options, choice_groups = _choice_metadata(field.choices)
         attrs["choices"] = choices
+        attrs["choice_options"] = choice_options
         if choice_groups:
             attrs["choice_groups"] = choice_groups
     attrs.update(_filepath_metadata(field))
