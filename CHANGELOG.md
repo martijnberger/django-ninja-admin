@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.16 - 2026-07-02
+
 - Added deterministic default OpenAPI operation IDs for custom site/model
   admin routes that do not provide an explicit `operation_id`, including
   multi-method custom routes.
