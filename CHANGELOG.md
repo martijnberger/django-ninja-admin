@@ -52,6 +52,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   or unique constraint.
 - Switched changelist date hierarchy filtering to Django-admin-style bounded
   `gte`/`lt` ranges while preserving the public year/month/day query params.
+- Added an admin system check that rejects non-string `date_hierarchy`
+  configurations before field-path resolution.
 
 ## 0.1.15 - 2026-07-02
 

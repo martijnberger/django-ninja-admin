@@ -966,12 +966,19 @@ def test_admin_checks_allow_relation_path_date_hierarchy(db):
     class RelatedDateHierarchyImageAdmin(ModelAdmin):
         date_hierarchy = "product__created_at"
 
+    class BadDateHierarchyProductAdmin(ModelAdmin):
+        date_hierarchy = 123
+
     admin_site = NinjaAdminSite(include_auth=False)
     admin_site.register(ProductImage, RelatedDateHierarchyImageAdmin)
+    bad_site = NinjaAdminSite(include_auth=False)
+    bad_site.register(Product, BadDateHierarchyProductAdmin)
 
     error_ids = {error.id for error in admin_site.get_model_admin(ProductImage).check()}
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
     assert error_ids.isdisjoint({"django_ninja_admin.E028", "django_ninja_admin.E029"})
+    assert bad_ids == {"django_ninja_admin.E096"}
 
 
 def test_admin_checks_allow_expression_ordering(db):

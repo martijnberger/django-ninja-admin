@@ -871,8 +871,10 @@ def _check_relation_fields(
 
 def _check_date_hierarchy(model_admin):
     field_name = getattr(model_admin, "date_hierarchy", None)
-    if not field_name:
+    if field_name is None:
         return []
+    if not isinstance(field_name, str):
+        return [_error(model_admin.__class__, "The value of 'date_hierarchy' must be a field path string.", "E096")]
     try:
         field = model_field_from_path(model_admin.model, field_name)
     except FieldDoesNotExist:
