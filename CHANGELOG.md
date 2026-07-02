@@ -83,6 +83,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Fixed related and related-only list filters to emit remote `to_field` values
   in filter choices and query strings, including `ForeignKey(to_field=...)`
   relations.
+- Expanded CI release-hardening coverage to include Python 3.13 and 3.14 lanes,
+  non-experimental Django 6.0 checks, and matrix-pinned installed-project
+  sample smoke via `DJANGO_NINJA_ADMIN_SMOKE_DJANGO`.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.

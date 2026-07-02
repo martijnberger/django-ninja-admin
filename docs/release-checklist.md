@@ -21,6 +21,9 @@ just check
 - `just sample-project-smoke` to install the built wheel into a temporary
   Django project, register a model, mount `site.urls`, open docs/OpenAPI, and
   exercise authenticated model discovery.
+- Set `DJANGO_NINJA_ADMIN_SMOKE_DJANGO` to a concrete requirement such as
+  `django>=5.2,<5.3` when the installed-project smoke should use the same
+  Django lane as a compatibility matrix job.
 - `just sample-project-full` is available as the broader installed-wheel sample
   project gate for release candidates. It exercises richer registered-admin
   workflows including autocomplete, list filters/search, list-editable bulk
@@ -50,7 +53,9 @@ behavior, or permission boundaries.
   inline constraints, and rollback after late failures.
 - Run `just postgres-test` for lookup, ordering, transaction, protected-delete,
   constraint, JSON-field, date/time, and facet/count behavior.
-- Review CI results across the supported Django 5.0+ and Python 3.12+ matrix.
+- Review CI results across the supported Django 5.0+ and Python 3.12+ matrix,
+  including installed-wheel sample-project smoke pinned to each matrix Django
+  requirement.
 - Run `just openapi-diff <previous-openapi.json> <candidate-openapi.json>` when
   comparing release candidates or reviewed OpenAPI artifacts.
 - Run `just generated-client-smoke` to prove a clean installed project can use

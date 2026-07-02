@@ -26,10 +26,22 @@ jobs:
             django: ">=5.2,<5.3"
             python-version: "3.12"
             experimental: false
+          - django-label: "5.2"
+            django: ">=5.2,<5.3"
+            python-version: "3.13"
+            experimental: false
           - django-label: "6.0"
             django: ">=6.0,<6.1"
             python-version: "3.12"
-            experimental: true
+            experimental: false
+          - django-label: "6.0"
+            django: ">=6.0,<6.1"
+            python-version: "3.13"
+            experimental: false
+          - django-label: "6.0"
+            django: ">=6.0,<6.1"
+            python-version: "3.14"
+            experimental: false
 
     steps:
       - name: Check out repository
@@ -64,6 +76,8 @@ jobs:
         run: just package-smoke
 
       - name: Sample project smoke
+        env:
+          DJANGO_NINJA_ADMIN_SMOKE_DJANGO: django${{ matrix.django }}
         run: just sample-project-smoke
 
   postgres:

@@ -26,6 +26,11 @@ def venv_python(venv_dir: Path) -> Path:
     return venv_dir / "bin" / "python"
 
 
+def smoke_django_requirements() -> list[str]:
+    requirement = os.environ.get("DJANGO_NINJA_ADMIN_SMOKE_DJANGO")
+    return [requirement] if requirement else []
+
+
 def main() -> None:
     uv = shutil.which("uv")
     if uv is None:
@@ -47,7 +52,18 @@ def main() -> None:
 
         run([uv, "venv", "--python", sys.executable, str(venv_dir)], env=uv_env)
         python = venv_python(venv_dir)
-        run([uv, "pip", "install", "--python", str(python), str(wheels[-1])], env=uv_env)
+        run(
+            [
+                uv,
+                "pip",
+                "install",
+                "--python",
+                str(python),
+                *smoke_django_requirements(),
+                str(wheels[-1]),
+            ],
+            env=uv_env,
+        )
 
         write_sample_project(project_dir)
         run([str(python), str(project_dir / "sample_smoke.py")], cwd=project_dir)

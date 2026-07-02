@@ -7,7 +7,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from sample_project_smoke import run, venv_python, write_file
+from sample_project_smoke import run, smoke_django_requirements, venv_python, write_file
 
 
 def main() -> None:
@@ -31,7 +31,18 @@ def main() -> None:
 
         run([uv, "venv", "--python", sys.executable, str(venv_dir)], env=uv_env)
         python = venv_python(venv_dir)
-        run([uv, "pip", "install", "--python", str(python), str(wheels[-1])], env=uv_env)
+        run(
+            [
+                uv,
+                "pip",
+                "install",
+                "--python",
+                str(python),
+                *smoke_django_requirements(),
+                str(wheels[-1]),
+            ],
+            env=uv_env,
+        )
 
         write_sample_project(project_dir)
         subprocess.run([str(python), str(project_dir / "sample_full.py")], cwd=project_dir, check=True)
