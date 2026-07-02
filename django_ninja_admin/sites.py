@@ -684,7 +684,7 @@ class NinjaAdminSite:
                 qs = qs.distinct()
             if not qs.ordered:
                 qs = qs.order_by(remote_model._meta.pk.name)
-            paginator = model_admin.paginator(qs, 20)
+            paginator = model_admin.get_paginator(request, qs, 20)
             try:
                 page_obj = paginator.page(page)
             except InvalidPage:

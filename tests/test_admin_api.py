@@ -5446,6 +5446,48 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
     assert bad_page.status_code == 404
 
 
+def test_autocomplete_uses_remote_model_admin_paginator_hook(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    tag_admin = site.get_model_admin(Tag)
+    monkeypatch.setattr(product_admin, "autocomplete_fields", ("tags",))
+    Tag.objects.bulk_create(Tag(name=f"Tag {index:02d}") for index in range(3))
+    calls = {}
+
+    def get_paginator(request, queryset, per_page, orphans=0, allow_empty_first_page=True):
+        calls["path"] = request.path
+        calls["model"] = queryset.model
+        calls["per_page"] = per_page
+        calls["orphans"] = orphans
+        calls["allow_empty_first_page"] = allow_empty_first_page
+        return Paginator(
+            queryset,
+            per_page,
+            orphans=orphans,
+            allow_empty_first_page=allow_empty_first_page,
+        )
+
+    monkeypatch.setattr(tag_admin, "get_paginator", get_paginator)
+
+    response = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "tags",
+            "term": "Tag",
+        },
+    )
+
+    assert response.status_code == 200
+    assert calls == {
+        "path": "/admin-api/autocomplete",
+        "model": Tag,
+        "per_page": 20,
+        "orphans": 0,
+        "allow_empty_first_page": True,
+    }
+
+
 @override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_autocomplete_uses_remote_related_to_field(admin_client):
     Category.objects.create(name="Cameras", slug="cameras")

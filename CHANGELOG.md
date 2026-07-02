@@ -57,6 +57,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Aligned bulk list-editable updates with direct change routes by skipping
   empty change-log entries when `construct_change_message()` returns no
   messages.
+- Made autocomplete pagination use the remote model admin's
+  `get_paginator()` hook.
 
 ## 0.1.15 - 2026-07-02
 
