@@ -16,7 +16,16 @@ from django.urls import reverse
 from django.utils.dateparse import parse_duration
 from django.utils.safestring import mark_safe
 from ninja import Schema
-from pydantic import AfterValidator, AnyUrl, BeforeValidator, ConfigDict, Field, IPvAnyAddress, create_model
+from pydantic import (
+    AfterValidator,
+    AnyUrl,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    IPvAnyAddress,
+    TypeAdapter,
+    create_model,
+)
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
@@ -624,7 +633,7 @@ class BaseAdmin:
         return tuple((name, repr(value)) for name, value in overrides.items())
 
     def get_form_fields_description(self, request, obj=None, *, initial=None):
-        return form_field_descriptions(
+        descriptions = form_field_descriptions(
             self.get_form_class(request, obj, change=obj is not None),
             readonly_fields=self.get_readonly_fields(request, obj),
             instance=obj,
@@ -638,9 +647,15 @@ class BaseAdmin:
             radio_fields=self.radio_fields,
             prepopulated_fields=self.get_prepopulated_fields(request, obj),
         )
+        return self.apply_form_schema_field_override_metadata(
+            descriptions,
+            request,
+            obj,
+            change=obj is not None,
+        )
 
     def get_changelist_form_fields_description(self, request, obj=None):
-        return form_field_descriptions(
+        descriptions = form_field_descriptions(
             self.get_changelist_form_class(request),
             instance=obj,
             model_admin=self,
@@ -652,6 +667,22 @@ class BaseAdmin:
             radio_fields=self.radio_fields,
             prepopulated_fields=self.get_prepopulated_fields(request, obj),
         )
+        return self.apply_form_schema_field_override_metadata(descriptions, request, obj, change=True)
+
+    def apply_form_schema_field_override_metadata(self, descriptions, request=None, obj=None, *, change=False):
+        overrides = self.get_form_schema_field_overrides(request, obj, change=change) or {}
+        if not overrides:
+            return descriptions
+        for description in descriptions:
+            override = overrides.get(description["name"])
+            if override is None:
+                continue
+            description["attrs"]["input_schema_override"] = self.form_schema_field_override_metadata(override)
+        return descriptions
+
+    def form_schema_field_override_metadata(self, override):
+        field_type, _default = self._normalize_schema_override(override)
+        return {"schema": TypeAdapter(field_type).json_schema()}
 
     def get_changeform_initial_data(self, request):
         initial = dict(getattr(request, "GET", {}).items())

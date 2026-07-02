@@ -3805,6 +3805,28 @@ def test_form_schema_field_overrides_drive_parent_bulk_and_inline_schemas(sample
     with pytest.raises(PydanticValidationError):
         inline_row_schema.model_validate({"title": "Front", "details": {"priority": "high"}})
 
+    request = RequestFactory().get("/")
+    fields_by_name = {field["name"]: field for field in model_admin.get_form_fields_description(request)}
+    assert fields_by_name["metadata"]["attrs"]["input_schema_override"]["schema"]["additionalProperties"][
+        "type"
+    ] == "integer"
+    assert fields_by_name["stock_status"]["attrs"]["input_schema_override"]["schema"]["type"] == "boolean"
+    assert "input_schema_override" not in fields_by_name["name"]["attrs"]
+
+    changelist_fields_by_name = {
+        field["name"]: field
+        for field in model_admin.get_changelist_form_fields_description(request)
+    }
+    assert changelist_fields_by_name["stock_status"]["attrs"]["input_schema_override"]["schema"]["type"] == "boolean"
+
+    inline_fields_by_name = {
+        field["name"]: field
+        for field in inline.get_form_fields_description(request, None)
+    }
+    assert inline_fields_by_name["details"]["attrs"]["input_schema_override"]["schema"]["additionalProperties"][
+        "type"
+    ] == "integer"
+
 
 def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
     uuid_choice = "550e8400-e29b-41d4-a716-446655440000"

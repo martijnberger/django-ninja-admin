@@ -191,7 +191,8 @@ Completed or mostly complete:
   before generated string constraints such as regex patterns.
 - Pydantic parent, inline, and bulk row request schemas now support
   `form_schema_field_overrides` for explicit per-field input/OpenAPI types
-  while preserving Django form validation as the persistence authority.
+  and form-description metadata while preserving Django form validation as the
+  persistence authority.
 - Pydantic request schemas now carry Django form string length, field/validator
   regex pattern, numeric bound, and decimal precision constraints into
   generated validation/OpenAPI schemas.

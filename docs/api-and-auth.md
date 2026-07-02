@@ -67,7 +67,9 @@ class ProductAdmin(ModelAdmin):
 
 Use `form_schema_field_overrides` when a form field needs a more precise
 Pydantic request/OpenAPI type than the package can infer automatically. Django
-`ModelForm` validation still remains authoritative for persistence.
+`ModelForm` validation still remains authoritative for persistence. Form
+descriptions expose the override under `attrs.input_schema_override.schema` so
+frontends can render the same input contract that OpenAPI advertises.
 
 ```python
 from django import forms
