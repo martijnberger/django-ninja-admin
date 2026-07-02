@@ -280,8 +280,9 @@ Completed or mostly complete:
   relation paths in `list_display`, independent of sortability.
 - Changelist N+1 hardening now also infers `select_related()` paths from display callables/methods whose `admin_order_field` traverses FK or one-to-one relations.
 - Changelist N+1 hardening now supports explicit `list_prefetch_related` /
-  `get_list_prefetch_related()` relation prefetches for callable display
-  columns that intentionally touch many-valued relations.
+  `get_list_prefetch_related()` relation prefetches, including string and
+  `Prefetch` entries, for callable display columns that intentionally touch
+  many-valued relations.
 - Phase 0 parity matrix at `docs/parity-matrix.md`.
 - Initial admin system checks for display, form layout, filters, search/order fields, relation widgets, radio fields, widget-option conflicts, date hierarchy, actions, and inlines.
 - Relation widget checks now reject reverse relations in `autocomplete_fields` and `raw_id_fields`, preventing frontend metadata for unsupported admin widget targets.

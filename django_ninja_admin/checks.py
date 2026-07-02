@@ -825,11 +825,26 @@ def _check_list_prefetch_related(model_admin):
 
     errors = []
     for item in value:
-        if not isinstance(item, str):
-            errors.append(_error(model_admin.__class__, "Items in 'list_prefetch_related' must be strings.", "E118"))
+        lookup = _prefetch_related_lookup(item)
+        if lookup is None:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    "Items in 'list_prefetch_related' must be strings or Prefetch objects.",
+                    "E118",
+                )
+            )
             continue
-        errors.extend(_check_prefetch_related_path(model_admin, item))
+        errors.extend(_check_prefetch_related_path(model_admin, lookup))
     return errors
+
+
+def _prefetch_related_lookup(item):
+    if isinstance(item, str):
+        return item
+    if isinstance(item, models.Prefetch):
+        return item.prefetch_through
+    return None
 
 
 def _check_prefetch_related_path(model_admin, field_path):
