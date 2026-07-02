@@ -245,6 +245,9 @@ Completed or mostly complete:
 - Pydantic request schemas now carry Django form string length, field/validator
   regex pattern, numeric bound, and decimal precision constraints into
   generated validation/OpenAPI schemas.
+- Pydantic request schemas now carry explicit form-field string length
+  validators into generated validation/OpenAPI schemas, including custom
+  `CharField` and `ComboField` inputs.
 - Form descriptions now expose widget template, option-template, checked-state,
   add-id-index, fieldset, format, microsecond-support, and `MultiWidget`
   subwidget metadata plus Django `BoundField` HTML names, generated IDs, label

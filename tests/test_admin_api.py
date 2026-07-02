@@ -3845,6 +3845,20 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             input_time_formats=["%H:%M"],
         )
         bounded_name = forms.CharField(required=False, min_length=3, max_length=8)
+        validator_bounded_name = forms.CharField(
+            required=False,
+            max_length=30,
+            validators=[MinLengthValidator(3), MaxLengthValidator(8)],
+        )
+        validator_combo_code = forms.ComboField(
+            fields=[
+                forms.CharField(
+                    max_length=20,
+                    validators=[MinLengthValidator(4), MaxLengthValidator(10)],
+                )
+            ],
+            required=False,
+        )
         bounded_count = forms.IntegerField(required=False, min_value=2, max_value=5)
         stepped_count = forms.IntegerField(required=False, step_size=2)
         offset_count = forms.IntegerField(required=False, min_value=1, step_size=2)
@@ -3903,6 +3917,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             "optional_reference": "REF-1",
             "release_window": ["2026-07-01", "09:30"],
             "bounded_name": "Camera",
+            "validator_bounded_name": "Camera",
+            "validator_combo_code": "CODE",
             "bounded_count": 3,
             "stepped_count": 4,
             "offset_count": 3,
@@ -3936,6 +3952,8 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert validated.optional_reference == "REF-1"
     assert validated.release_window == (date(2026, 7, 1), time(9, 30))
     assert validated.bounded_name == "Camera"
+    assert validated.validator_bounded_name == "Camera"
+    assert validated.validator_combo_code == "CODE"
     assert validated.bounded_count == 3
     assert validated.stepped_count == 4
     assert validated.offset_count == 3
@@ -3950,6 +3968,10 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     json_schema = schema.model_json_schema()["properties"]
     assert json_schema["bounded_name"]["anyOf"][0]["maxLength"] == 8
     assert json_schema["bounded_name"]["anyOf"][0]["minLength"] == 3
+    assert json_schema["validator_bounded_name"]["anyOf"][0]["maxLength"] == 8
+    assert json_schema["validator_bounded_name"]["anyOf"][0]["minLength"] == 3
+    assert json_schema["validator_combo_code"]["anyOf"][0]["maxLength"] == 10
+    assert json_schema["validator_combo_code"]["anyOf"][0]["minLength"] == 4
     assert json_schema["bounded_count"]["anyOf"][0]["maximum"] == 5
     assert json_schema["bounded_count"]["anyOf"][0]["minimum"] == 2
     assert json_schema["stepped_count"]["anyOf"][0]["multipleOf"] == 2
@@ -4023,6 +4045,18 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
                 "unstripped_code": "XYZ",
                 "sku": "SKU-123",
                 "slug": "camera-case",
+            }
+        )
+
+    with pytest.raises(PydanticValidationError):
+        schema.model_validate(
+            {
+                "name": "Typed payload",
+                "category": sample.category_id,
+                "price": "9.00",
+                "stock_status": "in_stock",
+                "validator_bounded_name": "toolong-name",
+                "validator_combo_code": "ABC",
             }
         )
 

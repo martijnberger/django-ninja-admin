@@ -552,6 +552,7 @@ class BaseAdmin:
                 constraints["min_length"] = field.min_length
             if getattr(field, "max_length", None) is not None:
                 constraints["max_length"] = field.max_length
+            constraints.update(self.get_pydantic_string_validator_constraints_for_form_field(field))
             pattern = self.get_pydantic_pattern_for_form_field(field)
             if pattern:
                 constraints["pattern"] = pattern
@@ -596,6 +597,24 @@ class BaseAdmin:
         if isinstance(field, (forms.FloatField, models.FloatField)):
             return float(value)
         return value
+
+    def get_pydantic_string_validator_constraints_for_form_field(self, field):
+        constraints = {}
+        field_max_length = getattr(field, "max_length", None)
+        for validator in getattr(field, "validators", ()):
+            limit_value = getattr(validator, "limit_value", None)
+            if callable(limit_value):
+                try:
+                    limit_value = limit_value()
+                except Exception:
+                    continue
+            if isinstance(validator, MinLengthValidator):
+                constraints["min_length"] = max(constraints.get("min_length", limit_value), limit_value)
+            elif isinstance(validator, MaxLengthValidator) and (
+                field_max_length is None or limit_value < field_max_length
+            ):
+                constraints["max_length"] = min(constraints.get("max_length", limit_value), limit_value)
+        return constraints
 
     def get_pydantic_pattern_for_form_field(self, field):
         pattern = self.normalize_pydantic_pattern(getattr(field, "regex", None))
@@ -651,6 +670,17 @@ class BaseAdmin:
                 constraints["min_length"] = subfield.min_length
             if "max_length" not in constraints and getattr(subfield, "max_length", None) is not None:
                 constraints["max_length"] = subfield.max_length
+            validator_constraints = self.get_pydantic_string_validator_constraints_for_form_field(subfield)
+            if "min_length" in validator_constraints:
+                constraints["min_length"] = max(
+                    constraints.get("min_length", validator_constraints["min_length"]),
+                    validator_constraints["min_length"],
+                )
+            if "max_length" in validator_constraints:
+                constraints["max_length"] = min(
+                    constraints.get("max_length", validator_constraints["max_length"]),
+                    validator_constraints["max_length"],
+                )
             if "pattern" not in constraints:
                 pattern = self.get_pydantic_pattern_for_form_field(subfield)
                 if pattern:

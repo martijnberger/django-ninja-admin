@@ -30,6 +30,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   and explicit `MinLengthValidator` limits.
 - Propagated zero-offset model `StepValueValidator` constraints into generated
   output schemas and relation target schemas as OpenAPI `multipleOf` metadata.
+- Propagated explicit form-field string length validators into generated
+  Pydantic request schemas, including stricter `MaxLengthValidator` limits and
+  `MinLengthValidator` limits on custom `CharField` and `ComboField` inputs.
 - Expanded the implementation plan's testing, validation, and verification
   section with concrete parity evidence rules, schema/OpenAPI contract gates,
   database/version matrix expectations, performance checks, and release
