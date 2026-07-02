@@ -62,6 +62,19 @@ class MessageResponse(Schema):
 
 
 class PermissionMap(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "has_add_permission": True,
+                    "has_change_permission": True,
+                    "has_delete_permission": False,
+                    "has_view_permission": True,
+                }
+            ]
+        }
+    )
+
     has_add_permission: bool = False
     has_change_permission: bool = False
     has_delete_permission: bool = False
@@ -69,6 +82,25 @@ class PermissionMap(Schema):
 
 
 class ModelSummary(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "Products",
+                    "object_name": "Product",
+                    "app_label": "shop",
+                    "model_name": "product",
+                    "perms": {
+                        "has_add_permission": True,
+                        "has_change_permission": True,
+                        "has_delete_permission": False,
+                        "has_view_permission": True,
+                    },
+                }
+            ]
+        }
+    )
+
     name: str
     object_name: str
     app_label: str
@@ -77,6 +109,32 @@ class ModelSummary(Schema):
 
 
 class AppSummary(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "name": "Shop",
+                    "app_label": "shop",
+                    "has_module_perms": True,
+                    "models": [
+                        {
+                            "name": "Products",
+                            "object_name": "Product",
+                            "app_label": "shop",
+                            "model_name": "product",
+                            "perms": {
+                                "has_add_permission": True,
+                                "has_change_permission": True,
+                                "has_delete_permission": False,
+                                "has_view_permission": True,
+                            },
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
     name: str
     app_label: str
     has_module_perms: bool
@@ -84,12 +142,69 @@ class AppSummary(Schema):
 
 
 class SiteContext(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "site_title": "Django Ninja Admin",
+                    "site_header": "Django Ninja Administration",
+                    "site_url": "/",
+                    "has_permission": True,
+                    "available_apps": [
+                        {
+                            "name": "Shop",
+                            "app_label": "shop",
+                            "has_module_perms": True,
+                            "models": [
+                                {
+                                    "name": "Products",
+                                    "object_name": "Product",
+                                    "app_label": "shop",
+                                    "model_name": "product",
+                                    "perms": {
+                                        "has_add_permission": True,
+                                        "has_change_permission": True,
+                                        "has_delete_permission": False,
+                                        "has_view_permission": True,
+                                    },
+                                }
+                            ],
+                        }
+                    ],
+                    "is_nav_sidebar_enabled": True,
+                }
+            ]
+        }
+    )
+
     site_title: str
     site_header: str
     site_url: str
     has_permission: bool
     available_apps: list[AppSummary]
     is_nav_sidebar_enabled: bool
+
+
+class PermissionsResponse(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "is_authenticated": True,
+                    "is_active": True,
+                    "is_staff": True,
+                    "is_superuser": False,
+                    "has_permission": True,
+                }
+            ]
+        }
+    )
+
+    is_authenticated: bool
+    is_active: bool
+    is_staff: bool
+    is_superuser: bool
+    has_permission: bool
 
 
 FIELD_DESCRIPTION_ATTRS_EXAMPLE = {
@@ -412,6 +527,43 @@ class HistoryItem(Schema):
 
 
 class HistoryResponse(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "pagination": {
+                        "num_pages": 1,
+                        "count": 1,
+                        "has_next": False,
+                        "has_previous": False,
+                        "page": 1,
+                        "per_page": 20,
+                    },
+                    "results": [
+                        {
+                            "id": 1,
+                            "action_time": "2026-07-02T12:00:00+00:00",
+                            "user_id": 1,
+                            "content_type_id": 12,
+                            "model": "shop.product",
+                            "app_label": "shop",
+                            "model_name": "product",
+                            "model_verbose_name": "product",
+                            "model_verbose_name_plural": "products",
+                            "object_id": "1",
+                            "object_repr": "Tripod",
+                            "detail_url": "/admin-api/shop/product/1",
+                            "change_form_url": "/admin-api/shop/product/1/form",
+                            "action_flag": 2,
+                            "change_message": [{"changed": {"fields": ["Name"]}}],
+                            "change_message_text": "Changed Name.",
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
     pagination: Pagination
     results: list[HistoryItem]
 
@@ -432,9 +584,30 @@ class AutocompletePagination(Schema):
 
 
 class AutocompleteResponse(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "results": [{"id": "1", "text": "Cameras"}],
+                    "pagination": {
+                        "more": False,
+                        "count": 1,
+                        "num_pages": 1,
+                        "page": 1,
+                        "per_page": 20,
+                        "has_next": False,
+                        "has_previous": False,
+                    },
+                }
+            ]
+        }
+    )
+
     results: list[AutocompleteItem]
     pagination: AutocompletePagination
 
 
 class ViewOnSiteResponse(Schema):
+    model_config = ConfigDict(json_schema_extra={"examples": [{"url": "https://example.com/products/1/"}]})
+
     url: str

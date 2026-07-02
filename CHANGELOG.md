@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Added typed `PermissionsResponse` OpenAPI output and concrete success
+  examples for built-in site-route response schemas.
+
 ## 0.1.21 - 2026-07-02
 
 - Added `ModelAdmin.list_prefetch_related` / `get_list_prefetch_related()` for

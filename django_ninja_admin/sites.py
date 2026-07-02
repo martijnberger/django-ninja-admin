@@ -55,6 +55,7 @@ from django_ninja_admin.schemas import (
     ErrorResponse,
     FormResponse,
     HistoryResponse,
+    PermissionsResponse,
     SiteContext,
     ViewOnSiteResponse,
 )
@@ -566,7 +567,7 @@ class NinjaAdminSite:
 
         @router.get(
             "/permissions",
-            response=site._site_route_response(dict[str, bool]),
+            response=site._site_route_response(PermissionsResponse),
             operation_id="admin_permissions",
         )
         def permissions(request):

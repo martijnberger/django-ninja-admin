@@ -380,22 +380,41 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     apps_schema = paths["/admin-api/apps"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
     assert apps_schema["type"] == "array"
     assert apps_schema["items"] == {"$ref": "#/components/schemas/AppSummary"}
+    app_example = components["AppSummary"]["examples"][0]
+    assert app_example["app_label"] == "shop"
+    assert app_example["models"][0]["perms"]["has_view_permission"] is True
     assert _response_schema_ref(paths["/admin-api/context"]["get"], "200") == "#/components/schemas/SiteContext"
-    permissions_schema = paths["/admin-api/permissions"]["get"]["responses"]["200"]["content"]["application/json"][
-        "schema"
-    ]
-    assert permissions_schema["type"] == "object"
-    assert permissions_schema["additionalProperties"] == {"type": "boolean"}
+    context_example = components["SiteContext"]["examples"][0]
+    assert context_example["available_apps"][0]["models"][0]["model_name"] == "product"
+    assert _response_schema_ref(paths["/admin-api/permissions"]["get"], "200") == (
+        "#/components/schemas/PermissionsResponse"
+    )
+    permissions_example = components["PermissionsResponse"]["examples"][0]
+    assert permissions_example == {
+        "is_authenticated": True,
+        "is_active": True,
+        "is_staff": True,
+        "is_superuser": False,
+        "has_permission": True,
+    }
     assert _response_schema_ref(paths["/admin-api/history"]["get"], "200") == "#/components/schemas/HistoryResponse"
     assert components["HistoryItem"]["properties"]["change_message_text"]["type"] == "string"
     assert components["HistoryItem"]["properties"]["model"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert components["HistoryItem"]["properties"]["detail_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    history_example = components["HistoryResponse"]["examples"][0]
+    assert history_example["pagination"]["per_page"] == 20
+    assert history_example["results"][0]["change_form_url"] == "/admin-api/shop/product/1/form"
+    assert history_example["results"][0]["change_message_text"] == "Changed Name."
     assert _response_schema_ref(paths["/admin-api/autocomplete"]["get"], "200") == (
         "#/components/schemas/AutocompleteResponse"
     )
+    autocomplete_example = components["AutocompleteResponse"]["examples"][0]
+    assert autocomplete_example["results"] == [{"id": "1", "text": "Cameras"}]
+    assert autocomplete_example["pagination"]["more"] is False
     assert _response_schema_ref(paths["/admin-api/view-on-site/{content_type_id}/{object_id}"]["get"], "200") == (
         "#/components/schemas/ViewOnSiteResponse"
     )
+    assert components["ViewOnSiteResponse"]["examples"][0] == {"url": "https://example.com/products/1/"}
     changelist_response_props = components["ChangelistResponse"]["properties"]
     assert changelist_response_props["list_editing_formset_prefix"]["anyOf"] == [
         {"type": "string"},
