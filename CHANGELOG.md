@@ -86,6 +86,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Expanded CI release-hardening coverage to include Python 3.13 and 3.14 lanes,
   non-experimental Django 6.0 checks, and matrix-pinned installed-project
   sample smoke via `DJANGO_NINJA_ADMIN_SMOKE_DJANGO`.
+- Added JSON-safe `deleted_objects` tree details to protected-delete and
+  permission-needed delete error bodies for direct deletes and
+  `delete_selected`.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.

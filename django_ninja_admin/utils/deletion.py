@@ -22,8 +22,24 @@ def get_deleted_objects(objs, request, admin_site):
     return collector.nested(), model_count, perms_needed, collector.protected
 
 
-def deletion_error_payload(message, *, param="object_id", protected=None, perms_needed=None, model_count=None):
+def stringify_deleted_objects(deleted_objects):
+    if isinstance(deleted_objects, (list, tuple)):
+        return [stringify_deleted_objects(item) for item in deleted_objects]
+    return str(deleted_objects)
+
+
+def deletion_error_payload(
+    message,
+    *,
+    param="object_id",
+    protected=None,
+    perms_needed=None,
+    model_count=None,
+    deleted_objects=None,
+):
     payload = {"errors": [{"message": message, "param": param}]}
+    if deleted_objects:
+        payload["deleted_objects"] = stringify_deleted_objects(deleted_objects)
     if protected:
         payload["protected"] = [str(obj) for obj in protected]
     if perms_needed:

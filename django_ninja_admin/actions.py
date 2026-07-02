@@ -24,6 +24,7 @@ def delete_selected(model_admin, request, queryset):
             deletion_error_payload(
                 _("Cannot delete protected objects."),
                 param="selected_ids",
+                deleted_objects=deleted_objects,
                 protected=protected,
                 model_count=model_count,
             ),
@@ -34,6 +35,7 @@ def delete_selected(model_admin, request, queryset):
             deletion_error_payload(
                 _("Permission denied."),
                 param="selected_ids",
+                deleted_objects=deleted_objects,
                 perms_needed=perms_needed,
                 model_count=model_count,
             ),

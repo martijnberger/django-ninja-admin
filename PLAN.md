@@ -151,6 +151,10 @@ Completed or mostly complete:
 - Direct delete and default `delete_selected` return structured protected-object and permission-needed details.
 - Collected-object delete permission checks now honor object-level delete hooks, including the default `delete_selected` action.
 - Direct delete now returns structured permission-needed details when object-level delete hooks deny the target row.
+- Direct delete and default `delete_selected` error bodies now include a
+  JSON-safe `deleted_objects` tree derived from Django's `NestedObjects`
+  collector so clients can render delete previews alongside protected/perms
+  details.
 - Default `delete_selected` now has mounted coverage for `select_across` over a
   filtered queryset when an object-level delete hook denies one of the expanded
   rows, preserving all-or-nothing behavior.

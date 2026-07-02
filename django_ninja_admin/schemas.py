@@ -41,6 +41,7 @@ class ErrorResponse(Schema):
                 },
                 {
                     "errors": [{"param": "delete", "message": "Cannot delete selected objects."}],
+                    "deleted_objects": ["Nice camera"],
                     "protected": ["Protected review: Nice camera"],
                     "perms_needed": ["Can delete product review"],
                     "model_count": {"product reviews": 1},
@@ -50,6 +51,7 @@ class ErrorResponse(Schema):
     )
 
     errors: list[ErrorItem]
+    deleted_objects: list[Any] | None = None
     protected: list[str] | None = None
     perms_needed: list[str] | None = None
     model_count: dict[str, int] | None = None

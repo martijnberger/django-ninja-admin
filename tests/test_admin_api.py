@@ -416,6 +416,13 @@ def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, samp
             "title": "Errors",
             "type": "array",
         },
+        "deleted_objects": {
+            "anyOf": [
+                {"items": {}, "type": "array"},
+                {"type": "null"},
+            ],
+            "title": "Deleted Objects",
+        },
         "protected": {
             "anyOf": [
                 {"items": {"type": "string"}, "type": "array"},
@@ -480,12 +487,19 @@ def test_error_response_runtime_shapes_are_consistent(admin_client, staff_client
 
     ProductReview.objects.create(product=sample, note="Pinned review")
     protected_body = assert_error_body(admin_client.delete(f"/admin-api/testapp/product/{sample.pk}"), 409)
+    assert_sample_deleted_objects_tree(protected_body)
     assert protected_body["protected"] == ["Pinned review"]
     assert protected_body["model_count"] == {
         "testapp.product": 1,
         "testapp.product_tags": 2,
         "testapp.productimage": 1,
     }
+
+
+def assert_sample_deleted_objects_tree(body):
+    assert body["deleted_objects"][0] == "Alpha"
+    assert "Front" in body["deleted_objects"][1]
+    assert any(item.startswith("Product_tags object") for item in body["deleted_objects"][1])
 
 
 def test_permissions_route_reports_site_permission(admin_client):
@@ -753,6 +767,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     error_examples = components["ErrorResponse"]["examples"]
     assert error_examples[0] == {"errors": [{"param": "name", "message": ["This field is required."]}]}
     assert error_examples[1]["errors"] == [{"param": "non_field_errors", "message": "Permission denied."}]
+    assert error_examples[2]["deleted_objects"] == ["Nice camera"]
     assert error_examples[2]["protected"] == ["Protected review: Nice camera"]
     assert error_examples[2]["perms_needed"] == ["Can delete product review"]
     assert error_examples[2]["model_count"] == {"product reviews": 1}
@@ -7631,6 +7646,7 @@ def test_direct_delete_returns_protected_object_details(admin_client, sample):
     assert response.status_code == 409
     body = response.json()
     assert body["errors"][0]["param"] == "object_id"
+    assert_sample_deleted_objects_tree(body)
     assert body["protected"] == ["Pinned review"]
     assert body["model_count"]["testapp.product"] == 1
     assert Product.objects.filter(pk=sample.pk).exists()
@@ -7661,6 +7677,7 @@ def test_direct_delete_returns_object_permission_needed_details(admin_client, sa
     assert response.status_code == 403
     body = response.json()
     assert body["errors"][0]["param"] == "object_id"
+    assert_sample_deleted_objects_tree(body)
     assert body["perms_needed"] == ["product"]
     assert body["model_count"]["testapp.product"] == 1
     assert Product.objects.filter(pk=sample.pk).exists()
@@ -8487,6 +8504,7 @@ def test_delete_selected_returns_protected_object_details(admin_client, sample):
     assert response.status_code == 409
     body = response.json()
     assert body["errors"][0]["param"] == "selected_ids"
+    assert_sample_deleted_objects_tree(body)
     assert body["protected"] == ["Pinned review"]
     assert Product.objects.filter(pk=sample.pk).exists()
 
@@ -8508,6 +8526,7 @@ def test_delete_selected_returns_object_permission_needed_details(admin_client, 
     assert response.status_code == 403
     body = response.json()
     assert body["errors"][0]["param"] == "selected_ids"
+    assert_sample_deleted_objects_tree(body)
     assert body["perms_needed"] == ["product"]
     assert body["model_count"]["testapp.product"] == 1
     assert Product.objects.filter(pk=sample.pk).exists()
@@ -8531,6 +8550,7 @@ def test_delete_selected_select_across_checks_filtered_object_permissions(admin_
     assert response.status_code == 403
     body = response.json()
     assert body["errors"][0]["param"] == "selected_ids"
+    assert body["deleted_objects"] == ["Beta"]
     assert body["perms_needed"] == ["product"]
     assert body["model_count"]["testapp.product"] == 1
     assert Product.objects.filter(pk=sample.pk).exists()

@@ -1107,6 +1107,7 @@ class NinjaAdminSite:
                     409,
                     deletion_error_payload(
                         "Cannot delete protected objects.",
+                        deleted_objects=deleted_objects,
                         protected=protected,
                         model_count=model_count,
                     ),
@@ -1116,6 +1117,7 @@ class NinjaAdminSite:
                     403,
                     deletion_error_payload(
                         "Permission denied.",
+                        deleted_objects=deleted_objects,
                         perms_needed=perms_needed,
                         model_count=model_count,
                     ),
