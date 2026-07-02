@@ -39,6 +39,9 @@ behavior, or permission boundaries.
 - Compare generated OpenAPI semantically for route maps, component names,
   required fields, examples, auth/error responses, multipart request bodies,
   action payload variants, and inline/bulk schemas.
+- Run `just parity-report` to summarize current matrix status, missing rows,
+  partial rows, and any rows with placeholder evidence before changing release
+  readiness claims.
 - Inspect `docs/parity-matrix.md` for stale evidence and make sure every
   remaining gap is still accurate.
 - Re-run the copyright/license audit after substantial Django-derived or

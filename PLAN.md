@@ -962,8 +962,9 @@ catch admin edge cases before client projects discover them.
 - Add `just sample-project-full` for the expanded sample project and reserve
   `just sample-project-smoke` for the fast release gate.
 - Add `just generated-client-smoke` for the OpenAPI consumer check.
-- Add `just parity-report` to summarize parity-matrix statuses, evidence links,
-  and rows that lack tests.
+- Keep `just parity-report` available to summarize parity-matrix statuses,
+  evidence notes, missing rows, partial rows, and rows with placeholder
+  evidence.
 - Add `just postgres-test` to the default release-candidate checklist even when
   it remains outside the fastest local `just check` loop.
 - Add a package-install matrix job that builds the wheel once and installs that

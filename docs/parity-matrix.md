@@ -96,7 +96,8 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | Ruff/pytest local gates | implemented | `just lint`, `just test`, `just check`, `.github/workflows/ci.yml` | Keep CI and local gates aligned |
-| Package build/install smoke | implemented | `scripts/package_smoke.py`, `scripts/sample_project_smoke.py`, `just package-smoke`, `just sample-project-smoke` | Expand sample project scenarios as parity grows |
+| Package build/install smoke | implemented | `scripts/package_smoke.py`, `scripts/sample_project_smoke.py`, `just package-smoke`, and `just sample-project-smoke` | Expand sample project scenarios as parity grows |
+| Parity report tooling | implemented | `scripts/parity_report.py`, `tests/test_parity_report.py`, and `just parity-report` | Expand into linked evidence checks as the matrix grows |
 | Django version matrix | partial | `.github/workflows/ci.yml` covers Django 5.0, 5.1, 5.2, and experimental 6.0 on Python 3.12+ | Confirm CI results; keep the matrix focused on Django 5+ and Python 3.12+ |
 | PostgreSQL coverage | partial | Env-driven `tests/settings.py`, `just postgres-test`, PostgreSQL CI job | Confirm CI results and broaden database-specific edge cases |
 | Copyright/license audit | implemented | `LICENSE`, `LICENSE-DJANGO`, `docs/copyright-audit.md` | Re-run before each release candidate and after substantial ports |

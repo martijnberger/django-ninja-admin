@@ -56,6 +56,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Generated request schema examples now honor `form_schema_field_overrides` for
   parent, bulk, inline, and route-level payload examples, and validate against
   their generated Pydantic schemas.
+- Added `just parity-report` to summarize parity-matrix statuses, remaining
+  partial/missing rows, and placeholder evidence gaps during release
+  verification.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.
