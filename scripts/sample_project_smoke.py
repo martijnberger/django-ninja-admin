@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import argparse
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import textwrap
+from collections.abc import Callable
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,12 +33,24 @@ def smoke_django_requirements() -> list[str]:
     return [requirement] if requirement else []
 
 
-def main() -> None:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the installed sample project smoke checks.")
+    parser.add_argument("--full", action="store_true", help="Run the fuller sample project acceptance flow.")
+    return parser.parse_args(argv)
+
+
+def run_sample_project(
+    write_project: Callable[[Path], None],
+    *,
+    smoke_script_name: str,
+    temp_prefix: str,
+    check_name: str,
+) -> None:
     uv = shutil.which("uv")
     if uv is None:
-        raise SystemExit("uv is required to run the sample project smoke check.")
+        raise SystemExit(f"uv is required to run the {check_name}.")
 
-    with tempfile.TemporaryDirectory(prefix="django-ninja-admin-sample-") as tmp:
+    with tempfile.TemporaryDirectory(prefix=temp_prefix) as tmp:
         tmp_path = Path(tmp)
         dist_dir = tmp_path / "dist"
         project_dir = tmp_path / "project"
@@ -65,8 +79,29 @@ def main() -> None:
             env=uv_env,
         )
 
-        write_sample_project(project_dir)
-        run([str(python), str(project_dir / "sample_smoke.py")], cwd=project_dir)
+        write_project(project_dir)
+        run([str(python), str(project_dir / smoke_script_name)], cwd=project_dir)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    if args.full:
+        from sample_project_full import write_sample_project as write_full_sample_project
+
+        run_sample_project(
+            write_full_sample_project,
+            smoke_script_name="sample_full.py",
+            temp_prefix="django-ninja-admin-full-sample-",
+            check_name="full sample project check",
+        )
+        return
+
+    run_sample_project(
+        write_sample_project,
+        smoke_script_name="sample_smoke.py",
+        temp_prefix="django-ninja-admin-sample-",
+        check_name="sample project smoke check",
+    )
 
 
 def write_sample_project(project_dir: Path) -> None:

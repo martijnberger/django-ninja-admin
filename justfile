@@ -25,7 +25,7 @@ sample-project-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/sample_project_smoke.py
 
 sample-project-full:
-    UV_CACHE_DIR=.uv-cache uv run python scripts/sample_project_full.py
+    UV_CACHE_DIR=.uv-cache uv run python scripts/sample_project_smoke.py --full
 
 generated-client-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/generated_client_smoke.py

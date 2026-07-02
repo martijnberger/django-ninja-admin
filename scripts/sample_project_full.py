@@ -1,51 +1,17 @@
 from __future__ import annotations
 
-import os
-import shutil
-import subprocess
-import sys
-import tempfile
 from pathlib import Path
 
-from sample_project_smoke import run, smoke_django_requirements, venv_python, write_file
+from sample_project_smoke import run_sample_project, write_file
 
 
 def main() -> None:
-    uv = shutil.which("uv")
-    if uv is None:
-        raise SystemExit("uv is required to run the full sample project check.")
-
-    with tempfile.TemporaryDirectory(prefix="django-ninja-admin-full-sample-") as tmp:
-        tmp_path = Path(tmp)
-        dist_dir = tmp_path / "dist"
-        project_dir = tmp_path / "project"
-        venv_dir = tmp_path / ".venv"
-        smoke_cache_dir = Path(tempfile.gettempdir()) / "django-ninja-admin-uv-cache"
-        uv_env = os.environ.copy()
-        uv_env["UV_CACHE_DIR"] = os.environ.get("DJANGO_NINJA_ADMIN_SMOKE_UV_CACHE", str(smoke_cache_dir))
-
-        run([uv, "build", "--wheel", "--out-dir", str(dist_dir)], env=uv_env)
-        wheels = sorted(dist_dir.glob("django_ninja_admin-*.whl"))
-        if not wheels:
-            raise SystemExit("No django-ninja-admin wheel was built.")
-
-        run([uv, "venv", "--python", sys.executable, str(venv_dir)], env=uv_env)
-        python = venv_python(venv_dir)
-        run(
-            [
-                uv,
-                "pip",
-                "install",
-                "--python",
-                str(python),
-                *smoke_django_requirements(),
-                str(wheels[-1]),
-            ],
-            env=uv_env,
-        )
-
-        write_sample_project(project_dir)
-        subprocess.run([str(python), str(project_dir / "sample_full.py")], cwd=project_dir, check=True)
+    run_sample_project(
+        write_sample_project,
+        smoke_script_name="sample_full.py",
+        temp_prefix="django-ninja-admin-full-sample-",
+        check_name="full sample project check",
+    )
 
 
 def write_sample_project(project_dir: Path) -> None:
