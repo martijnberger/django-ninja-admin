@@ -1,5 +1,6 @@
 import json
 import re
+from collections.abc import Sequence
 from decimal import Decimal
 from functools import wraps
 from types import UnionType
@@ -7,6 +8,7 @@ from typing import Any, Literal, Union, get_args, get_origin
 from uuid import UUID
 from weakref import WeakSet
 
+from asgiref.sync import async_to_sync
 from django import forms
 from django.apps import apps
 from django.contrib.auth import get_user_model
@@ -33,6 +35,7 @@ from ninja import NinjaAPI, Query, Router, Status
 from ninja.errors import AuthenticationError, AuthorizationError, HttpError
 from ninja.errors import ValidationError as NinjaValidationError
 from ninja.security import SessionAuthIsStaff
+from ninja.utils import is_async_callable
 from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin import actions
@@ -98,6 +101,8 @@ class NinjaAdminSite:
     enable_nav_sidebar = True
     empty_value_display = "-"
     include_auth = True
+    history_max_per_page = 100
+    autocomplete_per_page = 20
 
     def __init__(self, *, name="ninja_admin", auth=DEFAULT_AUTH, include_auth=True):
         self.name = name
@@ -109,7 +114,10 @@ class NinjaAdminSite:
         self._api = None
         all_sites.add(self)
         if include_auth:
-            self.register([get_user_model(), Group])
+            from django_ninja_admin.admins.auth import AuthGroupAdmin, AuthUserAdmin
+
+            self.register(get_user_model(), AuthUserAdmin)
+            self.register(Group, AuthGroupAdmin)
 
     def __repr__(self):
         return f"{self.__class__.__name__}(name={self.name!r})"
@@ -313,6 +321,7 @@ class NinjaAdminSite:
             auth=self.auth,
             openapi_url="/openapi.json",
             docs_url="/docs",
+            docs_decorator=None if self.auth is None else self._docs_auth_decorator,
         )
         self._register_exception_handlers(api)
         router = Router(tags=["admin"])
@@ -322,6 +331,38 @@ class NinjaAdminSite:
             self._register_model_routes(router, model, model_admin)
         api.add_router("", router)
         return api
+
+    def _auth_callbacks(self):
+        if self.auth is None:
+            return ()
+        if isinstance(self.auth, Sequence):
+            return tuple(self.auth)
+        return (self.auth,)
+
+    def _run_docs_authentication(self, request):
+        for callback in self._auth_callbacks():
+            try:
+                if is_async_callable(callback) or getattr(callback, "is_async", False):
+                    result = async_to_sync(callback)(request)
+                else:
+                    result = callback(request)
+            except Exception as exc:
+                return self.api.on_exception(request, exc)
+
+            if result:
+                request.auth = result
+                return None
+        return self.api.on_exception(request, AuthenticationError())
+
+    def _docs_auth_decorator(self, view_func):
+        @wraps(view_func)
+        def inner(request, *args, **kwargs):
+            error = self._run_docs_authentication(request)
+            if error is not None:
+                return error
+            return view_func(request, *args, **kwargs)
+
+        return inner
 
     def _register_custom_routes(self, router, routes, *, prefix="", default_tags=None):
         for route in routes:
@@ -475,6 +516,33 @@ class NinjaAdminSite:
             location_parts = location_parts[1:]
         return ".".join(location_parts)
 
+    def _model_admin_method_overridden(self, model_admin, method_name):
+        method = getattr(model_admin, method_name)
+        base_method = getattr(ModelAdmin, method_name)
+        return getattr(method, "__func__", method) is not base_method
+
+    def _uses_object_visibility_permissions(self, model_admin):
+        return self._model_admin_method_overridden(
+            model_admin,
+            "has_view_permission",
+        ) or self._model_admin_method_overridden(
+            model_admin,
+            "has_change_permission",
+        )
+
+    def _history_requires_object_visibility_filter(self, content_type_ids):
+        for content_type in ContentType.objects.filter(pk__in=content_type_ids):
+            model_class = content_type.model_class()
+            if model_class is None:
+                continue
+            try:
+                model_admin = self.get_model_admin(model_class)
+            except NotRegistered:
+                continue
+            if self._uses_object_visibility_permissions(model_admin):
+                return True
+        return False
+
     def _history_content_type_ids(self, request, *, app_label=None, model_name=None):
         if model_name and not app_label:
             raise AdminValidationError(
@@ -510,13 +578,23 @@ class NinjaAdminSite:
             return {"detail_url": None, "change_form_url": None}
         try:
             model_admin = self.get_model_admin(model_class)
+        except NotRegistered:
+            return {"detail_url": None, "change_form_url": None}
+        if not self._uses_object_visibility_permissions(model_admin):
+            if not model_admin.has_view_or_change_permission(request):
+                return {"detail_url": None, "change_form_url": None}
+            return self._history_object_link_urls(request, item, opts)
+        try:
             obj = model_admin.get_object(request, item.object_id)
-        except (LookupError, NotRegistered, ValidationError, ValueError):
+        except (LookupError, ValidationError, ValueError):
             return {"detail_url": None, "change_form_url": None}
         if obj is None:
             return {"detail_url": None, "change_form_url": None}
         if not model_admin.has_view_permission(request, obj) and not model_admin.has_change_permission(request, obj):
             return {"detail_url": None, "change_form_url": None}
+        return self._history_object_link_urls(request, item, opts)
+
+    def _history_object_link_urls(self, request, item, opts):
         admin_base_path = request.path.rstrip("/")
         if admin_base_path.endswith("/history"):
             admin_base_path = admin_base_path[: -len("/history")]
@@ -616,13 +694,23 @@ class NinjaAdminSite:
                 raise AdminValidationError([{"message": "Invalid action flag provided.", "param": "action_flag"}])
             if per_page < 1:
                 raise AdminValidationError([{"message": "Invalid page size.", "param": "per_page"}])
+            if per_page > site.history_max_per_page:
+                raise AdminValidationError(
+                    [
+                        {
+                            "message": f"Page size cannot exceed {site.history_max_per_page}.",
+                            "param": "per_page",
+                        }
+                    ]
+                )
+            content_type_ids = site._history_content_type_ids(
+                request,
+                app_label=app_label,
+                model_name=model,
+            )
             qs = (
                 LogEntry.objects.filter(
-                    content_type_id__in=site._history_content_type_ids(
-                        request,
-                        app_label=app_label,
-                        model_name=model,
-                    )
+                    content_type_id__in=content_type_ids,
                 )
                 .order_by(o)
                 .select_related("content_type")
@@ -631,7 +719,8 @@ class NinjaAdminSite:
                 qs = qs.filter(object_id=object_id)
             if action_flag is not None:
                 qs = qs.filter(action_flag=action_flag)
-            qs = [item for item in qs if site._history_item_is_visible(request, item)]
+            if site._history_requires_object_visibility_filter(content_type_ids):
+                qs = [item for item in qs if site._history_item_is_visible(request, item)]
             paginator = site.paginator(qs, per_page)
             try:
                 page_obj = paginator.page(page)
@@ -727,11 +816,13 @@ class NinjaAdminSite:
                 qs = qs.distinct()
             if not qs.ordered:
                 qs = qs.order_by(remote_model._meta.pk.name)
-            visible_results = _AutocompleteResultList(
-                remote_model,
-                (obj for obj in qs if model_admin.has_view_permission(request, obj)),
-            )
-            paginator = model_admin.get_paginator(request, visible_results, 20)
+            per_page = site.autocomplete_per_page
+            if site._model_admin_method_overridden(model_admin, "has_view_permission"):
+                qs = _AutocompleteResultList(
+                    remote_model,
+                    (obj for obj in qs if model_admin.has_view_permission(request, obj)),
+                )
+            paginator = model_admin.get_paginator(request, qs, per_page)
             try:
                 page_obj = paginator.page(page)
             except InvalidPage:
@@ -1099,7 +1190,7 @@ class NinjaAdminSite:
         )
         def delete(request, object_id: str, to_field: str | None = Query(None, alias="_to_field")):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
-            if not model_admin.has_delete_permission(request):
+            if not model_admin.has_delete_permission(request, obj):
                 raise PermissionDenied
             deleted_objects, model_count, perms_needed, protected = model_admin.get_deleted_objects([obj], request)
             if protected:

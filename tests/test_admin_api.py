@@ -392,6 +392,18 @@ def test_site_routes_return_typed_auth_errors(db):
     assert body["errors"][0]["param"] == "non_field_errors"
 
 
+def test_docs_and_openapi_require_site_auth(db):
+    client = Client()
+
+    for path in ("/admin-api/docs", "/admin-api/openapi.json"):
+        response = client.get(path)
+
+        assert response.status_code == 401
+        body = response.json()
+        ErrorResponse.model_validate(body)
+        assert body["errors"] == [{"message": "Authentication required.", "param": "non_field_errors"}]
+
+
 def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, sample):
     schema = admin_client.get("/admin-api/openapi.json").json()
     components = schema["components"]["schemas"]
@@ -564,6 +576,48 @@ def test_permissions_route_supports_auth_none_sites():
     assert "security" not in operation
     assert "401" not in operation["responses"]
     assert "403" not in operation["responses"]
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_include_auth_uses_safe_user_and_group_admins(db):
+    client = Client()
+    user = get_user_model().objects.create_user("auth-safe", password="hashed", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    client.force_login(user)
+
+    user_form = client.get("/auth-models-admin/auth/user/form")
+    assert user_form.status_code == 200
+    user_field_names = {field["name"] for field in user_form.json()["form"]["fields"]}
+    assert {"password", "is_superuser", "user_permissions", "groups"}.isdisjoint(user_field_names)
+
+    group_form = client.get("/auth-models-admin/auth/group/form")
+    assert group_form.status_code == 200
+    group_field_names = {field["name"] for field in group_form.json()["form"]["fields"]}
+    assert "permissions" not in group_field_names
+
+    response = client.patch(
+        f"/auth-models-admin/auth/user/{user.pk}",
+        data={
+            "data": {
+                "password": "plain",
+                "is_superuser": True,
+                "user_permissions": [Permission.objects.first().pk],
+                "groups": [],
+            }
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 422
+    assert {
+        "data.password",
+        "data.is_superuser",
+        "data.user_permissions",
+        "data.groups",
+    }.issubset({error["param"] for error in response.json()["errors"]})
+    user.refresh_from_db()
+    assert user.check_password("hashed")
+    assert user.is_superuser is False
 
 
 def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):
@@ -3258,6 +3312,7 @@ def test_changelist_route_uses_model_admin_paginator_hook(admin_client, sample, 
     def get_paginator(request, queryset, per_page, orphans=0, allow_empty_first_page=True):
         calls["path"] = request.path
         calls["model"] = queryset.model
+        calls["is_queryset"] = isinstance(queryset, models.QuerySet)
         calls["per_page"] = per_page
         calls["orphans"] = orphans
         calls["allow_empty_first_page"] = allow_empty_first_page
@@ -3277,6 +3332,7 @@ def test_changelist_route_uses_model_admin_paginator_hook(admin_client, sample, 
     assert calls == {
         "path": "/admin-api/testapp/product",
         "model": Product,
+        "is_queryset": True,
         "per_page": 1,
         "orphans": 0,
         "allow_empty_first_page": True,
@@ -3457,17 +3513,20 @@ def test_site_auth_accepts_ninja_auth_sequences():
     client = Client()
 
     assert client.get("/multi-auth-admin/whoami").status_code == 401
+    assert client.get("/multi-auth-admin/openapi.json").status_code == 401
     primary = client.get("/multi-auth-admin/whoami", headers={"X-Primary-Token": "primary"})
     secondary = client.get("/multi-auth-admin/whoami", headers={"X-Secondary-Token": "secondary"})
     invalid = client.get("/multi-auth-admin/whoami", headers={"X-Primary-Token": "wrong"})
+    schema_response = client.get("/multi-auth-admin/openapi.json", headers={"X-Primary-Token": "primary"})
 
     assert primary.status_code == 200
     assert primary.json() == {"auth": "primary"}
     assert secondary.status_code == 200
     assert secondary.json() == {"auth": "secondary"}
     assert invalid.status_code == 401
+    assert schema_response.status_code == 200
 
-    schema = client.get("/multi-auth-admin/openapi.json").json()
+    schema = schema_response.json()
     operation = schema["paths"]["/multi-auth-admin/whoami"]["get"]
     assert operation["operationId"] == "multi_auth_whoami"
     assert {"PrimaryTokenAuth": []} in operation["security"]
@@ -6312,6 +6371,42 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     assert bad_page_size.status_code == 400
     assert bad_page_size.json()["errors"] == [{"message": "Invalid page size.", "param": "per_page"}]
 
+    excessive_page_size = client.get("/admin-api/history", {"per_page": 101})
+    assert excessive_page_size.status_code == 400
+    assert excessive_page_size.json()["errors"] == [
+        {"message": "Page size cannot exceed 100.", "param": "per_page"}
+    ]
+
+
+def test_history_uses_queryset_pagination_for_global_permissions(admin_client, sample, monkeypatch):
+    actor = get_user_model().objects.create_user("history-query-actor", password="pw", is_staff=True)
+    product_admin = site.get_model_admin(Product)
+    product_ct = ContentType.objects.get_for_model(Product, for_concrete_model=False)
+    for index in range(3):
+        LogEntry.objects.create(
+            user=actor,
+            content_type=product_ct,
+            object_id=str(sample.pk),
+            object_repr=f"{sample}:{index}",
+            action_flag=CHANGE,
+            change_message=json.dumps([{"changed": {"fields": ["Name"]}}]),
+        )
+
+    monkeypatch.setattr(product_admin, "get_object", lambda *args, **kwargs: pytest.fail("history fetched objects"))
+
+    response = admin_client.get("/admin-api/history", {"app_label": "testapp", "model": "product", "per_page": 1})
+
+    assert response.status_code == 200
+    assert response.json()["pagination"] == {
+        "num_pages": 3,
+        "count": 3,
+        "has_next": True,
+        "has_previous": False,
+        "page": 1,
+        "per_page": 1,
+    }
+    assert len(response.json()["results"]) == 1
+
 
 def test_history_filters_object_level_permissions(admin_client, sample, monkeypatch):
     actor = get_user_model().objects.create_user("history-object-actor", password="pw", is_staff=True)
@@ -7664,7 +7759,27 @@ def test_direct_delete_returns_permission_needed_details(staff_client, sample):
     assert Category.objects.filter(pk=sample.category_id).exists()
 
 
-def test_direct_delete_returns_object_permission_needed_details(admin_client, sample, monkeypatch):
+def test_direct_delete_checks_object_level_permission_before_collecting(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    sample_pk = sample.pk
+    calls = []
+
+    def has_delete_permission(request, obj=None):
+        calls.append(obj.pk if obj is not None else None)
+        if len(calls) == 1:
+            return obj is not None and obj.pk == sample_pk
+        return True
+
+    monkeypatch.setattr(product_admin, "has_delete_permission", has_delete_permission)
+
+    response = admin_client.delete(f"/admin-api/testapp/product/{sample.pk}")
+
+    assert response.status_code == 204
+    assert calls[0] == sample_pk
+    assert not Product.objects.filter(pk=sample_pk).exists()
+
+
+def test_direct_delete_denies_object_level_permission(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
 
     def has_delete_permission(request, obj=None):
@@ -7675,11 +7790,7 @@ def test_direct_delete_returns_object_permission_needed_details(admin_client, sa
     response = admin_client.delete(f"/admin-api/testapp/product/{sample.pk}")
 
     assert response.status_code == 403
-    body = response.json()
-    assert body["errors"][0]["param"] == "object_id"
-    assert_sample_deleted_objects_tree(body)
-    assert body["perms_needed"] == ["product"]
-    assert body["model_count"]["testapp.product"] == 1
+    assert response.json() == {"errors": [{"message": "Permission denied.", "param": "non_field_errors"}]}
     assert Product.objects.filter(pk=sample.pk).exists()
 
 
@@ -8061,6 +8172,7 @@ def test_autocomplete_uses_remote_model_admin_paginator_hook(admin_client, sampl
     def get_paginator(request, queryset, per_page, orphans=0, allow_empty_first_page=True):
         calls["path"] = request.path
         calls["model"] = queryset.model
+        calls["is_queryset"] = isinstance(queryset, models.QuerySet)
         calls["per_page"] = per_page
         calls["orphans"] = orphans
         calls["allow_empty_first_page"] = allow_empty_first_page
@@ -8087,6 +8199,7 @@ def test_autocomplete_uses_remote_model_admin_paginator_hook(admin_client, sampl
     assert calls == {
         "path": "/admin-api/autocomplete",
         "model": Tag,
+        "is_queryset": True,
         "per_page": 20,
         "orphans": 0,
         "allow_empty_first_page": True,
@@ -9024,6 +9137,21 @@ def test_schema_field_overrides_are_included_and_serialize_admin_methods(sample)
 
     assert "custom_note" in model_admin.get_output_schema().model_fields
     assert model_admin.serialize_object(sample)["custom_note"] == "Alpha:in_stock"
+
+
+@isolate_apps("tests.testapp")
+def test_non_auth_password_fields_are_included_in_generated_schemas(db):
+    class Credential(models.Model):
+        username = models.CharField(max_length=50)
+        password = models.CharField(max_length=50)
+
+        class Meta:
+            app_label = "testapp"
+
+    model_admin = ModelAdmin(Credential, NinjaAdminSite(auth=None, include_auth=False))
+
+    assert "password" in model_admin.get_output_schema().model_fields
+    assert "password" in model_admin.get_write_schema(None).model_fields
 
 
 @isolate_apps("tests.testapp")

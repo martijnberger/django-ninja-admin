@@ -8,6 +8,7 @@ from uuid import UUID
 
 from django import forms
 from django.contrib.auth import get_permission_codename
+from django.contrib.auth.base_user import AbstractBaseUser
 from django.core.exceptions import FieldDoesNotExist
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import (
@@ -852,7 +853,7 @@ class BaseAdmin:
         field_names = set(fields_key)
         custom_field_names = {name for name, _field_type, _default in custom_fields}
         for field in self.model._meta.fields:
-            if field.name == "password":
+            if self._is_auth_password_field(field):
                 continue
             if isinstance(field, models.ImageField):
                 data[field.name] = {
@@ -1085,7 +1086,7 @@ class BaseAdmin:
         fields = []
         custom_fields = [self._model_field_output_custom_field(self.model._meta.pk)]
         for field in self.model._meta.fields:
-            if field.name == self.model._meta.pk.name or field.name == "password":
+            if field.name == self.model._meta.pk.name or self._is_auth_password_field(field):
                 continue
             if isinstance(field, models.ImageField):
                 custom_fields.append((field.name, ImageFieldValue | None, None))
@@ -1116,7 +1117,7 @@ class BaseAdmin:
             else:
                 fields.append(field.name)
         for field in self.model._meta.fields:
-            if field.remote_field and field.name != "password":
+            if field.remote_field and not self._is_auth_password_field(field):
                 custom_fields.append((f"{field.name}_label", str, None))
         for field in self.model._meta.many_to_many:
             custom_fields.append(
@@ -1367,7 +1368,7 @@ class BaseAdmin:
         schema = self.get_output_schema(request)
         data = {}
         for field in obj._meta.fields:
-            if field.name == "password":
+            if self._is_auth_password_field(field):
                 continue
             value = getattr(obj, field.name)
             if isinstance(field, models.ImageField):
@@ -1390,6 +1391,9 @@ class BaseAdmin:
                 continue
             data[name] = self._schema_override_value(obj, name)
         return schema.model_validate(data).model_dump(mode="json", by_alias=True)
+
+    def _is_auth_password_field(self, field):
+        return field.name == "password" and issubclass(self.model, AbstractBaseUser)
 
     def _schema_override_value(self, obj, name):
         if hasattr(obj, name):

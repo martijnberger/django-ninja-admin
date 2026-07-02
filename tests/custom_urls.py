@@ -265,6 +265,7 @@ locked_context_site = LockedContextAdminSite(name="locked_context_admin", includ
 
 
 public_permissions_site = NinjaAdminSite(name="public_permissions_admin", auth=None, include_auth=False)
+auth_models_site = NinjaAdminSite(name="auth_models_admin", auth=None, include_auth=True)
 
 
 urlpatterns = [
@@ -275,4 +276,5 @@ urlpatterns = [
     path("context-admin/", context_site.urls),
     path("locked-context-admin/", locked_context_site.urls),
     path("public-permissions-admin/", public_permissions_site.urls),
+    path("auth-models-admin/", auth_models_site.urls),
 ]
