@@ -281,6 +281,9 @@ Completed or mostly complete:
   string-or-null JSON values instead of untyped payload slots, with runtime
   request-validation coverage for malformed JSON values and image clear
   mutations.
+- Multipart file parts now satisfy required file fields during Pydantic request
+  validation so clients do not need to duplicate uploaded filenames inside the
+  JSON `data` part.
 - Many-to-many fields now have Pydantic write schemas, JSON-safe change-form values, form relation metadata, output serialization, and create/update persistence coverage.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Relation form field descriptions now include structured related-model identity and autocomplete request parameters for frontend clients.

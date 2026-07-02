@@ -837,7 +837,7 @@ class NinjaAdminSite:
                 ),
             )
             def create_multipart(request):
-                payload = site._multipart_mutation_payload(request, create_payload_schema)
+                payload = site._multipart_mutation_payload(request, create_payload_schema, create_file_fields)
                 form_class = model_admin.get_form_class(request, None, change=False)
                 return site._create_object(
                     request,
@@ -980,7 +980,7 @@ class NinjaAdminSite:
             ):
                 obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
-                payload = site._multipart_mutation_payload(request, update_payload_schema)
+                payload = site._multipart_mutation_payload(request, update_payload_schema, change_file_fields)
                 return site._update_object(
                     request,
                     model_admin,
@@ -1009,7 +1009,7 @@ class NinjaAdminSite:
             ):
                 obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
-                payload = site._multipart_mutation_payload(request, replace_payload_schema)
+                payload = site._multipart_mutation_payload(request, replace_payload_schema, change_file_fields)
                 return site._update_object(
                     request,
                     model_admin,
@@ -1416,7 +1416,7 @@ class NinjaAdminSite:
             schema["required"] = ["data"]
         return {"requestBody": {"required": True, "content": {"multipart/form-data": {"schema": schema}}}}
 
-    def _multipart_mutation_payload(self, request, payload_schema):
+    def _multipart_mutation_payload(self, request, payload_schema, file_fields=()):
         data = self._json_form_part(request, "data", default={})
         inlines = self._json_form_part(request, "inlines", default=None)
         if not isinstance(data, dict):
@@ -1429,6 +1429,7 @@ class NinjaAdminSite:
                     }
                 ]
             )
+        data = self._multipart_payload_data_with_file_parts(request, data, file_fields)
         payload_data = {"data": data}
         if inlines is not None:
             if not isinstance(inlines, dict):
@@ -1446,6 +1447,18 @@ class NinjaAdminSite:
             return payload_schema.model_validate(payload_data)
         except PydanticValidationError as exc:
             self._raise_request_validation(exc)
+
+    def _multipart_payload_data_with_file_parts(self, request, data, file_fields):
+        if not file_fields:
+            return data
+        _form_data, files = self._multipart_request_parts(request)
+        if not files:
+            return data
+        data = dict(data)
+        for field_name in file_fields:
+            if field_name not in data and field_name in files:
+                data[field_name] = files[field_name].name
+        return data
 
     def _json_form_part(self, request, name, *, default):
         form_data, _files = self._multipart_request_parts(request)

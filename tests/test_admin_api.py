@@ -5145,6 +5145,40 @@ def test_file_and_image_fields_reject_non_string_json_payloads(admin_client, sam
     assert invalid_photo.json()["errors"][0]["param"] == "data.photo"
 
 
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_multipart_file_parts_satisfy_required_file_schema_fields(admin_client, sample, tmp_path):
+    schema = admin_client.get("/required-file-admin/openapi.json").json()
+    create_data_schema = schema["components"]["schemas"]["ProductAdminCreateData"]
+
+    assert "manual" in create_data_schema["required"]
+    assert create_data_schema["properties"]["manual"] == {"title": "Manual", "type": "string"}
+
+    with override_settings(MEDIA_ROOT=tmp_path):
+        created = admin_client.post(
+            "/required-file-admin/testapp/product/multipart",
+            data={
+                "data": json.dumps(
+                    {
+                        "name": "Required manual",
+                        "category": sample.category_id,
+                        "price": "5.00",
+                        "stock_status": "in_stock",
+                    }
+                ),
+                "manual": SimpleUploadedFile("required.txt", b"required", content_type="text/plain"),
+            },
+        )
+
+        assert created.status_code == 201, created.json()
+        product = Product.objects.get(pk=created.json()["data"]["id"])
+        assert product.manual.name.startswith("manuals/required")
+        assert (tmp_path / product.manual.name).read_bytes() == b"required"
+        assert created.json()["data"]["manual"] == {
+            "name": product.manual.name,
+            "url": f"/media/{product.manual.name}",
+        }
+
+
 def test_file_field_can_be_uploaded_with_multipart_payload(admin_client, sample, tmp_path):
     with override_settings(MEDIA_ROOT=tmp_path):
         created = admin_client.post(

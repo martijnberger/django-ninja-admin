@@ -259,6 +259,23 @@ disabled_site.register(Category, ModelAdmin)
 disabled_site.register(Product, DisabledProductAdmin)
 
 
+class RequiredManualProductForm(forms.ModelForm):
+    manual = forms.FileField(required=True)
+
+    class Meta:
+        model = Product
+        fields = ("name", "category", "price", "stock_status", "manual")
+
+
+class RequiredManualProductAdmin(ModelAdmin):
+    form_class = RequiredManualProductForm
+
+
+required_file_site = NinjaAdminSite(name="required_file_admin", include_auth=False)
+required_file_site.register(Category, ModelAdmin)
+required_file_site.register(Product, RequiredManualProductAdmin)
+
+
 class InlineCodeProductImageForm(forms.ModelForm):
     title = CodeCountField()
 
@@ -291,5 +308,6 @@ urlpatterns = [
     path("temporal-admin/", temporal_site.urls),
     path("scalar-admin/", scalar_site.urls),
     path("disabled-admin/", disabled_site.urls),
+    path("required-file-admin/", required_file_site.urls),
     path("inline-multivalue-admin/", inline_multivalue_site.urls),
 ]
