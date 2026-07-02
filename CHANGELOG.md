@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Hardened inline admin checks to reject non-boolean `can_delete` and
+  `show_change_link` option values.
 - Validated dynamic inline `get_extra()`, `get_min_num()`, and `get_max_num()`
   hook returns before formset construction, returning typed API errors for bad
   values.

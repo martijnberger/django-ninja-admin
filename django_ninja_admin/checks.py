@@ -1116,6 +1116,10 @@ def _check_inlines(model_admin):
             and min_num > max_num
         ):
             errors.append(_error(inline_class, "The value of 'min_num' must not exceed 'max_num'.", "E109"))
+        if not isinstance(getattr(inline_class, "can_delete", True), bool):
+            errors.append(_error(inline_class, "The value of 'can_delete' must be a boolean.", "E110"))
+        if not isinstance(getattr(inline_class, "show_change_link", False), bool):
+            errors.append(_error(inline_class, "The value of 'show_change_link' must be a boolean.", "E111"))
         formset = getattr(inline_class, "formset", None)
         if not isinstance(formset, type) or not issubclass(formset, BaseInlineFormSet):
             errors.append(_error(inline_class, "The value of 'formset' must inherit from BaseInlineFormSet.", "E076"))
