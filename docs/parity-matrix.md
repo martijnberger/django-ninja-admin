@@ -89,7 +89,7 @@ Statuses:
 | Custom auth and `auth=None` | implemented | Auth contract tests, multi-auth mounted-route tests, auth-none site-route tests, and auth docs | More project-level examples |
 | Typed error bodies | partial | Exception handlers, Ninja validation handler, runtime auth-error tests, and built-in/model/custom route OpenAPI error maps including conditional `401` responses | Full error schema snapshots |
 | Stable operation IDs/tags | partial | Explicit and generated operation IDs plus semantic OpenAPI contract tests for core site/model routes and custom site/model routes, including multi-method uniqueness | Broader custom-route snapshot tests |
-| Per-model request/response contracts | partial | Output, write payload, generated create/update/bulk/action request examples, mutation/bulk response, changelist/list-editing/form/inline response metadata components, inline operation, multipart JSON part media hints plus required file parts, discriminated action payload/input/response, global action cache invalidation, and auth-aware response-map schemas in OpenAPI | Broader Phase 6 snapshots and examples |
+| Per-model request/response contracts | partial | Output, write payload, generated create/update/bulk/action request examples, mutation/bulk response, changelist/list-editing/form/inline response metadata components, `FieldDescription.attrs` examples, inline operation, multipart JSON part media hints plus required file parts, discriminated action payload/input/response, global action cache invalidation, and auth-aware response-map schemas in OpenAPI | Broader Phase 6 snapshots and examples |
 
 ## Release Hardening
 

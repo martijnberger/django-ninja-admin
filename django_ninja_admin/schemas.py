@@ -71,10 +71,40 @@ class SiteContext(Schema):
     is_nav_sidebar_enabled: bool
 
 
+FIELD_DESCRIPTION_ATTRS_EXAMPLE = {
+    "required": True,
+    "label": "Name",
+    "help_text": "Public display name.",
+    "widget": "TextInput",
+    "html_name": "name",
+    "auto_id": "id_name",
+    "id_for_label": "id_name",
+    "aria_describedby": "id_name_helptext",
+    "rendered_attrs": {
+        "id": "id_name",
+        "required": True,
+        "aria-describedby": "id_name_helptext",
+    },
+    "rendered_subwidgets": [
+        {
+            "index": 0,
+            "name": "release_window_0",
+            "auto_id": "id_release_window_0",
+            "id_for_label": "id_release_window_0",
+            "attrs": {"id": "id_release_window_0"},
+            "type": "text",
+        }
+    ],
+}
+
+
 class FieldDescription(Schema):
     name: str
     type: str
-    attrs: dict[str, Any]
+    attrs: dict[str, Any] = Field(
+        description="Django form/admin metadata for frontend renderers.",
+        json_schema_extra={"examples": [FIELD_DESCRIPTION_ATTRS_EXAMPLE]},
+    )
 
 
 class FileFieldValue(Schema):

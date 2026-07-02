@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   compound widgets such as `SplitDateTimeWidget` and `SelectDateWidget`.
 - Exposed Django-style rendered widget attrs combining static widget attrs with
   generated IDs, required/disabled flags, and ARIA help-text links.
+- Added a concrete OpenAPI example for `FieldDescription.attrs` showing
+  bound-field, rendered-attr, and rendered-subwidget metadata.
 
 ## 0.1.19 - 2026-07-02
 

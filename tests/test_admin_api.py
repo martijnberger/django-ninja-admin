@@ -432,6 +432,15 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert inline_row_metadata_props["is_initial"]["type"] == "boolean"
     assert inline_row_metadata_props["empty_permitted"]["type"] == "boolean"
     assert inline_row_metadata_props["object_id"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    field_attrs_schema = components["FieldDescription"]["properties"]["attrs"]
+    assert field_attrs_schema["description"] == "Django form/admin metadata for frontend renderers."
+    field_attrs_example = field_attrs_schema["examples"][0]
+    assert field_attrs_example["rendered_attrs"] == {
+        "id": "id_name",
+        "required": True,
+        "aria-describedby": "id_name_helptext",
+    }
+    assert field_attrs_example["rendered_subwidgets"][0]["name"] == "release_window_0"
 
     for path, method, statuses in [
         ("/admin-api/apps", "get", {"401", "403"}),
