@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Allowed explicit `fields`/`fieldsets` layouts to reference callable readonly
+  fields by their stable display names.
 - Tightened generated Pydantic write schemas for file and image fields from
   untyped JSON values to string-or-null values and added JSON clear coverage
   for image fields.

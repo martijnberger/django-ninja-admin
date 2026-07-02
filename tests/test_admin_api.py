@@ -4714,6 +4714,40 @@ def test_readonly_display_fields_include_values_and_display_metadata(admin_clien
     assert empty_fields_by_name["subtitle"]["attrs"]["value"] == "No subtitle"
 
 
+def test_explicit_form_layouts_accept_callable_readonly_field_names(db, sample):
+    def callable_summary(obj):
+        return f"{obj.name}:{obj.stock_status}"
+
+    callable_summary.short_description = "Callable summary"
+
+    class ReadonlyLayoutProductAdmin(ModelAdmin):
+        readonly_fields = ("upper_name", callable_summary)
+        fieldsets = ((None, {"fields": ("name", "callable_summary", "upper_name")}),)
+
+        @display(description="Upper name")
+        def upper_name(self, obj):
+            return obj.name.upper()
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, ReadonlyLayoutProductAdmin)
+    model_admin = admin_site.get_model_admin(Product)
+    user = get_user_model().objects.create_user("readonly-layout-admin", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get(f"/admin-api/testapp/product/{sample.pk}/form")
+    request.user = user
+
+    assert "django_ninja_admin.E014" not in {error.id for error in model_admin.check()}
+    assert list(model_admin.get_form_class(request, sample, change=True).base_fields) == ["name"]
+
+    form = model_admin.get_form_description(request, sample)["form"]
+    fields_by_name = {field["name"]: field for field in form["fields"]}
+
+    assert form["fieldsets"] == [(None, {"fields": ("name", "callable_summary", "upper_name")})]
+    assert fields_by_name["callable_summary"]["attrs"]["label"] == "Callable summary"
+    assert fields_by_name["callable_summary"]["attrs"]["value"] == "Alpha:in_stock"
+    assert fields_by_name["upper_name"]["attrs"]["value"] == "ALPHA"
+
+
 def test_history_filters_by_permission_and_params(staff_client, sample):
     actor = get_user_model().objects.create_user("history-actor", password="pw", is_staff=True)
     product_ct = ContentType.objects.get_for_model(Product, for_concrete_model=False)

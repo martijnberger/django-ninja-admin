@@ -128,7 +128,8 @@ class BaseAdmin:
         fields = flatten_fieldsets(self.get_fieldsets(request, obj))
         exclude = list(self.get_exclude(request, obj) or [])
         readonly_fields = list(self.get_readonly_fields(request, obj) or [])
-        form_fields = [field for field in fields if field not in readonly_fields]
+        readonly_field_names = {field_name_for_display(field) for field in readonly_fields}
+        form_fields = [field for field in fields if field_name_for_display(field) not in readonly_field_names]
         return modelform_factory(
             self.model,
             form=forms.ModelForm,

@@ -420,6 +420,7 @@ def _check_form_layout(model_admin):
     errors.extend(_check_form_option_items(model_admin, "exclude", require_model_field=True))
 
     readonly_fields = tuple(model_admin.get_readonly_fields(None) or ())
+    readonly_field_names = {field_name_for_display(field) for field in readonly_fields}
     seen_readonly_fields = set()
     for item in readonly_fields:
         item_key = field_name_for_display(item)
@@ -452,7 +453,7 @@ def _check_form_layout(model_admin):
     for item in fields:
         if not isinstance(item, str):
             continue
-        if item in readonly_fields:
+        if item in readonly_field_names:
             continue
         field = _model_field(model_admin, item)
         if field is None:
