@@ -5,6 +5,7 @@ import calendar
 from django.core.exceptions import FieldDoesNotExist, FieldError, PermissionDenied, ValidationError
 from django.core.paginator import InvalidPage
 from django.db import models
+from django.db.models.expressions import F, OrderBy
 from django.http import Http404, QueryDict
 from django.utils import timezone
 
@@ -277,7 +278,7 @@ class ChangeList:
         params = params or self.params
         ordering_param = params.get("o")
         if not ordering_param:
-            return self.get_default_ordering()
+            return self.get_deterministic_ordering(self.get_default_ordering())
 
         ordering = []
         invalid_fields = []
@@ -298,10 +299,52 @@ class ChangeList:
             raise AdminValidationError(
                 [{"message": f"Invalid ordering field: {', '.join(invalid_fields)}.", "param": "o"}]
             )
-        return ordering
+        return self.get_deterministic_ordering(ordering)
 
     def get_default_ordering(self):
-        return [field for field in self.model_admin.get_ordering(self.request) if isinstance(field, str)]
+        ordering = self.model_admin.get_ordering(self.request) or self.model._meta.ordering
+        return [field for field in ordering if isinstance(field, str)]
+
+    def get_deterministic_ordering(self, ordering):
+        ordering = list(ordering)
+        ordering_fields = set()
+        total_ordering_fields = {
+            "pk",
+            *[field.attname for field in self.model._meta.fields if field.unique and not field.null],
+        }
+        for part in ordering:
+            field_name = None
+            if isinstance(part, str):
+                field_name = part.lstrip("-")
+            elif isinstance(part, F):
+                field_name = part.name
+            elif isinstance(part, OrderBy) and isinstance(part.expression, F):
+                field_name = part.expression.name
+            if not field_name:
+                continue
+            try:
+                field = self.model._meta.get_field(field_name)
+            except FieldDoesNotExist:
+                continue
+            if field.remote_field and field_name == field.name:
+                continue
+            if field.attname in total_ordering_fields:
+                break
+            ordering_fields.add(field.attname)
+        else:
+            constraint_field_names = (
+                *self.model._meta.unique_together,
+                *(constraint.fields for constraint in self.model._meta.total_unique_constraints),
+            )
+            for field_names in constraint_field_names:
+                fields = [self.model._meta.get_field(field_name) for field_name in field_names]
+                if any(field.null for field in fields):
+                    continue
+                if ordering_fields.issuperset(field.attname for field in fields):
+                    break
+            else:
+                ordering.append("-pk")
+        return ordering
 
     def ordering_field_from_column(self, column):
         index = int(column) - 1

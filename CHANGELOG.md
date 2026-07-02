@@ -47,6 +47,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   row identity.
 - Made changelist show-all mode follow Django admin's presence-based `all`
   query parameter behavior.
+- Added Django-admin-style deterministic primary-key fallback ordering for
+  changelists whose active ordering does not include a non-null unique field
+  or unique constraint.
 
 ## 0.1.15 - 2026-07-02
 

@@ -1626,7 +1626,7 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert initial_body["config"]["facets_optional"] is True
     assert initial_body["config"]["add_facets_query_string"] == "?_facets=1"
     assert initial_body["config"]["remove_facets_query_string"] is None
-    assert initial_body["config"]["ordering"] == ["name"]
+    assert initial_body["config"]["ordering"] == ["name", "-pk"]
     initial_name_column = next(column for column in initial_body["columns"] if column["field"] == "name")
     assert initial_name_column["sorted"] is True
     assert initial_name_column["ascending"] is True
@@ -1880,10 +1880,30 @@ def test_changelist_supports_relation_path_list_display(admin_client, sample, mo
     assert category_column["sortable"] is True
     assert category_column["ordering_field"] == "category__name"
     assert category_column["ordering_index"] == "2"
-    assert body["config"]["ordering"] == ["category__name"]
+    assert body["config"]["ordering"] == ["category__name", "-pk"]
     assert body["config"]["ordering_field_columns"] == {"name": "1", "category__name": "2"}
     assert body["rows"][0]["cells"] == {"name": "Omega", "category__name": "Accessories"}
     assert body["rows"][1]["cells"]["category__name"] == "Cameras"
+
+
+def test_changelist_ordering_adds_deterministic_pk_fallback(admin_client, sample, monkeypatch):
+    duplicate = Product.objects.create(name="Alpha", category=sample.category, price="6.00")
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["config"]["ordering"] == ["name", "-pk"]
+    alpha_ids = [row["id"] for row in body["rows"] if row["cells"]["name"] == "Alpha"]
+    assert alpha_ids == [duplicate.pk, sample.pk]
+
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "ordering", ("id",))
+
+    unique_ordering = admin_client.get("/admin-api/testapp/product")
+
+    assert unique_ordering.status_code == 200
+    assert unique_ordering.json()["config"]["ordering"] == ["id"]
 
 
 def test_changelist_row_metadata_honors_object_permissions(staff_client, sample):
@@ -2151,7 +2171,7 @@ def test_changelist_multi_column_ordering_metadata(admin_client, sample):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["config"]["ordering"] == ["price", "-name"]
+    assert body["config"]["ordering"] == ["price", "-name", "-pk"]
     assert [row["cells"]["name"] for row in body["rows"]][:2] == ["Gamma", "Beta"]
 
     columns_by_field = {column["field"]: column for column in body["columns"]}
