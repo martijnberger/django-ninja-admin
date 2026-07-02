@@ -89,7 +89,9 @@ Completed or mostly complete:
 - Registry coverage now includes option-based registration, duplicate/unregistered errors, abstract-model rejection, swapped-model skipping, and the public `@register` decorator.
 - Core site/model routes for apps, context, permissions, history, autocomplete, view-on-site, changelist, detail, add/change/delete, actions, and bulk updates.
 - Context metadata honors custom site title/header/url/sidebar settings and uses `NinjaAdminSite.has_permission()` for permission status.
-- Permissions metadata includes site-level `has_permission` and is covered for default staff-session and explicit `auth=None` sites.
+- Permissions metadata includes site-level `has_permission`, registered-model
+  permission maps, custom model permission hooks, and is covered for default
+  staff-session and explicit `auth=None` sites.
 - Default `SessionAuthIsStaff`, explicit `auth=None`, custom auth callable, and multiple Ninja auth callable support.
 - Basic Pydantic request envelopes and typed response schemas.
 - Dynamic Pydantic output schemas with FK labels, many-to-many IDs, and `schema_field_overrides`.

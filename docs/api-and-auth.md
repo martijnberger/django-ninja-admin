@@ -247,6 +247,18 @@ a required top-level status field:
 }
 ```
 
+## Permissions Metadata
+
+`GET /permissions` returns the current user's site-level permission state plus
+registered model permission summaries. The model entries use the same
+`has_add_permission()`, `has_change_permission()`, `has_delete_permission()`,
+and `has_view_permission()` hooks as Django admin, so custom model-admin
+permission overrides are reflected in the response.
+
+Object-specific UI state is exposed on object-bearing responses such as
+changelist rows and change forms, where those same hooks can receive the
+current object.
+
 ## Authentication
 
 The default auth is `ninja.security.SessionAuthIsStaff`. It accepts active staff

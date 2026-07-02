@@ -61,6 +61,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   verification.
 - Added `just openapi-diff` for semantic OpenAPI contract comparisons across
   reviewed artifacts or release candidates.
+- Expanded `GET /permissions` with registered-model permission summaries and
+  covered custom/object-level permission metadata hooks.
 - Tightened plain Django choice-field request schemas for non-JSON scalar
   choices such as `Decimal` and `UUID` values by advertising the stringified
   Django form values as OpenAPI enums.

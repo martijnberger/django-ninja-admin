@@ -195,6 +195,20 @@ class PermissionsResponse(Schema):
                     "is_staff": True,
                     "is_superuser": False,
                     "has_permission": True,
+                    "models": [
+                        {
+                            "name": "Products",
+                            "object_name": "Product",
+                            "app_label": "shop",
+                            "model_name": "product",
+                            "perms": {
+                                "has_add_permission": True,
+                                "has_change_permission": True,
+                                "has_delete_permission": False,
+                                "has_view_permission": True,
+                            },
+                        }
+                    ],
                 }
             ]
         }
@@ -205,6 +219,7 @@ class PermissionsResponse(Schema):
     is_staff: bool
     is_superuser: bool
     has_permission: bool
+    models: list[ModelSummary] = Field(default_factory=list)
 
 
 FIELD_DESCRIPTION_ATTRS_EXAMPLE = {

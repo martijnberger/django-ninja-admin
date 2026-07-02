@@ -387,12 +387,42 @@ def test_permissions_route_reports_site_permission(admin_client):
     staff_response = admin_client.get("/admin-api/permissions")
 
     assert staff_response.status_code == 200
-    assert staff_response.json() == {
+    body = staff_response.json()
+    permission_state_keys = ("is_authenticated", "is_active", "is_staff", "is_superuser", "has_permission")
+    assert {key: body[key] for key in permission_state_keys} == {
         "is_authenticated": True,
         "is_active": True,
         "is_staff": True,
         "is_superuser": False,
         "has_permission": True,
+    }
+    assert isinstance(body["models"], list)
+    model_keys = {(model["app_label"], model["model_name"]) for model in body["models"]}
+    assert {("testapp", "category"), ("testapp", "product"), ("testapp", "tag")} <= model_keys
+    product_permissions = next(model["perms"] for model in body["models"] if model["model_name"] == "product")
+    assert product_permissions == {
+        "has_add_permission": True,
+        "has_change_permission": True,
+        "has_delete_permission": True,
+        "has_view_permission": True,
+    }
+
+
+def test_permissions_route_uses_custom_model_permission_hooks(admin_client, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    monkeypatch.setattr(product_admin, "has_add_permission", lambda request: False)
+    monkeypatch.setattr(product_admin, "has_delete_permission", lambda request, obj=None: False)
+
+    response = admin_client.get("/admin-api/permissions")
+
+    assert response.status_code == 200
+    product = next(model for model in response.json()["models"] if model["model_name"] == "product")
+    assert product["perms"] == {
+        "has_add_permission": False,
+        "has_change_permission": True,
+        "has_delete_permission": False,
+        "has_view_permission": True,
     }
 
 
@@ -407,6 +437,7 @@ def test_permissions_route_supports_auth_none_sites():
         "is_staff": False,
         "is_superuser": False,
         "has_permission": False,
+        "models": [],
     }
 
     schema = Client().get("/public-permissions-admin/openapi.json").json()
@@ -508,6 +539,23 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "is_staff": True,
         "is_superuser": False,
         "has_permission": True,
+        "models": [
+            {
+                "name": "Products",
+                "object_name": "Product",
+                "app_label": "shop",
+                "model_name": "product",
+                "perms": {
+                    "has_add_permission": True,
+                    "has_change_permission": True,
+                    "has_delete_permission": False,
+                    "has_view_permission": True,
+                },
+            }
+        ],
+    }
+    assert components["PermissionsResponse"]["properties"]["models"]["items"] == {
+        "$ref": "#/components/schemas/ModelSummary"
     }
     assert _response_schema_ref(paths["/admin-api/history"]["get"], "200") == "#/components/schemas/HistoryResponse"
     assert components["HistoryItem"]["properties"]["change_message_text"]["type"] == "string"
@@ -2550,6 +2598,29 @@ def test_changelist_row_metadata_honors_object_permissions(staff_client, sample)
     assert row["delete_url"] is None
     assert row["permissions"] == {
         "has_add_permission": False,
+        "has_change_permission": False,
+        "has_delete_permission": False,
+        "has_view_permission": True,
+    }
+
+
+def test_change_form_metadata_honors_custom_object_permission_hooks(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    def has_change_permission(request, obj=None):
+        return obj is None or obj.pk != sample.pk
+
+    def has_delete_permission(request, obj=None):
+        return obj is None or obj.pk != sample.pk
+
+    monkeypatch.setattr(product_admin, "has_change_permission", has_change_permission)
+    monkeypatch.setattr(product_admin, "has_delete_permission", has_delete_permission)
+
+    response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+
+    assert response.status_code == 200
+    assert response.json()["form"]["permissions"] == {
+        "has_add_permission": True,
         "has_change_permission": False,
         "has_delete_permission": False,
         "has_view_permission": True,

@@ -572,12 +572,18 @@ class NinjaAdminSite:
         )
         def permissions(request):
             user = request.user
+            model_permissions = [
+                model
+                for app in site.get_app_list(request)
+                for model in app["models"]
+            ]
             return {
                 "is_authenticated": user.is_authenticated,
                 "is_active": user.is_active,
                 "is_staff": user.is_staff,
                 "is_superuser": user.is_superuser,
                 "has_permission": site.has_permission(request),
+                "models": model_permissions,
             }
 
         @router.get(
