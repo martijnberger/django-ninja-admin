@@ -7039,6 +7039,119 @@ def test_string_length_model_validators_drive_output_and_relation_schemas(db):
 
 
 @isolate_apps("tests.testapp")
+def test_numeric_model_validators_use_strictest_output_and_relation_bounds(db):
+    class BoundedCode(models.Model):
+        code = models.IntegerField(
+            primary_key=True,
+            validators=[
+                MinValueValidator(5),
+                MinValueValidator(2),
+                MaxValueValidator(8),
+                MaxValueValidator(12),
+            ],
+        )
+        ratio = models.FloatField(
+            validators=[
+                MinValueValidator(0.75),
+                MinValueValidator(0.25),
+                MaxValueValidator(2.5),
+                MaxValueValidator(3.0),
+            ],
+        )
+        price = models.DecimalField(
+            max_digits=6,
+            decimal_places=2,
+            validators=[
+                MinValueValidator(Decimal("2.50")),
+                MinValueValidator(Decimal("1.00")),
+                MaxValueValidator(Decimal("8.75")),
+                MaxValueValidator(Decimal("9.99")),
+            ],
+        )
+        nullable_count = models.IntegerField(
+            null=True,
+            blank=True,
+            validators=[
+                MinValueValidator(4),
+                MinValueValidator(1),
+                MaxValueValidator(7),
+                MaxValueValidator(9),
+            ],
+        )
+
+        class Meta:
+            app_label = "testapp"
+
+    class BoundedCodeLink(models.Model):
+        code = models.ForeignKey(BoundedCode, to_field="code", on_delete=models.CASCADE)
+        codes = models.ManyToManyField(BoundedCode, related_name="bounded_links", blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(BoundedCode)
+    admin_site.register(BoundedCodeLink)
+    code_admin = admin_site.get_model_admin(BoundedCode)
+    link_admin = admin_site.get_model_admin(BoundedCodeLink)
+
+    code_schema = code_admin.get_output_schema()
+    code_output_schema = code_schema.model_json_schema()
+    link_output_schema = link_admin.get_output_schema().model_json_schema()
+    link_write_schema = link_admin.get_write_schema(None).model_json_schema()
+
+    assert code_output_schema["properties"]["code"] == {
+        "maximum": 8,
+        "minimum": 5,
+        "title": "Code",
+        "type": "integer",
+    }
+    assert link_write_schema["properties"]["code"] == {
+        "maximum": 8,
+        "minimum": 5,
+        "title": "Code",
+        "type": "integer",
+    }
+    assert link_output_schema["properties"]["code_id"] == {
+        "maximum": 8,
+        "minimum": 5,
+        "title": "Code Id",
+        "type": "integer",
+    }
+    assert link_output_schema["properties"]["codes"]["items"] == {
+        "maximum": 8,
+        "minimum": 5,
+        "type": "integer",
+    }
+    assert code_output_schema["properties"]["ratio"] == {
+        "maximum": 2.5,
+        "minimum": 0.75,
+        "title": "Ratio",
+        "type": "number",
+    }
+    price_number_schema = next(
+        option for option in code_output_schema["properties"]["price"]["anyOf"] if option.get("type") == "number"
+    )
+    assert price_number_schema["maximum"] == 8.75
+    assert price_number_schema["minimum"] == 2.5
+    nullable_count_integer = next(
+        option
+        for option in code_output_schema["properties"]["nullable_count"]["anyOf"]
+        if option.get("type") == "integer"
+    )
+    assert nullable_count_integer["maximum"] == 7
+    assert nullable_count_integer["minimum"] == 4
+
+    code_schema.model_validate({"code": 5, "ratio": 0.75, "price": Decimal("2.50"), "nullable_count": None})
+    with pytest.raises(PydanticValidationError):
+        code_schema.model_validate({"code": 2, "ratio": 0.75, "price": Decimal("2.50"), "nullable_count": None})
+    with pytest.raises(PydanticValidationError):
+        code_schema.model_validate({"code": 5, "ratio": 3.0, "price": Decimal("2.50"), "nullable_count": None})
+    with pytest.raises(PydanticValidationError):
+        code_schema.model_validate({"code": 5, "ratio": 0.75, "price": Decimal("9.99"), "nullable_count": None})
+
+
+@isolate_apps("tests.testapp")
 def test_step_value_model_validators_drive_output_and_relation_schemas(db):
     class StepCode(models.Model):
         code = models.IntegerField(primary_key=True, validators=[StepValueValidator(5)])

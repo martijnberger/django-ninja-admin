@@ -625,11 +625,11 @@ class BaseAdmin:
         return value
 
     def pydantic_numeric_bound_value(self, field, value):
-        if isinstance(field, forms.DecimalField):
+        if isinstance(field, (forms.DecimalField, models.DecimalField)):
             return Decimal(str(value))
-        if isinstance(field, forms.FloatField):
+        if isinstance(field, (forms.FloatField, models.FloatField)):
             return float(value)
-        if isinstance(field, forms.IntegerField):
+        if isinstance(field, (forms.IntegerField, models.IntegerField)):
             return int(value)
         return value
 
@@ -1046,9 +1046,11 @@ class BaseAdmin:
                 except Exception:
                     continue
             if isinstance(validator, MinValueValidator):
-                bounds["ge"] = limit_value
+                bound = self.pydantic_numeric_bound_value(field, limit_value)
+                bounds["ge"] = max(bounds.get("ge", bound), bound)
             elif isinstance(validator, MaxValueValidator):
-                bounds["le"] = limit_value
+                bound = self.pydantic_numeric_bound_value(field, limit_value)
+                bounds["le"] = min(bounds.get("le", bound), bound)
         return bounds
 
     def get_pydantic_step_constraint_for_model_field(self, field):
