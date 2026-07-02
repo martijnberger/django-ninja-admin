@@ -1400,10 +1400,12 @@ class NinjaAdminSite:
         properties = {
             "data": {
                 "type": "string",
+                "contentMediaType": "application/json",
                 "description": f"JSON object matching {payload_schema.__name__}.data.",
             },
             "inlines": {
                 "type": "string",
+                "contentMediaType": "application/json",
                 "description": f"Optional JSON object matching {payload_schema.__name__}.inlines.",
             },
         }

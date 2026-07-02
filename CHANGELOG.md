@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Marked multipart `data` and `inlines` OpenAPI string parts with
+  `contentMediaType: application/json`.
 - Added mounted-route `ImageField` upload coverage that rejects non-images and
   persists valid images with typed width/height metadata.
 - Kept file field serialization and form metadata usable when a storage backend
