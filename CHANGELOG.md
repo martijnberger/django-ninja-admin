@@ -13,6 +13,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Tightened generated relation write schemas and OpenAPI examples to use the
   related primary key or explicit `to_field_name` type instead of a blanket
   integer-or-string union.
+- Tightened generated relation output schemas so serialized foreign-key
+  `attname` fields use the related target-field type, including non-PK
+  `ForeignKey(to_field=...)` relations.
 
 ## 0.1.22 - 2026-07-02
 

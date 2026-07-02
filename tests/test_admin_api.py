@@ -7077,6 +7077,7 @@ def test_autocomplete_uses_remote_model_admin_paginator_hook(admin_client, sampl
 def test_autocomplete_uses_remote_related_to_field(admin_client):
     Category.objects.create(name="Cameras", slug="cameras")
     Category.objects.create(name="Accessories", slug="accessories")
+    link = CategorySlugLink.objects.create(name="Camera link", category_id="cameras")
     source_model_name = CategorySlugLink._meta.model_name
 
     form = admin_client.get("/slug-autocomplete-admin/testapp/categorysluglink/form")
@@ -7111,10 +7112,19 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
         "title": "Category",
         "type": "string",
     }
+    assert components["CategorySlugLinkAdminOut"]["properties"]["category_id"] == {
+        "title": "Category Id",
+        "type": "string",
+    }
     create_example = schema["paths"]["/slug-autocomplete-admin/testapp/categorysluglink"]["post"]["requestBody"][
         "content"
     ]["application/json"]["examples"]["create"]["value"]["data"]
     assert create_example["category"] == "example"
+
+    detail = admin_client.get(f"/slug-autocomplete-admin/testapp/categorysluglink/{link.pk}")
+    assert detail.status_code == 200
+    assert detail.json()["category_id"] == "cameras"
+    assert detail.json()["category_label"] == "Cameras"
 
     response = admin_client.get(
         "/slug-autocomplete-admin/autocomplete",

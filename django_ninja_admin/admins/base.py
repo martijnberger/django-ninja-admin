@@ -744,6 +744,7 @@ class BaseAdmin:
     def _output_schema_example(self, fields_key, custom_fields):
         data = {}
         field_names = set(fields_key)
+        custom_field_names = {name for name, _field_type, _default in custom_fields}
         for field in self.model._meta.fields:
             if field.name == "password":
                 continue
@@ -760,6 +761,10 @@ class BaseAdmin:
                     "name": f"{field.name}/example.dat",
                     "url": f"/media/{field.name}/example.dat",
                 }
+                continue
+            if field.remote_field and field.attname in custom_field_names:
+                data[field.attname] = self._model_field_example_value(field.target_field)
+                data[f"{field.name}_label"] = "Example"
                 continue
             if field.name not in field_names:
                 continue
@@ -818,7 +823,7 @@ class BaseAdmin:
         return "example"
 
     def _schema_type_example(self, field_type, default):
-        if default is not None:
+        if default is not None and default is not ...:
             return default
         origin = get_origin(field_type)
         args = get_args(field_type)
@@ -866,6 +871,8 @@ class BaseAdmin:
                 custom_fields.append((field.name, ImageFieldValue | None, None))
             elif isinstance(field, models.FileField):
                 custom_fields.append((field.name, FileFieldValue | None, None))
+            elif field.remote_field:
+                custom_fields.append(self._relation_output_custom_field(field))
             else:
                 fields.append(field.name)
         for field in self.model._meta.fields:
@@ -879,6 +886,12 @@ class BaseAdmin:
             for field_type, default in [self._normalize_schema_override(value)]
         )
         return self._output_schema_for_fields(tuple(fields), tuple(custom_fields))
+
+    def _relation_output_custom_field(self, field):
+        field_type = self.get_pydantic_type_for_model_field(field.target_field)
+        if field.null:
+            return field.attname, field_type | None, None
+        return field.attname, field_type, ...
 
     def _normalize_schema_override(self, value):
         if isinstance(value, tuple):

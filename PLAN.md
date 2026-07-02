@@ -345,6 +345,8 @@ Completed or mostly complete:
   and create/update persistence coverage.
 - Relation write schemas and OpenAPI examples now infer input types from the
   related primary key or explicit `to_field_name` target.
+- Relation output schemas now infer serialized foreign-key `attname` types from
+  the related target field, including non-PK `to_field` relations.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Relation form field descriptions now include structured related-model identity,
   selected option labels, and mount-aware endpoint/query metadata for
