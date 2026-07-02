@@ -651,6 +651,9 @@ catch admin edge cases before client projects discover them.
   intentionally Ninja/Pydantic-native, but equivalent admin behavior should be
   provable through permissions, querysets, validation results, side effects,
   log entries, and rendered metadata.
+- Treat each feature as incomplete until implementation, schema behavior,
+  route behavior, documentation, and matrix evidence agree. A feature that
+  works locally but lacks contract coverage should remain `partial`.
 - Every behavior marked `implemented` in `docs/parity-matrix.md` needs evidence:
   at least one test, smoke gate, documented intentional contract difference, or
   source-level reason why the behavior is not applicable.
@@ -672,6 +675,10 @@ catch admin edge cases before client projects discover them.
 - Tests should be allowed to be a little redundant where the public contract is
   generated. A direct schema assertion, an OpenAPI assertion, and a route test
   may all cover the same field because they protect different failure modes.
+- Prefer fewer broad "happy path" tests and more targeted edge tests for admin
+  semantics: object-level permission denial, malformed lookup input,
+  unsupported `_to_field`, stale inline IDs, duplicate bulk rows, multipart
+  parse failures, protected deletes, and rollback after late validation.
 
 ### Coverage Sources
 
@@ -703,6 +710,70 @@ catch admin edge cases before client projects discover them.
   `partial`, `missing`, or `changed`, with evidence pointing to tests, docs, or
   code.
 
+### Definition Of Done For A Feature Slice
+
+Each implementation slice should leave behind enough evidence that a future
+refactor can understand and preserve the contract.
+
+- Behavior is covered through mounted Ninja routes, not only direct helper
+  tests, whenever auth, parsing, serialization, transactions, or exception
+  handlers are involved.
+- Pydantic request schemas are tested directly for at least one valid payload
+  and one invalid payload when a slice changes input shape, coercion,
+  optionality, constraints, aliases, or examples.
+- Output schemas are tested directly when a slice changes serialization,
+  computed fields, relation values, file/image values, custom fields, or
+  `output_schema` / `schema_field_overrides` behavior.
+- OpenAPI is asserted when a slice changes route presence, operation IDs, tags,
+  request bodies, response status maps, examples, auth/error maps, component
+  names, multipart bodies, or custom route/action schemas.
+- Database side effects are asserted for mutations: parent rows, inline rows,
+  many-to-many relations, uploaded files, log entries, change messages, and
+  rollback after late failures.
+- Permission-sensitive behavior includes both allowed and denied users, and
+  object-level hooks when the corresponding Django admin hook exists.
+- `docs/parity-matrix.md` is updated with precise evidence before claiming an
+  implemented row; broad "covered by tests" notes should be replaced by test
+  names, smoke gates, or documented v2 differences.
+- `CHANGELOG.md` is updated for user-visible contract changes, new validation
+  behavior, new OpenAPI shape, new admin hook support, or narrowed parity gaps.
+- The release checklist is updated when the slice adds a new gate, fixture app,
+  sample-project scenario, supported environment, or manual verification step.
+
+### Pydantic And ModelSchema Verification Track
+
+Django Ninja's documented `ModelSchema` / `create_schema()` behavior should be
+treated as the reference point for generated read schemas, with admin-specific
+extensions tested explicitly where we diverge.
+
+- Read schema tests should confirm explicit safe field lists, never accidental
+  `__all__`, deterministic component names, stable examples, nullable fields,
+  constrained strings/numbers/decimals, email/URL/IP formats, JSON fields,
+  registered custom field mappings, relation target IDs, many-to-many IDs,
+  file/image metadata, and computed/admin display fields.
+- Read serialization tests should validate both Pydantic `model_validate()` /
+  `model_dump()` behavior and mounted-route JSON output so Ninja response
+  serialization and admin helper serialization cannot drift apart.
+- Partial update tests should verify unset fields are not treated as `None`.
+  If Ninja `fields_optional` or `PatchDict` patterns are adopted later, they
+  must preserve admin form semantics, hook order, inline aliases, and existing
+  error locations before replacing current generated partial schemas.
+- Write schema tests should prove form-derived Pydantic models reject unknown
+  fields, coerce expected scalar/container values, preserve cleaned Python
+  values for Django forms, expose realistic examples, and keep disabled or
+  readonly fields out of writable requirements.
+- Custom field tests should cover both Ninja `register_field()` mappings for
+  Django model fields and admin `schema_field_overrides` /
+  `form_schema_field_overrides` for cases where the admin contract is more
+  specific than the model-field mapping.
+- OpenAPI tests should verify that the schema a client sees matches the schema
+  used by route parsing, including multipart JSON parts, inline operation
+  aliases, bulk-row dictionaries, action payload discriminators, custom route
+  response maps, and typed error bodies.
+- Generated examples should be self-validating: every example advertised in a
+  Pydantic schema or OpenAPI route should be passed through the corresponding
+  schema in tests or smoke tooling.
+
 ### Near-Term Testing Investments
 
 - Add a semantic OpenAPI diff helper that normalizes generated documents,
@@ -733,6 +804,18 @@ catch admin edge cases before client projects discover them.
 - Add an upstream-fixture comparison command that runs selected v1/Django-admin
   semantic scenarios against local fixtures and records whether the v2 response
   is equivalent, intentionally changed, or still missing.
+- Add a parity-evidence checker that scans `docs/parity-matrix.md` for vague
+  evidence notes, missing test/gate references, stale `partial` rows with no
+  remaining-work text, and `implemented` rows whose cited test names no longer
+  exist.
+- Add a release-candidate gate that runs the broad verification set in one
+  command: lint, unit/route tests, package smoke, sample-project smoke,
+  generated-client smoke, parity report, OpenAPI diff input validation, and
+  PostgreSQL tests when database credentials are available.
+- Add mutation fuzz/property-style tests for envelope structure, inline aliases,
+  duplicate row IDs, action names, malformed `_to_field`, unexpected fields,
+  and invalid relation identifiers. Keep these focused on contract stability
+  rather than broad random ORM state.
 - Add pytest markers or naming conventions for `schema`, `openapi`, `route`,
   `postgres`, `smoke`, `performance`, and `parity` tests so focused gates can
   be run without losing the full `just check` gate.
@@ -771,6 +854,10 @@ catch admin edge cases before client projects discover them.
 - When a regression test is added for a bug, link it back to the affected
   endpoint, schema, or matrix row so future refactors preserve the reason the
   test exists.
+- Keep reviewed OpenAPI artifacts, parity reports, and release-candidate smoke
+  logs long enough to compare at least the previous intermediate release and
+  the next candidate. The project should be able to answer "what contract
+  changed?" without reconstructing history from memory.
 
 ### Test Tiers
 
@@ -801,6 +888,14 @@ catch admin edge cases before client projects discover them.
 - Compatibility matrix tests: run representative behavioral and contract tests
   across supported Django 5.0+ versions and Python 3.12+ so compatibility
   claims are backed by execution, not dependency ranges alone.
+- Fixture-comparison tests: run selected Django-admin or upstream-equivalent
+  scenarios against the same local fixture data and compare semantic outcomes:
+  visible objects, allowed actions, filtered counts, validation errors, log
+  entries, delete protections, and change messages.
+- Release-candidate tests: exercise the package as an installed artifact,
+  preferably from the same wheel that would be uploaded, and verify that source
+  tree assumptions do not hide packaging, migration, static asset, or settings
+  issues.
 
 ### Required Gates By Change Type
 
@@ -832,6 +927,11 @@ catch admin edge cases before client projects discover them.
   environment. A release may proceed from a narrower local gate only when the
   missing wider gate is recorded with a reason and followed by CI or a later
   verification pass.
+- Version/dependency changes should run package smoke, sample-project smoke,
+  no-DRF/no-drf-spectacular dependency checks, and at least one installed-wheel
+  OpenAPI/docs request.
+- Matrix-only changes should be reviewed against code and tests; if a row moves
+  toward `implemented`, the same change should add or cite concrete evidence.
 
 ### Validation Layers
 
@@ -864,6 +964,17 @@ catch admin edge cases before client projects discover them.
 - Error tests should assert status codes, stable error `code` values, field or
   row locations, protected-object details, permission-needed details, and
   validation messages where clients need deterministic behavior.
+- Cross-layer validation should prove that Pydantic, Django forms, model
+  validation, database constraints, and exception handlers report compatible
+  error locations. Clients should not need to special-case the same invalid
+  field differently depending on which layer rejected it.
+- Validation tests should include both JSON and multipart entry points when a
+  feature supports files/images or JSON form parts, because Ninja parsing and
+  Django form binding exercise different failure modes.
+- Validation should include "too much input" cases: unknown parent fields,
+  unknown inline aliases, unknown inline row fields, unknown bulk PKs,
+  duplicate IDs, unexpected action payload keys, and unexpected query params
+  where the admin contract promises strictness.
 
 ### OpenAPI And Contract Verification
 
@@ -896,6 +1007,33 @@ catch admin edge cases before client projects discover them.
   releases. A removed field, renamed component, changed required field, changed
   status map, or changed error shape should be treated as a release decision,
   not incidental churn.
+- Verify OpenAPI from an installed wheel, not only the source tree, before
+  beta/stable candidates. Generated contracts should survive normal package
+  installation, app loading, migrations, and URL mounting.
+- Keep a minimal client-consumer fixture that discovers operation IDs from the
+  OpenAPI document instead of hard-coding route URLs. This catches accidental
+  operation-ID churn and proves advertised examples are useful to consumers.
+
+### Gate Profiles
+
+Use named gate profiles so local development stays fast while release evidence
+keeps getting stronger.
+
+- Fast slice gate: focused pytest target for the changed behavior, focused
+  schema/OpenAPI assertion when applicable, and `just parity-report` when a
+  matrix row changes.
+- Default local gate: `just check`, covering lint, the full SQLite pytest
+  suite, package smoke, and sample-project smoke.
+- Contract gate: `just openapi-diff` with reviewed artifacts plus
+  `just generated-client-smoke` for installed-project OpenAPI consumption.
+- Database gate: `just postgres-test`, especially for ORM lookups, date/time
+  bucketing, JSON fields, constraints, protected deletes, transactions,
+  ordering, and facets/counts.
+- Release-candidate gate: default local gate, contract gate, database gate,
+  parity report review, copyright/license audit, changelog review, and
+  installed-wheel sample-project verification from the candidate artifact.
+- Exploratory gate: manual sample-project walkthrough plus notes converted
+  into tests before a parity claim is upgraded.
 
 ### Database, Version, And Environment Matrix
 

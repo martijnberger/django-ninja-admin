@@ -33,6 +33,16 @@ behavior, or permission boundaries.
 
 - Run focused tests for the changed behavior and at least one OpenAPI/schema
   contract test when the wire shape changes.
+- Validate generated Pydantic schemas directly for changed input/output
+  contracts, including valid examples, invalid payloads, required fields,
+  optional PATCH-style fields, and error locations.
+- Verify read-schema changes against Django Ninja `ModelSchema` /
+  `create_schema()` expectations where feasible: explicit safe field lists,
+  registered custom field mappings, relation IDs, nullable values, constraints,
+  and no accidental `__all__` exposure.
+- Verify form-derived write schemas still hand off to Django `ModelForm` and
+  formset validation for persistence rules, hook order, disabled fields,
+  inline constraints, and rollback after late failures.
 - Run `just postgres-test` for lookup, ordering, transaction, protected-delete,
   constraint, JSON-field, date/time, and facet/count behavior.
 - Review CI results across the supported Django 5.0+ and Python 3.12+ matrix.
@@ -48,6 +58,12 @@ behavior, or permission boundaries.
   readiness claims.
 - Inspect `docs/parity-matrix.md` for stale evidence and make sure every
   remaining gap is still accurate.
+- Confirm each `implemented` parity row cites concrete evidence: focused test
+  names, smoke gates, documented intentional v2 differences, or source-level
+  non-applicability.
+- Keep a short expected-change note for any OpenAPI diff that removes a field,
+  renames a component, changes required fields, changes response status maps,
+  or changes typed error bodies.
 - Re-run the copyright/license audit after substantial Django-derived or
   upstream-derived ports.
 
