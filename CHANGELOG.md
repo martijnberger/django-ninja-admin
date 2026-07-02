@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.19 - 2026-07-02
+
 - Added inline formset prefix, management-form, empty-form, and per-row
   prefixed bound-field metadata to form descriptions.
 - Added list-editable changelist formset prefix, management-form counts, and
