@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Validated dynamic inline `get_extra()`, `get_min_num()`, and `get_max_num()`
+  hook returns before formset construction, returning typed API errors for bad
+  values.
 - Hardened inline count-option checks to reject boolean, negative, and
   impossible min/max values before formset construction.
 - Hardened admin pagination checks to reject boolean, zero, and negative

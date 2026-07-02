@@ -4880,6 +4880,48 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     assert len(add_inline["formset"]) == 5
 
 
+def test_form_description_rejects_invalid_dynamic_inline_count_hooks(admin_client, sample, monkeypatch):
+    from tests.testapp.admin import ProductImageInline
+
+    def negative_extra(self, request, obj=None, **kwargs):
+        return -1
+
+    monkeypatch.setattr(ProductImageInline, "get_extra", negative_extra)
+
+    response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+
+    assert response.status_code == 400
+    assert response.json()["errors"] == [
+        {
+            "message": "Inline 'extra' must not be negative.",
+            "param": "inlines.testapp.productimage.extra",
+        }
+    ]
+
+    def zero_extra(self, request, obj=None, **kwargs):
+        return 0
+
+    def min_num(self, request, obj=None, **kwargs):
+        return 3
+
+    def max_num(self, request, obj=None, **kwargs):
+        return 1
+
+    monkeypatch.setattr(ProductImageInline, "get_extra", zero_extra)
+    monkeypatch.setattr(ProductImageInline, "get_min_num", min_num)
+    monkeypatch.setattr(ProductImageInline, "get_max_num", max_num)
+
+    response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+
+    assert response.status_code == 400
+    assert response.json()["errors"] == [
+        {
+            "message": "Inline 'min_num' must not exceed 'max_num'.",
+            "param": "inlines.testapp.productimage.min_num",
+        }
+    ]
+
+
 def test_inline_descriptions_use_formfield_hooks_and_media(admin_client, sample, monkeypatch):
     from tests.testapp.admin import ProductImageInline
 

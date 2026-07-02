@@ -7,6 +7,7 @@ from django.utils.text import format_lazy
 from pydantic import Field, create_model
 
 from django_ninja_admin.admins.base import BaseAdmin
+from django_ninja_admin.exceptions import AdminValidationError
 from django_ninja_admin.schemas import AdminInlineOperationsSchema, AdminInlineRowSchema
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 
@@ -46,6 +47,27 @@ class InlineModelAdmin(BaseAdmin):
     def get_max_num(self, request, obj=None, **kwargs):
         return self.max_num
 
+    def get_formset_count_options(self, request, obj=None):
+        extra = self._clean_formset_count_option("extra", self.get_extra(request, obj), allow_none=False)
+        min_num = self._clean_formset_count_option("min_num", self.get_min_num(request, obj), allow_none=True)
+        max_num = self._clean_formset_count_option("max_num", self.get_max_num(request, obj), allow_none=True)
+        if min_num is not None and max_num is not None and min_num > max_num:
+            self._raise_count_option_error("min_num", "Inline 'min_num' must not exceed 'max_num'.")
+        return {"extra": extra, "min_num": min_num, "max_num": max_num}
+
+    def _clean_formset_count_option(self, option, value, *, allow_none):
+        if value is None and allow_none:
+            return None
+        if not isinstance(value, int) or isinstance(value, bool):
+            self._raise_count_option_error(option, f"Inline '{option}' must be an integer.")
+        if value < 0:
+            self._raise_count_option_error(option, f"Inline '{option}' must not be negative.")
+        return value
+
+    def _raise_count_option_error(self, option, message):
+        inline_id = f"{self.model._meta.app_label}.{self.model._meta.model_name}"
+        raise AdminValidationError([{"message": message, "param": f"inlines.{inline_id}.{option}"}])
+
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         if not self.has_view_or_change_permission(request):
@@ -71,21 +93,20 @@ class InlineModelAdmin(BaseAdmin):
             formfield_callback=lambda db_field, **kwargs: self.formfield_for_dbfield(db_field, request, **kwargs),
         )
 
-    def get_formset(self, request, obj=None, change=False):
-        min_num = self.get_min_num(request, obj)
-        max_num = self.get_max_num(request, obj)
+    def get_formset(self, request, obj=None, change=False, *, count_options=None):
+        count_options = count_options or self.get_formset_count_options(request, obj)
         return inlineformset_factory(
             self.parent_model,
             self.model,
             form=self.get_form_class(request, obj, change=change),
             formset=self.formset,
             fk_name=self.fk_name,
-            extra=self.get_extra(request, obj),
-            min_num=min_num,
-            max_num=max_num,
+            extra=count_options["extra"],
+            min_num=count_options["min_num"],
+            max_num=count_options["max_num"],
             can_delete=self.can_delete,
-            validate_min=min_num is not None,
-            validate_max=max_num is not None,
+            validate_min=count_options["min_num"] is not None,
+            validate_max=count_options["max_num"] is not None,
         )
 
     def get_inline_row_schema(self, request=None, obj=None, *, change=False, partial=False, require_pk=False):

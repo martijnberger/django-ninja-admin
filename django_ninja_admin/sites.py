@@ -1293,7 +1293,8 @@ class NinjaAdminSite:
         data = model_admin.get_form_description(request, obj)
         inlines = []
         for inline in model_admin.get_inline_instances(request, obj):
-            formset_class = inline.get_formset(request, obj, change=obj is not None)
+            count_options = inline.get_formset_count_options(request, obj)
+            formset_class = inline.get_formset(request, obj, change=obj is not None, count_options=count_options)
             queryset = inline.model.objects.none()
             inline_desc = {
                 "model": f"{inline.model._meta.app_label}.{inline.model._meta.model_name}",
@@ -1307,9 +1308,9 @@ class NinjaAdminSite:
                     "has_delete_permission": inline.has_delete_permission(request, obj),
                     "has_view_permission": inline.has_view_permission(request, obj),
                 },
-                "extra": inline.get_extra(request, obj),
-                "min_num": inline.get_min_num(request, obj),
-                "max_num": inline.get_max_num(request, obj),
+                "extra": count_options["extra"],
+                "min_num": count_options["min_num"],
+                "max_num": count_options["max_num"],
                 "verbose_name": str(inline.verbose_name),
                 "verbose_name_plural": str(inline.verbose_name_plural),
                 "can_delete": inline.can_delete,
