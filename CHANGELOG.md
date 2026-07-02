@@ -10,6 +10,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Tightened generated output schemas for many-to-many fields so response
   components advertise arrays of related target-field values instead of
   unconstrained arrays.
+- Tightened generated relation write schemas and OpenAPI examples to use the
+  related primary key or explicit `to_field_name` type instead of a blanket
+  integer-or-string union.
 
 ## 0.1.22 - 2026-07-02
 

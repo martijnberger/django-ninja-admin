@@ -389,9 +389,9 @@ class BaseAdmin:
 
     def _form_field_example_value(self, field):
         if isinstance(field, ModelMultipleChoiceField):
-            return [1]
+            return [self._relation_form_field_example_value(field)]
         if isinstance(field, ModelChoiceField):
-            return 1
+            return self._relation_form_field_example_value(field)
         if isinstance(field, forms.TypedMultipleChoiceField | forms.MultipleChoiceField):
             return [self._choice_example_value(field.choices)]
         if isinstance(field, forms.TypedChoiceField):
@@ -477,9 +477,9 @@ class BaseAdmin:
 
     def _get_pydantic_type_for_form_field(self, field, *, choices_as_literal=True):
         if isinstance(field, ModelMultipleChoiceField):
-            return list[int | str]
+            return list[self.get_pydantic_type_for_model_field(self.get_model_choice_target_field(field))]
         if isinstance(field, ModelChoiceField):
-            return int | str
+            return self.get_pydantic_type_for_model_field(self.get_model_choice_target_field(field))
         if isinstance(field, forms.NullBooleanField):
             return Annotated[bool | None, BeforeValidator(_parse_null_boolean_value)]
         if isinstance(field, forms.BooleanField):
@@ -663,6 +663,18 @@ class BaseAdmin:
         if value_types <= {bool}:
             return bool
         return str
+
+    def get_model_choice_target_field(self, field):
+        model = field.queryset.model
+        if field.to_field_name:
+            try:
+                return model._meta.get_field(field.to_field_name)
+            except FieldDoesNotExist:
+                pass
+        return model._meta.pk
+
+    def _relation_form_field_example_value(self, field):
+        return self._model_field_example_value(self.get_model_choice_target_field(field))
 
     def get_pydantic_literal_for_choices(self, choices):
         values = self.get_pydantic_choice_values(choices)

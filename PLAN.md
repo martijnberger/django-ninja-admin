@@ -343,6 +343,8 @@ Completed or mostly complete:
 - Many-to-many fields now have Pydantic write schemas, typed output schemas,
   JSON-safe change-form values, form relation metadata, output serialization,
   and create/update persistence coverage.
+- Relation write schemas and OpenAPI examples now infer input types from the
+  related primary key or explicit `to_field_name` target.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Relation form field descriptions now include structured related-model identity,
   selected option labels, and mount-aware endpoint/query metadata for

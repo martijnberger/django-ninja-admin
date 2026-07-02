@@ -220,6 +220,10 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert delete_accepted_schema["additionalProperties"] is True
     assert set(components["ProductAdminCreateData"]["required"]) == {"name", "category", "price", "stock_status"}
     assert "required" not in components["ProductAdminPartialUpdateData"]
+    assert components["ProductAdminCreateData"]["properties"]["category"] == {
+        "title": "Category",
+        "type": "integer",
+    }
     assert components["ProductAdminCreateData"]["properties"]["stock_status"]["type"] == "string"
     assert components["ProductAdminPartialUpdateData"]["properties"]["manual"] == {
         "anyOf": [{"type": "string"}, {"type": "null"}],
@@ -231,7 +235,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     }
     tags_options = components["ProductAdminCreateData"]["properties"]["tags"]["anyOf"]
     tags_schema = next(option for option in tags_options if option.get("type") == "array")
-    assert {option["type"] for option in tags_schema["items"]["anyOf"]} == {"integer", "string"}
+    assert tags_schema["items"] == {"type": "integer"}
     price_options = components["ProductAdminCreateData"]["properties"]["price"]["anyOf"]
     assert any(option.get("type") == "number" for option in price_options)
     assert components["ProductAdminBulkRow"]["required"] == ["pk"]
@@ -7098,6 +7102,19 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
             "field_name": "category",
         },
     }
+
+    openapi = admin_client.get("/slug-autocomplete-admin/openapi.json")
+    assert openapi.status_code == 200
+    schema = openapi.json()
+    components = schema["components"]["schemas"]
+    assert components["CategorySlugLinkAdminCreateData"]["properties"]["category"] == {
+        "title": "Category",
+        "type": "string",
+    }
+    create_example = schema["paths"]["/slug-autocomplete-admin/testapp/categorysluglink"]["post"]["requestBody"][
+        "content"
+    ]["application/json"]["examples"]["create"]["value"]["data"]
+    assert create_example["category"] == "example"
 
     response = admin_client.get(
         "/slug-autocomplete-admin/autocomplete",

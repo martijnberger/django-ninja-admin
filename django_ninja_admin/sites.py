@@ -21,7 +21,7 @@ from django.core.exceptions import (
     ValidationError,
 )
 from django.core.paginator import InvalidPage, Paginator
-from django.db import router, transaction
+from django.db import models, router, transaction
 from django.db.models.base import ModelBase
 from django.forms.models import _get_foreign_key, modelformset_factory
 from django.http import Http404
@@ -1601,9 +1601,9 @@ class NinjaAdminSite:
 
     def _form_field_example_value(self, field):
         if isinstance(field, forms.ModelMultipleChoiceField):
-            return [1]
+            return [self._relation_form_field_example_value(field)]
         if isinstance(field, forms.ModelChoiceField):
-            return 1
+            return self._relation_form_field_example_value(field)
         if isinstance(field, forms.TypedMultipleChoiceField | forms.MultipleChoiceField):
             return [self._choice_example_value(field.choices)]
         if isinstance(field, forms.TypedChoiceField | forms.ChoiceField):
@@ -1637,6 +1637,33 @@ class NinjaAdminSite:
         if isinstance(field, forms.DurationField):
             return "1 00:00:00"
         return "example"
+
+    def _relation_form_field_example_value(self, field):
+        target_field = self._model_choice_target_field(field)
+        if isinstance(
+            target_field,
+            models.AutoField
+            | models.BigAutoField
+            | models.SmallAutoField
+            | models.IntegerField
+            | models.BigIntegerField
+            | models.PositiveIntegerField
+            | models.PositiveSmallIntegerField
+            | models.SmallIntegerField,
+        ):
+            return 1
+        if isinstance(target_field, models.UUIDField):
+            return "550e8400-e29b-41d4-a716-446655440000"
+        return "example"
+
+    def _model_choice_target_field(self, field):
+        model = field.queryset.model
+        if field.to_field_name:
+            try:
+                return model._meta.get_field(field.to_field_name)
+            except FieldDoesNotExist:
+                pass
+        return model._meta.pk
 
     def _choice_example_value(self, choices):
         for value, label in choices:
