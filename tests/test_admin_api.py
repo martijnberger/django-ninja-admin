@@ -4481,6 +4481,19 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     assert inline["extra"] == 2
     assert inline["min_num"] == 1
     assert inline["max_num"] == 5
+    title_values = [
+        next(field for field in row if field["name"] == "title")["attrs"].get("value")
+        for row in inline["formset"]
+    ]
+    assert title_values == ["Front", None, None]
+
+    add_response = admin_client.get("/admin-api/testapp/product/form")
+
+    assert add_response.status_code == 200
+    add_inline = next(item for item in add_response.json()["inlines"] if item["model"] == "testapp.productimage")
+    assert add_inline["extra"] == 4
+    assert add_inline["min_num"] == 1
+    assert len(add_inline["formset"]) == 5
 
 
 def test_inline_descriptions_use_formfield_hooks_and_media(admin_client, sample, monkeypatch):

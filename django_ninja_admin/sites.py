@@ -1273,6 +1273,7 @@ class NinjaAdminSite:
         inlines = []
         for inline in model_admin.get_inline_instances(request, obj):
             formset_class = inline.get_formset(request, obj, change=obj is not None)
+            queryset = inline.model.objects.none()
             inline_desc = {
                 "model": f"{inline.model._meta.app_label}.{inline.model._meta.model_name}",
                 "readonly_fields": list(inline.get_readonly_fields(request, obj)),
@@ -1299,12 +1300,15 @@ class NinjaAdminSite:
                 fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
                 related_name = fk.remote_field.accessor_name
                 try:
-                    related_instances = getattr(obj, related_name).all()
+                    queryset = getattr(obj, related_name).all()
+                    related_instances = list(queryset)
                 except AttributeError:
                     related_instances = []
                 for instance in related_instances:
                     inline_desc["formset"].append(inline.get_form_fields_description(request, instance))
-            inline_desc["formset"].append(inline.get_form_fields_description(request, None))
+            formset = formset_class(instance=obj, queryset=queryset)
+            for _form in formset.extra_forms:
+                inline_desc["formset"].append(inline.get_form_fields_description(request, None))
             inlines.append(inline_desc)
         data["inlines"] = inlines
         return FormResponse.model_validate(data).model_dump(mode="json")
