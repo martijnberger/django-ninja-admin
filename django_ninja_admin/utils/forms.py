@@ -983,6 +983,7 @@ def _filtered_select_metadata(source_model, field_name, *, direction):
         remote_model = getattr(getattr(field, "remote_field", None), "model", None)
         if remote_model is not None:
             remote_opts = remote_model._meta
+            to_field_name = _relation_to_field_name(field, remote_model)
             metadata.update(
                 {
                     "related_model": f"{remote_opts.app_label}.{remote_opts.model_name}",
@@ -990,6 +991,8 @@ def _filtered_select_metadata(source_model, field_name, *, direction):
                     "related_model_name": remote_opts.model_name,
                     "related_verbose_name": str(remote_opts.verbose_name),
                     "related_verbose_name_plural": str(remote_opts.verbose_name_plural),
+                    "to_field_name": to_field_name,
+                    **_relation_target_field_metadata(remote_model, to_field_name),
                 }
             )
     return metadata

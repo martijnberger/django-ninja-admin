@@ -18,6 +18,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `ForeignKey(to_field=...)` relations.
 - Added related target-field class, internal type, and attname metadata to
   relation form descriptions and relation widget hints.
+- Added related target-field metadata to filter-horizontal/filter-vertical
+  dual-select form widget hints.
 
 ## 0.1.22 - 2026-07-02
 

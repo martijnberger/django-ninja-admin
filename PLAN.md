@@ -352,7 +352,8 @@ Completed or mostly complete:
   selected option labels, target-field type metadata, and mount-aware
   endpoint/query metadata for autocomplete and raw-id frontend clients.
 - Filter-horizontal and filter-vertical metadata now includes stacking state,
-  source verbose names, and related-model identity for dual-select renderers.
+  source verbose names, related-model identity, and target-field type metadata
+  for dual-select renderers.
 - Relation form field descriptions now include selected option labels for existing foreign-key and many-to-many values.
 - Relation form field descriptions now expose model `limit_choices_to` constraints,
   including callable constraints and structured `Q` objects.

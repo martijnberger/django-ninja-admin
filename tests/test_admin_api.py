@@ -5289,6 +5289,10 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
         "related_model_name": "tag",
         "related_verbose_name": "tag",
         "related_verbose_name_plural": "tags",
+        "to_field_name": "id",
+        "to_field_class": "BigAutoField",
+        "to_field_internal_type": "BigAutoField",
+        "to_field_attname": "id",
     }
     assert form.json()["form"]["filter_horizontal"] == ["tags"]
 
@@ -5966,6 +5970,10 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
         "related_model_name": "tag",
         "related_verbose_name": "tag",
         "related_verbose_name_plural": "tags",
+        "to_field_name": "id",
+        "to_field_class": "BigAutoField",
+        "to_field_internal_type": "BigAutoField",
+        "to_field_attname": "id",
     }
     assert {option["text"] for option in fields_by_name["tags"]["attrs"]["selected_options"]} == {
         "Featured",
