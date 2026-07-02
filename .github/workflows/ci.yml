@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     name: Django ${{ matrix.django-label }} / Python ${{ matrix.python-version }}
@@ -69,8 +73,11 @@ jobs:
       - name: Lint
         run: just lint
 
+      - name: Format check
+        run: just format-check
+
       - name: Test
-        run: just test
+        run: just coverage-test
 
       - name: Package smoke
         run: just package-smoke
@@ -79,6 +86,9 @@ jobs:
         env:
           DJANGO_NINJA_ADMIN_SMOKE_DJANGO: django${{ matrix.django }}
         run: just sample-project-smoke
+
+      - name: Generated client smoke
+        run: just generated-client-smoke
 
   postgres:
     name: PostgreSQL / Django 5.2 / Python 3.12

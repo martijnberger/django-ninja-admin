@@ -3,6 +3,9 @@ set dotenv-load := false
 test *args:
     UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
 
+coverage-test *args:
+    UV_CACHE_DIR=.uv-cache uv run pytest --cov=django_ninja_admin --cov-report=term-missing --cov-report=xml {{args}}
+
 postgres-test *args:
     DJANGO_NINJA_ADMIN_TEST_DATABASE=postgres UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
 
@@ -33,6 +36,6 @@ parity-report *args:
 openapi-diff *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_diff.py {{args}}
 
-check: lint format-check test package-smoke sample-project-smoke generated-client-smoke
+check: lint format-check coverage-test package-smoke sample-project-smoke generated-client-smoke
 
 ci: check

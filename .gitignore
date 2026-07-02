@@ -2,5 +2,8 @@
 .ruff_cache/
 .uv-cache/
 .venv/
+.coverage
+coverage.xml
+htmlcov/
 __pycache__/
 *.py[cod]
