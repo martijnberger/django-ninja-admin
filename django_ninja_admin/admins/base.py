@@ -783,6 +783,8 @@ class BaseAdmin:
                     value = coerce(value)
                 except (TypeError, ValueError):
                     continue
+            elif not isinstance(value, allowed_types):
+                value = str(value)
             if not isinstance(value, allowed_types):
                 continue
             key = (type(value), value)

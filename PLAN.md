@@ -227,6 +227,9 @@ Completed or mostly complete:
   `coerce` hooks such as `int`.
 - Pydantic request schemas now validate typed choice fields against declared
   values after coercion while preserving OpenAPI enum metadata.
+- Pydantic request schemas now advertise enum values for plain Django choice
+  fields whose raw choices are non-JSON scalar values such as `Decimal` or
+  `UUID`, using the stringified values Django forms accept.
 - Pydantic request schemas now validate Django email form fields using Django's
   email validator.
 - Pydantic request schemas now use native URL validation for Django URL form
