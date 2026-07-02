@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Hardened admin pagination checks to reject boolean, zero, and negative
+  pagination option values before changelist runtime.
 - Exposed Django widget option-template, checked-attribute, add-id-index, and
   microsecond-support metadata in form descriptions.
 - Exposed Django form field `empty_value` metadata in form descriptions.

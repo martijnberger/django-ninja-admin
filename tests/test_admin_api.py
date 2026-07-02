@@ -876,16 +876,39 @@ def test_admin_checks_validate_pagination_options(db):
         list_per_page = "25"
         list_max_show_all = "250"
 
+    class BadBooleanPaginationProductAdmin(ModelAdmin):
+        list_per_page = True
+        list_max_show_all = False
+
+    class BadRangePaginationProductAdmin(ModelAdmin):
+        list_per_page = 0
+        list_max_show_all = -1
+
     valid_site = NinjaAdminSite(include_auth=False)
     valid_site.register(Product, ValidPaginationProductAdmin)
     bad_site = NinjaAdminSite(include_auth=False)
     bad_site.register(Product, BadPaginationProductAdmin)
+    bad_boolean_site = NinjaAdminSite(include_auth=False)
+    bad_boolean_site.register(Product, BadBooleanPaginationProductAdmin)
+    bad_range_site = NinjaAdminSite(include_auth=False)
+    bad_range_site.register(Product, BadRangePaginationProductAdmin)
 
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+    bad_boolean_ids = {error.id for error in bad_boolean_site.get_model_admin(Product).check()}
+    bad_range_ids = {error.id for error in bad_range_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E067", "django_ninja_admin.E068"})
+    assert valid_ids.isdisjoint(
+        {
+            "django_ninja_admin.E067",
+            "django_ninja_admin.E068",
+            "django_ninja_admin.E104",
+            "django_ninja_admin.E105",
+        }
+    )
     assert bad_ids == {"django_ninja_admin.E067", "django_ninja_admin.E068"}
+    assert bad_boolean_ids == {"django_ninja_admin.E067", "django_ninja_admin.E068"}
+    assert bad_range_ids == {"django_ninja_admin.E104", "django_ninja_admin.E105"}
 
 
 def test_admin_checks_validate_paginator_class(db):

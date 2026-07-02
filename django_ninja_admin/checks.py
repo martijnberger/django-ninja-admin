@@ -274,11 +274,25 @@ def _check_sortable_by(model_admin):
 
 def _check_pagination_options(model_admin):
     errors = []
-    if not isinstance(getattr(model_admin, "list_per_page", None), int):
+    list_per_page = getattr(model_admin, "list_per_page", None)
+    list_max_show_all = getattr(model_admin, "list_max_show_all", None)
+    if not _is_integer_option(list_per_page):
         errors.append(_error(model_admin.__class__, "The value of 'list_per_page' must be an integer.", "E067"))
-    if not isinstance(getattr(model_admin, "list_max_show_all", None), int):
+    elif list_per_page < 1:
+        errors.append(
+            _error(model_admin.__class__, "The value of 'list_per_page' must be greater than zero.", "E104")
+        )
+    if not _is_integer_option(list_max_show_all):
         errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must be an integer.", "E068"))
+    elif list_max_show_all < 0:
+        errors.append(
+            _error(model_admin.__class__, "The value of 'list_max_show_all' must not be negative.", "E105")
+        )
     return errors
+
+
+def _is_integer_option(value):
+    return isinstance(value, int) and not isinstance(value, bool)
 
 
 def _check_paginator(model_admin):
