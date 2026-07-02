@@ -3237,6 +3237,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
         custom_datetime = forms.DateTimeField(required=False, input_formats=["%d/%m/%Y %H.%M"])
         duration = forms.DurationField(required=False)
         review_required = forms.NullBooleanField(required=False)
+        optional_reference = forms.CharField(required=False, empty_value=None)
         release_window = forms.SplitDateTimeField(
             required=False,
             input_date_formats=["%Y-%m-%d"],
@@ -3298,6 +3299,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
             "custom_datetime": "01/07/2026 09.30",
             "duration": "1 02:03:04",
             "review_required": "unknown",
+            "optional_reference": "REF-1",
             "release_window": ["2026-07-01", "09:30"],
             "bounded_name": "Camera",
             "bounded_count": 3,
@@ -3330,6 +3332,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert validated.custom_datetime.tzinfo is not None
     assert validated.duration == timedelta(days=1, hours=2, minutes=3, seconds=4)
     assert validated.review_required is None
+    assert validated.optional_reference == "REF-1"
     assert validated.release_window == (date(2026, 7, 1), time(9, 30))
     assert validated.bounded_name == "Camera"
     assert validated.bounded_count == 3
@@ -3380,6 +3383,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert fields_by_name["review_required"]["type"] == "NullBooleanField"
     assert fields_by_name["review_required"]["attrs"]["null_boolean"] is True
     assert fields_by_name["review_required"]["attrs"]["widget"] == "NullBooleanSelect"
+    assert fields_by_name["optional_reference"]["attrs"]["empty_value"] is None
     assert fields_by_name["product_code"]["attrs"]["strip"] is True
     tracked_label_attrs = fields_by_name["tracked_label"]["attrs"]
     assert tracked_label_attrs["show_hidden_initial"] is True

@@ -466,6 +466,8 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         attrs["min_length"] = field.min_length
     if hasattr(field, "strip"):
         attrs["strip"] = bool(field.strip)
+    if hasattr(field, "empty_value"):
+        attrs["empty_value"] = _jsonish_value(field.empty_value)
     if getattr(field, "min_value", None) is not None:
         attrs["min_value"] = _jsonish_value(field.min_value)
     if getattr(field, "max_value", None) is not None:
