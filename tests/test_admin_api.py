@@ -5377,6 +5377,25 @@ def test_actions_bulk_autocomplete_and_view_on_site(admin_client, sample):
     assert onsite.json() == {"url": f"http://example.com/products/{sample.pk}/"}
 
 
+def test_autocomplete_honors_remote_get_search_fields_hook(admin_client, sample, monkeypatch):
+    category_admin = site.get_model_admin(Category)
+    monkeypatch.setattr(category_admin, "search_fields", ())
+    monkeypatch.setattr(category_admin, "get_search_fields", lambda request: ("name",))
+
+    response = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "category",
+            "term": "Cam",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"] == [{"id": str(sample.category_id), "text": "Cameras"}]
+
+
 def test_view_on_site_supports_callable_external_urls(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
     content_type = ContentType.objects.get_for_model(Product, for_concrete_model=False)

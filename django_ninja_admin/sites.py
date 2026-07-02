@@ -667,7 +667,7 @@ class NinjaAdminSite:
                 raise Http404
             if not source_admin.has_view_or_change_permission(request):
                 raise PermissionDenied
-            if not model_admin.search_fields:
+            if not model_admin.get_search_fields(request):
                 raise MissingSearchFields
             if hasattr(source_field.remote_field, "get_related_field"):
                 to_field_name = source_field.remote_field.get_related_field().attname

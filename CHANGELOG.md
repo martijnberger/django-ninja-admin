@@ -62,6 +62,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Preserved string `order_by()` clauses from custom `ModelAdmin.get_queryset()`
   implementations in changelist ordering before applying deterministic
   primary-key fallback ordering.
+- Made autocomplete use the remote admin's `get_search_fields()` hook when
+  checking whether search is configured.
 
 ## 0.1.15 - 2026-07-02
 
