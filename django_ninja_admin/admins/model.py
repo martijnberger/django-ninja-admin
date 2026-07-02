@@ -13,7 +13,7 @@ from django.forms.models import model_to_dict
 from django.utils.text import capfirst, smart_split, unescape_string_literal
 from django.utils.translation import gettext_lazy as _
 from ninja import Schema
-from pydantic import BaseModel, Field, RootModel, TypeAdapter, create_model
+from pydantic import BaseModel, ConfigDict, Field, RootModel, TypeAdapter, create_model
 from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin.admins.base import BaseAdmin
@@ -168,6 +168,16 @@ class ModelAdmin(BaseAdmin):
             cache[cache_key] = create_model(
                 f"{self.model.__name__}AdminInlinePayload",
                 __base__=AdminInlinePayloadSchema,
+                __config__=ConfigDict(
+                    json_schema_extra={
+                        "examples": [
+                            {
+                                inline_id: self._schema_example(inline_schema)
+                                for inline_id, inline_schema in inline_schemas
+                            }
+                        ]
+                    }
+                ),
                 **fields,
             )
             self._inline_payload_schema_cache = cache
@@ -180,14 +190,36 @@ class ModelAdmin(BaseAdmin):
         cache_key = ("model-mutation", change, partial, data_schema, inline_payload_schema)
         if cache_key not in cache:
             operation = "PartialUpdate" if partial else "Update" if change else "Create"
+            inline_example = self._inline_payload_example_for_mutation(inline_payload_schema, change=change)
             cache[cache_key] = create_model(
                 f"{self.model.__name__}Admin{operation}Payload",
                 __base__=Schema,
+                __config__=ConfigDict(
+                    json_schema_extra={
+                        "examples": [
+                            {
+                                "data": self._schema_example(data_schema),
+                                "inlines": inline_example,
+                            }
+                        ]
+                    }
+                ),
                 data=(data_schema, ...),
                 inlines=(inline_payload_schema | None, None),
             )
             self._mutation_payload_schema_cache = cache
         return cache[cache_key]
+
+    def _inline_payload_example_for_mutation(self, inline_payload_schema, *, change):
+        inline_example = self._schema_example(inline_payload_schema)
+        if not inline_example:
+            return None
+        if change:
+            return inline_example
+        return {
+            inline_id: {"add": operations.get("add", [])}
+            for inline_id, operations in inline_example.items()
+        }
 
     def get_model_perms(self, request):
         return {

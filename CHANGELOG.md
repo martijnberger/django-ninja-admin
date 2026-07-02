@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added typed `PermissionsResponse` OpenAPI output and concrete success
   examples for built-in site-route response schemas.
+- Added generated OpenAPI component examples for per-model output, mutation
+  payload/response, bulk update, and inline operation schemas.
 
 ## 0.1.21 - 2026-07-02
 

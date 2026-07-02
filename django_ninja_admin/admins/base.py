@@ -1,7 +1,7 @@
 import copy
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, get_args, get_origin
 from uuid import UUID
 
 from django import forms
@@ -246,6 +246,17 @@ class BaseAdmin:
             cache[cache_key] = create_model(
                 f"{self.model.__name__}Admin{operation}Data",
                 __base__=AdminWriteSchema,
+                __config__=ConfigDict(
+                    json_schema_extra={
+                        "examples": [
+                            self._form_data_example(
+                                form_fields,
+                                selected_fields=selected_fields,
+                                partial=partial,
+                            )
+                        ]
+                    }
+                ),
                 **schema_fields,
             )
             self._write_schema_cache = cache
@@ -260,6 +271,9 @@ class BaseAdmin:
             cache[cache_key] = create_model(
                 f"{self.model.__name__}Admin{operation}Payload",
                 __base__=Schema,
+                __config__=ConfigDict(
+                    json_schema_extra={"examples": [{"data": self._schema_example(data_schema)}]}
+                ),
                 data=(data_schema, ...),
                 inlines=(dict[str, Any] | None, None),
             )
@@ -279,6 +293,16 @@ class BaseAdmin:
             cache[cache_key] = create_model(
                 f"{self.model.__name__}AdminMutationResponse",
                 __base__=Schema,
+                __config__=ConfigDict(
+                    json_schema_extra={
+                        "examples": [
+                            {
+                                "data": self._schema_example(output_schema),
+                                "inlines": None,
+                            }
+                        ]
+                    }
+                ),
                 data=(dict[str, Any] | data_schema, ...),
                 inlines=(dict[str, Any] | None, None),
             )
@@ -307,11 +331,15 @@ class BaseAdmin:
             row_schema = create_model(
                 f"{self.model.__name__}AdminBulkRow",
                 __base__=AdminBulkRowSchema,
+                __config__=ConfigDict(json_schema_extra={"examples": [self._bulk_row_example(form_fields)]}),
                 **row_fields,
             )
             cache[cache_key] = create_model(
                 f"{self.model.__name__}AdminBulkPayload",
                 __base__=Schema,
+                __config__=ConfigDict(
+                    json_schema_extra={"examples": [{"data": [self._schema_example(row_schema)]}]}
+                ),
                 data=(list[row_schema], ...),
             )
             self._mutation_payload_schema_cache = cache
@@ -325,10 +353,97 @@ class BaseAdmin:
             cache[cache_key] = create_model(
                 f"{self.model.__name__}AdminBulkResponse",
                 __base__=Schema,
+                __config__=ConfigDict(
+                    json_schema_extra={"examples": [{"data": {"1": self._schema_example(output_schema)}}]}
+                ),
                 data=(dict[str, output_schema], ...),
             )
             self._mutation_response_schema_cache = cache
         return cache[cache_key]
+
+    def _schema_example(self, schema):
+        return (schema.model_json_schema().get("examples") or [{}])[0]
+
+    def _form_data_example(self, form_fields, *, selected_fields=None, partial=False):
+        data = {}
+        field_names = tuple(selected_fields or form_fields.keys())
+        candidates = [
+            (name, form_fields.get(name))
+            for name in field_names
+            if form_fields.get(name) is not None and not getattr(form_fields.get(name), "disabled", False)
+        ]
+        for name, field in candidates:
+            if partial and data:
+                break
+            if partial or field.required:
+                data[name] = self._form_field_example_value(field)
+        if not data and candidates:
+            name, field = candidates[0]
+            data[name] = self._form_field_example_value(field)
+        return data
+
+    def _bulk_row_example(self, form_fields):
+        row = {"pk": 1}
+        row.update(self._form_data_example(form_fields, selected_fields=tuple(self.list_editable), partial=True))
+        return row
+
+    def _form_field_example_value(self, field):
+        if isinstance(field, ModelMultipleChoiceField):
+            return [1]
+        if isinstance(field, ModelChoiceField):
+            return 1
+        if isinstance(field, forms.TypedMultipleChoiceField | forms.MultipleChoiceField):
+            return [self._choice_example_value(field.choices)]
+        if isinstance(field, forms.TypedChoiceField):
+            return self._coerce_choice_example(field, self._choice_example_value(field.choices))
+        if isinstance(field, forms.ChoiceField):
+            return self._choice_example_value(field.choices)
+        if isinstance(field, forms.NullBooleanField):
+            return None
+        if isinstance(field, forms.BooleanField):
+            return True
+        if isinstance(field, forms.DecimalField):
+            return "9.99"
+        if isinstance(field, forms.IntegerField):
+            return 1
+        if isinstance(field, forms.FloatField):
+            return 1.5
+        if isinstance(field, forms.SplitDateTimeField):
+            return ["2026-07-02", "12:00:00"]
+        if isinstance(field, forms.DateTimeField):
+            return "2026-07-02T12:00:00+00:00"
+        if isinstance(field, forms.DateField):
+            return "2026-07-02"
+        if isinstance(field, forms.TimeField):
+            return "12:00:00"
+        if isinstance(field, forms.DurationField):
+            return "01:00:00"
+        if isinstance(field, forms.UUIDField):
+            return "00000000-0000-4000-8000-000000000000"
+        if isinstance(field, forms.EmailField):
+            return "user@example.com"
+        if isinstance(field, forms.URLField):
+            return "https://example.com/"
+        if isinstance(field, forms.GenericIPAddressField):
+            return "192.0.2.1"
+        if isinstance(field, forms.JSONField):
+            return {"example": True}
+        return "example"
+
+    def _choice_example_value(self, choices):
+        for value in self.iter_choice_values(choices):
+            if value not in ("", None):
+                return value
+        return "example"
+
+    def _coerce_choice_example(self, field, value):
+        coerce = getattr(field, "coerce", None)
+        if coerce is None:
+            return value
+        try:
+            return coerce(value)
+        except (TypeError, ValueError):
+            return value
 
     def get_form_schema_field_type(
         self,
@@ -594,14 +709,137 @@ class BaseAdmin:
         )
         if cache_key not in cache:
             fields = list(fields_key)
+            base_class = type(
+                f"{self.model.__name__}AdminOutBase",
+                (Schema,),
+                {
+                    "__module__": self.__class__.__module__,
+                    "model_config": ConfigDict(
+                        json_schema_extra={"examples": [self._output_schema_example(fields_key, custom_fields)]}
+                    ),
+                },
+            )
             cache[cache_key] = create_schema(
                 self.model,
                 name=f"{self.model.__name__}AdminOut",
                 fields=fields,
                 custom_fields=custom_fields,
+                base_class=base_class,
             )
             self._output_schema_cache = cache
         return cache[cache_key]
+
+    def _output_schema_example(self, fields_key, custom_fields):
+        data = {}
+        field_names = set(fields_key)
+        for field in self.model._meta.fields:
+            if field.name == "password":
+                continue
+            if isinstance(field, models.ImageField):
+                data[field.name] = {
+                    "name": f"{field.name}/example.png",
+                    "url": f"/media/{field.name}/example.png",
+                    "width": 640,
+                    "height": 480,
+                }
+                continue
+            if isinstance(field, models.FileField):
+                data[field.name] = {
+                    "name": f"{field.name}/example.dat",
+                    "url": f"/media/{field.name}/example.dat",
+                }
+                continue
+            if field.name not in field_names:
+                continue
+            key = field.attname if field.remote_field else field.name
+            example_field = field.target_field if field.remote_field else field
+            data[key] = self._model_field_example_value(example_field)
+            if field.remote_field:
+                data[f"{field.name}_label"] = "Example"
+        for field in self.model._meta.many_to_many:
+            data[field.name] = [1]
+        for name, field_type, default in custom_fields:
+            data.setdefault(name, self._schema_type_example(field_type, default))
+        return data
+
+    def _model_field_example_value(self, field):
+        if field.choices:
+            return self._choice_example_value(field.choices)
+        if isinstance(
+            field,
+            models.AutoField
+            | models.BigAutoField
+            | models.SmallAutoField
+            | models.IntegerField
+            | models.BigIntegerField
+            | models.PositiveIntegerField
+            | models.PositiveSmallIntegerField
+            | models.SmallIntegerField,
+        ):
+            return 1
+        if isinstance(field, models.BooleanField):
+            return True
+        if isinstance(field, models.DecimalField):
+            return "9.99"
+        if isinstance(field, models.FloatField):
+            return 1.5
+        if isinstance(field, models.DateTimeField):
+            return "2026-07-02T12:00:00+00:00"
+        if isinstance(field, models.DateField):
+            return "2026-07-02"
+        if isinstance(field, models.TimeField):
+            return "12:00:00"
+        if isinstance(field, models.DurationField):
+            return "01:00:00"
+        if isinstance(field, models.UUIDField):
+            return "00000000-0000-4000-8000-000000000000"
+        if isinstance(field, models.EmailField):
+            return "user@example.com"
+        if isinstance(field, models.URLField):
+            return "https://example.com/"
+        if isinstance(field, models.GenericIPAddressField):
+            return "192.0.2.1"
+        if isinstance(field, models.JSONField):
+            return {"example": True}
+        if isinstance(field, models.BinaryField):
+            return "ZXhhbXBsZQ=="
+        return "example"
+
+    def _schema_type_example(self, field_type, default):
+        if default is not None:
+            return default
+        origin = get_origin(field_type)
+        args = get_args(field_type)
+        if origin is Literal and args:
+            return args[0]
+        if origin in {list, tuple, set}:
+            return [self._schema_type_example(args[0] if args else str, None)]
+        if origin in {dict}:
+            return {"example": True}
+        if args:
+            non_null_args = [arg for arg in args if arg is not type(None)]
+            if non_null_args:
+                return self._schema_type_example(non_null_args[0], None)
+        if field_type is str:
+            return "example"
+        if field_type is int:
+            return 1
+        if field_type is float:
+            return 1.5
+        if field_type is bool:
+            return True
+        if field_type is Decimal:
+            return "9.99"
+        if field_type is FileFieldValue:
+            return {"name": "files/example.dat", "url": "/media/files/example.dat"}
+        if field_type is ImageFieldValue:
+            return {
+                "name": "images/example.png",
+                "url": "/media/images/example.png",
+                "width": 640,
+                "height": 480,
+            }
+        return "example"
 
     def get_output_schema(self, request=None):
         if self.output_schema is not None:

@@ -151,6 +151,32 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductAdminOut"]["properties"]["photo"] == {
         "anyOf": [{"$ref": "#/components/schemas/ImageFieldValue"}, {"type": "null"}]
     }
+    output_example = components["ProductAdminOut"]["examples"][0]
+    assert output_example["id"] == 1
+    assert output_example["name"] == "example"
+    assert output_example["category_id"] == 1
+    assert output_example["manual"] == {"name": "manual/example.dat", "url": "/media/manual/example.dat"}
+    assert output_example["photo"]["width"] == 640
+    assert output_example["tags"] == [1]
+    assert components["ProductAdminCreateData"]["examples"][0] == {
+        "name": "example",
+        "category": 1,
+        "price": "9.99",
+        "stock_status": "in_stock",
+    }
+    assert components["ProductAdminCreatePayload"]["examples"][0] == {
+        "data": {
+            "name": "example",
+            "category": 1,
+            "price": "9.99",
+            "stock_status": "in_stock",
+        },
+        "inlines": {"testapp.productimage": {"add": [{"title": "example"}]}},
+    }
+    partial_payload_example = components["ProductAdminPartialUpdatePayload"]["examples"][0]
+    assert partial_payload_example["data"] == {"name": "example"}
+    assert partial_payload_example["inlines"]["testapp.productimage"]["change"] == [{"pk": 1, "title": "example"}]
+    assert partial_payload_example["inlines"]["testapp.productimage"]["delete"] == [2]
     mutation_response_schema = components["ProductAdminMutationResponse"]
     assert mutation_response_schema["required"] == ["data"]
     mutation_data_options = mutation_response_schema["properties"]["data"]["anyOf"]
@@ -160,6 +186,10 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "name"
     ]
     assert components["ProductAdminMutationData"].get("additionalProperties") is True
+    mutation_response_example = components["ProductAdminMutationResponse"]["examples"][0]
+    assert mutation_response_example["data"]["name"] == "example"
+    assert mutation_response_example["data"]["photo"]["height"] == 480
+    assert mutation_response_example["inlines"] is None
     assert schema_body["paths"]["/admin-api/testapp/product"]["post"]["responses"]["201"]["content"][
         "application/json"
     ]["schema"] == {"$ref": "#/components/schemas/ProductAdminMutationResponse"}
@@ -199,11 +229,16 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert any(option.get("type") == "number" for option in price_options)
     assert components["ProductAdminBulkRow"]["required"] == ["pk"]
     assert components["ProductAdminBulkRow"]["additionalProperties"] is False
+    assert components["ProductAdminBulkRow"]["examples"][0] == {"pk": 1, "stock_status": "in_stock"}
+    assert components["ProductAdminBulkPayload"]["examples"][0] == {
+        "data": [{"pk": 1, "stock_status": "in_stock"}]
+    }
     bulk_response_schema = components["ProductAdminBulkResponse"]
     assert bulk_response_schema["required"] == ["data"]
     assert bulk_response_schema["properties"]["data"]["additionalProperties"] == {
         "$ref": "#/components/schemas/ProductAdminOut"
     }
+    assert components["ProductAdminBulkResponse"]["examples"][0]["data"]["1"]["name"] == "example"
     assert schema_body["paths"]["/admin-api/testapp/product/bulk"]["put"]["responses"]["200"]["content"][
         "application/json"
     ]["schema"] == {"$ref": "#/components/schemas/ProductAdminBulkResponse"}
@@ -212,8 +247,22 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductImageInlineOperations"]["additionalProperties"] is False
     assert components["ProductImageInlineAddRow"]["required"] == ["title"]
     assert components["ProductImageInlineAddRow"]["additionalProperties"] is False
+    assert components["ProductImageInlineAddRow"]["examples"][0] == {"title": "example"}
     assert components["ProductImageInlineChangeRow"]["required"] == ["pk"]
     assert components["ProductImageInlineChangeRow"]["additionalProperties"] is False
+    assert components["ProductImageInlineChangeRow"]["examples"][0] == {"pk": 1, "title": "example"}
+    assert components["ProductImageInlineOperations"]["examples"][0] == {
+        "add": [{"title": "example"}],
+        "change": [{"pk": 1, "title": "example"}],
+        "delete": [2],
+    }
+    assert components["ProductAdminInlinePayload"]["examples"][0] == {
+        "testapp.productimage": {
+            "add": [{"title": "example"}],
+            "change": [{"pk": 1, "title": "example"}],
+            "delete": [2],
+        }
+    }
     action_payload_schema = components["ProductAdminActionPayload"]
     assert action_payload_schema["discriminator"] == {
         "propertyName": "action",

@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth import get_permission_codename
 from django.forms.models import BaseInlineFormSet, _get_foreign_key, inlineformset_factory, modelform_factory
 from django.utils.text import format_lazy
-from pydantic import Field, create_model
+from pydantic import ConfigDict, Field, create_model
 
 from django_ninja_admin.admins.base import BaseAdmin
 from django_ninja_admin.exceptions import AdminValidationError
@@ -131,9 +131,13 @@ class InlineModelAdmin(BaseAdmin):
                 required = bool(form_field.required and not getattr(form_field, "disabled", False) and not partial)
                 fields[field_name] = (field_type, ...) if required else (field_type | None, None)
             operation = "Change" if require_pk else "Add"
+            example = self._form_data_example(form_fields, selected_fields=tuple(form_fields), partial=partial)
+            if require_pk:
+                example = {"pk": 1, **example}
             cache[cache_key] = create_model(
                 f"{self.model.__name__}Inline{operation}Row",
                 __base__=AdminInlineRowSchema,
+                __config__=ConfigDict(json_schema_extra={"examples": [example]}),
                 **fields,
             )
             self._inline_row_schema_cache = cache
@@ -148,6 +152,17 @@ class InlineModelAdmin(BaseAdmin):
             cache[cache_key] = create_model(
                 f"{self.model.__name__}InlineOperations",
                 __base__=AdminInlineOperationsSchema,
+                __config__=ConfigDict(
+                    json_schema_extra={
+                        "examples": [
+                            {
+                                "add": [self._schema_example(add_schema)],
+                                "change": [self._schema_example(change_schema)],
+                                "delete": [2],
+                            }
+                        ]
+                    }
+                ),
                 add=(list[add_schema], Field(default_factory=list)),
                 change=(list[change_schema], Field(default_factory=list)),
                 delete=(list[Any], Field(default_factory=list)),
