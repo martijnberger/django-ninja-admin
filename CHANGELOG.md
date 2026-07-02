@@ -7,12 +7,16 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.22 - 2026-07-02
+
 - Added typed `PermissionsResponse` OpenAPI output and concrete success
   examples for built-in site-route response schemas.
 - Added generated OpenAPI component examples for per-model output, mutation
   payload/response, bulk update, and inline operation schemas.
 - Added per-row changelist cell metadata for display values, empty-state
   handling, links, sortability, and list-editable hints.
+- Added mount-aware endpoint and query metadata for autocomplete and raw-id
+  relation widgets in form descriptions.
 
 ## 0.1.21 - 2026-07-02
 

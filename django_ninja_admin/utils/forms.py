@@ -709,6 +709,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
 def form_field_descriptions(
     form_class,
     *,
+    request=None,
     form=None,
     readonly_fields=(),
     instance=None,
@@ -755,6 +756,8 @@ def form_field_descriptions(
             radio_fields=radio_fields,
             prepopulated_fields=prepopulated_fields,
             source_model=model,
+            request=request,
+            model_admin=model_admin,
         )
         descriptions.append(description)
     for readonly_field in readonly_fields:
@@ -791,6 +794,8 @@ def form_field_descriptions(
                 radio_fields=radio_fields,
                 prepopulated_fields=prepopulated_fields,
                 source_model=model,
+                request=request,
+                model_admin=model_admin,
             )
             descriptions.append(description)
     return descriptions
@@ -815,24 +820,30 @@ def _apply_admin_field_metadata(
     radio_fields,
     prepopulated_fields,
     source_model=None,
+    request=None,
+    model_admin=None,
 ):
     attrs = description["attrs"]
     if name in autocomplete_fields:
         attrs["admin_widget"] = "autocomplete"
         if source_model is not None:
-            attrs["autocomplete"] = {
-                "app_label": source_model._meta.app_label,
-                "model_name": source_model._meta.model_name,
-                "field_name": name,
-            }
+            attrs["autocomplete"] = _relation_widget_metadata(
+                source_model,
+                name,
+                widget="autocomplete",
+                request=request,
+                model_admin=model_admin,
+            )
     if name in raw_id_fields:
         attrs["admin_widget"] = "raw_id"
         if source_model is not None:
-            attrs["raw_id"] = {
-                "app_label": source_model._meta.app_label,
-                "model_name": source_model._meta.model_name,
-                "field_name": name,
-            }
+            attrs["raw_id"] = _relation_widget_metadata(
+                source_model,
+                name,
+                widget="raw_id",
+                request=request,
+                model_admin=model_admin,
+            )
     if name in filter_horizontal:
         attrs["admin_widget"] = "filter_horizontal"
         if source_model is not None:
@@ -865,6 +876,78 @@ def _source_field_identity(source_model, field_name):
         "model_name": source_model._meta.model_name,
         "field_name": field_name,
     }
+
+
+def _relation_widget_metadata(source_model, field_name, *, widget, request=None, model_admin=None):
+    metadata = _source_field_identity(source_model, field_name)
+    source_field = _model_field_for_name(source_model, field_name)
+    remote_model = getattr(getattr(source_field, "remote_field", None), "model", None)
+    to_field_name = None
+    if remote_model is not None:
+        remote_opts = remote_model._meta
+        to_field_name = _relation_to_field_name(source_field, remote_model)
+        metadata.update(
+            {
+                "related_model": f"{remote_opts.app_label}.{remote_opts.model_name}",
+                "related_app_label": remote_opts.app_label,
+                "related_model_name": remote_opts.model_name,
+                "related_object_name": remote_opts.object_name,
+                "related_verbose_name": str(remote_opts.verbose_name),
+                "related_verbose_name_plural": str(remote_opts.verbose_name_plural),
+                "to_field_name": to_field_name,
+                "multiple": bool(getattr(source_field, "many_to_many", False)),
+            }
+        )
+
+    base_path = _admin_mount_path(request, source_model, model_admin=model_admin)
+    if base_path is None:
+        return metadata
+    if widget == "autocomplete":
+        metadata["url"] = f"{base_path}/autocomplete"
+        metadata["query"] = _source_field_identity(source_model, field_name)
+    elif widget == "raw_id" and remote_model is not None:
+        metadata["url"] = f"{base_path}/{remote_model._meta.app_label}/{remote_model._meta.model_name}"
+        if to_field_name is not None:
+            metadata["query"] = {"_to_field": to_field_name}
+    return metadata
+
+
+def _relation_to_field_name(source_field, remote_model):
+    remote_field = None
+    remote_relation = getattr(source_field, "remote_field", None)
+    if hasattr(remote_relation, "get_related_field"):
+        try:
+            remote_field = remote_relation.get_related_field()
+        except (AttributeError, FieldDoesNotExist, TypeError, ValueError):
+            remote_field = None
+    if remote_field is None:
+        remote_field = remote_model._meta.pk
+    return getattr(remote_field, "attname", remote_field.name)
+
+
+def _admin_mount_path(request, source_model, *, model_admin=None):
+    path = getattr(request, "path", None) or getattr(request, "path_info", None)
+    if not path:
+        return None
+    for candidate_model in _mount_path_model_candidates(source_model, model_admin):
+        marker = f"/{candidate_model._meta.app_label}/{candidate_model._meta.model_name}"
+        index = path.find(marker)
+        if index >= 0:
+            return path[:index].rstrip("/")
+    return None
+
+
+def _mount_path_model_candidates(source_model, model_admin):
+    seen = set()
+    for candidate_model in (
+        source_model,
+        getattr(model_admin, "parent_model", None),
+        getattr(model_admin, "model", None),
+    ):
+        if candidate_model is None or id(candidate_model) in seen:
+            continue
+        seen.add(id(candidate_model))
+        yield candidate_model
 
 
 def _filtered_select_metadata(source_model, field_name, *, direction):

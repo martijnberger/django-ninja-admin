@@ -5207,6 +5207,20 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
         "app_label": "testapp",
         "model_name": "product",
         "field_name": "category",
+        "related_model": "testapp.category",
+        "related_app_label": "testapp",
+        "related_model_name": "category",
+        "related_object_name": "Category",
+        "related_verbose_name": "category",
+        "related_verbose_name_plural": "categorys",
+        "to_field_name": "id",
+        "multiple": False,
+        "url": "/admin-api/autocomplete",
+        "query": {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "category",
+        },
     }
     assert fields_by_name["description"]["attrs"]["blank"] is True
     assert fields_by_name["description"]["attrs"]["null"] is False
@@ -5906,6 +5920,16 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
         "app_label": "testapp",
         "model_name": "product",
         "field_name": "category",
+        "related_model": "testapp.category",
+        "related_app_label": "testapp",
+        "related_model_name": "category",
+        "related_object_name": "Category",
+        "related_verbose_name": "category",
+        "related_verbose_name_plural": "categorys",
+        "to_field_name": "id",
+        "multiple": False,
+        "url": "/admin-api/testapp/category",
+        "query": {"_to_field": "id"},
     }
     assert fields_by_name["category"]["attrs"]["selected_options"] == [
         {"id": str(sample.category_id), "text": "Cameras"}
@@ -7053,6 +7077,20 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
         "app_label": "testapp",
         "model_name": source_model_name,
         "field_name": "category",
+        "related_model": "testapp.category",
+        "related_app_label": "testapp",
+        "related_model_name": "category",
+        "related_object_name": "Category",
+        "related_verbose_name": "category",
+        "related_verbose_name_plural": "categorys",
+        "to_field_name": "slug",
+        "multiple": False,
+        "url": "/slug-autocomplete-admin/autocomplete",
+        "query": {
+            "app_label": "testapp",
+            "model_name": source_model_name,
+            "field_name": "category",
+        },
     }
 
     response = admin_client.get(

@@ -883,6 +883,7 @@ class BaseAdmin:
         form_class = form.__class__ if form is not None else self.get_form_class(request, obj, change=obj is not None)
         descriptions = form_field_descriptions(
             form_class,
+            request=request,
             form=form,
             readonly_fields=self.get_readonly_fields(request, obj),
             instance=obj,
@@ -907,6 +908,7 @@ class BaseAdmin:
         form_class = form.__class__ if form is not None else self.get_changelist_form_class(request)
         descriptions = form_field_descriptions(
             form_class,
+            request=request,
             form=form,
             instance=obj,
             model_admin=self,

@@ -1223,6 +1223,7 @@ class NinjaAdminSite:
             list_editing_formset_prefix = formset.prefix
             list_editing_management_form = form_field_descriptions(
                 formset.management_form.__class__,
+                request=request,
                 form=formset.management_form,
             )
             list_editing_total_form_count = formset.total_form_count()
@@ -1401,6 +1402,7 @@ class NinjaAdminSite:
                 "formset_prefix": formset.prefix,
                 "management_form": form_field_descriptions(
                     formset.management_form.__class__,
+                    request=request,
                     form=formset.management_form,
                 ),
                 "total_form_count": formset.total_form_count(),
