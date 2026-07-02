@@ -5158,6 +5158,9 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["category"]["attrs"]["related_object_name"] == "Category"
     assert fields_by_name["category"]["attrs"]["related_verbose_name"] == "category"
     assert fields_by_name["category"]["attrs"]["to_field_name"] == "id"
+    assert fields_by_name["category"]["attrs"]["to_field_class"] == "BigAutoField"
+    assert fields_by_name["category"]["attrs"]["to_field_internal_type"] == "BigAutoField"
+    assert fields_by_name["category"]["attrs"]["to_field_attname"] == "id"
     assert fields_by_name["category"]["attrs"]["model_field_name"] == "category"
     assert fields_by_name["category"]["attrs"]["model_field_class"] == "ForeignKey"
     assert fields_by_name["category"]["attrs"]["internal_type"] == "ForeignKey"
@@ -5224,6 +5227,9 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
         "related_verbose_name": "category",
         "related_verbose_name_plural": "categorys",
         "to_field_name": "id",
+        "to_field_class": "BigAutoField",
+        "to_field_internal_type": "BigAutoField",
+        "to_field_attname": "id",
         "multiple": False,
         "url": "/admin-api/autocomplete",
         "query": {
@@ -5937,6 +5943,9 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
         "related_verbose_name": "category",
         "related_verbose_name_plural": "categorys",
         "to_field_name": "id",
+        "to_field_class": "BigAutoField",
+        "to_field_internal_type": "BigAutoField",
+        "to_field_attname": "id",
         "multiple": False,
         "url": "/admin-api/testapp/category",
         "query": {"_to_field": "id"},
@@ -7084,6 +7093,9 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
     assert form.status_code == 200
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
     assert fields_by_name["category"]["attrs"]["to_field_name"] == "slug"
+    assert fields_by_name["category"]["attrs"]["to_field_class"] == "SlugField"
+    assert fields_by_name["category"]["attrs"]["to_field_internal_type"] == "SlugField"
+    assert fields_by_name["category"]["attrs"]["to_field_attname"] == "slug"
     assert fields_by_name["category"]["attrs"]["autocomplete"] == {
         "app_label": "testapp",
         "model_name": source_model_name,
@@ -7095,6 +7107,9 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
         "related_verbose_name": "category",
         "related_verbose_name_plural": "categorys",
         "to_field_name": "slug",
+        "to_field_class": "SlugField",
+        "to_field_internal_type": "SlugField",
+        "to_field_attname": "slug",
         "multiple": False,
         "url": "/slug-autocomplete-admin/autocomplete",
         "query": {

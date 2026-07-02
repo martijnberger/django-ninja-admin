@@ -349,8 +349,8 @@ Completed or mostly complete:
   the related target field, including non-PK `to_field` relations.
 - Form field descriptions now expose per-field admin widget intent for autocomplete, raw-id, radio, filter-horizontal/filter-vertical, and prepopulated fields.
 - Relation form field descriptions now include structured related-model identity,
-  selected option labels, and mount-aware endpoint/query metadata for
-  autocomplete and raw-id frontend clients.
+  selected option labels, target-field type metadata, and mount-aware
+  endpoint/query metadata for autocomplete and raw-id frontend clients.
 - Filter-horizontal and filter-vertical metadata now includes stacking state,
   source verbose names, and related-model identity for dual-select renderers.
 - Relation form field descriptions now include selected option labels for existing foreign-key and many-to-many values.

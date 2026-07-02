@@ -16,6 +16,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Tightened generated relation output schemas so serialized foreign-key
   `attname` fields use the related target-field type, including non-PK
   `ForeignKey(to_field=...)` relations.
+- Added related target-field class, internal type, and attname metadata to
+  relation form descriptions and relation widget hints.
 
 ## 0.1.22 - 2026-07-02
 

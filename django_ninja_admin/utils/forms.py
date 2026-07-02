@@ -129,6 +129,7 @@ def _relation_metadata(field):
         return {}
     model = field.queryset.model
     opts = model._meta
+    to_field_name = field.to_field_name or model._meta.pk.name
     attrs = {
         "related_model": f"{opts.app_label}.{opts.model_name}",
         "related_app_label": opts.app_label,
@@ -136,7 +137,8 @@ def _relation_metadata(field):
         "related_object_name": opts.object_name,
         "related_verbose_name": str(opts.verbose_name),
         "related_verbose_name_plural": str(opts.verbose_name_plural),
-        "to_field_name": field.to_field_name or model._meta.pk.name,
+        "to_field_name": to_field_name,
+        **_relation_target_field_metadata(model, to_field_name),
         "multiple": isinstance(field, ModelMultipleChoiceField),
     }
     if isinstance(field, ModelChoiceField):
@@ -895,6 +897,7 @@ def _relation_widget_metadata(source_model, field_name, *, widget, request=None,
                 "related_verbose_name": str(remote_opts.verbose_name),
                 "related_verbose_name_plural": str(remote_opts.verbose_name_plural),
                 "to_field_name": to_field_name,
+                **_relation_target_field_metadata(remote_model, to_field_name),
                 "multiple": bool(getattr(source_field, "many_to_many", False)),
             }
         )
@@ -923,6 +926,24 @@ def _relation_to_field_name(source_field, remote_model):
     if remote_field is None:
         remote_field = remote_model._meta.pk
     return getattr(remote_field, "attname", remote_field.name)
+
+
+def _relation_target_field_metadata(model, to_field_name):
+    try:
+        field = model._meta.get_field(to_field_name)
+    except FieldDoesNotExist:
+        return {}
+    metadata = {
+        "to_field_class": field.__class__.__name__,
+        "to_field_internal_type": (
+            field.get_internal_type()
+            if hasattr(field, "get_internal_type")
+            else field.__class__.__name__
+        ),
+    }
+    if getattr(field, "attname", None):
+        metadata["to_field_attname"] = field.attname
+    return metadata
 
 
 def _admin_mount_path(request, source_model, *, model_admin=None):
