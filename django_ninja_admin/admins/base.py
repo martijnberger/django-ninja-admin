@@ -3,7 +3,7 @@ from base64 import b64encode
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from math import ceil, floor
-from typing import Annotated, Any, Literal, get_args, get_origin
+from typing import Annotated, Any, ClassVar, Literal, get_args, get_origin
 from uuid import UUID
 
 from django import forms
@@ -115,14 +115,14 @@ class BaseAdmin:
     exclude = None
     fieldsets = None
     form_class = None
-    formfield_overrides = {}
-    form_schema_field_overrides = {}
+    formfield_overrides: ClassVar[dict[Any, Any]] = {}
+    form_schema_field_overrides: ClassVar[dict[str, Any]] = {}
     output_schema = None
-    schema_field_overrides = {}
+    schema_field_overrides: ClassVar[dict[str, Any]] = {}
     filter_vertical = ()
     filter_horizontal = ()
-    radio_fields = {}
-    prepopulated_fields = {}
+    radio_fields: ClassVar[dict[str, Any]] = {}
+    prepopulated_fields: ClassVar[dict[str, Any]] = {}
     readonly_fields = ()
     ordering = None
     sortable_by = None

@@ -7,4 +7,6 @@ class TestAppConfig(AppConfig):
     label = "testapp"
 
     def ready(self):
-        from tests.testapp import admin  # noqa: F401
+        from importlib import import_module
+
+        import_module("tests.testapp.admin")

@@ -1,7 +1,7 @@
 import re
 from functools import reduce, wraps
 from operator import or_
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, ClassVar, Literal
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
@@ -52,7 +52,7 @@ class ModelAdmin(BaseAdmin):
     actions_on_bottom = False
     actions_selection_counter = True
 
-    changelist_options = [
+    changelist_options: ClassVar[list[str]] = [
         "actions_on_top",
         "actions_on_bottom",
         "actions_selection_counter",

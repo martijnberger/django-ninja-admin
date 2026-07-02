@@ -743,7 +743,6 @@ class ChangeList:
         field = self.date_hierarchy_model_field
         values = self.get_date_hierarchy_values(self.params)
         values = self.select_date_hierarchy_level(values, field)
-        year_param, month_param, day_param = self.date_hierarchy_param_names
         queryset = self.date_queryset()
         filter_values = {key: value for key, value in values.items() if key in {"year", "month"}}
         queryset = self.apply_date_hierarchy_bounds(queryset, filter_values)

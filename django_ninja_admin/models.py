@@ -1,4 +1,5 @@
 import json
+from typing import ClassVar
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -67,11 +68,11 @@ class LogEntry(models.Model):
     action_flag = models.PositiveSmallIntegerField(_("action flag"), choices=ACTION_FLAG_CHOICES)
     change_message = models.TextField(_("change message"), blank=True)
 
-    objects = LogEntryManager()
+    objects: ClassVar[LogEntryManager] = LogEntryManager()
 
     class Meta:
         db_table = "django_ninja_admin_log"
-        ordering = ["-action_time"]
+        ordering = ("-action_time",)
         verbose_name = _("log entry")
         verbose_name_plural = _("log entries")
 

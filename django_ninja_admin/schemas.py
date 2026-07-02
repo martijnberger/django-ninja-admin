@@ -318,12 +318,12 @@ class FormDescription(Schema):
     save_as: bool = False
     save_as_continue: bool = True
     save_on_top: bool = False
-    filter_horizontal: list[str] = []
-    filter_vertical: list[str] = []
-    raw_id_fields: list[str] = []
-    radio_fields: dict[str, Any] = {}
+    filter_horizontal: list[str] = Field(default_factory=list)
+    filter_vertical: list[str] = Field(default_factory=list)
+    raw_id_fields: list[str] = Field(default_factory=list)
+    radio_fields: dict[str, Any] = Field(default_factory=dict)
     view_on_site: bool = True
-    autocomplete_fields: list[str] = []
+    autocomplete_fields: list[str] = Field(default_factory=list)
 
 
 class InlineFormsetRowMetadata(Schema):
@@ -362,7 +362,7 @@ class InlineDescription(Schema):
 
 class FormResponse(Schema):
     form: FormDescription
-    inlines: list[InlineDescription] = []
+    inlines: list[InlineDescription] = Field(default_factory=list)
 
 
 class Column(Schema):
@@ -412,7 +412,7 @@ class Row(Schema):
 class ActionChoice(Schema):
     action: str
     description: str
-    permissions: list[str] = []
+    permissions: list[str] = Field(default_factory=list)
 
 
 class FilterChoice(Schema):
@@ -469,8 +469,8 @@ class ChangelistConfig(Schema):
     has_previous: bool = False
     multi_page: bool = False
     pagination_required: bool = False
-    page_range: list[int | str] = []
-    page_choices: list[PageChoice] = []
+    page_range: list[int | str] = Field(default_factory=list)
+    page_choices: list[PageChoice] = Field(default_factory=list)
     first_page_query_string: str | None = None
     previous_page_query_string: str | None = None
     next_page_query_string: str | None = None
@@ -495,15 +495,15 @@ class ChangelistConfig(Schema):
     filters: list[FilterDescription]
     date_hierarchy: DateHierarchyDescription | None = None
     list_display_fields: list[str]
-    list_display_links: list[str] = []
+    list_display_links: list[str] = Field(default_factory=list)
     to_field: str | None = None
     object_id_field: str
-    ordering_field_columns: dict[str, str] = {}
-    ordering: list[str] = []
+    ordering_field_columns: dict[str, str] = Field(default_factory=dict)
+    ordering: list[str] = Field(default_factory=list)
     search_term: str = ""
     has_search: bool = False
     clear_search_query_string: str | None = None
-    search_fields: list[str] = []
+    search_fields: list[str] = Field(default_factory=list)
     search_help_text: str | None = None
 
 
@@ -520,23 +520,23 @@ class ChangelistResponse(Schema):
     columns: list[Column]
     rows: list[Row]
     config: ChangelistConfig
-    action_form: list[FieldDescription] = []
+    action_form: list[FieldDescription] = Field(default_factory=list)
     list_editing_formset_prefix: str | None = None
     list_editing_management_form: list[FieldDescription] = Field(default_factory=list)
     list_editing_total_form_count: int | None = None
     list_editing_initial_form_count: int | None = None
-    list_editing_formset: list[list[FieldDescription]] = []
-    list_editing_rows: list[ListEditingRow] = []
+    list_editing_formset: list[list[FieldDescription]] = Field(default_factory=list)
+    list_editing_rows: list[ListEditingRow] = Field(default_factory=list)
 
 
 class MutationPayload(Schema):
-    data: dict[str, Any] = {}
+    data: dict[str, Any] = Field(default_factory=dict)
     inlines: dict[str, Any] | None = None
 
 
 class ActionPayload(Schema):
     action: str
-    selected_ids: list[Any] = []
+    selected_ids: list[Any] = Field(default_factory=list)
     select_across: bool = False
 
 
