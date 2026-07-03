@@ -216,7 +216,18 @@ custom payload:
 
 Input schemas are included in OpenAPI as per-action payload variants selected
 by an `action` discriminator. Response schemas are included under the model
-action response component.
+action response component alongside the built-in default action response:
+
+```json
+{
+  "detail": "Action completed."
+}
+```
+
+Actions that return custom objects should declare `response_schema`. This also
+applies when an action returns `ninja.Status(...)` with a custom success status,
+because the route response map is generated when the admin site builds its
+routers.
 
 ## Request And Error Shapes
 

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from ninja import Schema
-from pydantic import ConfigDict, Field, field_serializer
+from pydantic import ConfigDict, Field, field_serializer, field_validator
 
 
 class AdminWriteSchema(Schema):
@@ -80,6 +80,27 @@ class MessageResponse(Schema):
     model_config = ConfigDict(json_schema_extra={"examples": [{"detail": "Object deleted."}]})
 
     detail: str
+
+
+class ActionResponse(Schema):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"detail": "Action completed."},
+                {"detail": "Successfully deleted selected objects.", "deleted": {"products": 1}},
+            ]
+        }
+    )
+
+    detail: str
+    deleted: dict[str, int] | None = None
+
+    @field_validator("detail", mode="before")
+    @classmethod
+    def coerce_lazy_detail(cls, value):
+        if value is None:
+            return value
+        return str(value)
 
 
 class PermissionMap(Schema):

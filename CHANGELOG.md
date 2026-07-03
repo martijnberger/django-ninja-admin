@@ -16,6 +16,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `response_delete_schema` hooks for custom mutation/delete `Status(...)`
   responses, and stopped advertising generic 200/202 objects for default model
   mutation routes.
+- Added a typed default `ActionResponse` for model actions and tightened action
+  success response maps so 200/202 responses use the default action schema plus
+  declared `@action(response_schema=...)` variants instead of arbitrary object
+  payloads.
 
 ## 0.1.25 - 2026-07-03
 

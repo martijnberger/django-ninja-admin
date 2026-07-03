@@ -26,6 +26,44 @@
         "title": "ActionChoice",
         "type": "object"
       },
+      "ActionResponse": {
+        "examples": [
+          {
+            "detail": "Action completed."
+          },
+          {
+            "deleted": {
+              "products": 1
+            },
+            "detail": "Successfully deleted selected objects."
+          }
+        ],
+        "properties": {
+          "deleted": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ActionResponse",
+        "type": "object"
+      },
       "AppSummary": {
         "examples": [
           {
@@ -5236,6 +5274,22 @@
         "title": "ProductImageInlineOperations",
         "type": "object"
       },
+      "ReportNamesActionResult": {
+        "properties": {
+          "names": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Names",
+            "type": "array"
+          }
+        },
+        "required": [
+          "names"
+        ],
+        "title": "ReportNamesActionResult",
+        "type": "object"
+      },
       "Row": {
         "properties": {
           "cell_metadata": {
@@ -7179,9 +7233,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ActionResponse"
                 }
               }
             },
@@ -7191,9 +7243,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ActionResponse"
                 }
               }
             },
@@ -8261,9 +8311,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ActionResponse"
                 }
               }
             },
@@ -8273,9 +8321,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ActionResponse"
                 }
               }
             },
@@ -9875,9 +9921,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ActionResponse"
                 }
               }
             },
@@ -9887,9 +9931,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ActionResponse"
                 }
               }
             },
@@ -10973,11 +11015,13 @@
                 "schema": {
                   "anyOf": [
                     {
+                      "$ref": "#/components/schemas/ReportNamesActionResult"
+                    },
+                    {
                       "$ref": "#/components/schemas/StockStatusActionResult"
                     },
                     {
-                      "additionalProperties": true,
-                      "type": "object"
+                      "$ref": "#/components/schemas/ActionResponse"
                     }
                   ],
                   "title": "Response"
@@ -10990,9 +11034,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ReportNamesActionResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/StockStatusActionResult"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ActionResponse"
+                    }
+                  ],
+                  "title": "Response"
                 }
               }
             },
@@ -12465,9 +12518,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ActionResponse"
                 }
               }
             },
@@ -12477,9 +12528,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ActionResponse"
                 }
               }
             },

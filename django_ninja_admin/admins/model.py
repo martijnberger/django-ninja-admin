@@ -21,7 +21,7 @@ from django_ninja_admin.constants import ShowFacets
 from django_ninja_admin.exceptions import AdminPermissionError, AdminValidationError
 from django_ninja_admin.models import ADDITION, CHANGE, DELETION, LogEntry
 from django_ninja_admin.routes import AdminRoute
-from django_ninja_admin.schemas import AdminInlinePayloadSchema
+from django_ninja_admin.schemas import ActionResponse, AdminInlinePayloadSchema
 from django_ninja_admin.utils.deletion import get_deleted_objects
 
 HORIZONTAL, VERTICAL = 1, 2
@@ -441,12 +441,10 @@ class ModelAdmin(BaseAdmin):
         cache = getattr(self, "_action_response_schema_cache", {})
         actions = self._get_base_actions()
         action_response_schemas = self._action_schemas(actions, "action_response_schema")
-        cache_key = ("action-response", action_response_schemas)
+        response_schemas = (*action_response_schemas, ActionResponse)
+        cache_key = ("action-response", response_schemas)
         if cache_key not in cache:
-            if action_response_schemas:
-                cache[cache_key] = self._union_type((*action_response_schemas, dict[str, Any]))
-            else:
-                cache[cache_key] = dict[str, Any]
+            cache[cache_key] = self._union_type(response_schemas)
             self._action_response_schema_cache = cache
         return cache[cache_key]
 

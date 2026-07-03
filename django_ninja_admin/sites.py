@@ -966,7 +966,7 @@ class NinjaAdminSite:
         delete_hook_responses = site._custom_hook_responses(model_admin.get_response_delete_schema(None), (200, 202))
         action_response = {
             200: action_response_schema,
-            202: dict[str, Any],
+            202: action_response_schema,
             204: None,
             **auth_errors,
             400: ErrorResponse,

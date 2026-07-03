@@ -339,12 +339,10 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert set(set_status_payload["required"]) == {"action", "data"}
     action_responses = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["responses"]
     action_response_schema = action_responses["200"]["content"]["application/json"]["schema"]
+    assert {"$ref": "#/components/schemas/ActionResponse"} in action_response_schema["anyOf"]
+    assert {"$ref": "#/components/schemas/ReportNamesActionResult"} in action_response_schema["anyOf"]
     assert {"$ref": "#/components/schemas/StockStatusActionResult"} in action_response_schema["anyOf"]
-    assert action_responses["202"]["content"]["application/json"]["schema"] == {
-        "additionalProperties": True,
-        "title": "Response",
-        "type": "object",
-    }
+    assert action_responses["202"]["content"]["application/json"]["schema"] == action_response_schema
     assert "content" not in action_responses["204"]
     action_example = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["requestBody"]["content"][
         "application/json"
@@ -8478,23 +8476,34 @@ def test_actions_support_custom_return_values_empty_selection_and_select_across(
 
 
 def test_actions_can_return_custom_status(admin_client, sample, monkeypatch):
-    from tests.testapp.admin import ProductAdmin
+    from tests.testapp.admin import ProductAdmin, StockStatusActionData, StockStatusActionResult
 
-    @action(description="Report names", permissions=["view"])
-    def status_report_names(self, request, queryset):
-        names = list(queryset.order_by("name").values_list("name", flat=True))
-        return Status(202, {"hook": "action", "names": names})
+    @action(
+        description="Set stock status",
+        permissions=["change"],
+        input_schema=StockStatusActionData,
+        response_schema=StockStatusActionResult,
+    )
+    def status_set_stock_status(self, request, queryset, data):
+        updated = queryset.update(stock_status=data.status)
+        return Status(202, {"updated": updated, "status": data.status, "note": data.note})
 
-    monkeypatch.setattr(ProductAdmin, "report_names", status_report_names)
+    monkeypatch.setattr(ProductAdmin, "set_stock_status", status_set_stock_status)
 
     response = admin_client.post(
         "/admin-api/testapp/product/actions",
-        data={"action": "report_names", "selected_ids": [sample.pk]},
+        data={
+            "action": "set_stock_status",
+            "selected_ids": [sample.pk],
+            "data": {"status": "out_of_stock", "note": "custom status"},
+        },
         content_type="application/json",
     )
 
     assert response.status_code == 202
-    assert response.json() == {"hook": "action", "names": ["Alpha"]}
+    assert response.json() == {"updated": 1, "status": "out_of_stock", "note": "custom status"}
+    sample.refresh_from_db()
+    assert sample.stock_status == "out_of_stock"
 
 
 def test_actions_reject_invalid_selected_ids(admin_client, sample):

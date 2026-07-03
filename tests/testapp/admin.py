@@ -39,6 +39,10 @@ class StockStatusActionResult(Schema):
     note: str | None = None
 
 
+class ReportNamesActionResult(Schema):
+    names: list[str]
+
+
 class ProductAdmin(ModelAdmin):
     list_display = (
         "name",
@@ -80,7 +84,7 @@ class ProductAdmin(ModelAdmin):
     def mark_out_of_stock(self, request, queryset):
         queryset.update(stock_status="out_of_stock")
 
-    @action(description="Report names", permissions=["view"])
+    @action(description="Report names", permissions=["view"], response_schema=ReportNamesActionResult)
     def report_names(self, request, queryset):
         return {"names": list(queryset.order_by("name").values_list("name", flat=True))}
 
