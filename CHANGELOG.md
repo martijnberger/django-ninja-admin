@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.27 - 2026-07-03
+
 - Bounded history and autocomplete object-level permission filtering to the
   current database page, avoiding full-queryset materialization when custom
   object permission hooks are present.
