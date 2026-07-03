@@ -12,6 +12,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving file/image clear, upload,
   multipart, validation, image-dimension, and storage-without-public-URL
   coverage into `tests/test_file_fields.py`.
+- Continued the test-suite split by moving richer form-field Pydantic schema,
+  parent/bulk/inline form schema override, and typed choice coercion coverage
+  into `tests/test_form_field_schemas.py`.
 
 ## 0.1.33 - 2026-07-03
 
