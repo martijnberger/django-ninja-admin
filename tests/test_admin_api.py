@@ -837,16 +837,20 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["HistoryItem"]["properties"]["change_message_text"]["type"] == "string"
     assert components["HistoryItem"]["properties"]["model"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert components["HistoryItem"]["properties"]["detail_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    assert components["HistoryResponse"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
     history_example = components["HistoryResponse"]["examples"][0]
     assert history_example["pagination"]["per_page"] == 20
+    assert history_example["pagination"]["more"] is False
     assert history_example["results"][0]["change_form_url"] == "/admin-api/shop/product/1/form"
     assert history_example["results"][0]["change_message_text"] == "Changed Name."
     assert _response_schema_ref(paths["/admin-api/autocomplete"]["get"], "200") == (
         "#/components/schemas/AutocompleteResponse"
     )
+    assert components["AutocompleteResponse"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
     autocomplete_example = components["AutocompleteResponse"]["examples"][0]
     assert autocomplete_example["results"] == [{"id": "1", "text": "Cameras"}]
     assert autocomplete_example["pagination"]["more"] is False
+    assert components["ChangelistConfig"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
     assert _response_schema_ref(paths["/admin-api/view-on-site/{content_type_id}/{object_id}"]["get"], "200") == (
         "#/components/schemas/ViewOnSiteResponse"
     )
@@ -2567,6 +2571,15 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     paginated_body = paginated.json()
     assert paginated_body["config"]["page"] == 2
     assert paginated_body["config"]["page_count"] == 3
+    assert paginated_body["config"]["pagination"] == {
+        "count": 3,
+        "num_pages": 3,
+        "page": 2,
+        "per_page": 1,
+        "has_next": True,
+        "has_previous": True,
+        "more": True,
+    }
     assert paginated_body["config"]["has_next"] is True
     assert paginated_body["config"]["has_previous"] is True
     assert paginated_body["config"]["multi_page"] is True
@@ -6411,12 +6424,13 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     paged = client.get("/admin-api/history", {"per_page": 1, "page": 2})
     assert paged.status_code == 200
     assert paged.json()["pagination"] == {
-        "num_pages": 2,
         "count": 2,
-        "has_next": False,
-        "has_previous": True,
+        "num_pages": 2,
         "page": 2,
         "per_page": 1,
+        "has_next": False,
+        "has_previous": True,
+        "more": False,
     }
     assert len(paged.json()["results"]) == 1
 
@@ -6469,12 +6483,13 @@ def test_history_uses_queryset_pagination_for_global_permissions(admin_client, s
 
     assert response.status_code == 200
     assert response.json()["pagination"] == {
-        "num_pages": 3,
         "count": 3,
-        "has_next": True,
-        "has_previous": False,
+        "num_pages": 3,
         "page": 1,
         "per_page": 1,
+        "has_next": True,
+        "has_previous": False,
+        "more": True,
     }
     assert len(response.json()["results"]) == 1
 
@@ -8166,13 +8181,13 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
     assert first_page.status_code == 200
     assert len(first_page.json()["results"]) == 20
     assert first_page.json()["pagination"] == {
-        "more": True,
         "count": 25,
         "num_pages": 2,
         "page": 1,
         "per_page": 20,
         "has_next": True,
         "has_previous": False,
+        "more": True,
     }
 
     second_page = admin_client.get(
@@ -8188,13 +8203,13 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
     assert second_page.status_code == 200
     assert len(second_page.json()["results"]) == 5
     assert second_page.json()["pagination"] == {
-        "more": False,
         "count": 25,
         "num_pages": 2,
         "page": 2,
         "per_page": 20,
         "has_next": False,
         "has_previous": True,
+        "more": False,
     }
     assert all(result["text"].startswith("Tag ") for result in second_page.json()["results"])
 
@@ -8522,13 +8537,13 @@ def test_autocomplete_filters_object_level_view_permissions(admin_client, sample
     assert response.status_code == 200
     assert response.json()["results"] == [{"id": str(sample.category_id), "text": "Cameras"}]
     assert response.json()["pagination"] == {
-        "more": False,
         "count": 1,
         "num_pages": 1,
         "page": 1,
         "per_page": 20,
         "has_next": False,
         "has_previous": False,
+        "more": False,
     }
 
 

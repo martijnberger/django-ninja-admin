@@ -96,49 +96,6 @@
         "title": "AutocompleteItem",
         "type": "object"
       },
-      "AutocompletePagination": {
-        "properties": {
-          "count": {
-            "default": 0,
-            "title": "Count",
-            "type": "integer"
-          },
-          "has_next": {
-            "default": false,
-            "title": "Has Next",
-            "type": "boolean"
-          },
-          "has_previous": {
-            "default": false,
-            "title": "Has Previous",
-            "type": "boolean"
-          },
-          "more": {
-            "title": "More",
-            "type": "boolean"
-          },
-          "num_pages": {
-            "default": 0,
-            "title": "Num Pages",
-            "type": "integer"
-          },
-          "page": {
-            "default": 1,
-            "title": "Page",
-            "type": "integer"
-          },
-          "per_page": {
-            "default": 20,
-            "title": "Per Page",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "more"
-        ],
-        "title": "AutocompletePagination",
-        "type": "object"
-      },
       "AutocompleteResponse": {
         "examples": [
           {
@@ -161,7 +118,7 @@
         ],
         "properties": {
           "pagination": {
-            "$ref": "#/components/schemas/AutocompletePagination"
+            "$ref": "#/components/schemas/Pagination"
           },
           "results": {
             "items": {
@@ -924,6 +881,9 @@
             "title": "Page Result Count",
             "type": "integer"
           },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          },
           "pagination_required": {
             "default": false,
             "title": "Pagination Required",
@@ -1043,6 +1003,7 @@
           "object_id_field",
           "page",
           "page_count",
+          "pagination",
           "per_page",
           "result_count"
         ],
@@ -2415,6 +2376,7 @@
               "count": 1,
               "has_next": false,
               "has_previous": false,
+              "more": false,
               "num_pages": 1,
               "page": 1,
               "per_page": 20
@@ -2871,11 +2833,18 @@
             "type": "integer"
           },
           "has_next": {
+            "default": false,
             "title": "Has Next",
             "type": "boolean"
           },
           "has_previous": {
+            "default": false,
             "title": "Has Previous",
+            "type": "boolean"
+          },
+          "more": {
+            "default": false,
+            "title": "More",
             "type": "boolean"
           },
           "num_pages": {
@@ -2895,8 +2864,6 @@
         },
         "required": [
           "count",
-          "has_next",
-          "has_previous",
           "num_pages"
         ],
         "title": "Pagination",

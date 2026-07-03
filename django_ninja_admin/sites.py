@@ -309,6 +309,18 @@ class NinjaAdminSite:
         except (ValueError, InvalidPage) as exc:
             raise HttpError(404, f"Invalid page ({page_value}): {exc}") from exc
 
+    def pagination_payload(self, paginator, page_obj):
+        has_next = page_obj.has_next()
+        return {
+            "count": paginator.count,
+            "num_pages": paginator.num_pages,
+            "page": page_obj.number,
+            "per_page": paginator.per_page,
+            "has_next": has_next,
+            "has_previous": page_obj.has_previous(),
+            "more": has_next,
+        }
+
     @property
     def urls(self):
         return self.api.urls
@@ -816,14 +828,7 @@ class NinjaAdminSite:
                     }
                 )
             return {
-                "pagination": {
-                    "num_pages": paginator.num_pages,
-                    "count": paginator.count,
-                    "has_next": page_obj.has_next(),
-                    "has_previous": page_obj.has_previous(),
-                    "page": page_obj.number,
-                    "per_page": paginator.per_page,
-                },
+                "pagination": site.pagination_payload(paginator, page_obj),
                 "results": results,
             }
 
@@ -889,15 +894,7 @@ class NinjaAdminSite:
                 raise Http404 from exc
             return {
                 "results": [{"id": str(getattr(obj, to_field_name)), "text": str(obj)} for obj in page_obj.object_list],
-                "pagination": {
-                    "more": page_obj.has_next(),
-                    "count": paginator.count,
-                    "num_pages": paginator.num_pages,
-                    "page": page_obj.number,
-                    "per_page": paginator.per_page,
-                    "has_next": page_obj.has_next(),
-                    "has_previous": page_obj.has_previous(),
-                },
+                "pagination": site.pagination_payload(paginator, page_obj),
             }
 
         @router.get(
@@ -1418,6 +1415,15 @@ class NinjaAdminSite:
                 "page_count": changelist.paginator.num_pages,
                 "page": changelist.page_num,
                 "per_page": changelist.per_page,
+                "pagination": {
+                    "count": changelist.result_count,
+                    "num_pages": changelist.paginator.num_pages,
+                    "page": changelist.page_num,
+                    "per_page": changelist.per_page,
+                    "has_next": changelist.page.has_next(),
+                    "has_previous": changelist.page.has_previous(),
+                    "more": changelist.page.has_next(),
+                },
                 "has_next": changelist.page.has_next(),
                 "has_previous": changelist.page.has_previous(),
                 "multi_page": changelist.multi_page,

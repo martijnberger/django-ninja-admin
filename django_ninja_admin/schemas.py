@@ -456,6 +456,16 @@ class PageChoice(Schema):
     query_string: str | None = None
 
 
+class Pagination(Schema):
+    count: int
+    num_pages: int
+    page: int = 1
+    per_page: int = 20
+    has_next: bool = False
+    has_previous: bool = False
+    more: bool = False
+
+
 class ChangelistConfig(Schema):
     full_count: int | None
     result_count: int
@@ -465,6 +475,7 @@ class ChangelistConfig(Schema):
     page_count: int
     page: int
     per_page: int
+    pagination: Pagination
     has_next: bool = False
     has_previous: bool = False
     multi_page: bool = False
@@ -549,15 +560,6 @@ class MutationResponse(Schema):
     inlines: dict[str, Any] | None = None
 
 
-class Pagination(Schema):
-    num_pages: int
-    count: int
-    has_next: bool
-    has_previous: bool
-    page: int = 1
-    per_page: int = 20
-
-
 class HistoryItem(Schema):
     id: Any
     action_time: str
@@ -589,6 +591,7 @@ class HistoryResponse(Schema):
                         "has_previous": False,
                         "page": 1,
                         "per_page": 20,
+                        "more": False,
                     },
                     "results": [
                         {
@@ -624,16 +627,6 @@ class AutocompleteItem(Schema):
     text: str
 
 
-class AutocompletePagination(Schema):
-    more: bool
-    count: int = 0
-    num_pages: int = 0
-    page: int = 1
-    per_page: int = 20
-    has_next: bool = False
-    has_previous: bool = False
-
-
 class AutocompleteResponse(Schema):
     model_config = ConfigDict(
         json_schema_extra={
@@ -641,13 +634,13 @@ class AutocompleteResponse(Schema):
                 {
                     "results": [{"id": "1", "text": "Cameras"}],
                     "pagination": {
-                        "more": False,
                         "count": 1,
                         "num_pages": 1,
                         "page": 1,
                         "per_page": 20,
                         "has_next": False,
                         "has_previous": False,
+                        "more": False,
                     },
                 }
             ]
@@ -655,7 +648,7 @@ class AutocompleteResponse(Schema):
     )
 
     results: list[AutocompleteItem]
-    pagination: AutocompletePagination
+    pagination: Pagination
 
 
 class ViewOnSiteResponse(Schema):
