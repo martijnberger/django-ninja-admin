@@ -1,5 +1,6 @@
 from contextlib import suppress
 from decimal import Decimal
+from typing import Any, cast
 
 from django import forms
 from django.core.exceptions import FieldDoesNotExist
@@ -76,8 +77,8 @@ def _choice_option(value, label, *, coerce=None):
 def _choice_metadata(choices, *, coerce=None):
     flat_choices = []
     choice_options = []
-    choice_groups = []
-    ungrouped_options = []
+    choice_groups: list[dict[str, Any]] = []
+    ungrouped_options: list[dict[str, Any]] = []
 
     def add_flat(option):
         flat_choices.append((option["value"], option["label"]))
@@ -1069,5 +1070,5 @@ def formset_errors(formset):
 
 class RequestDataFormMixin:
     def clean(self):
-        cleaned = super().clean()
+        cleaned = cast(Any, super()).clean()
         return cleaned

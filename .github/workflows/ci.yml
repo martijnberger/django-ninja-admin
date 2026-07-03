@@ -105,6 +105,9 @@ jobs:
       - name: Format check
         run: just format-check
 
+      - name: Type check
+        run: just typecheck
+
       - name: Test
         run: just coverage-test
 

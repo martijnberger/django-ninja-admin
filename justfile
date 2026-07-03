@@ -18,6 +18,14 @@ format:
 format-check:
     UV_CACHE_DIR=.uv-cache uv run ruff format --check .
 
+typecheck-package:
+    UV_CACHE_DIR=.uv-cache uv run ty check django_ninja_admin/schemas.py django_ninja_admin/exceptions.py django_ninja_admin/constants.py django_ninja_admin/routes.py django_ninja_admin/utils
+
+typecheck-scripts:
+    UV_CACHE_DIR=.uv-cache uv run ty check scripts/openapi_diff.py scripts/parity_report.py scripts/dist_check.py
+
+typecheck: typecheck-package typecheck-scripts
+
 package-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/package_smoke.py
 
@@ -39,6 +47,6 @@ parity-report *args:
 openapi-diff *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_diff.py {{args}}
 
-check: lint format-check coverage-test dist-check package-smoke sample-project-smoke generated-client-smoke
+check: lint format-check typecheck coverage-test dist-check package-smoke sample-project-smoke generated-client-smoke
 
 ci: check

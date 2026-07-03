@@ -37,6 +37,7 @@ dev = [
     "pytest-django>=4.8",
     "ruff>=0.6",
     "twine>=5.0",
+    "ty>=0.0.56",
 ]
 
 [build-system]
