@@ -135,6 +135,18 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     mutation_response_schema = components["ProductAdminMutationResponse"]
     assert mutation_response_schema["required"] == ["data"]
     assert mutation_response_schema["properties"]["data"] == {"$ref": "#/components/schemas/ProductAdminMutationData"}
+    assert mutation_response_schema["properties"]["inlines"]["anyOf"] == [
+        {"$ref": "#/components/schemas/ProductAdminInlineResponse"},
+        {"type": "null"},
+    ]
+    assert components["ProductAdminInlineResponse"]["additionalProperties"] == {
+        "$ref": "#/components/schemas/ProductImageInlineOperationResults"
+    }
+    inline_result_props = components["ProductImageInlineOperationResults"]["properties"]
+    assert inline_result_props["add"]["items"] == {"$ref": "#/components/schemas/ProductImageAdminOut"}
+    assert inline_result_props["change"]["items"] == {"$ref": "#/components/schemas/ProductImageAdminOut"}
+    assert inline_result_props["delete"]["items"] == {"$ref": "#/components/schemas/ObjectIdentifier"}
+    assert components["ProductImageInlineOperationResults"]["additionalProperties"] is False
     assert (
         components["ProductAdminMutationData"]["properties"]["name"]
         == components["ProductAdminOut"]["properties"]["name"]

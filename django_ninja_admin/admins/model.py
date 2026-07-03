@@ -21,7 +21,12 @@ from django_ninja_admin.constants import ShowFacets
 from django_ninja_admin.exceptions import AdminPermissionError, AdminValidationError
 from django_ninja_admin.models import ADDITION, CHANGE, DELETION, LogEntry
 from django_ninja_admin.routes import AdminRoute
-from django_ninja_admin.schemas import ActionResponse, AdminInlinePayloadSchema, FieldMetadataValue, ObjectIdentifier
+from django_ninja_admin.schemas import (
+    ActionResponse,
+    AdminInlinePayloadSchema,
+    FieldMetadataValue,
+    ObjectIdentifier,
+)
 from django_ninja_admin.utils.deletion import get_deleted_objects
 
 HORIZONTAL, VERTICAL = 1, 2
@@ -221,6 +226,68 @@ class ModelAdmin(BaseAdmin):
         if change:
             return inline_example
         return {inline_id: {"add": operations.get("add", [])} for inline_id, operations in inline_example.items()}
+
+    def get_inline_response_schema(self, request=None):
+        cache = getattr(self, "_inline_response_schema_cache", {})
+        inline_schemas = tuple(
+            (
+                f"{inline.model._meta.app_label}.{inline.model._meta.model_name}",
+                inline.get_inline_operation_results_schema(request),
+            )
+            for inline in self.get_inline_instances(request, check_permissions=False)
+        )
+        cache_key = ("inline-response", inline_schemas)
+        if cache_key not in cache:
+            value_schemas = tuple(inline_schema for _inline_id, inline_schema in inline_schemas)
+            value_schema = self._union_type(value_schemas) if value_schemas else FieldMetadataValue
+            cache[cache_key] = type(
+                f"{self.model.__name__}AdminInlineResponse",
+                (RootModel[dict[str, value_schema]],),
+                {
+                    "__module__": self.__class__.__module__,
+                    "model_config": ConfigDict(
+                        json_schema_extra={
+                            "examples": [
+                                {
+                                    inline_id: self._schema_example(inline_schema)
+                                    for inline_id, inline_schema in inline_schemas
+                                }
+                            ]
+                        }
+                    ),
+                },
+            )
+            self._inline_response_schema_cache = cache
+        return cache[cache_key]
+
+    def get_mutation_response_schema(self, request=None):
+        cache = getattr(self, "_mutation_response_schema_cache", {})
+        output_schema = self.get_output_schema(request)
+        inline_response_schema = self.get_inline_response_schema(request)
+        cache_key = ("model-mutation-response", output_schema, inline_response_schema)
+        if cache_key not in cache:
+            data_schema = PydanticCreateModel(
+                f"{self.model.__name__}AdminMutationData",
+                __base__=output_schema,
+            )
+            cache[cache_key] = PydanticCreateModel(
+                f"{self.model.__name__}AdminMutationResponse",
+                __base__=Schema,
+                __config__=ConfigDict(
+                    json_schema_extra={
+                        "examples": [
+                            {
+                                "data": self._schema_example(output_schema),
+                                "inlines": None,
+                            }
+                        ]
+                    }
+                ),
+                data=(data_schema, ...),
+                inlines=(inline_response_schema | None, None),
+            )
+            self._mutation_response_schema_cache = cache
+        return cache[cache_key]
 
     def get_model_perms(self, request):
         return {

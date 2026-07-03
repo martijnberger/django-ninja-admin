@@ -8,7 +8,12 @@ from pydantic import ConfigDict, Field, create_model
 
 from django_ninja_admin.admins.base import BaseAdmin
 from django_ninja_admin.exceptions import AdminValidationError
-from django_ninja_admin.schemas import AdminInlineOperationsSchema, AdminInlineRowSchema, ObjectIdentifier
+from django_ninja_admin.schemas import (
+    AdminInlineOperationResultsSchema,
+    AdminInlineOperationsSchema,
+    AdminInlineRowSchema,
+    ObjectIdentifier,
+)
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 
 PydanticCreateModel = cast(Any, create_model)
@@ -177,6 +182,33 @@ class InlineModelAdmin(BaseAdmin):
                 delete=(list[ObjectIdentifier], Field(default_factory=list)),
             )
             self._inline_operations_schema_cache = cache
+        return cache[cache_key]
+
+    def get_inline_operation_results_schema(self, request=None):
+        cache = getattr(self, "_inline_operation_results_schema_cache", {})
+        output_schema = self.get_output_schema(request)
+        cache_key = ("inline-operation-results", output_schema)
+        if cache_key not in cache:
+            model = cast(Any, self.model)
+            cache[cache_key] = PydanticCreateModel(
+                f"{model.__name__}InlineOperationResults",
+                __base__=AdminInlineOperationResultsSchema,
+                __config__=ConfigDict(
+                    json_schema_extra={
+                        "examples": [
+                            {
+                                "add": [self._schema_example(output_schema)],
+                                "change": [self._schema_example(output_schema)],
+                                "delete": [2],
+                            }
+                        ]
+                    }
+                ),
+                add=(list[output_schema], Field(default_factory=list)),
+                change=(list[output_schema], Field(default_factory=list)),
+                delete=(list[ObjectIdentifier], Field(default_factory=list)),
+            )
+            self._inline_operation_results_schema_cache = cache
         return cache[cache_key]
 
     def _has_any_perms_for_target_model(self, request, perms):

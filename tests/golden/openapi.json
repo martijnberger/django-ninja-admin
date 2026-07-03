@@ -359,6 +359,16 @@
         "title": "CategoryAdminInlinePayload",
         "type": "object"
       },
+      "CategoryAdminInlineResponse": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/FieldMetadataValue"
+        },
+        "examples": [
+          {}
+        ],
+        "title": "CategoryAdminInlineResponse",
+        "type": "object"
+      },
       "CategoryAdminMutationData": {
         "examples": [
           {
@@ -418,7 +428,7 @@
           "inlines": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "$ref": "#/components/schemas/CategoryAdminInlineResponse"
               },
               {
                 "type": "null"
@@ -3469,6 +3479,16 @@
         "title": "GroupAdminInlinePayload",
         "type": "object"
       },
+      "GroupAdminInlineResponse": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/FieldMetadataValue"
+        },
+        "examples": [
+          {}
+        ],
+        "title": "GroupAdminInlineResponse",
+        "type": "object"
+      },
       "GroupAdminMutationData": {
         "examples": [
           {
@@ -3529,7 +3549,7 @@
           "inlines": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "$ref": "#/components/schemas/GroupAdminInlineResponse"
               },
               {
                 "type": "null"
@@ -4890,6 +4910,38 @@
         "title": "ProductAdminInlinePayload",
         "type": "object"
       },
+      "ProductAdminInlineResponse": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/ProductImageInlineOperationResults"
+        },
+        "examples": [
+          {
+            "testapp.productimage": {
+              "add": [
+                {
+                  "id": 1,
+                  "product_id": 1,
+                  "product_label": "Example",
+                  "title": "example"
+                }
+              ],
+              "change": [
+                {
+                  "id": 1,
+                  "product_id": 1,
+                  "product_label": "Example",
+                  "title": "example"
+                }
+              ],
+              "delete": [
+                2
+              ]
+            }
+          }
+        ],
+        "title": "ProductAdminInlineResponse",
+        "type": "object"
+      },
       "ProductAdminMarkOutOfStockActionPayload": {
         "properties": {
           "action": {
@@ -5115,7 +5167,7 @@
           "inlines": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "$ref": "#/components/schemas/ProductAdminInlineResponse"
               },
               {
                 "type": "null"
@@ -5689,6 +5741,46 @@
         "title": "ProductAdminUpdatePayload",
         "type": "object"
       },
+      "ProductImageAdminOut": {
+        "examples": [
+          {
+            "id": 1,
+            "product_id": 1,
+            "product_label": "Example",
+            "title": "example"
+          }
+        ],
+        "properties": {
+          "id": {
+            "maximum": 9223372036854775807,
+            "minimum": -9223372036854775808,
+            "title": "Id",
+            "type": "integer"
+          },
+          "product_id": {
+            "maximum": 9223372036854775807,
+            "minimum": -9223372036854775808,
+            "title": "Product Id",
+            "type": "integer"
+          },
+          "product_label": {
+            "title": "Product Label",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 100,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "product_id",
+          "title"
+        ],
+        "title": "ProductImageAdminOut",
+        "type": "object"
+      },
       "ProductImageInlineAddRow": {
         "additionalProperties": false,
         "examples": [
@@ -5738,6 +5830,57 @@
           "pk"
         ],
         "title": "ProductImageInlineChangeRow",
+        "type": "object"
+      },
+      "ProductImageInlineOperationResults": {
+        "additionalProperties": false,
+        "examples": [
+          {
+            "add": [
+              {
+                "id": 1,
+                "product_id": 1,
+                "product_label": "Example",
+                "title": "example"
+              }
+            ],
+            "change": [
+              {
+                "id": 1,
+                "product_id": 1,
+                "product_label": "Example",
+                "title": "example"
+              }
+            ],
+            "delete": [
+              2
+            ]
+          }
+        ],
+        "properties": {
+          "add": {
+            "items": {
+              "$ref": "#/components/schemas/ProductImageAdminOut"
+            },
+            "title": "Add",
+            "type": "array"
+          },
+          "change": {
+            "items": {
+              "$ref": "#/components/schemas/ProductImageAdminOut"
+            },
+            "title": "Change",
+            "type": "array"
+          },
+          "delete": {
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
+            "title": "Delete",
+            "type": "array"
+          }
+        },
+        "title": "ProductImageInlineOperationResults",
         "type": "object"
       },
       "ProductImageInlineOperations": {
@@ -6810,6 +6953,16 @@
         "title": "TagAdminInlinePayload",
         "type": "object"
       },
+      "TagAdminInlineResponse": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/FieldMetadataValue"
+        },
+        "examples": [
+          {}
+        ],
+        "title": "TagAdminInlineResponse",
+        "type": "object"
+      },
       "TagAdminMutationData": {
         "examples": [
           {
@@ -6854,7 +7007,7 @@
           "inlines": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "$ref": "#/components/schemas/TagAdminInlineResponse"
               },
               {
                 "type": "null"
@@ -7277,6 +7430,16 @@
         "title": "UserAdminInlinePayload",
         "type": "object"
       },
+      "UserAdminInlineResponse": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/FieldMetadataValue"
+        },
+        "examples": [
+          {}
+        ],
+        "title": "UserAdminInlineResponse",
+        "type": "object"
+      },
       "UserAdminMutationData": {
         "examples": [
           {
@@ -7424,7 +7587,7 @@
           "inlines": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "$ref": "#/components/schemas/UserAdminInlineResponse"
               },
               {
                 "type": "null"

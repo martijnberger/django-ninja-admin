@@ -22,6 +22,10 @@ class AdminInlinePayloadSchema(Schema):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
+class AdminInlineOperationResultsSchema(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+
 class AdminBulkRowSchema(Schema):
     model_config = ConfigDict(extra="forbid")
 
