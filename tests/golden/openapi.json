@@ -1577,17 +1577,6 @@
             ],
             "title": "Allowed Extensions"
           },
-          "aria_describedby": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Aria Describedby"
-          },
           "attname": {
             "anyOf": [
               {
@@ -1598,17 +1587,6 @@
               }
             ],
             "title": "Attname"
-          },
-          "auto_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auto Id"
           },
           "autocomplete": {
             "anyOf": [
@@ -1643,21 +1621,6 @@
               }
             ],
             "title": "Boolean"
-          },
-          "bound_subwidgets": {
-            "anyOf": [
-              {
-                "items": {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Bound Subwidgets"
           },
           "checked_attribute": {
             "anyOf": [
@@ -1733,17 +1696,6 @@
             ],
             "title": "Choices"
           },
-          "clear_checkbox_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Clear Checkbox Id"
-          },
           "clear_checkbox_label": {
             "anyOf": [
               {
@@ -1754,17 +1706,6 @@
               }
             ],
             "title": "Clear Checkbox Label"
-          },
-          "clear_checkbox_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Clear Checkbox Name"
           },
           "clearable_file_input": {
             "anyOf": [
@@ -1802,17 +1743,6 @@
               }
             ],
             "title": "Combo Fields"
-          },
-          "css_classes": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Css Classes"
           },
           "current_file": {
             "anyOf": [
@@ -1924,17 +1854,6 @@
             ],
             "title": "Filtered Select"
           },
-          "form_prefix": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Form Prefix"
-          },
           "format": {
             "anyOf": [
               {
@@ -1967,84 +1886,6 @@
               }
             ],
             "title": "Help Text"
-          },
-          "hidden_initial_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Hidden Initial Id"
-          },
-          "hidden_initial_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Hidden Initial Name"
-          },
-          "hidden_initial_widget": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Hidden Initial Widget"
-          },
-          "html_initial_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Html Initial Id"
-          },
-          "html_initial_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Html Initial Name"
-          },
-          "html_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Html Name"
-          },
-          "id_for_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Id For Label"
           },
           "image": {
             "anyOf": [
@@ -2292,17 +2133,6 @@
             ],
             "title": "Null Boolean"
           },
-          "option_template_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Option Template Name"
-          },
           "ordering_field": {
             "anyOf": [
               {
@@ -2477,48 +2307,6 @@
             ],
             "title": "Related Verbose Name Plural"
           },
-          "rendered_attrs": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rendered Attrs"
-          },
-          "rendered_optgroups": {
-            "anyOf": [
-              {
-                "items": {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rendered Optgroups"
-          },
-          "rendered_subwidgets": {
-            "anyOf": [
-              {
-                "items": {
-                  "additionalProperties": true,
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Rendered Subwidgets"
-          },
           "required": {
             "anyOf": [
               {
@@ -2555,17 +2343,6 @@
               }
             ],
             "title": "Selected Options"
-          },
-          "show_hidden_initial": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Show Hidden Initial"
           },
           "step_offset": {
             "title": "Step Offset"
@@ -2609,17 +2386,6 @@
               }
             ],
             "title": "Supports Microseconds"
-          },
-          "template_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Template Name"
           },
           "to_field_attname": {
             "anyOf": [

@@ -7,7 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
-- Nothing yet.
+- Removed rendered Django `BoundField`/widget internals from
+  `FieldDescription.attrs` and the `FieldAttributes` OpenAPI component,
+  keeping semantic field metadata while dropping generated HTML names, IDs,
+  ARIA/rendered attrs, widget template names, rendered option groups, rendered
+  subwidgets, hidden-initial widgets, and clear-checkbox HTML identifiers.
 
 ## 0.1.25 - 2026-07-03
 

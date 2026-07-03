@@ -301,12 +301,10 @@ class FieldAttributes(Schema):
     is_hidden: bool | None = None
     is_localized: bool | None = None
     multiple: bool | None = None
-    template_name: str | None = None
     use_fieldset: bool | None = None
     input_type: str | None = None
     format: str | None = None
     needs_multipart_form: bool | None = None
-    option_template_name: str | None = None
     add_id_index: bool | None = None
     checked_attribute: dict[str, Any] | str | bool | None = None
     supports_microseconds: bool | None = None
@@ -330,23 +328,6 @@ class FieldAttributes(Schema):
     width_field: str | None = None
     height_field: str | None = None
     limit_choices_to: dict[str, Any] | list[Any] | None = None
-
-    html_name: str | None = None
-    auto_id: str | None = None
-    id_for_label: str | None = None
-    aria_describedby: str | None = None
-    form_prefix: str | None = None
-    css_classes: str | None = None
-    html_initial_name: str | None = None
-    html_initial_id: str | None = None
-    rendered_attrs: dict[str, Any] | None = None
-    bound_subwidgets: list[dict[str, Any]] | None = None
-    rendered_optgroups: list[dict[str, Any]] | None = None
-    rendered_subwidgets: list[dict[str, Any]] | None = None
-    show_hidden_initial: bool | None = None
-    hidden_initial_name: str | None = None
-    hidden_initial_id: str | None = None
-    hidden_initial_widget: dict[str, Any] | None = None
 
     subwidgets: list[dict[str, Any]] | None = None
     select_date: dict[str, Any] | None = None
@@ -385,8 +366,6 @@ class FieldAttributes(Schema):
     initial_text: str | None = None
     input_text: str | None = None
     clear_checkbox_label: str | None = None
-    clear_checkbox_name: str | None = None
-    clear_checkbox_id: str | None = None
 
     related_model: str | None = None
     related_app_label: str | None = None

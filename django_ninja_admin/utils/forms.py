@@ -352,8 +352,6 @@ def _widget_metadata(widget):
         "is_localized": bool(getattr(widget, "is_localized", False)),
         "multiple": getattr(widget, "allow_multiple_selected", False),
     }
-    if getattr(widget, "template_name", None):
-        metadata["template_name"] = widget.template_name
     if getattr(widget, "use_fieldset", False):
         metadata["use_fieldset"] = True
     if getattr(widget, "input_type", None):
@@ -362,8 +360,6 @@ def _widget_metadata(widget):
         metadata["format"] = widget.format
     if hasattr(widget, "needs_multipart_form"):
         metadata["needs_multipart_form"] = widget.needs_multipart_form
-    if getattr(widget, "option_template_name", None):
-        metadata["option_template_name"] = widget.option_template_name
     if hasattr(widget, "add_id_index"):
         metadata["add_id_index"] = bool(widget.add_id_index)
     checked_attribute = getattr(widget, "checked_attribute", None)
@@ -392,11 +388,6 @@ def _select_date_metadata(name, field, current_value):
     order = list(widget._parse_date_fmt()) or ["month", "day", "year"]
     select_date = {
         "order": order,
-        "field_names": {
-            "year": widget.year_field % name,
-            "month": widget.month_field % name,
-            "day": widget.day_field % name,
-        },
         "years": [_jsonish_value(year) for year in widget.years],
         "months": [{"value": _jsonish_value(value), "label": str(label)} for value, label in widget.months.items()],
         "days": list(range(1, 32)),
@@ -497,169 +488,12 @@ def _file_upload_metadata(field):
 def _clearable_file_widget_metadata(name, widget, *, bound_field=None):
     if not isinstance(widget, forms.ClearableFileInput):
         return {}
-    html_name = bound_field.html_name if bound_field is not None else name
     return {
         "clearable_file_input": True,
         "initial_text": str(widget.initial_text),
         "input_text": str(widget.input_text),
         "clear_checkbox_label": str(widget.clear_checkbox_label),
-        "clear_checkbox_name": widget.clear_checkbox_name(html_name),
-        "clear_checkbox_id": widget.clear_checkbox_id(html_name),
     }
-
-
-def _bound_field_metadata(bound_field):
-    if bound_field is None:
-        return {}
-    attrs = {
-        "html_name": bound_field.html_name,
-        "auto_id": bound_field.auto_id,
-        "id_for_label": bound_field.id_for_label,
-        "aria_describedby": bound_field.aria_describedby,
-    }
-    if getattr(bound_field.form, "prefix", None):
-        attrs["form_prefix"] = bound_field.form.prefix
-    css_classes = bound_field.css_classes()
-    if css_classes:
-        attrs["css_classes"] = css_classes
-    if getattr(bound_field.field, "show_hidden_initial", False):
-        attrs["html_initial_name"] = bound_field.html_initial_name
-        attrs["html_initial_id"] = bound_field.html_initial_id
-    return {key: value for key, value in attrs.items() if value not in (None, "")}
-
-
-def _rendered_widget_attrs(bound_field):
-    if bound_field is None:
-        return {}
-    widget = bound_field.field.widget
-    try:
-        attrs = {}
-        if bound_field.auto_id and "id" not in getattr(widget, "attrs", {}):
-            attrs["id"] = bound_field.auto_id
-        render_attrs = bound_field.build_widget_attrs(attrs, widget)
-        return _jsonish_value(widget.build_attrs(getattr(widget, "attrs", {}), render_attrs))
-    except Exception:
-        return {}
-
-
-def _bound_subwidget_metadata(bound_field):
-    if bound_field is None:
-        return []
-    widget = bound_field.field.widget
-    if not getattr(bound_field.field, "choices", None) and not getattr(widget, "choices", None):
-        return []
-    subwidgets = []
-    for subwidget in bound_field.subwidgets:
-        data = subwidget.data
-        item = {
-            "name": data.get("name"),
-            "value": _jsonish_value(data.get("value")),
-            "label": str(data.get("label", "")),
-            "selected": bool(data.get("selected", False)),
-            "index": str(data.get("index", "")),
-            "attrs": _jsonish_value(data.get("attrs", {})),
-        }
-        for key in ("type", "template_name", "wrap_label"):
-            if key in data:
-                item[key] = _jsonish_value(data[key])
-        if subwidget.id_for_label:
-            item["id_for_label"] = subwidget.id_for_label
-        subwidgets.append({key: value for key, value in item.items() if value not in (None, "")})
-    return subwidgets
-
-
-def _rendered_optgroups_metadata(bound_field):
-    if bound_field is None:
-        return []
-    widget = bound_field.field.widget
-    if not getattr(bound_field.field, "choices", None) and not getattr(widget, "choices", None):
-        return []
-    if not hasattr(widget, "optgroups"):
-        return []
-    try:
-        attrs = {}
-        if bound_field.auto_id:
-            attrs["id"] = bound_field.auto_id
-        value = widget.format_value(bound_field.value())
-        optgroups = widget.optgroups(bound_field.html_name, value, bound_field.build_widget_attrs(attrs, widget))
-    except Exception:
-        return []
-
-    groups = []
-    for group_name, options, group_index in optgroups:
-        if group_name is None:
-            continue
-        group_options = []
-        for option in options:
-            item = {
-                "name": option.get("name"),
-                "value": _jsonish_value(option.get("value")),
-                "label": str(option.get("label", "")),
-                "selected": bool(option.get("selected", False)),
-                "index": str(option.get("index", "")),
-                "attrs": _jsonish_value(option.get("attrs", {})),
-            }
-            for key in ("type", "template_name", "wrap_label"):
-                if key in option:
-                    item[key] = _jsonish_value(option[key])
-            group_options.append({key: value for key, value in item.items() if value not in (None, "")})
-        if group_options:
-            groups.append(
-                {
-                    "label": str(group_name),
-                    "index": _jsonish_value(group_index),
-                    "options": group_options,
-                }
-            )
-    return groups
-
-
-def _rendered_subwidgets_metadata(bound_field):
-    if bound_field is None:
-        return []
-    try:
-        bound_widgets = list(bound_field.subwidgets)
-    except Exception:
-        return []
-    rendered = []
-    for bound_widget in bound_widgets:
-        for index, subwidget in enumerate(bound_widget.data.get("subwidgets") or []):
-            attrs = _jsonish_value(subwidget.get("attrs", {}))
-            item = {
-                "index": index,
-                "name": subwidget.get("name"),
-                "value": _jsonish_value(subwidget.get("value")),
-                "attrs": attrs,
-                "is_hidden": bool(subwidget.get("is_hidden", False)),
-                "required": bool(subwidget.get("required", False)),
-            }
-            if isinstance(attrs, dict) and attrs.get("id") not in (None, ""):
-                item["auto_id"] = str(attrs["id"])
-                item["id_for_label"] = str(attrs["id"])
-            for key in ("type", "template_name"):
-                if key in subwidget:
-                    item[key] = _jsonish_value(subwidget[key])
-            rendered.append({key: value for key, value in item.items() if value not in (None, "")})
-    return rendered
-
-
-def _hidden_initial_metadata(name, field, *, bound_field=None):
-    if not getattr(field, "show_hidden_initial", False):
-        return {}
-    hidden_initial_name = (
-        bound_field.html_initial_name
-        if bound_field is not None and bound_field.html_initial_name
-        else f"initial-{name}"
-    )
-    hidden_widget = field.hidden_widget()
-    attrs = {
-        "show_hidden_initial": True,
-        "hidden_initial_name": hidden_initial_name,
-        "hidden_initial_widget": _widget_metadata(hidden_widget),
-    }
-    if bound_field is not None and bound_field.html_initial_id:
-        attrs["hidden_initial_id"] = bound_field.html_initial_id
-    return attrs
 
 
 def field_description(name, field, *, read_only=False, current_value=None, model_field=None, bound_field=None):
@@ -674,20 +508,6 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         "validators": _validator_names(field),
         **_widget_metadata(widget),
     }
-    attrs.update(_bound_field_metadata(bound_field))
-    rendered_attrs = _rendered_widget_attrs(bound_field)
-    if rendered_attrs:
-        attrs["rendered_attrs"] = rendered_attrs
-    bound_subwidgets = _bound_subwidget_metadata(bound_field)
-    if bound_subwidgets:
-        attrs["bound_subwidgets"] = bound_subwidgets
-    rendered_optgroups = _rendered_optgroups_metadata(bound_field)
-    if rendered_optgroups:
-        attrs["rendered_optgroups"] = rendered_optgroups
-    rendered_subwidgets = _rendered_subwidgets_metadata(bound_field)
-    if rendered_subwidgets:
-        attrs["rendered_subwidgets"] = rendered_subwidgets
-    attrs.update(_hidden_initial_metadata(name, field, bound_field=bound_field))
     if getattr(field, "error_messages", None):
         attrs["error_messages"] = _jsonish_value(field.error_messages)
     if isinstance(field, forms.NullBooleanField):
@@ -825,8 +645,6 @@ def form_field_descriptions(
                 **_model_field_metadata(model_field),
                 **display_metadata,
             }
-            if getattr(form, "prefix", None):
-                readonly_attrs["form_prefix"] = form.prefix
             if instance is not None:
                 value = _readonly_value(readonly_field, instance, model_admin, model_field)
                 field_empty_value = display_metadata["empty_value_display"] or empty_value_display

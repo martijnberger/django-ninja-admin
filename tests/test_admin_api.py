@@ -617,6 +617,34 @@ def assert_sample_deleted_objects_tree(body):
     assert any(item.startswith("Product_tags object") for item in body["deleted_objects"][1])
 
 
+RENDERED_FIELD_ATTR_KEYS = {
+    "aria_describedby",
+    "auto_id",
+    "bound_subwidgets",
+    "clear_checkbox_id",
+    "clear_checkbox_name",
+    "css_classes",
+    "form_prefix",
+    "hidden_initial_id",
+    "hidden_initial_name",
+    "hidden_initial_widget",
+    "html_initial_id",
+    "html_initial_name",
+    "html_name",
+    "id_for_label",
+    "option_template_name",
+    "rendered_attrs",
+    "rendered_optgroups",
+    "rendered_subwidgets",
+    "show_hidden_initial",
+    "template_name",
+}
+
+
+def assert_no_rendered_field_attrs(attrs):
+    assert RENDERED_FIELD_ATTR_KEYS.isdisjoint(attrs)
+
+
 def test_permissions_route_reports_site_permission(admin_client):
     staff_response = admin_client.get("/admin-api/permissions")
 
@@ -946,6 +974,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     field_attrs_component = components["FieldAttributes"]
     assert field_attrs_component["additionalProperties"] is False
     field_attrs_props = field_attrs_component["properties"]
+    assert RENDERED_FIELD_ATTR_KEYS.isdisjoint(field_attrs_props)
     assert field_attrs_props["required"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
     assert field_attrs_props["ordering_field"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert field_attrs_props["max_length"]["anyOf"] == [{"type": "integer"}, {"type": "null"}]
@@ -2983,9 +3012,9 @@ def test_changelist_exposes_list_editing_row_metadata(admin_client, sample):
     assert body["list_editing_total_form_count"] == 2
     assert body["list_editing_initial_form_count"] == 2
     management_fields = {field["name"]: field for field in body["list_editing_management_form"]}
-    assert management_fields["TOTAL_FORMS"]["attrs"]["html_name"] == "form-TOTAL_FORMS"
+    assert_no_rendered_field_attrs(management_fields["TOTAL_FORMS"]["attrs"])
     assert management_fields["TOTAL_FORMS"]["attrs"]["value"] == 2
-    assert management_fields["INITIAL_FORMS"]["attrs"]["html_name"] == "form-INITIAL_FORMS"
+    assert_no_rendered_field_attrs(management_fields["INITIAL_FORMS"]["attrs"])
     assert management_fields["INITIAL_FORMS"]["attrs"]["value"] == 2
     assert management_fields["MIN_NUM_FORMS"]["attrs"]["value"] == 0
     assert management_fields["MAX_NUM_FORMS"]["attrs"]["value"] >= 2
@@ -2997,12 +3026,9 @@ def test_changelist_exposes_list_editing_row_metadata(admin_client, sample):
     assert [[field["name"] for field in row["fields"]] for row in rows] == [["stock_status"], ["stock_status"]]
     assert legacy_formset == [row["fields"] for row in rows]
     assert rows[0]["fields"][0]["attrs"]["value"] == "in_stock"
-    assert rows[0]["fields"][0]["attrs"]["form_prefix"] == "form-0"
-    assert rows[0]["fields"][0]["attrs"]["html_name"] == "form-0-stock_status"
-    assert rows[0]["fields"][0]["attrs"]["auto_id"] == "id_form-0-stock_status"
+    assert_no_rendered_field_attrs(rows[0]["fields"][0]["attrs"])
     assert rows[1]["fields"][0]["attrs"]["value"] == "out_of_stock"
-    assert rows[1]["fields"][0]["attrs"]["form_prefix"] == "form-1"
-    assert rows[1]["fields"][0]["attrs"]["html_name"] == "form-1-stock_status"
+    assert_no_rendered_field_attrs(rows[1]["fields"][0]["attrs"])
     assert rows[0]["fields"][0]["attrs"]["choices"] == [
         ["in_stock", "In Stock"],
         ["out_of_stock", "Out of Stock"],
@@ -4095,9 +4121,7 @@ def test_disabled_form_fields_are_optional_in_write_schema(admin_client, sample)
     assert fields_by_name["name"]["attrs"]["required"] is True
     assert fields_by_name["name"]["attrs"]["disabled"] is True
     assert fields_by_name["name"]["attrs"]["initial"] == "Server named product"
-    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["id"] == "id_name"
-    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["required"] is True
-    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["disabled"] is True
+    assert_no_rendered_field_attrs(fields_by_name["name"]["attrs"])
 
     created = admin_client.post(
         "/disabled-admin/testapp/product",
@@ -4128,10 +4152,7 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
     assert form.status_code == 200
     fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
     assert fields_by_name["name"]["attrs"]["help_text"] == "Name from formfield_for_dbfield."
-    assert fields_by_name["name"]["attrs"]["aria_describedby"] == "id_name_helptext"
-    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["id"] == "id_name"
-    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["required"] is True
-    assert fields_by_name["name"]["attrs"]["rendered_attrs"]["aria-describedby"] == "id_name_helptext"
+    assert_no_rendered_field_attrs(fields_by_name["name"]["attrs"])
     assert fields_by_name["name"]["attrs"]["min_length"] == 3
     name_validator_details = fields_by_name["name"]["attrs"]["validator_details"]
     assert {
@@ -4141,14 +4162,10 @@ def test_formfield_hooks_drive_schema_metadata_validation_and_persistence(admin_
         "message": "",
     } in name_validator_details
     assert fields_by_name["description"]["attrs"]["help_text"] == "Describe the product carefully."
-    assert fields_by_name["description"]["attrs"]["aria_describedby"] == "id_description_helptext"
     assert fields_by_name["description"]["attrs"]["widget"] == "Textarea"
     assert fields_by_name["description"]["attrs"]["widget_attrs"]["data-hook"] == "override"
     assert fields_by_name["description"]["attrs"]["widget_attrs"]["rows"] == 4
-    assert fields_by_name["description"]["attrs"]["rendered_attrs"]["id"] == "id_description"
-    assert fields_by_name["description"]["attrs"]["rendered_attrs"]["data-hook"] == "override"
-    assert fields_by_name["description"]["attrs"]["rendered_attrs"]["rows"] == 4
-    assert fields_by_name["description"]["attrs"]["rendered_attrs"]["aria-describedby"] == "id_description_helptext"
+    assert_no_rendered_field_attrs(fields_by_name["description"]["attrs"])
     assert fields_by_name["stock_status"]["attrs"]["choices"] == [["in_stock", "Available"]]
     assert fields_by_name["stock_status"]["attrs"]["widget"] == "RadioSelect"
     assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
@@ -4444,9 +4461,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert fields_by_name["review_required"]["attrs"]["null_boolean"] is True
     assert fields_by_name["review_required"]["attrs"]["widget"] == "NullBooleanSelect"
     name_attrs = fields_by_name["name"]["attrs"]
-    assert name_attrs["html_name"] == "name"
-    assert name_attrs["auto_id"] == "id_name"
-    assert name_attrs["id_for_label"] == "id_name"
+    assert_no_rendered_field_attrs(name_attrs)
     assert fields_by_name["optional_reference"]["attrs"]["empty_value"] is None
     assert fields_by_name["product_code"]["attrs"]["strip"] is True
     assert fields_by_name["validator_bounded_name"]["attrs"]["min_length"] == 3
@@ -4462,17 +4477,7 @@ def test_write_schema_uses_richer_pydantic_types_for_form_fields(sample, tmp_pat
     assert fields_by_name["validator_bounded_price"]["attrs"]["min_value"] == "1.00"
     assert fields_by_name["validator_bounded_price"]["attrs"]["max_value"] == "9.99"
     tracked_label_attrs = fields_by_name["tracked_label"]["attrs"]
-    assert tracked_label_attrs["html_name"] == "tracked_label"
-    assert tracked_label_attrs["auto_id"] == "id_tracked_label"
-    assert tracked_label_attrs["id_for_label"] == "id_tracked_label"
-    assert tracked_label_attrs["html_initial_name"] == "initial-tracked_label"
-    assert tracked_label_attrs["html_initial_id"] == "initial-id_tracked_label"
-    assert tracked_label_attrs["show_hidden_initial"] is True
-    assert tracked_label_attrs["hidden_initial_name"] == "initial-tracked_label"
-    assert tracked_label_attrs["hidden_initial_id"] == "initial-id_tracked_label"
-    assert tracked_label_attrs["hidden_initial_widget"]["widget"] == "HiddenInput"
-    assert tracked_label_attrs["hidden_initial_widget"]["input_type"] == "hidden"
-    assert tracked_label_attrs["hidden_initial_widget"]["is_hidden"] is True
+    assert_no_rendered_field_attrs(tracked_label_attrs)
     assert fields_by_name["unstripped_code"]["attrs"]["strip"] is False
 
     with pytest.raises(PydanticValidationError):
@@ -5140,53 +5145,7 @@ def test_write_schema_uses_choice_types_for_multiple_choice_fields(sample):
             "options": [{"value": "archived", "raw_value": "archived", "label": "Archived"}],
         },
     ]
-    assert fields_by_name["grouped_status"]["attrs"]["rendered_optgroups"] == [
-        {
-            "label": "Publishing",
-            "index": 0,
-            "options": [
-                {
-                    "name": "grouped_status",
-                    "value": "draft",
-                    "label": "Draft",
-                    "selected": False,
-                    "index": "0_0",
-                    "attrs": {},
-                    "type": "select",
-                    "template_name": "django/forms/widgets/select_option.html",
-                    "wrap_label": True,
-                },
-                {
-                    "name": "grouped_status",
-                    "value": "live",
-                    "label": "Live",
-                    "selected": False,
-                    "index": "0_1",
-                    "attrs": {},
-                    "type": "select",
-                    "template_name": "django/forms/widgets/select_option.html",
-                    "wrap_label": True,
-                },
-            ],
-        },
-        {
-            "label": "Archive",
-            "index": 1,
-            "options": [
-                {
-                    "name": "grouped_status",
-                    "value": "archived",
-                    "label": "Archived",
-                    "selected": False,
-                    "index": "1_0",
-                    "attrs": {},
-                    "type": "select",
-                    "template_name": "django/forms/widgets/select_option.html",
-                    "wrap_label": True,
-                }
-            ],
-        },
-    ]
+    assert_no_rendered_field_attrs(fields_by_name["grouped_status"]["attrs"])
     assert fields_by_name["numeric_flags"]["attrs"]["choices"] == [("1", "One"), ("2", "Two")]
     assert fields_by_name["numeric_flags"]["attrs"]["choice_options"] == [
         {"value": "1", "raw_value": 1, "label": "One"},
@@ -5798,35 +5757,9 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     ]
     assert fields_by_name["stock_status"]["attrs"]["default"] == "in_stock"
     assert fields_by_name["stock_status"]["attrs"]["admin_widget"] == "radio"
-    assert fields_by_name["stock_status"]["attrs"]["option_template_name"] == "django/forms/widgets/radio_option.html"
     assert fields_by_name["stock_status"]["attrs"]["add_id_index"] is True
     assert fields_by_name["stock_status"]["attrs"]["checked_attribute"] == {"checked": True}
-    assert fields_by_name["stock_status"]["attrs"]["bound_subwidgets"] == [
-        {
-            "name": "stock_status",
-            "value": "in_stock",
-            "label": "In Stock",
-            "selected": True,
-            "index": "0",
-            "attrs": {"id": "id_stock_status_0", "required": True, "checked": True},
-            "type": "radio",
-            "template_name": "django/forms/widgets/radio_option.html",
-            "wrap_label": True,
-            "id_for_label": "id_stock_status_0",
-        },
-        {
-            "name": "stock_status",
-            "value": "out_of_stock",
-            "label": "Out of Stock",
-            "selected": False,
-            "index": "1",
-            "attrs": {"id": "id_stock_status_1", "required": True},
-            "type": "radio",
-            "template_name": "django/forms/widgets/radio_option.html",
-            "wrap_label": True,
-            "id_for_label": "id_stock_status_1",
-        },
-    ]
+    assert_no_rendered_field_attrs(fields_by_name["stock_status"]["attrs"])
     assert fields_by_name["stock_status"]["attrs"]["radio_orientation"] == VERTICAL
     assert fields_by_name["stock_status"]["attrs"]["radio"] == {
         "app_label": "testapp",
@@ -5874,14 +5807,12 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert fields_by_name["manual"]["attrs"]["initial_text"] == "Currently"
     assert fields_by_name["manual"]["attrs"]["input_text"] == "Change"
     assert fields_by_name["manual"]["attrs"]["clear_checkbox_label"] == "Clear"
-    assert fields_by_name["manual"]["attrs"]["clear_checkbox_name"] == "manual-clear"
-    assert fields_by_name["manual"]["attrs"]["clear_checkbox_id"] == "manual_id"
+    assert_no_rendered_field_attrs(fields_by_name["manual"]["attrs"])
     assert fields_by_name["photo"]["type"] == "ImageField"
     assert fields_by_name["photo"]["attrs"]["needs_multipart_form"] is True
     assert fields_by_name["photo"]["attrs"]["image"] is True
     assert fields_by_name["photo"]["attrs"]["accepted_content_types"] == ["image/*"]
-    assert fields_by_name["photo"]["attrs"]["clear_checkbox_name"] == "photo-clear"
-    assert fields_by_name["photo"]["attrs"]["clear_checkbox_id"] == "photo_id"
+    assert_no_rendered_field_attrs(fields_by_name["photo"]["attrs"])
     assert fields_by_name["photo"]["attrs"]["upload_to"] == "photos"
     assert fields_by_name["photo"]["attrs"]["width_field"] == "photo_width"
     assert fields_by_name["photo"]["attrs"]["height_field"] == "photo_height"
@@ -6106,9 +6037,9 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     assert inline["total_form_count"] == 3
     assert inline["initial_form_count"] == 1
     management_fields = {field["name"]: field for field in inline["management_form"]}
-    assert management_fields["TOTAL_FORMS"]["attrs"]["html_name"] == "images-TOTAL_FORMS"
+    assert_no_rendered_field_attrs(management_fields["TOTAL_FORMS"]["attrs"])
     assert management_fields["TOTAL_FORMS"]["attrs"]["value"] == 3
-    assert management_fields["INITIAL_FORMS"]["attrs"]["html_name"] == "images-INITIAL_FORMS"
+    assert_no_rendered_field_attrs(management_fields["INITIAL_FORMS"]["attrs"])
     assert management_fields["INITIAL_FORMS"]["attrs"]["value"] == 1
     assert management_fields["MIN_NUM_FORMS"]["attrs"]["value"] == 1
     assert management_fields["MAX_NUM_FORMS"]["attrs"]["value"] == 5
@@ -6120,17 +6051,13 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     ]
     assert title_values == ["Front", None, None]
     first_row_fields = {field["name"]: field for field in inline["formset"][0]}
-    assert first_row_fields["title"]["attrs"]["form_prefix"] == "images-0"
-    assert first_row_fields["title"]["attrs"]["html_name"] == "images-0-title"
-    assert first_row_fields["title"]["attrs"]["auto_id"] == "id_images-0-title"
-    assert first_row_fields["title"]["attrs"]["id_for_label"] == "id_images-0-title"
-    assert first_row_fields["id"]["attrs"]["html_name"] == "images-0-id"
-    assert first_row_fields["DELETE"]["attrs"]["html_name"] == "images-0-DELETE"
-    assert first_row_fields["product"]["attrs"]["html_name"] == "images-0-product"
+    assert_no_rendered_field_attrs(first_row_fields["title"]["attrs"])
+    assert_no_rendered_field_attrs(first_row_fields["id"]["attrs"])
+    assert_no_rendered_field_attrs(first_row_fields["DELETE"]["attrs"])
+    assert_no_rendered_field_attrs(first_row_fields["product"]["attrs"])
     assert inline["empty_form_prefix"] == "images-__prefix__"
     empty_form_fields = {field["name"]: field for field in inline["empty_form"]}
-    assert empty_form_fields["title"]["attrs"]["html_name"] == "images-__prefix__-title"
-    assert empty_form_fields["title"]["attrs"]["auto_id"] == "id_images-__prefix__-title"
+    assert_no_rendered_field_attrs(empty_form_fields["title"]["attrs"])
 
     add_response = admin_client.get("/admin-api/testapp/product/form")
 
@@ -6661,7 +6588,7 @@ def test_form_description_exposes_multiwidget_metadata(db):
     attrs = field["attrs"]
 
     assert attrs["widget"] == "SplitDateTimeWidget"
-    assert attrs["template_name"] == "django/forms/widgets/splitdatetime.html"
+    assert_no_rendered_field_attrs(attrs)
     assert attrs["use_fieldset"] is True
     assert attrs["supports_microseconds"] is False
     assert attrs["input_formats"] == [
@@ -6676,7 +6603,6 @@ def test_form_description_exposes_multiwidget_metadata(db):
             "is_hidden": False,
             "is_localized": False,
             "multiple": False,
-            "template_name": "django/forms/widgets/date.html",
             "input_type": "text",
             "format": "%Y-%m-%d",
             "needs_multipart_form": False,
@@ -6689,35 +6615,10 @@ def test_form_description_exposes_multiwidget_metadata(db):
             "is_hidden": False,
             "is_localized": False,
             "multiple": False,
-            "template_name": "django/forms/widgets/time.html",
             "input_type": "text",
             "format": "%H:%M",
             "needs_multipart_form": False,
             "supports_microseconds": False,
-        },
-    ]
-    assert attrs["rendered_subwidgets"] == [
-        {
-            "index": 0,
-            "name": "release_window_0",
-            "attrs": {"data-part": "date", "id": "id_release_window_0"},
-            "is_hidden": False,
-            "required": False,
-            "auto_id": "id_release_window_0",
-            "id_for_label": "id_release_window_0",
-            "type": "text",
-            "template_name": "django/forms/widgets/date.html",
-        },
-        {
-            "index": 1,
-            "name": "release_window_1",
-            "attrs": {"data-part": "time", "id": "id_release_window_1"},
-            "is_hidden": False,
-            "required": False,
-            "auto_id": "id_release_window_1",
-            "id_for_label": "id_release_window_1",
-            "type": "text",
-            "template_name": "django/forms/widgets/time.html",
         },
     ]
     assert any(detail.get("pattern") == "^[A-Z]{3}$" for detail in code_field["attrs"]["validator_details"])
@@ -6752,18 +6653,13 @@ def test_form_description_exposes_select_date_widget_metadata(db):
     attrs = next(field["attrs"] for field in form["fields"] if field["name"] == "release_date")
 
     assert attrs["widget"] == "SelectDateWidget"
-    assert attrs["template_name"] == "django/forms/widgets/select_date.html"
+    assert_no_rendered_field_attrs(attrs)
     assert attrs["input_type"] == "select"
     assert attrs["use_fieldset"] is True
     assert attrs["widget_attrs"] == {"data-date": "release"}
     assert attrs["value"] == "2024-02-03"
     assert attrs["select_date"] == {
         "order": ["month", "day", "year"],
-        "field_names": {
-            "year": "release_date_year",
-            "month": "release_date_month",
-            "day": "release_date_day",
-        },
         "years": [2024, 2025],
         "months": [{"value": 1, "label": "Jan"}, {"value": 2, "label": "Feb"}],
         "days": list(range(1, 32)),
@@ -6774,43 +6670,6 @@ def test_form_description_exposes_select_date_widget_metadata(db):
         },
         "selected": {"year": 2024, "month": 2, "day": 3},
     }
-    assert [
-        {
-            "index": item["index"],
-            "name": item["name"],
-            "auto_id": item["auto_id"],
-            "id_for_label": item["id_for_label"],
-            "value": item["value"],
-            "template_name": item["template_name"],
-        }
-        for item in attrs["rendered_subwidgets"]
-    ] == [
-        {
-            "index": 0,
-            "name": "release_date_month",
-            "auto_id": "id_release_date_month",
-            "id_for_label": "id_release_date_month",
-            "value": ["2"],
-            "template_name": "django/forms/widgets/select.html",
-        },
-        {
-            "index": 1,
-            "name": "release_date_day",
-            "auto_id": "id_release_date_day",
-            "id_for_label": "id_release_date_day",
-            "value": ["3"],
-            "template_name": "django/forms/widgets/select.html",
-        },
-        {
-            "index": 2,
-            "name": "release_date_year",
-            "auto_id": "id_release_date_year",
-            "id_for_label": "id_release_date_year",
-            "value": ["2024"],
-            "template_name": "django/forms/widgets/select.html",
-        },
-    ]
-    assert all(item["attrs"]["data-date"] == "release" for item in attrs["rendered_subwidgets"])
 
 
 def test_form_description_exposes_filepath_field_metadata(db, tmp_path):
@@ -7199,8 +7058,7 @@ def test_file_field_metadata_handles_storage_without_public_url(admin_client, sa
     assert change_form.status_code == 200
     assert manual_attrs["current_file"] == {"name": "manuals/alpha.pdf", "url": None}
     assert manual_attrs["clearable_file_input"] is True
-    assert manual_attrs["clear_checkbox_name"] == "manual-clear"
-    assert manual_attrs["clear_checkbox_id"] == "manual_id"
+    assert_no_rendered_field_attrs(manual_attrs)
 
 
 @isolate_apps("tests.testapp")
