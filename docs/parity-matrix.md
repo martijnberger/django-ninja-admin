@@ -96,7 +96,7 @@ Statuses:
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
 | Ruff/pytest local gates | implemented | `just lint`, `just test`, `just typecheck`, `just check`, `.github/workflows/ci.yml`; typecheck currently covers the package modules under `django_ninja_admin/` plus release scripts | Keep CI and local gates aligned as new modules are added |
-| Test suite split | partial | `tests/test_checks.py` and `tests/conftest.py` start moving admin-check coverage out of `tests/test_admin_api.py` with a shared `make_site` factory | Continue splitting remaining admin-check, OpenAPI, changelist, auth/permission, inline, action/bulk, and autocomplete coverage into topic modules |
+| Test suite split | partial | `tests/test_checks.py` and `tests/conftest.py` move initial and inline-layout admin-check coverage out of `tests/test_admin_api.py` with a shared `make_site` factory | Continue splitting remaining admin-check, OpenAPI, changelist, auth/permission, inline, action/bulk, and autocomplete coverage into topic modules |
 | Package build/install smoke | implemented | `scripts/package_smoke.py`, `scripts/sample_project_smoke.py`, `scripts/sample_project_full.py`, `just package-smoke`, `just sample-project-smoke`, `just sample-project-full`, and `DJANGO_NINJA_ADMIN_SMOKE_DJANGO` installed-project Django pins | Expand sample project scenarios as parity grows |
 | Parity report tooling | implemented | `scripts/parity_report.py`, `tests/test_parity_report.py`, and `just parity-report` | Expand into linked evidence checks as the matrix grows |
 | OpenAPI diff tooling | implemented | `scripts/openapi_diff.py`, `tests/test_openapi_diff.py`, and `just openapi-diff` | Use reviewed OpenAPI artifacts before beta/stable release candidates |

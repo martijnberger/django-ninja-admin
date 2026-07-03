@@ -25,6 +25,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   now that the full package passes.
 - Started the test-suite split by extracting admin-check coverage into
   `tests/test_checks.py` with a shared `make_site` fixture.
+- Expanded the admin-check test split to cover inline boolean, layout, and
+  fieldset validation cases.
 
 ## 0.1.27 - 2026-07-03
 
