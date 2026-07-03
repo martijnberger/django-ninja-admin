@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Tightened typed error contracts with explicit `ErrorMessage` and recursive
   `DeletedObject` OpenAPI components instead of unconstrained message and
   deleted-object item schemas.
+- Expanded the package typecheck gate to cover action/decorator/app config and
+  auth-admin modules, including dynamic admin metadata helpers.
 
 ## 0.1.26 - 2026-07-03
 

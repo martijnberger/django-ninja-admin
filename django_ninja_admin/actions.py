@@ -1,3 +1,5 @@
+from typing import Any, cast
+
 from django.core.exceptions import PermissionDenied
 from django.db import router, transaction
 from django.utils.translation import gettext_lazy as _
@@ -47,5 +49,6 @@ def delete_selected(model_admin, request, queryset):
     return {"detail": _("Successfully deleted selected objects."), "deleted": model_count}
 
 
-delete_selected.short_description = _("Delete selected objects")
-delete_selected.allowed_permissions = ["delete"]
+delete_selected_action = cast(Any, delete_selected)
+delete_selected_action.short_description = _("Delete selected objects")
+delete_selected_action.allowed_permissions = ["delete"]

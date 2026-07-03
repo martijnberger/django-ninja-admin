@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 
 def action(
@@ -11,14 +11,15 @@ def action(
     response_schema: type[Any] | None = None,
 ):
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        admin_func = cast(Any, func)
         if permissions is not None:
-            func.allowed_permissions = permissions  # type: ignore[attr-defined]
+            admin_func.allowed_permissions = permissions
         if description is not None:
-            func.short_description = description  # type: ignore[attr-defined]
+            admin_func.short_description = description
         if input_schema is not None:
-            func.action_input_schema = input_schema  # type: ignore[attr-defined]
+            admin_func.action_input_schema = input_schema
         if response_schema is not None:
-            func.action_response_schema = response_schema  # type: ignore[attr-defined]
+            admin_func.action_response_schema = response_schema
         return func
 
     if function is None:
@@ -35,16 +36,17 @@ def display(
     empty_value: str | None = None,
 ):
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        admin_func = cast(Any, func)
         if boolean is not None and empty_value is not None:
             raise ValueError("The boolean and empty_value arguments to @display are mutually exclusive.")
         if boolean is not None:
-            func.boolean = boolean  # type: ignore[attr-defined]
+            admin_func.boolean = boolean
         if ordering is not None:
-            func.admin_order_field = ordering  # type: ignore[attr-defined]
+            admin_func.admin_order_field = ordering
         if description is not None:
-            func.short_description = description  # type: ignore[attr-defined]
+            admin_func.short_description = description
         if empty_value is not None:
-            func.empty_value_display = empty_value  # type: ignore[attr-defined]
+            admin_func.empty_value_display = empty_value
         return func
 
     if function is None:
