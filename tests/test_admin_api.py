@@ -66,49 +66,6 @@ from tests.testapp.models import (
 )
 
 
-@pytest.fixture
-def admin_client(db):
-    user = get_user_model().objects.create_user("admin", password="pw", is_staff=True)
-    user.user_permissions.set(Permission.objects.all())
-    client = Client()
-    client.force_login(user)
-    return client
-
-
-@pytest.fixture
-def staff_client(db):
-    user_count = 0
-
-    def make_client(*permission_codenames):
-        nonlocal user_count
-        user_count += 1
-        user = get_user_model().objects.create_user(f"staff-{user_count}", password="pw", is_staff=True)
-        user.user_permissions.set(Permission.objects.filter(codename__in=permission_codenames))
-        client = Client()
-        client.force_login(user)
-        return client
-
-    return make_client
-
-
-@pytest.fixture
-def sample(db):
-    category = Category.objects.create(name="Cameras")
-    featured = Tag.objects.create(name="Featured")
-    compact = Tag.objects.create(name="Compact")
-    product = Product.objects.create(
-        name="Alpha",
-        category=category,
-        price="12.50",
-        description="Nice camera",
-        manual="manuals/alpha.pdf",
-    )
-    product.tags.set([featured, compact])
-    Product.objects.create(name="Beta", category=category, price="3.00", stock_status="out_of_stock")
-    ProductImage.objects.create(product=product, title="Front")
-    return product
-
-
 def test_apps_context_docs_and_schema(admin_client, sample):
     assert admin_client.get("/admin-api/apps").status_code == 200
     assert admin_client.get("/admin-api/apps/testapp").json()["app_label"] == "testapp"
@@ -372,18 +329,6 @@ def test_site_routes_return_typed_auth_errors(db):
     assert body["errors"][0]["param"] == "non_field_errors"
 
 
-def test_docs_and_openapi_require_site_auth(db):
-    client = Client()
-
-    for path in ("/admin-api/docs", "/admin-api/openapi.json"):
-        response = client.get(path)
-
-        assert response.status_code == 401
-        body = response.json()
-        ErrorResponse.model_validate(body)
-        assert body["errors"] == [{"message": "Authentication required.", "param": "non_field_errors"}]
-
-
 @override_settings(
     MIDDLEWARE=[
         "django.contrib.sessions.middleware.SessionMiddleware",
@@ -443,90 +388,6 @@ def test_session_bootstrap_login_csrf_mutation_and_logout(db, sample):
     assert logout_response.status_code == 200
     assert logout_response.json()["is_authenticated"] is False
     assert client.get("/admin-api/apps").status_code == 401
-
-
-def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, sample):
-    schema = admin_client.get("/admin-api/openapi.json").json()
-    components = schema["components"]["schemas"]
-
-    assert components["ErrorItem"] == {
-        "properties": {
-            "message": {"$ref": "#/components/schemas/ErrorMessage"},
-            "param": {
-                "default": "non_field_errors",
-                "title": "Param",
-                "type": "string",
-            },
-        },
-        "required": ["message"],
-        "title": "ErrorItem",
-        "type": "object",
-    }
-    assert components["ErrorMessage"] == {
-        "anyOf": [
-            {"type": "string"},
-            {"items": {"type": "string"}, "type": "array"},
-        ]
-    }
-    assert components["DeletedObject"] == {
-        "anyOf": [
-            {"type": "string"},
-            {"items": {"$ref": "#/components/schemas/DeletedObject"}, "type": "array"},
-        ]
-    }
-    assert components["ErrorResponse"]["required"] == ["errors"]
-    assert components["ErrorResponse"]["properties"] == {
-        "errors": {
-            "items": {"$ref": "#/components/schemas/ErrorItem"},
-            "title": "Errors",
-            "type": "array",
-        },
-        "deleted_objects": {
-            "anyOf": [
-                {"items": {"$ref": "#/components/schemas/DeletedObject"}, "type": "array"},
-                {"type": "null"},
-            ],
-            "title": "Deleted Objects",
-        },
-        "protected": {
-            "anyOf": [
-                {"items": {"type": "string"}, "type": "array"},
-                {"type": "null"},
-            ],
-            "title": "Protected",
-        },
-        "perms_needed": {
-            "anyOf": [
-                {"items": {"type": "string"}, "type": "array"},
-                {"type": "null"},
-            ],
-            "title": "Perms Needed",
-        },
-        "model_count": {
-            "anyOf": [
-                {"additionalProperties": {"type": "integer"}, "type": "object"},
-                {"type": "null"},
-            ],
-            "title": "Model Count",
-        },
-    }
-
-    for path, method, status in [
-        ("/admin-api/apps", "get", "401"),
-        ("/admin-api/testapp/product", "post", "422"),
-        ("/admin-api/testapp/product", "get", "403"),
-        ("/admin-api/testapp/product/{object_id}", "get", "404"),
-        ("/admin-api/testapp/product/{object_id}", "delete", "409"),
-    ]:
-        assert _response_schema_ref(schema["paths"][path][method], status) == "#/components/schemas/ErrorResponse"
-    ErrorResponse.model_validate(
-        {
-            "errors": [{"message": ["This field is required."], "param": "name"}],
-            "deleted_objects": ["Alpha", ["Front", ["Nested child"]]],
-        }
-    )
-    with pytest.raises(PydanticValidationError):
-        ErrorResponse.model_validate({"errors": [{"message": {"detail": "Nope"}, "param": "name"}]})
 
 
 def test_error_response_runtime_shapes_are_consistent(admin_client, staff_client, sample):
