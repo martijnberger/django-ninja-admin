@@ -535,6 +535,43 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["ChoiceGroup"]["properties"]["options"]["items"] == {"$ref": "#/components/schemas/ChoiceOption"}
     assert {"type": "string"} in components["FieldMetadataValue"]["anyOf"]
     assert {"type": "null"} in components["FieldMetadataValue"]["anyOf"]
+    assert field_attrs_props["validator_details"]["anyOf"][0]["items"] == {
+        "$ref": "#/components/schemas/ValidatorDetail"
+    }
+    assert components["ValidatorDetail"]["additionalProperties"] is False
+    assert components["ValidatorDetail"]["required"] == ["class"]
+    assert components["ValidatorDetail"]["properties"]["class"]["type"] == "string"
+    assert components["ValidatorDetail"]["properties"]["limit_value"]["allOf"] == [
+        {"$ref": "#/components/schemas/FieldMetadataValue"}
+    ]
+    assert field_attrs_props["widget_attrs"]["anyOf"][0]["additionalProperties"] == {
+        "$ref": "#/components/schemas/FieldMetadataValue"
+    }
+    assert field_attrs_props["checked_attribute"]["anyOf"][0]["additionalProperties"] == {
+        "$ref": "#/components/schemas/FieldMetadataValue"
+    }
+    assert field_attrs_props["subwidgets"]["anyOf"][0]["items"] == {"$ref": "#/components/schemas/SubwidgetMetadata"}
+    assert components["SubwidgetMetadata"]["additionalProperties"] is False
+    assert set(components["SubwidgetMetadata"]["required"]) == {
+        "is_hidden",
+        "is_localized",
+        "multiple",
+        "name_suffix",
+        "widget",
+    }
+    input_format_items = field_attrs_props["input_formats"]["anyOf"][0]["items"]["anyOf"]
+    assert {"type": "string"} in input_format_items
+    assert {"$ref": "#/components/schemas/IndexedInputFormats"} in input_format_items
+    assert components["IndexedInputFormats"]["additionalProperties"] is False
+    assert set(components["IndexedInputFormats"]["required"]) == {"index", "input_formats"}
+    assert field_attrs_props["select_date"]["anyOf"][0] == {"$ref": "#/components/schemas/SelectDateMetadata"}
+    assert components["SelectDateMetadata"]["additionalProperties"] is False
+    assert components["SelectDateMetadata"]["properties"]["months"]["items"] == {
+        "$ref": "#/components/schemas/SelectDateChoice"
+    }
+    assert components["SelectDateMetadata"]["properties"]["empty_choices"] == {
+        "$ref": "#/components/schemas/SelectDateEmptyChoices"
+    }
     selected_options_schema = field_attrs_props["selected_options"]["anyOf"][0]
     assert selected_options_schema["items"] == {"$ref": "#/components/schemas/SelectedOption"}
     assert components["SelectedOption"]["required"] == ["id", "text"]

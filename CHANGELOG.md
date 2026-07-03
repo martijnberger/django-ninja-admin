@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Typed validator detail, widget-attribute, subwidget, input-format, and
+  select-date form metadata OpenAPI components.
+
 ## 0.1.36 - 2026-07-03
 
 ### Changed

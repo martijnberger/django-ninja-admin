@@ -399,6 +399,85 @@ class PrepopulatedMetadata(SourceFieldIdentity):
     sources: list[PrepopulatedSourceMetadata]
 
 
+def _class_field_json_schema(schema: dict[str, Any]) -> None:
+    properties = schema.get("properties", {})
+    if "class_" in properties:
+        properties["class"] = properties.pop("class_")
+    schema["required"] = ["class" if item == "class_" else item for item in schema.get("required", [])]
+
+
+class ValidatorDetail(Schema):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, json_schema_extra=_class_field_json_schema)
+
+    class_: str = Field(alias="class", serialization_alias="class")
+    code: FieldMetadataValue = None
+    message: FieldMetadataValue = None
+    limit_value: FieldMetadataValue = None
+    pattern: str | None = None
+
+
+class WidgetMetadata(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    widget: str
+    widget_attrs: dict[str, FieldMetadataValue] | None = None
+    is_hidden: bool
+    is_localized: bool
+    multiple: bool
+    use_fieldset: bool | None = None
+    input_type: str | None = None
+    format: str | None = None
+    needs_multipart_form: bool | None = None
+    add_id_index: bool | None = None
+    checked_attribute: dict[str, FieldMetadataValue] | str | bool | None = None
+    supports_microseconds: bool | None = None
+
+
+class SubwidgetMetadata(WidgetMetadata):
+    name_suffix: str
+
+
+class IndexedInputFormats(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    index: int
+    input_formats: list[str]
+
+
+class SelectDateChoice(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    value: FieldMetadataValue = None
+    label: str
+
+
+class SelectDateEmptyChoices(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    year: SelectDateChoice
+    month: SelectDateChoice
+    day: SelectDateChoice
+
+
+class SelectDateSelected(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    year: FieldMetadataValue = None
+    month: FieldMetadataValue = None
+    day: FieldMetadataValue = None
+
+
+class SelectDateMetadata(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    order: list[Literal["year", "month", "day"]]
+    years: list[FieldMetadataValue]
+    months: list[SelectDateChoice]
+    days: list[int]
+    empty_choices: SelectDateEmptyChoices
+    selected: SelectDateSelected | None = None
+
+
 class FieldAttributes(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -409,14 +488,14 @@ class FieldAttributes(Schema):
     disabled: bool | None = None
     localize: bool | None = None
     validators: list[str] | None = None
-    validator_details: list[dict[str, Any]] | None = None
-    error_messages: dict[str, Any] | None = None
+    validator_details: list[ValidatorDetail] | None = None
+    error_messages: dict[str, FieldMetadataValue] | None = None
     boolean: bool | None = None
     empty_value_display: str | None = None
     ordering_field: str | None = None
 
     widget: str | None = None
-    widget_attrs: dict[str, Any] | None = None
+    widget_attrs: dict[str, FieldMetadataValue] | None = None
     is_hidden: bool | None = None
     is_localized: bool | None = None
     multiple: bool | None = None
@@ -425,7 +504,7 @@ class FieldAttributes(Schema):
     format: str | None = None
     needs_multipart_form: bool | None = None
     add_id_index: bool | None = None
-    checked_attribute: dict[str, Any] | str | bool | None = None
+    checked_attribute: dict[str, FieldMetadataValue] | str | bool | None = None
     supports_microseconds: bool | None = None
     admin_widget: str | None = None
     radio_orientation: str | int | None = None
@@ -446,11 +525,11 @@ class FieldAttributes(Schema):
     image: bool | None = None
     width_field: str | None = None
     height_field: str | None = None
-    limit_choices_to: dict[str, Any] | list[Any] | None = None
+    limit_choices_to: dict[str, FieldMetadataValue] | list[FieldMetadataValue] | None = None
 
-    subwidgets: list[dict[str, Any]] | None = None
-    select_date: dict[str, Any] | None = None
-    input_formats: list[Any] | None = None
+    subwidgets: list[SubwidgetMetadata] | None = None
+    select_date: SelectDateMetadata | None = None
+    input_formats: list[str | IndexedInputFormats] | None = None
     choices: list[ChoicePair] | None = None
     choice_options: list[ChoiceOption] | None = None
     choice_coerce: str | None = None

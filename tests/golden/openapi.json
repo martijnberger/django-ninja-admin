@@ -1767,7 +1767,9 @@
           "checked_attribute": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FieldMetadataValue"
+                },
                 "type": "object"
               },
               {
@@ -1972,7 +1974,9 @@
           "error_messages": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FieldMetadataValue"
+                },
                 "type": "object"
               },
               {
@@ -2052,7 +2056,16 @@
           "input_formats": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "$ref": "#/components/schemas/IndexedInputFormats"
+                    }
+                  ]
+                },
                 "type": "array"
               },
               {
@@ -2130,11 +2143,15 @@
           "limit_choices_to": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FieldMetadataValue"
+                },
                 "type": "object"
               },
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/FieldMetadataValue"
+                },
                 "type": "array"
               },
               {
@@ -2463,14 +2480,12 @@
           "select_date": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/SelectDateMetadata"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Select Date"
+            ]
           },
           "selected_options": {
             "anyOf": [
@@ -2507,8 +2522,7 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": true,
-                  "type": "object"
+                  "$ref": "#/components/schemas/SubwidgetMetadata"
                 },
                 "type": "array"
               },
@@ -2610,8 +2624,7 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": true,
-                  "type": "object"
+                  "$ref": "#/components/schemas/ValidatorDetail"
                 },
                 "type": "array"
               },
@@ -2652,7 +2665,9 @@
           "widget_attrs": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FieldMetadataValue"
+                },
                 "type": "object"
               },
               {
@@ -3849,6 +3864,28 @@
           "name"
         ],
         "title": "ImageFieldValue",
+        "type": "object"
+      },
+      "IndexedInputFormats": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "input_formats": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Input Formats",
+            "type": "array"
+          }
+        },
+        "required": [
+          "index",
+          "input_formats"
+        ],
+        "title": "IndexedInputFormats",
         "type": "object"
       },
       "InlineDescription": {
@@ -5993,6 +6030,136 @@
         "title": "Row",
         "type": "object"
       },
+      "SelectDateChoice": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "SelectDateChoice",
+        "type": "object"
+      },
+      "SelectDateEmptyChoices": {
+        "additionalProperties": false,
+        "properties": {
+          "day": {
+            "$ref": "#/components/schemas/SelectDateChoice"
+          },
+          "month": {
+            "$ref": "#/components/schemas/SelectDateChoice"
+          },
+          "year": {
+            "$ref": "#/components/schemas/SelectDateChoice"
+          }
+        },
+        "required": [
+          "day",
+          "month",
+          "year"
+        ],
+        "title": "SelectDateEmptyChoices",
+        "type": "object"
+      },
+      "SelectDateMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "days": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "empty_choices": {
+            "$ref": "#/components/schemas/SelectDateEmptyChoices"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/SelectDateChoice"
+            },
+            "title": "Months",
+            "type": "array"
+          },
+          "order": {
+            "items": {
+              "enum": [
+                "day",
+                "month",
+                "year"
+              ],
+              "type": "string"
+            },
+            "title": "Order",
+            "type": "array"
+          },
+          "selected": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SelectDateSelected"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "years": {
+            "items": {
+              "$ref": "#/components/schemas/FieldMetadataValue"
+            },
+            "title": "Years",
+            "type": "array"
+          }
+        },
+        "required": [
+          "days",
+          "empty_choices",
+          "months",
+          "order",
+          "years"
+        ],
+        "title": "SelectDateMetadata",
+        "type": "object"
+      },
+      "SelectDateSelected": {
+        "additionalProperties": false,
+        "properties": {
+          "day": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
+          },
+          "month": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
+          },
+          "year": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
+          }
+        },
+        "title": "SelectDateSelected",
+        "type": "object"
+      },
       "SelectedOption": {
         "properties": {
           "id": {
@@ -6229,6 +6396,140 @@
           "updated"
         ],
         "title": "StockStatusActionResult",
+        "type": "object"
+      },
+      "SubwidgetMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "add_id_index": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Add Id Index"
+          },
+          "checked_attribute": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FieldMetadataValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked Attribute"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Format"
+          },
+          "input_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Type"
+          },
+          "is_hidden": {
+            "title": "Is Hidden",
+            "type": "boolean"
+          },
+          "is_localized": {
+            "title": "Is Localized",
+            "type": "boolean"
+          },
+          "multiple": {
+            "title": "Multiple",
+            "type": "boolean"
+          },
+          "name_suffix": {
+            "title": "Name Suffix",
+            "type": "string"
+          },
+          "needs_multipart_form": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needs Multipart Form"
+          },
+          "supports_microseconds": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supports Microseconds"
+          },
+          "use_fieldset": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Fieldset"
+          },
+          "widget": {
+            "title": "Widget",
+            "type": "string"
+          },
+          "widget_attrs": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/FieldMetadataValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Widget Attrs"
+          }
+        },
+        "required": [
+          "is_hidden",
+          "is_localized",
+          "multiple",
+          "name_suffix",
+          "widget"
+        ],
+        "title": "SubwidgetMetadata",
         "type": "object"
       },
       "TagAdminActionPayload": {
@@ -7411,6 +7712,52 @@
           "data"
         ],
         "title": "UserAdminUpdatePayload",
+        "type": "object"
+      },
+      "ValidatorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "class": {
+            "title": "Class",
+            "type": "string"
+          },
+          "code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
+          },
+          "limit_value": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
+          },
+          "message": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
+          },
+          "pattern": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pattern"
+          }
+        },
+        "required": [
+          "class"
+        ],
+        "title": "ValidatorDetail",
         "type": "object"
       },
       "ViewOnSiteResponse": {
