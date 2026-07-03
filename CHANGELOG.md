@@ -10,7 +10,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 ### Changed
 
 - Extracted shared schema/example helpers into
-  `django_ninja_admin.utils.schema_examples` for generated OpenAPI examples.
+  `django_ninja_admin.utils.schema_examples` for generated OpenAPI examples
+  and choice-field schema/example handling.
 
 ## 0.1.34 - 2026-07-03
 

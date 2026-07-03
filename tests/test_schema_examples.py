@@ -6,7 +6,12 @@ from uuid import UUID
 from pydantic import BaseModel, Field, TypeAdapter
 
 from django_ninja_admin.utils.schema_examples import (
+    choice_example_value,
+    coerce_choice_example,
+    iter_choice_values,
+    pydantic_choice_values,
     pydantic_model_example,
+    pydantic_type_for_choices,
     schema_example,
     schema_type_example,
 )
@@ -43,3 +48,32 @@ def test_pydantic_model_example_uses_required_field_annotations():
         enabled: bool = False
 
     assert pydantic_model_example(ActionInput) == {"names": ["example"], "count": 1}
+
+
+def test_choice_helpers_flatten_groups_and_skip_empty_values():
+    price = Decimal("1.50")
+    choices = [
+        ("", "Any"),
+        ("group", [("", "Empty"), (price, "Price")]),
+    ]
+
+    assert list(iter_choice_values(choices)) == ["", "", price]
+    assert choice_example_value(choices) == price
+    assert choice_example_value(choices, json_safe=True) == "1.50"
+
+
+def test_pydantic_choice_values_dedupe_and_normalize_values():
+    choices = [(1, "One"), ("1", "One string"), (1, "Duplicate"), (UUID(int=1), "UUID")]
+
+    assert pydantic_choice_values(choices) == (1, "1", "00000000-0000-0000-0000-000000000001")
+    assert pydantic_choice_values(choices, coerce=str) == ("1", "00000000-0000-0000-0000-000000000001")
+
+
+def test_pydantic_choice_type_falls_back_to_scalar_union_when_literals_disabled():
+    assert pydantic_type_for_choices([(1, "One"), ("two", "Two")], as_literal=False) == int | str
+    assert pydantic_type_for_choices([(True, "Enabled")], as_literal=False) is bool
+
+
+def test_coerce_choice_example_returns_original_value_when_coercion_fails():
+    assert coerce_choice_example(int, "2") == 2
+    assert coerce_choice_example(int, "bad") == "bad"

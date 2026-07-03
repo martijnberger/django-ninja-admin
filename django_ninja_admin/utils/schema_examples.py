@@ -15,6 +15,83 @@ def schema_example(schema):
     return (schema.model_json_schema().get("examples") or [{}])[0]
 
 
+def iter_choice_values(choices):
+    for value, label in choices:
+        if isinstance(label, (list, tuple)):
+            yield from iter_choice_values(label)
+        else:
+            yield value
+
+
+def choice_example_value(choices, *, json_safe=False):
+    for value in iter_choice_values(choices):
+        if value not in ("", None):
+            return json_example_value(value) if json_safe else value
+    return "example"
+
+
+def coerce_choice_example(coerce, value):
+    if coerce is None:
+        return value
+    try:
+        return coerce(value)
+    except (TypeError, ValueError):
+        return value
+
+
+def pydantic_type_for_choices(choices, *, as_literal=True):
+    literal_type = pydantic_literal_for_choices(choices) if as_literal else None
+    if literal_type is not None:
+        return literal_type
+    value_types = set()
+    for value in iter_choice_values(choices):
+        if value not in ("", None):
+            value_types.add(type(value))
+    if not value_types:
+        return str
+    if value_types <= {int}:
+        return int
+    if value_types <= {str}:
+        return str
+    if value_types <= {int, str}:
+        return int | str
+    if value_types <= {bool}:
+        return bool
+    return str
+
+
+def pydantic_literal_for_choices(choices):
+    values = pydantic_choice_values(choices)
+    if not values:
+        return None
+    return Literal.__getitem__(tuple(values))
+
+
+def pydantic_choice_values(choices, *, coerce=None):
+    values = []
+    seen = set()
+    allowed_types = (str, int, bool)
+    if coerce is not None:
+        allowed_types = (str, int, bool, float, Decimal, UUID)
+    for value in iter_choice_values(choices):
+        if value in ("", None):
+            continue
+        if coerce is not None:
+            try:
+                value = coerce(value)
+            except (TypeError, ValueError):
+                continue
+        elif not isinstance(value, allowed_types):
+            value = str(value)
+        if not isinstance(value, allowed_types):
+            continue
+        key = (type(value), value)
+        if key not in seen:
+            seen.add(key)
+            values.append(value)
+    return tuple(values)
+
+
 def schema_type_example(field_type, default):
     if default is not None and default is not ...:
         return default

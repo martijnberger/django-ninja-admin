@@ -82,7 +82,7 @@ from django_ninja_admin.utils.lookup import (
     lookup_field,
 )
 from django_ninja_admin.utils.quote import quote, unquote
-from django_ninja_admin.utils.schema_examples import json_example_value, pydantic_model_example
+from django_ninja_admin.utils.schema_examples import choice_example_value, json_example_value, pydantic_model_example
 
 all_sites = WeakSet()
 DEFAULT_AUTH = object()
@@ -1925,15 +1925,7 @@ class NinjaAdminSite:
         return model._meta.pk
 
     def _choice_example_value(self, choices):
-        for value, label in choices:
-            if isinstance(label, (list, tuple)):
-                nested = self._choice_example_value(label)
-                if nested is not None:
-                    return nested
-                continue
-            if value not in ("", None):
-                return self._json_example_value(value)
-        return "example"
+        return choice_example_value(choices, json_safe=True)
 
     def _pydantic_model_example(self, schema):
         return pydantic_model_example(schema)

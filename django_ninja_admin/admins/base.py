@@ -2,7 +2,7 @@ import copy
 from base64 import b64encode
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Annotated, Any, ClassVar, Literal, cast
+from typing import Annotated, Any, ClassVar, cast
 from uuid import UUID
 
 from django import forms
@@ -49,7 +49,16 @@ from django_ninja_admin.utils.forms import (
     image_value_metadata,
 )
 from django_ninja_admin.utils.lookup import field_name_for_display
-from django_ninja_admin.utils.schema_examples import schema_example, schema_type_example
+from django_ninja_admin.utils.schema_examples import (
+    choice_example_value,
+    coerce_choice_example,
+    iter_choice_values,
+    pydantic_choice_values,
+    pydantic_literal_for_choices,
+    pydantic_type_for_choices,
+    schema_example,
+    schema_type_example,
+)
 
 AdminJsonValue = dict[str, Any] | list[Any] | str | int | float | bool | None
 PydanticCreateModel = cast(Any, create_model)
@@ -464,19 +473,10 @@ class BaseAdmin:
         return "example"
 
     def _choice_example_value(self, choices):
-        for value in self.iter_choice_values(choices):
-            if value not in ("", None):
-                return value
-        return "example"
+        return choice_example_value(choices)
 
     def _coerce_choice_example(self, field, value):
-        coerce = getattr(field, "coerce", None)
-        if coerce is None:
-            return value
-        try:
-            return coerce(value)
-        except (TypeError, ValueError):
-            return value
+        return coerce_choice_example(getattr(field, "coerce", None), value)
 
     def get_form_schema_field_type(
         self,
@@ -761,24 +761,7 @@ class BaseAdmin:
         return tuple.__class_getitem__(field_types)
 
     def get_pydantic_type_for_choices(self, choices, *, as_literal=True):
-        literal_type = self.get_pydantic_literal_for_choices(choices) if as_literal else None
-        if literal_type is not None:
-            return literal_type
-        value_types = set()
-        for value in self.iter_choice_values(choices):
-            if value not in ("", None):
-                value_types.add(type(value))
-        if not value_types:
-            return str
-        if value_types <= {int}:
-            return int
-        if value_types <= {str}:
-            return str
-        if value_types <= {int, str}:
-            return int | str
-        if value_types <= {bool}:
-            return bool
-        return str
+        return pydantic_type_for_choices(choices, as_literal=as_literal)
 
     def get_model_choice_target_field(self, field):
         model = field.queryset.model
@@ -793,41 +776,13 @@ class BaseAdmin:
         return self._model_field_example_value(self.get_model_choice_target_field(field))
 
     def get_pydantic_literal_for_choices(self, choices):
-        values = self.get_pydantic_choice_values(choices)
-        if not values:
-            return None
-        return Literal.__getitem__(tuple(values))
+        return pydantic_literal_for_choices(choices)
 
     def get_pydantic_choice_values(self, choices, *, coerce=None):
-        values = []
-        seen = set()
-        allowed_types = (str, int, bool)
-        if coerce is not None:
-            allowed_types = (str, int, bool, float, Decimal, UUID)
-        for value in self.iter_choice_values(choices):
-            if value in ("", None):
-                continue
-            if coerce is not None:
-                try:
-                    value = coerce(value)
-                except (TypeError, ValueError):
-                    continue
-            elif not isinstance(value, allowed_types):
-                value = str(value)
-            if not isinstance(value, allowed_types):
-                continue
-            key = (type(value), value)
-            if key not in seen:
-                seen.add(key)
-                values.append(value)
-        return tuple(values)
+        return pydantic_choice_values(choices, coerce=coerce)
 
     def iter_choice_values(self, choices):
-        for value, label in choices:
-            if isinstance(label, (list, tuple)):
-                yield from self.iter_choice_values(label)
-            else:
-                yield value
+        yield from iter_choice_values(choices)
 
     def _output_schema_for_fields(self, fields_key, custom_fields):
         from ninja.orm import create_schema
