@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from django.utils.functional import Promise
 from ninja import Schema
@@ -311,6 +311,74 @@ class SelectedOption(Schema):
     text: str
 
 
+class SourceFieldIdentity(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    app_label: str | None = None
+    model_name: str | None = None
+    field_name: str
+
+
+def _to_field_query_json_schema(schema: dict[str, Any]) -> None:
+    properties = schema.get("properties", {})
+    if "to_field" in properties:
+        properties["_to_field"] = properties.pop("to_field")
+    schema["required"] = ["_to_field" if item == "to_field" else item for item in schema.get("required", [])]
+
+
+class ToFieldQuery(Schema):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, json_schema_extra=_to_field_query_json_schema)
+
+    to_field: str = Field(alias="_to_field", serialization_alias="_to_field")
+
+
+class RelationWidgetMetadata(SourceFieldIdentity):
+    related_model: str | None = None
+    related_app_label: str | None = None
+    related_model_name: str | None = None
+    related_object_name: str | None = None
+    related_verbose_name: str | None = None
+    related_verbose_name_plural: str | None = None
+    to_field_name: str | None = None
+    to_field_class: str | None = None
+    to_field_internal_type: str | None = None
+    to_field_attname: str | None = None
+    multiple: bool | None = None
+    url: str | None = None
+    query: SourceFieldIdentity | ToFieldQuery | None = None
+
+
+class FilteredSelectMetadata(SourceFieldIdentity):
+    direction: Literal["horizontal", "vertical"]
+    is_stacked: bool
+    verbose_name: str | None = None
+    related_model: str | None = None
+    related_app_label: str | None = None
+    related_model_name: str | None = None
+    related_verbose_name: str | None = None
+    related_verbose_name_plural: str | None = None
+    to_field_name: str | None = None
+    to_field_class: str | None = None
+    to_field_internal_type: str | None = None
+    to_field_attname: str | None = None
+
+
+class RadioMetadata(SourceFieldIdentity):
+    orientation: str | int
+
+
+class PrepopulatedSourceMetadata(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    field_name: str
+    label: str | None = None
+    internal_type: str | None = None
+
+
+class PrepopulatedMetadata(SourceFieldIdentity):
+    sources: list[PrepopulatedSourceMetadata]
+
+
 class FieldAttributes(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -340,7 +408,7 @@ class FieldAttributes(Schema):
     checked_attribute: dict[str, Any] | str | bool | None = None
     supports_microseconds: bool | None = None
     admin_widget: str | None = None
-    radio_orientation: Any = None
+    radio_orientation: str | int | None = None
 
     model_field_name: str | None = None
     model_field_class: str | None = None
@@ -410,12 +478,12 @@ class FieldAttributes(Schema):
     to_field_attname: str | None = None
     empty_label: str | None = None
     selected_options: list[SelectedOption] | None = None
-    autocomplete: dict[str, Any] | None = None
-    raw_id: dict[str, Any] | None = None
-    filtered_select: dict[str, Any] | None = None
-    radio: dict[str, Any] | None = None
+    autocomplete: RelationWidgetMetadata | None = None
+    raw_id: RelationWidgetMetadata | None = None
+    filtered_select: FilteredSelectMetadata | None = None
+    radio: RadioMetadata | None = None
     prepopulated_from: list[str] | None = None
-    prepopulated: dict[str, Any] | None = None
+    prepopulated: PrepopulatedMetadata | None = None
 
 
 class FieldDescription(Schema):
@@ -428,7 +496,7 @@ class FieldDescription(Schema):
 
     @field_serializer("attrs")
     def serialize_attrs(self, attrs: FieldAttributes):
-        return attrs.model_dump(mode="json", exclude_unset=True)
+        return attrs.model_dump(mode="json", exclude_unset=True, by_alias=True)
 
 
 class FormMediaDescription(Schema):

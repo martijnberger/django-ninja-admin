@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Folded the full installed-project smoke writer into `sample_project_smoke.py`
   behind `--full`.
 - Expanded script type checking to cover release smoke scripts.
+- Typed nested form metadata OpenAPI components for relation widgets,
+  filtered selects, radio fields, and prepopulated-field sources.
 
 ## 0.1.35 - 2026-07-03
 

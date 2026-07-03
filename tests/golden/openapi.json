@@ -1648,14 +1648,12 @@
           "autocomplete": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/RelationWidgetMetadata"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Autocomplete"
+            ]
           },
           "blank": {
             "anyOf": [
@@ -1902,14 +1900,12 @@
           "filtered_select": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/FilteredSelectMetadata"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Filtered Select"
+            ]
           },
           "format": {
             "anyOf": [
@@ -2215,14 +2211,12 @@
           "prepopulated": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/PrepopulatedMetadata"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Prepopulated"
+            ]
           },
           "prepopulated_from": {
             "anyOf": [
@@ -2252,29 +2246,36 @@
           "radio": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/RadioMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "radio_orientation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Radio"
-          },
-          "radio_orientation": {
             "title": "Radio Orientation"
           },
           "raw_id": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/RelationWidgetMetadata"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Raw Id"
+            ]
           },
           "read_only": {
             "anyOf": [
@@ -2792,6 +2793,166 @@
           "title"
         ],
         "title": "FilterDescription",
+        "type": "object"
+      },
+      "FilteredSelectMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "app_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Label"
+          },
+          "direction": {
+            "enum": [
+              "horizontal",
+              "vertical"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "field_name": {
+            "title": "Field Name",
+            "type": "string"
+          },
+          "is_stacked": {
+            "title": "Is Stacked",
+            "type": "boolean"
+          },
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name"
+          },
+          "related_app_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related App Label"
+          },
+          "related_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Model"
+          },
+          "related_model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Model Name"
+          },
+          "related_verbose_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Verbose Name"
+          },
+          "related_verbose_name_plural": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Verbose Name Plural"
+          },
+          "to_field_attname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Field Attname"
+          },
+          "to_field_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Field Class"
+          },
+          "to_field_internal_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Field Internal Type"
+          },
+          "to_field_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Field Name"
+          },
+          "verbose_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verbose Name"
+          }
+        },
+        "required": [
+          "direction",
+          "field_name",
+          "is_stacked"
+        ],
+        "title": "FilteredSelectMetadata",
         "type": "object"
       },
       "FormDescription": {
@@ -4059,6 +4220,86 @@
         "title": "PermissionsResponse",
         "type": "object"
       },
+      "PrepopulatedMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "app_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Label"
+          },
+          "field_name": {
+            "title": "Field Name",
+            "type": "string"
+          },
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/PrepopulatedSourceMetadata"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "field_name",
+          "sources"
+        ],
+        "title": "PrepopulatedMetadata",
+        "type": "object"
+      },
+      "PrepopulatedSourceMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "field_name": {
+            "title": "Field Name",
+            "type": "string"
+          },
+          "internal_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Internal Type"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          }
+        },
+        "required": [
+          "field_name"
+        ],
+        "title": "PrepopulatedSourceMetadata",
+        "type": "object"
+      },
       "ProductAdminActionPayload": {
         "discriminator": {
           "mapping": {
@@ -5302,6 +5543,236 @@
         "title": "ProductImageInlineOperations",
         "type": "object"
       },
+      "RadioMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "app_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Label"
+          },
+          "field_name": {
+            "title": "Field Name",
+            "type": "string"
+          },
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name"
+          },
+          "orientation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Orientation"
+          }
+        },
+        "required": [
+          "field_name",
+          "orientation"
+        ],
+        "title": "RadioMetadata",
+        "type": "object"
+      },
+      "RelationWidgetMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "app_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Label"
+          },
+          "field_name": {
+            "title": "Field Name",
+            "type": "string"
+          },
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name"
+          },
+          "multiple": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Multiple"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceFieldIdentity"
+              },
+              {
+                "$ref": "#/components/schemas/ToFieldQuery"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "related_app_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related App Label"
+          },
+          "related_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Model"
+          },
+          "related_model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Model Name"
+          },
+          "related_object_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Object Name"
+          },
+          "related_verbose_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Verbose Name"
+          },
+          "related_verbose_name_plural": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Verbose Name Plural"
+          },
+          "to_field_attname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Field Attname"
+          },
+          "to_field_class": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Field Class"
+          },
+          "to_field_internal_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Field Internal Type"
+          },
+          "to_field_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Field Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "field_name"
+        ],
+        "title": "RelationWidgetMetadata",
+        "type": "object"
+      },
       "ReportNamesActionResult": {
         "properties": {
           "names": {
@@ -5550,6 +6021,42 @@
           "site_url"
         ],
         "title": "SiteContext",
+        "type": "object"
+      },
+      "SourceFieldIdentity": {
+        "additionalProperties": false,
+        "properties": {
+          "app_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "App Label"
+          },
+          "field_name": {
+            "title": "Field Name",
+            "type": "string"
+          },
+          "model_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Name"
+          }
+        },
+        "required": [
+          "field_name"
+        ],
+        "title": "SourceFieldIdentity",
         "type": "object"
       },
       "StockStatusActionData": {
@@ -5969,6 +6476,20 @@
           "data"
         ],
         "title": "TagAdminUpdatePayload",
+        "type": "object"
+      },
+      "ToFieldQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "_to_field": {
+            "title": "To Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "_to_field"
+        ],
+        "title": "ToFieldQuery",
         "type": "object"
       },
       "UserAdminActionPayload": {

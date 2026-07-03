@@ -519,6 +519,27 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     selected_options_schema = field_attrs_props["selected_options"]["anyOf"][0]
     assert selected_options_schema["items"] == {"$ref": "#/components/schemas/SelectedOption"}
     assert components["SelectedOption"]["required"] == ["id", "text"]
+    assert field_attrs_props["autocomplete"]["anyOf"][0] == {"$ref": "#/components/schemas/RelationWidgetMetadata"}
+    assert field_attrs_props["raw_id"]["anyOf"][0] == {"$ref": "#/components/schemas/RelationWidgetMetadata"}
+    assert field_attrs_props["filtered_select"]["anyOf"][0] == {"$ref": "#/components/schemas/FilteredSelectMetadata"}
+    assert field_attrs_props["radio"]["anyOf"][0] == {"$ref": "#/components/schemas/RadioMetadata"}
+    assert field_attrs_props["prepopulated"]["anyOf"][0] == {"$ref": "#/components/schemas/PrepopulatedMetadata"}
+    assert components["RelationWidgetMetadata"]["additionalProperties"] is False
+    assert components["RelationWidgetMetadata"]["properties"]["query"]["anyOf"][:2] == [
+        {"$ref": "#/components/schemas/SourceFieldIdentity"},
+        {"$ref": "#/components/schemas/ToFieldQuery"},
+    ]
+    assert components["ToFieldQuery"]["properties"]["_to_field"]["type"] == "string"
+    assert components["FilteredSelectMetadata"]["properties"]["direction"]["enum"] == ["horizontal", "vertical"]
+    assert components["FilteredSelectMetadata"]["required"] == ["field_name", "direction", "is_stacked"]
+    assert components["RadioMetadata"]["properties"]["orientation"]["anyOf"] == [
+        {"type": "string"},
+        {"type": "integer"},
+    ]
+    assert components["PrepopulatedMetadata"]["properties"]["sources"]["items"] == {
+        "$ref": "#/components/schemas/PrepopulatedSourceMetadata"
+    }
+    assert components["PrepopulatedSourceMetadata"]["required"] == ["field_name"]
     error_examples = components["ErrorResponse"]["examples"]
     assert error_examples[0] == {"errors": [{"param": "name", "message": ["This field is required."]}]}
     assert error_examples[1]["errors"] == [{"param": "non_field_errors", "message": "Permission denied."}]
