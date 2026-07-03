@@ -360,7 +360,6 @@
         "type": "object"
       },
       "CategoryAdminMutationData": {
-        "additionalProperties": true,
         "examples": [
           {
             "id": 1,
@@ -3471,7 +3470,6 @@
         "type": "object"
       },
       "GroupAdminMutationData": {
-        "additionalProperties": true,
         "examples": [
           {
             "id": 1,
@@ -4923,7 +4921,6 @@
         "type": "object"
       },
       "ProductAdminMutationData": {
-        "additionalProperties": true,
         "examples": [
           {
             "category_id": 1,
@@ -6814,7 +6811,6 @@
         "type": "object"
       },
       "TagAdminMutationData": {
-        "additionalProperties": true,
         "examples": [
           {
             "id": 1,
@@ -7282,7 +7278,6 @@
         "type": "object"
       },
       "UserAdminMutationData": {
-        "additionalProperties": true,
         "examples": [
           {
             "date_joined": "2026-07-02T12:00:00+00:00",

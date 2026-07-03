@@ -263,7 +263,7 @@ a required top-level status field:
 `response_add()` and `response_change()` should return the standard typed
 mutation response shape unless they return a `ninja.Status` with a custom
 status/body. The standard shape is serialized through the model admin output
-schema and is typed as:
+schema and does not advertise extra ad hoc fields:
 
 ```json
 {

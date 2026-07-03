@@ -343,7 +343,6 @@ class BaseAdmin:
             data_schema = PydanticCreateModel(
                 f"{self.model.__name__}AdminMutationData",
                 __base__=output_schema,
-                __config__=ConfigDict(extra="allow"),
             )
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminMutationResponse",

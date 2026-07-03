@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Typed action selected IDs, bulk row primary keys, and inline change/delete
   identifiers as reusable JSON scalar OpenAPI components.
+- Removed arbitrary extra fields from the default mutation response data
+  schema; custom response bodies should use declared hook response schemas.
 
 ## 0.1.37 - 2026-07-03
 

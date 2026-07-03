@@ -139,7 +139,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         components["ProductAdminMutationData"]["properties"]["name"]
         == components["ProductAdminOut"]["properties"]["name"]
     )
-    assert components["ProductAdminMutationData"].get("additionalProperties") is True
+    assert "additionalProperties" not in components["ProductAdminMutationData"]
     mutation_response_example = components["ProductAdminMutationResponse"]["examples"][0]
     assert mutation_response_example["data"]["name"] == "example"
     assert mutation_response_example["data"]["photo"]["height"] == 480
