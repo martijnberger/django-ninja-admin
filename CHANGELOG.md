@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Continued the test-suite split by moving file/image clear, upload,
+  multipart, validation, image-dimension, and storage-without-public-URL
+  coverage into `tests/test_file_fields.py`.
+
 ## 0.1.33 - 2026-07-03
 
 ### Changed
