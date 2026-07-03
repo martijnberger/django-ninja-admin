@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.db import models
 from django.forms.models import BaseInlineFormSet
 from django.test import RequestFactory
+from django.test.utils import isolate_apps
 
 from django_ninja_admin import (
     VERTICAL,
@@ -15,6 +16,7 @@ from django_ninja_admin import (
     SimpleListFilter,
     TabularInline,
     action,
+    site,
 )
 from django_ninja_admin.filters import build_filter_spec
 from tests.testapp.models import Category, Product, ProductImage, ProductReview, Tag
@@ -22,6 +24,46 @@ from tests.testapp.models import Category, Product, ProductImage, ProductReview,
 
 def _check_site(admin_site):
     return admin_site.check(app_configs=[django_apps.get_app_config("testapp")])
+
+
+def test_admin_checks_accept_valid_test_admins(db):
+    errors = site.check(app_configs=[django_apps.get_app_config("testapp")])
+
+    assert errors == []
+
+
+def test_admin_checks_report_invalid_model_admin_configuration(db, make_site):
+    class BadInline(TabularInline):
+        model = Category
+
+    class BadProductAdmin(ModelAdmin):
+        list_display = ("missing", "name", "tags")
+        list_display_links = ("name",)
+        list_editable = ("name",)
+        list_filter = ("missing_filter",)
+        search_fields = ("category__missing",)
+        ordering = ("missing_ordering",)
+        date_hierarchy = "name"
+        autocomplete_fields = ("stock_status",)
+        actions = ["missing_action"]
+        inlines = [BadInline]
+
+    admin_site = make_site(Product, BadProductAdmin)
+
+    errors = _check_site(admin_site)
+    error_ids = {error.id for error in errors}
+
+    assert {
+        "django_ninja_admin.E004",
+        "django_ninja_admin.E007",
+        "django_ninja_admin.E019",
+        "django_ninja_admin.E021",
+        "django_ninja_admin.E025",
+        "django_ninja_admin.E029",
+        "django_ninja_admin.E030",
+        "django_ninja_admin.E033",
+        "django_ninja_admin.E043",
+    } <= error_ids
 
 
 def test_admin_checks_reject_empty_list_display(db, make_site):
@@ -889,3 +931,354 @@ def test_admin_checks_validate_prepopulated_fields(db, make_site):
     assert bad_shape_ids == {"django_ninja_admin.E050"}
     assert bad_target_ids == {"django_ninja_admin.E051", "django_ninja_admin.E052"}
     assert bad_source_ids == {"django_ninja_admin.E053", "django_ninja_admin.E054"}
+
+
+def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db, make_site):
+    class MissingFromFieldsProductAdmin(ModelAdmin):
+        list_display = ("name", "stock_status")
+        list_display_links = ("name",)
+        list_editable = ("stock_status",)
+        fields = ("name", "category", "price")
+
+    class ExcludedProductAdmin(ModelAdmin):
+        list_display = ("name", "stock_status")
+        list_display_links = ("name",)
+        list_editable = ("stock_status",)
+        exclude = ("stock_status",)
+
+    class MissingFromFieldsetsProductAdmin(ModelAdmin):
+        list_display = ("name", "stock_status")
+        list_display_links = ("name",)
+        list_editable = ("stock_status",)
+        fieldsets = ((None, {"fields": ("name", "category", "price")}),)
+
+    fields_site = make_site(Product, MissingFromFieldsProductAdmin)
+    exclude_site = make_site(Product, ExcludedProductAdmin)
+    fieldsets_site = make_site(Product, MissingFromFieldsetsProductAdmin)
+
+    fields_errors = _check_site(fields_site)
+    exclude_errors = _check_site(exclude_site)
+    fieldsets_errors = _check_site(fieldsets_site)
+
+    assert "django_ninja_admin.E044" in {error.id for error in fields_errors}
+    assert "django_ninja_admin.E044" in {error.id for error in exclude_errors}
+    assert "django_ninja_admin.E044" in {error.id for error in fieldsets_errors}
+
+
+def test_admin_checks_reject_first_list_editable_without_explicit_display_link(db, make_site):
+    class BadFirstEditableProductAdmin(ModelAdmin):
+        list_display = ("stock_status", "name")
+        list_editable = ("stock_status",)
+
+    class ValidFirstEditableProductAdmin(ModelAdmin):
+        list_display = ("stock_status", "name")
+        list_display_links = ("name",)
+        list_editable = ("stock_status",)
+
+    bad_site = make_site(Product, BadFirstEditableProductAdmin)
+    valid_site = make_site(Product, ValidFirstEditableProductAdmin)
+
+    bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+
+    assert bad_ids == {"django_ninja_admin.E066"}
+    assert valid_ids.isdisjoint({"django_ninja_admin.E007", "django_ninja_admin.E066"})
+
+
+def test_admin_checks_reject_duplicate_list_editable_fields(db, make_site):
+    class DuplicateEditableProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        list_display_links = ("name",)
+        list_editable = ("price", "price")
+
+    admin_site = make_site(Product, DuplicateEditableProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E093"}
+
+
+def test_admin_checks_reject_non_string_list_editable_fields(db, make_site):
+    class BadEditableProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        list_display_links = ("name",)
+        list_editable = (123,)
+
+    admin_site = make_site(Product, BadEditableProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E094"}
+
+
+def test_admin_checks_reject_duplicate_list_display_links(db, make_site):
+    class DuplicateLinksProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        list_display_links = ("name", "name")
+
+    admin_site = make_site(Product, DuplicateLinksProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E079"}
+
+
+def test_admin_checks_reject_non_string_list_display_links(db, make_site):
+    class BadLinksProductAdmin(ModelAdmin):
+        list_display = ("name", "price")
+        list_display_links = (123,)
+
+    admin_site = make_site(Product, BadLinksProductAdmin)
+
+    errors = admin_site.get_model_admin(Product).check()
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E095"}
+
+
+def test_admin_checks_validate_fields_and_exclude_items(db, make_site):
+    class RowFieldsProductAdmin(ModelAdmin):
+        fields = (("name", "price"), "category")
+
+    class BadFieldsProductAdmin(ModelAdmin):
+        fields = ("name", 123)
+
+    class DuplicateFieldsProductAdmin(ModelAdmin):
+        fields = ("name", ("price", "name"))
+
+    class BadExcludeProductAdmin(ModelAdmin):
+        exclude = ("missing", 123)
+
+    class DuplicateExcludeProductAdmin(ModelAdmin):
+        exclude = ("name", "name")
+
+    row_fields_site = make_site(Product, RowFieldsProductAdmin)
+    fields_site = make_site(Product, BadFieldsProductAdmin)
+    duplicate_fields_site = make_site(Product, DuplicateFieldsProductAdmin)
+    exclude_site = make_site(Product, BadExcludeProductAdmin)
+    duplicate_exclude_site = make_site(Product, DuplicateExcludeProductAdmin)
+
+    row_fields_errors = _check_site(row_fields_site)
+    fields_errors = _check_site(fields_site)
+    duplicate_fields_errors = _check_site(duplicate_fields_site)
+    exclude_errors = _check_site(exclude_site)
+    duplicate_exclude_errors = _check_site(duplicate_exclude_site)
+
+    assert row_fields_errors == []
+    assert list(row_fields_site.get_model_admin(Product).get_form_class(None).base_fields) == [
+        "name",
+        "price",
+        "category",
+    ]
+    assert {error.id for error in fields_errors} == {"django_ninja_admin.E048"}
+    assert {error.id for error in duplicate_fields_errors} == {"django_ninja_admin.E065"}
+    assert {error.id for error in exclude_errors} == {"django_ninja_admin.E048", "django_ninja_admin.E049"}
+    assert {error.id for error in duplicate_exclude_errors} == {"django_ninja_admin.E080"}
+
+
+def test_admin_checks_reject_duplicate_readonly_fields(db, make_site):
+    def readonly_summary(obj):
+        return obj.name
+
+    class ValidReadonlyProductAdmin(ModelAdmin):
+        readonly_fields = ("name", readonly_summary)
+
+    class DuplicateNameReadonlyProductAdmin(ModelAdmin):
+        readonly_fields = ("name", "name")
+
+    class DuplicateCallableReadonlyProductAdmin(ModelAdmin):
+        readonly_fields = (readonly_summary, readonly_summary)
+
+    valid_site = make_site(Product, ValidReadonlyProductAdmin)
+    duplicate_name_site = make_site(Product, DuplicateNameReadonlyProductAdmin)
+    duplicate_callable_site = make_site(Product, DuplicateCallableReadonlyProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    duplicate_name_ids = {error.id for error in duplicate_name_site.get_model_admin(Product).check()}
+    duplicate_callable_ids = {error.id for error in duplicate_callable_site.get_model_admin(Product).check()}
+
+    assert "django_ninja_admin.E092" not in valid_ids
+    assert duplicate_name_ids == {"django_ninja_admin.E092"}
+    assert duplicate_callable_ids == {"django_ninja_admin.E092"}
+
+
+def test_admin_checks_validate_fieldsets_shape_and_duplicates(db, make_site):
+    class ValidFieldsetsProductAdmin(ModelAdmin):
+        fieldsets = (
+            (None, {"fields": (("name", "price"), "category")}),
+            ("Advanced", {"fields": ("description",)}),
+        )
+
+    class MissingFieldsOptionProductAdmin(ModelAdmin):
+        fieldsets = ((None, {"classes": ("collapse",)}),)
+
+    class StringFieldsProductAdmin(ModelAdmin):
+        fieldsets = ((None, {"fields": "name"}),)
+
+    class BadFieldItemProductAdmin(ModelAdmin):
+        fieldsets = ((None, {"fields": ("name", 123)}),)
+
+    class DuplicateFieldProductAdmin(ModelAdmin):
+        fieldsets = ((None, {"fields": ("name", ("price", "name"))}),)
+
+    valid_site = make_site(Product, ValidFieldsetsProductAdmin)
+    missing_site = make_site(Product, MissingFieldsOptionProductAdmin)
+    string_site = make_site(Product, StringFieldsProductAdmin)
+    bad_item_site = make_site(Product, BadFieldItemProductAdmin)
+    duplicate_site = make_site(Product, DuplicateFieldProductAdmin)
+
+    assert _check_site(valid_site) == []
+    assert list(valid_site.get_model_admin(Product).get_form_class(None).base_fields) == [
+        "name",
+        "price",
+        "category",
+        "description",
+    ]
+    assert {error.id for error in _check_site(missing_site)} == {"django_ninja_admin.E013"}
+    assert {error.id for error in _check_site(string_site)} == {"django_ninja_admin.E013"}
+    assert {error.id for error in _check_site(bad_item_site)} == {"django_ninja_admin.E013"}
+    assert {error.id for error in _check_site(duplicate_site)} == {"django_ninja_admin.E064"}
+
+
+def test_admin_checks_validate_radio_fields_shape(db, make_site):
+    class BadRadioShapeAdmin(ModelAdmin):
+        radio_fields = ("stock_status",)
+
+    admin_site = make_site(Product, BadRadioShapeAdmin)
+
+    errors = _check_site(admin_site)
+
+    assert {error.id for error in errors} == {"django_ninja_admin.E034"}
+
+
+@isolate_apps("tests.testapp")
+def test_admin_checks_reject_manual_through_many_to_many_widget_modes(db, make_site):
+    class Article(models.Model):
+        title = models.CharField(max_length=100)
+        tags = models.ManyToManyField("ArticleTag", through="ArticleTagging")
+
+        class Meta:
+            app_label = "testapp"
+
+    class ArticleTag(models.Model):
+        name = models.CharField(max_length=100)
+
+        class Meta:
+            app_label = "testapp"
+
+    class ArticleTagging(models.Model):
+        article = models.ForeignKey(Article, on_delete=models.CASCADE)
+        tag = models.ForeignKey(ArticleTag, on_delete=models.CASCADE)
+
+        class Meta:
+            app_label = "testapp"
+
+    class HorizontalArticleAdmin(ModelAdmin):
+        filter_horizontal = ("tags",)
+
+    class VerticalArticleAdmin(ModelAdmin):
+        filter_vertical = ("tags",)
+
+    horizontal_site = make_site(Article, HorizontalArticleAdmin)
+    vertical_site = make_site(Article, VerticalArticleAdmin)
+
+    horizontal_errors = horizontal_site.get_model_admin(Article).check()
+    vertical_errors = vertical_site.get_model_admin(Article).check()
+
+    assert {error.id for error in horizontal_errors} == {"django_ninja_admin.E047"}
+    assert {error.id for error in vertical_errors} == {"django_ninja_admin.E047"}
+
+
+@isolate_apps("tests.testapp")
+def test_admin_checks_reject_manual_through_many_to_many_form_layouts(db, make_site):
+    class ArticleTag(models.Model):
+        name = models.CharField(max_length=20)
+
+        class Meta:
+            app_label = "testapp"
+
+    class Article(models.Model):
+        title = models.CharField(max_length=20)
+        tags = models.ManyToManyField(ArticleTag, through="ArticleTagging")
+
+        class Meta:
+            app_label = "testapp"
+
+    class ArticleTagging(models.Model):
+        article = models.ForeignKey(Article, on_delete=models.CASCADE)
+        tag = models.ForeignKey(ArticleTag, on_delete=models.CASCADE)
+
+        class Meta:
+            app_label = "testapp"
+
+    class FieldsArticleAdmin(ModelAdmin):
+        fields = ("title", "tags")
+
+    class FieldsetsArticleAdmin(ModelAdmin):
+        fieldsets = ((None, {"fields": ("title", "tags")}),)
+
+    fields_site = make_site(Article, FieldsArticleAdmin)
+    fieldsets_site = make_site(Article, FieldsetsArticleAdmin)
+
+    fields_errors = fields_site.get_model_admin(Article).check()
+    fieldsets_errors = fieldsets_site.get_model_admin(Article).check()
+
+    assert {error.id for error in fields_errors} == {"django_ninja_admin.E078"}
+    assert {error.id for error in fieldsets_errors} == {"django_ninja_admin.E078"}
+
+
+def test_admin_checks_validate_schema_field_overrides(db, make_site):
+    class ValidSchemaOverrideProductAdmin(ModelAdmin):
+        schema_field_overrides = {"custom_note": (str, None), "score": (int,)}
+
+    class BadMappingSchemaOverrideProductAdmin(ModelAdmin):
+        schema_field_overrides = [("custom_note", str)]
+
+    class BadKeySchemaOverrideProductAdmin(ModelAdmin):
+        schema_field_overrides = {123: str}
+
+    class BadTupleSchemaOverrideProductAdmin(ModelAdmin):
+        schema_field_overrides = {"custom_note": (str, None, "extra")}
+
+    valid_site = make_site(Product, ValidSchemaOverrideProductAdmin)
+    bad_mapping_site = make_site(Product, BadMappingSchemaOverrideProductAdmin)
+    bad_key_site = make_site(Product, BadKeySchemaOverrideProductAdmin)
+    bad_tuple_site = make_site(Product, BadTupleSchemaOverrideProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_mapping_ids = {error.id for error in bad_mapping_site.get_model_admin(Product).check()}
+    bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
+    bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint({"django_ninja_admin.E098", "django_ninja_admin.E099", "django_ninja_admin.E100"})
+    assert bad_mapping_ids == {"django_ninja_admin.E098"}
+    assert bad_key_ids == {"django_ninja_admin.E099"}
+    assert bad_tuple_ids == {"django_ninja_admin.E100"}
+
+
+def test_admin_checks_validate_form_schema_field_overrides(db, make_site):
+    class ValidFormSchemaOverrideProductAdmin(ModelAdmin):
+        form_schema_field_overrides = {"metadata": dict[str, int], "score": (int,)}
+
+    class BadMappingFormSchemaOverrideProductAdmin(ModelAdmin):
+        form_schema_field_overrides = [("metadata", dict[str, int])]
+
+    class BadKeyFormSchemaOverrideProductAdmin(ModelAdmin):
+        form_schema_field_overrides = {123: str}
+
+    class BadTupleFormSchemaOverrideProductAdmin(ModelAdmin):
+        form_schema_field_overrides = {"metadata": (dict[str, int], None, "extra")}
+
+    valid_site = make_site(Product, ValidFormSchemaOverrideProductAdmin)
+    bad_mapping_site = make_site(Product, BadMappingFormSchemaOverrideProductAdmin)
+    bad_key_site = make_site(Product, BadKeyFormSchemaOverrideProductAdmin)
+    bad_tuple_site = make_site(Product, BadTupleFormSchemaOverrideProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_mapping_ids = {error.id for error in bad_mapping_site.get_model_admin(Product).check()}
+    bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
+    bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint({"django_ninja_admin.E101", "django_ninja_admin.E102", "django_ninja_admin.E103"})
+    assert bad_mapping_ids == {"django_ninja_admin.E101"}
+    assert bad_key_ids == {"django_ninja_admin.E102"}
+    assert bad_tuple_ids == {"django_ninja_admin.E103"}

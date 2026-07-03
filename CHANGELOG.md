@@ -18,6 +18,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Expanded the admin-check test split to cover custom form classes,
   formfield overrides, reverse relation widget fields, autocomplete target
   registration/searchability, and prepopulated-field validation.
+- Completed the admin-check test extraction so all `test_admin_checks*` cases
+  now live in `tests/test_checks.py`, including list-editable, form layout,
+  manual-through many-to-many, and schema override validation.
 
 ## 0.1.28 - 2026-07-03
 
