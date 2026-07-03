@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.28 - 2026-07-03
+
 ### Changed
 
 - Expanded the package typecheck gate to cover changelist and list-filter
