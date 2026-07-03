@@ -6479,6 +6479,61 @@ def test_history_filters_object_level_permissions(admin_client, sample, monkeypa
     assert hidden_response.json()["results"] == []
 
 
+def test_history_object_level_permissions_are_page_scoped(admin_client, sample, monkeypatch):
+    actor = get_user_model().objects.create_user("history-page-actor", password="pw", is_staff=True)
+    product_admin = site.get_model_admin(Product)
+    product_ct = ContentType.objects.get_for_model(Product, for_concrete_model=False)
+    products = [
+        Product.objects.create(
+            name=f"History page {index}",
+            category=sample.category,
+            price="5.00",
+        )
+        for index in range(5)
+    ]
+    now = timezone.now()
+    for index, product in enumerate(products):
+        LogEntry.objects.create(
+            user=actor,
+            content_type=product_ct,
+            object_id=str(product.pk),
+            object_repr=str(product),
+            action_flag=CHANGE,
+            action_time=now + timedelta(seconds=index),
+            change_message=json.dumps([{"changed": {"fields": ["Name"]}}]),
+        )
+    objects_by_id = {str(product.pk): product for product in products}
+    fetched_object_ids = []
+
+    def has_object_permission(request, obj=None):
+        return True
+
+    def get_object(request, object_id, from_field=None):
+        fetched_object_ids.append(str(object_id))
+        if len(fetched_object_ids) > 2:
+            pytest.fail("history fetched more objects than the requested page")
+        return objects_by_id[str(object_id)]
+
+    monkeypatch.setattr(product_admin, "has_view_permission", has_object_permission)
+    monkeypatch.setattr(product_admin, "has_change_permission", has_object_permission)
+    monkeypatch.setattr(product_admin, "get_object", get_object)
+
+    response = admin_client.get("/admin-api/history", {"app_label": "testapp", "model": "product", "per_page": 2})
+
+    assert response.status_code == 200
+    assert len(response.json()["results"]) == 2
+    assert len(fetched_object_ids) == 2
+    assert response.json()["pagination"] == {
+        "count": 2,
+        "num_pages": 1,
+        "page": 1,
+        "per_page": 2,
+        "has_next": False,
+        "has_previous": False,
+        "more": False,
+    }
+
+
 def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, sample):
     user = get_user_model().objects.create_user("widget-admin", password="pw", is_staff=True)
     user.user_permissions.set(Permission.objects.all())
@@ -8409,6 +8464,44 @@ def test_autocomplete_filters_object_level_view_permissions(admin_client, sample
     assert response.json()["results"] == [{"id": str(sample.category_id), "text": "Cameras"}]
     assert response.json()["pagination"] == {
         "count": 1,
+        "num_pages": 1,
+        "page": 1,
+        "per_page": 20,
+        "has_next": False,
+        "has_previous": False,
+        "more": False,
+    }
+
+
+def test_autocomplete_object_level_permissions_are_page_scoped(admin_client, sample, monkeypatch):
+    category_admin = site.get_model_admin(Category)
+    Category.objects.bulk_create(Category(name=f"Paged Category {index:02d}") for index in range(25))
+    checked_object_ids = []
+
+    def has_view_permission(request, obj=None):
+        if obj is not None:
+            checked_object_ids.append(obj.pk)
+            if len(checked_object_ids) > 20:
+                pytest.fail("autocomplete checked more objects than the requested page")
+        return True
+
+    monkeypatch.setattr(category_admin, "has_view_permission", has_view_permission)
+
+    response = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "category",
+            "term": "Paged",
+        },
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()["results"]) == 20
+    assert len(checked_object_ids) == 20
+    assert response.json()["pagination"] == {
+        "count": 20,
         "num_pages": 1,
         "page": 1,
         "per_page": 20,

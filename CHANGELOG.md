@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Bounded history and autocomplete object-level permission filtering to the
+  current database page, avoiding full-queryset materialization when custom
+  object permission hooks are present.
+
 ## 0.1.26 - 2026-07-03
 
 - Removed rendered Django `BoundField`/widget internals from
