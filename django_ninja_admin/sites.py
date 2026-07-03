@@ -1568,7 +1568,7 @@ class NinjaAdminSite:
         try:
             model._meta.get_field(field)
             return True
-        except Exception:
+        except FieldDoesNotExist:
             return False
 
     def _filter_descriptions(self, request, model_admin):
@@ -1578,7 +1578,7 @@ class NinjaAdminSite:
                 continue
             try:
                 field = model_admin.model._meta.get_field(field_name)
-            except Exception:
+            except FieldDoesNotExist:
                 continue
             current = request.GET.get(field_name)
             values = (
@@ -1707,7 +1707,7 @@ class NinjaAdminSite:
         elif hasattr(field.widget, "decompress"):
             try:
                 values = field.widget.decompress(value)
-            except Exception:
+            except (AttributeError, TypeError, ValueError):
                 values = None
         if values is None:
             return

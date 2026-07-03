@@ -1,7 +1,7 @@
 import copy
 from base64 import b64encode
 from datetime import date, datetime, time, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from math import ceil, floor
 from typing import Annotated, Any, ClassVar, Literal, cast, get_args, get_origin
 from uuid import UUID
@@ -37,6 +37,8 @@ from pydantic import (
     TypeAdapter,
     create_model,
 )
+from pydantic_core import SchemaError
+from pydantic_core import ValidationError as PydanticCoreValidationError
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
@@ -617,7 +619,7 @@ class BaseAdmin:
             if callable(limit_value):
                 try:
                     limit_value = limit_value()
-                except Exception:
+                except (TypeError, ValueError):
                     continue
             if isinstance(validator, MinValueValidator):
                 constraints["ge"] = max(
@@ -637,7 +639,7 @@ class BaseAdmin:
             return True
         try:
             return Decimal(str(offset)) == 0
-        except Exception:
+        except (InvalidOperation, TypeError, ValueError):
             return False
 
     def pydantic_step_value(self, field, value):
@@ -666,7 +668,7 @@ class BaseAdmin:
             if callable(limit_value):
                 try:
                     limit_value = limit_value()
-                except Exception:
+                except (TypeError, ValueError):
                     continue
             if limit_value is None:
                 continue
@@ -699,7 +701,7 @@ class BaseAdmin:
     def pydantic_pattern_is_supported(self, pattern):
         try:
             TypeAdapter(Annotated[str, Field(pattern=pattern)])
-        except Exception:
+        except SchemaError:
             return False
         return True
 
@@ -1008,7 +1010,7 @@ class BaseAdmin:
         for candidate in candidates:
             try:
                 adapter.validate_python(candidate)
-            except Exception:
+            except PydanticCoreValidationError:
                 continue
             return candidate
         return candidates[0]
@@ -1180,7 +1182,7 @@ class BaseAdmin:
             if callable(limit_value):
                 try:
                     limit_value = limit_value()
-                except Exception:
+                except (TypeError, ValueError):
                     continue
             if isinstance(validator, MinValueValidator):
                 bound = self.pydantic_numeric_bound_value(field, limit_value)
@@ -1198,7 +1200,7 @@ class BaseAdmin:
         if callable(limit_value):
             try:
                 limit_value = limit_value()
-            except Exception:
+            except (TypeError, ValueError):
                 return {}
         return {"multiple_of": self.pydantic_step_value(field, limit_value)}
 
@@ -1210,7 +1212,7 @@ class BaseAdmin:
             if callable(limit_value):
                 try:
                     limit_value = limit_value()
-                except Exception:
+                except (TypeError, ValueError):
                     continue
             if limit_value is None:
                 continue

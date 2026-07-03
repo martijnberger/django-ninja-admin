@@ -1,6 +1,8 @@
 from django.contrib.admin.utils import NestedObjects
 from django.db import router
 
+from django_ninja_admin.exceptions import NotRegistered
+
 
 def get_deleted_objects(objs, request, admin_site):
     using = router.db_for_write(objs[0]._meta.model if objs else None)
@@ -13,7 +15,7 @@ def get_deleted_objects(objs, request, admin_site):
         model_count[f"{opts.app_label}.{opts.model_name}"] = len(instances)
         try:
             model_admin = admin_site.get_model_admin(model)
-        except Exception:
+        except NotRegistered:
             continue
         if not model_admin.has_delete_permission(request) or any(
             not model_admin.has_delete_permission(request, obj) for obj in instances

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import datetime
 
-from django.core.exceptions import FieldDoesNotExist, ImproperlyConfigured
+from django.core.exceptions import FieldDoesNotExist, FieldError, ImproperlyConfigured
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
+
+from django_ninja_admin.exceptions import NotRegistered
 
 NULL_BOOLEAN_FIELD = getattr(models, "NullBooleanField", None)
 BOOLEAN_FIELD_TYPES = (
@@ -314,7 +316,7 @@ class RelatedFieldListFilter(FieldListFilter):
             ordering = related_admin.get_ordering(self.request)
             if ordering:
                 queryset = queryset.order_by(*ordering)
-        except Exception:
+        except (FieldError, NotRegistered):
             queryset = queryset.order_by(related_model._meta.pk.name)
         return queryset
 

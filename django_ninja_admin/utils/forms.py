@@ -43,7 +43,7 @@ def image_value_metadata(value):
     for dimension in ("width", "height"):
         try:
             metadata[dimension] = getattr(value, dimension)
-        except Exception:
+        except (AttributeError, OSError, ValueError):
             metadata[dimension] = None
     return metadata
 
@@ -265,7 +265,7 @@ def _validator_limit_value(validator):
     if callable(value):
         try:
             return value()
-        except Exception:
+        except (TypeError, ValueError):
             return None
     return value
 

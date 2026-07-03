@@ -7,8 +7,14 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.34 - 2026-07-03
+
 ### Changed
 
+- Narrowed safe metadata and schema exception handlers so deletion collection,
+  related filters, form metadata, multivalue decompression, validator
+  introspection, and Pydantic schema probes catch expected exception types
+  instead of broad `Exception`.
 - Continued the test-suite split by moving file/image clear, upload,
   multipart, validation, image-dimension, and storage-without-public-URL
   coverage into `tests/test_file_fields.py`.
