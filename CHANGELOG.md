@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.26 - 2026-07-03
+
 - Removed rendered Django `BoundField`/widget internals from
   `FieldDescription.attrs` and the `FieldAttributes` OpenAPI component,
   keeping semantic field metadata while dropping generated HTML names, IDs,
