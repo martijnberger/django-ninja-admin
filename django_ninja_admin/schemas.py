@@ -520,7 +520,7 @@ class FieldAttributes(Schema):
     db_index: bool | None = None
     attname: str | None = None
     column: str | None = None
-    default: Any = None
+    default: FieldMetadataValue = None
     upload_to: str | None = None
     image: bool | None = None
     width_field: str | None = None
@@ -534,18 +534,18 @@ class FieldAttributes(Schema):
     choice_options: list[ChoiceOption] | None = None
     choice_coerce: str | None = None
     choice_groups: list[ChoiceGroup] | None = None
-    combo_fields: list[dict[str, Any]] | None = None
+    combo_fields: list["ComboFieldMetadata"] | None = None
 
-    initial: Any = None
-    value: Any = None
+    initial: FieldMetadataValue = None
+    value: FieldMetadataValue = None
     max_length: int | None = None
     min_length: int | None = None
     strip: bool | None = None
-    empty_value: Any = None
-    min_value: Any = None
-    max_value: Any = None
-    step_size: Any = None
-    step_offset: Any = None
+    empty_value: FieldMetadataValue = None
+    min_value: FieldMetadataValue = None
+    max_value: FieldMetadataValue = None
+    step_size: FieldMetadataValue = None
+    step_offset: FieldMetadataValue = None
     max_digits: int | None = None
     decimal_places: int | None = None
     null_boolean: bool | None = None
@@ -583,6 +583,17 @@ class FieldAttributes(Schema):
     radio: RadioMetadata | None = None
     prepopulated_from: list[str] | None = None
     prepopulated: PrepopulatedMetadata | None = None
+
+
+class ComboFieldMetadata(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    index: int
+    type: str
+    attrs: FieldAttributes
+
+
+FieldAttributes.model_rebuild(_types_namespace={"ComboFieldMetadata": ComboFieldMetadata})
 
 
 class FieldDescription(Schema):

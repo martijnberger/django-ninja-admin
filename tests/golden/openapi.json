@@ -1338,6 +1338,29 @@
         "title": "Column",
         "type": "object"
       },
+      "ComboFieldMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "$ref": "#/components/schemas/FieldAttributes"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attrs",
+          "index",
+          "type"
+        ],
+        "title": "ComboFieldMetadata",
+        "type": "object"
+      },
       "CsrfTokenResponse": {
         "properties": {
           "csrf_token": {
@@ -1874,8 +1897,7 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": true,
-                  "type": "object"
+                  "$ref": "#/components/schemas/ComboFieldMetadata"
                 },
                 "type": "array"
               },
@@ -1922,7 +1944,11 @@
             "title": "Decimal Places"
           },
           "default": {
-            "title": "Default"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "disabled": {
             "anyOf": [
@@ -1958,7 +1984,11 @@
             "title": "Empty Label"
           },
           "empty_value": {
-            "title": "Empty Value"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "empty_value_display": {
             "anyOf": [
@@ -2040,7 +2070,11 @@
             "title": "Image"
           },
           "initial": {
-            "title": "Initial"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "initial_text": {
             "anyOf": [
@@ -2205,7 +2239,11 @@
             "title": "Max Length"
           },
           "max_value": {
-            "title": "Max Value"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "min_length": {
             "anyOf": [
@@ -2219,7 +2257,11 @@
             "title": "Min Length"
           },
           "min_value": {
-            "title": "Min Value"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "model_field_class": {
             "anyOf": [
@@ -2502,10 +2544,18 @@
             "title": "Selected Options"
           },
           "step_offset": {
-            "title": "Step Offset"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "step_size": {
-            "title": "Step Size"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "strip": {
             "anyOf": [
@@ -2649,7 +2699,11 @@
             "title": "Validators"
           },
           "value": {
-            "title": "Value"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "widget": {
             "anyOf": [

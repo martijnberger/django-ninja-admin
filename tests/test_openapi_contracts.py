@@ -514,6 +514,17 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert field_attrs_props["required"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
     assert field_attrs_props["ordering_field"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert field_attrs_props["max_length"]["anyOf"] == [{"type": "integer"}, {"type": "null"}]
+    for metadata_value_field in (
+        "default",
+        "initial",
+        "value",
+        "empty_value",
+        "min_value",
+        "max_value",
+        "step_size",
+        "step_offset",
+    ):
+        assert field_attrs_props[metadata_value_field]["allOf"] == [{"$ref": "#/components/schemas/FieldMetadataValue"}]
     assert {"$ref": "#/components/schemas/FileFieldValue"} in field_attrs_props["current_file"]["anyOf"]
     assert {"$ref": "#/components/schemas/ImageFieldValue"} in field_attrs_props["current_file"]["anyOf"]
     assert field_attrs_props["choices"]["anyOf"][0]["items"] == {"$ref": "#/components/schemas/ChoicePair"}
@@ -533,6 +544,10 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["ChoiceGroup"]["additionalProperties"] is False
     assert components["ChoiceGroup"]["required"] == ["options"]
     assert components["ChoiceGroup"]["properties"]["options"]["items"] == {"$ref": "#/components/schemas/ChoiceOption"}
+    assert field_attrs_props["combo_fields"]["anyOf"][0]["items"] == {"$ref": "#/components/schemas/ComboFieldMetadata"}
+    assert components["ComboFieldMetadata"]["additionalProperties"] is False
+    assert set(components["ComboFieldMetadata"]["required"]) == {"attrs", "index", "type"}
+    assert components["ComboFieldMetadata"]["properties"]["attrs"] == {"$ref": "#/components/schemas/FieldAttributes"}
     assert {"type": "string"} in components["FieldMetadataValue"]["anyOf"]
     assert {"type": "null"} in components["FieldMetadataValue"]["anyOf"]
     assert field_attrs_props["validator_details"]["anyOf"][0]["items"] == {
