@@ -12,6 +12,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Expanded the admin-check test split to cover inline formset validation,
   parent foreign-key exclusions, relation-path list-display checks, and action
   permission-hook validation.
+- Expanded the admin-check test split to cover widget-option conflicts,
+  related loading, sorting, pagination, boolean, ordering, facet, date
+  hierarchy, expression ordering, and field-filter validation cases.
 
 ## 0.1.28 - 2026-07-03
 
