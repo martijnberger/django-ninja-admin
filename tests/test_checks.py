@@ -17,7 +17,7 @@ from django_ninja_admin import (
     action,
 )
 from django_ninja_admin.filters import build_filter_spec
-from tests.testapp.models import Product, ProductImage, Tag
+from tests.testapp.models import Category, Product, ProductImage, ProductReview, Tag
 
 
 def _check_site(admin_site):
@@ -692,3 +692,200 @@ def test_admin_checks_validate_field_based_list_filter_classes(db, make_site):
     request = RequestFactory().get("/")
     with pytest.raises(ImproperlyConfigured, match="must subclass FieldListFilter"):
         build_filter_spec(("description", TupleSimpleFilter), request, request.GET, Product, model_admin)
+
+
+def test_admin_checks_validate_form_class(db, make_site):
+    class ProductAdminForm(forms.ModelForm):
+        class Meta:
+            model = Product
+            fields = ("name", "category", "price", "stock_status")
+
+    class ProductImageAdminForm(forms.ModelForm):
+        class Meta:
+            model = ProductImage
+            fields = ("title",)
+
+    class CategoryAdminForm(forms.ModelForm):
+        class Meta:
+            model = Category
+            fields = ("name",)
+
+    class PlainForm(forms.Form):
+        name = forms.CharField()
+
+    class ValidFormProductAdmin(ModelAdmin):
+        form_class = ProductAdminForm
+
+    class PlainFormProductAdmin(ModelAdmin):
+        form_class = PlainForm
+
+    class WrongModelFormProductAdmin(ModelAdmin):
+        form_class = CategoryAdminForm
+
+    class ValidFormInline(TabularInline):
+        model = ProductImage
+        form_class = ProductImageAdminForm
+
+    class PlainFormInline(TabularInline):
+        model = ProductImage
+        form_class = PlainForm
+
+    class WrongModelFormInline(TabularInline):
+        model = ProductImage
+        form_class = ProductAdminForm
+
+    valid_site = make_site(Product, ValidFormProductAdmin)
+    plain_site = make_site(Product, PlainFormProductAdmin)
+    wrong_model_site = make_site(Product, WrongModelFormProductAdmin)
+    valid_inline_site = make_site(Product, inlines=[ValidFormInline])
+    plain_inline_site = make_site(Product, inlines=[PlainFormInline])
+    wrong_model_inline_site = make_site(Product, inlines=[WrongModelFormInline])
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    plain_ids = {error.id for error in plain_site.get_model_admin(Product).check()}
+    wrong_model_ids = {error.id for error in wrong_model_site.get_model_admin(Product).check()}
+    valid_inline_ids = {error.id for error in valid_inline_site.get_model_admin(Product).check()}
+    plain_inline_ids = {error.id for error in plain_inline_site.get_model_admin(Product).check()}
+    wrong_model_inline_ids = {error.id for error in wrong_model_inline_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint({"django_ninja_admin.E058", "django_ninja_admin.E059"})
+    assert plain_ids == {"django_ninja_admin.E058"}
+    assert wrong_model_ids == {"django_ninja_admin.E059"}
+    assert valid_inline_ids.isdisjoint({"django_ninja_admin.E058", "django_ninja_admin.E059"})
+    assert plain_inline_ids == {"django_ninja_admin.E058"}
+    assert wrong_model_inline_ids == {"django_ninja_admin.E059"}
+
+
+def test_admin_checks_validate_formfield_overrides(db, make_site):
+    class ValidOverrideProductAdmin(ModelAdmin):
+        formfield_overrides = {models.TextField: {"help_text": "Custom help."}}
+
+    class BadShapeProductAdmin(ModelAdmin):
+        formfield_overrides = [(models.TextField, {"help_text": "Custom help."})]
+
+    class BadFieldKeyProductAdmin(ModelAdmin):
+        formfield_overrides = {"description": {"help_text": "Custom help."}}
+
+    class BadOverrideValueProductAdmin(ModelAdmin):
+        formfield_overrides = {models.TextField: ["help_text", "Custom help."]}
+
+    class BadOverrideKeyProductAdmin(ModelAdmin):
+        formfield_overrides = {models.TextField: {123: "Custom help."}}
+
+    valid_site = make_site(Product, ValidOverrideProductAdmin)
+    bad_shape_site = make_site(Product, BadShapeProductAdmin)
+    bad_field_key_site = make_site(Product, BadFieldKeyProductAdmin)
+    bad_override_value_site = make_site(Product, BadOverrideValueProductAdmin)
+    bad_override_key_site = make_site(Product, BadOverrideKeyProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
+    bad_field_key_ids = {error.id for error in bad_field_key_site.get_model_admin(Product).check()}
+    bad_override_value_ids = {error.id for error in bad_override_value_site.get_model_admin(Product).check()}
+    bad_override_key_ids = {error.id for error in bad_override_key_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint(
+        {
+            "django_ninja_admin.E060",
+            "django_ninja_admin.E061",
+            "django_ninja_admin.E062",
+            "django_ninja_admin.E063",
+        }
+    )
+    assert bad_shape_ids == {"django_ninja_admin.E060"}
+    assert bad_field_key_ids == {"django_ninja_admin.E061"}
+    assert bad_override_value_ids == {"django_ninja_admin.E062"}
+    assert bad_override_key_ids == {"django_ninja_admin.E063"}
+
+
+def test_admin_checks_reject_reverse_relation_widget_fields(db, make_site):
+    class ReviewAdmin(ModelAdmin):
+        search_fields = ("note",)
+
+    class ReverseAutocompleteProductAdmin(ModelAdmin):
+        autocomplete_fields = ("reviews",)
+
+    class ReverseRawIdProductAdmin(ModelAdmin):
+        raw_id_fields = ("reviews",)
+
+    autocomplete_site = make_site(Product, ReverseAutocompleteProductAdmin)
+    autocomplete_site.register(ProductReview, ReviewAdmin)
+    raw_id_site = make_site(Product, ReverseRawIdProductAdmin)
+
+    autocomplete_errors = autocomplete_site.get_model_admin(Product).check()
+    raw_id_errors = raw_id_site.get_model_admin(Product).check()
+
+    assert {error.id for error in autocomplete_errors} == {"django_ninja_admin.E025"}
+    assert {error.id for error in raw_id_errors} == {"django_ninja_admin.E025"}
+
+
+def test_admin_checks_require_registered_searchable_autocomplete_targets(db, make_site):
+    class ProductAutocompleteAdmin(ModelAdmin):
+        autocomplete_fields = ("category",)
+
+    unregistered_site = make_site(Product, ProductAutocompleteAdmin)
+
+    class UnsearchableCategoryAdmin(ModelAdmin):
+        pass
+
+    unsearchable_site = make_site(Product, ProductAutocompleteAdmin)
+    unsearchable_site.register(Category, UnsearchableCategoryAdmin)
+
+    class SearchableCategoryAdmin(ModelAdmin):
+        search_fields = ("name",)
+
+    valid_site = make_site(Product, ProductAutocompleteAdmin)
+    valid_site.register(Category, SearchableCategoryAdmin)
+
+    unregistered_errors = unregistered_site.get_model_admin(Product).check()
+    unsearchable_errors = unsearchable_site.get_model_admin(Product).check()
+    valid_errors = valid_site.get_model_admin(Product).check()
+
+    assert {error.id for error in unregistered_errors} == {"django_ninja_admin.E026"}
+    assert {error.id for error in unsearchable_errors} == {"django_ninja_admin.E027"}
+    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E026", "django_ninja_admin.E027"})
+
+
+def test_admin_checks_validate_prepopulated_fields(db, make_site):
+    class ValidPrepopulatedProductAdmin(ModelAdmin):
+        prepopulated_fields = {"description": ("name",)}
+
+    class BadShapeProductAdmin(ModelAdmin):
+        prepopulated_fields = [("description", ("name",))]
+
+    class BadTargetProductAdmin(ModelAdmin):
+        prepopulated_fields = {
+            123: ("name",),
+            "missing": ("name",),
+            "category": ("name",),
+            "created_at": ("name",),
+        }
+
+    class BadSourceProductAdmin(ModelAdmin):
+        prepopulated_fields = {
+            "description": "name",
+            "name": (123, "missing"),
+        }
+
+    valid_site = make_site(Product, ValidPrepopulatedProductAdmin)
+    bad_shape_site = make_site(Product, BadShapeProductAdmin)
+    bad_target_site = make_site(Product, BadTargetProductAdmin)
+    bad_source_site = make_site(Product, BadSourceProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
+    bad_target_ids = {error.id for error in bad_target_site.get_model_admin(Product).check()}
+    bad_source_ids = {error.id for error in bad_source_site.get_model_admin(Product).check()}
+
+    assert valid_ids.isdisjoint(
+        {
+            "django_ninja_admin.E050",
+            "django_ninja_admin.E051",
+            "django_ninja_admin.E052",
+            "django_ninja_admin.E053",
+            "django_ninja_admin.E054",
+        }
+    )
+    assert bad_shape_ids == {"django_ninja_admin.E050"}
+    assert bad_target_ids == {"django_ninja_admin.E051", "django_ninja_admin.E052"}
+    assert bad_source_ids == {"django_ninja_admin.E053", "django_ninja_admin.E054"}

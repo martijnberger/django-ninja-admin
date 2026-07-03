@@ -15,6 +15,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Expanded the admin-check test split to cover widget-option conflicts,
   related loading, sorting, pagination, boolean, ordering, facet, date
   hierarchy, expression ordering, and field-filter validation cases.
+- Expanded the admin-check test split to cover custom form classes,
+  formfield overrides, reverse relation widget fields, autocomplete target
+  registration/searchability, and prepopulated-field validation.
 
 ## 0.1.28 - 2026-07-03
 
