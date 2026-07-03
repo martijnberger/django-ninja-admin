@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.32 - 2026-07-03
+
 ### Changed
 
 - Continued the test-suite split by moving site registration, autodiscover
