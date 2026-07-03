@@ -2697,9 +2697,9 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     columns_by_field = {column["field"]: column for column in show_all_body["columns"]}
     assert columns_by_field["has_description"]["boolean"] is True
     assert columns_by_field["tagline"]["empty_value_display"] == "No description"
-    assert columns_by_field["is_expensive"]["headerName"] == "Expensive"
+    assert columns_by_field["is_expensive"]["header_name"] == "Expensive"
     assert columns_by_field["is_expensive"]["boolean"] is True
-    assert columns_by_field["subtitle"]["headerName"] == "Subtitle"
+    assert columns_by_field["subtitle"]["header_name"] == "Subtitle"
     assert columns_by_field["subtitle"]["empty_value_display"] == "No subtitle"
     rows_by_name = {row["cells"]["name"]: row for row in show_all_body["rows"]}
     assert [row["index"] for row in show_all_body["rows"]] == [0, 1, 2]
@@ -2707,7 +2707,7 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     alpha_name_cell = rows_by_name["Alpha"]["cell_metadata"]["name"]
     assert alpha_name_cell == {
         "field": "name",
-        "headerName": "Name",
+        "header_name": "Name",
         "value": "Alpha",
         "display_value": "Alpha",
         "empty": False,
@@ -2784,7 +2784,7 @@ def test_changelist_supports_callable_list_display(admin_client, sample, monkeyp
     assert "django_ninja_admin.E057" not in error_ids
     body = response.json()
     stock_column = next(column for column in body["columns"] if column["field"] == "stock_badge")
-    assert stock_column["headerName"] == "Stock badge"
+    assert stock_column["header_name"] == "Stock badge"
     assert stock_column["boolean"] is True
     assert stock_column["sortable"] is True
     assert stock_column["ordering_field"] == "stock_status"
@@ -2807,7 +2807,7 @@ def test_changelist_supports_relation_path_list_display(admin_client, sample, mo
     assert response.status_code == 200
     body = response.json()
     category_column = next(column for column in body["columns"] if column["field"] == "category__name")
-    assert category_column["headerName"] == "Name"
+    assert category_column["header_name"] == "Name"
     assert category_column["sortable"] is True
     assert category_column["ordering_field"] == "category__name"
     assert category_column["ordering_index"] == "2"

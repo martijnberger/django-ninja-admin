@@ -1299,7 +1299,7 @@ class NinjaAdminSite:
         columns = [
             {
                 "field": field_name_for_display(field),
-                "headerName": label_for_field(field, model_admin.model, model_admin),
+                "header_name": label_for_field(field, model_admin.model, model_admin),
                 "display_link": self._display_field_in(field, changelist.list_display_links or ()),
                 **display_metadata_for_field(field, model_admin.model, model_admin),
                 "sortable": field in changelist.ordering_field_columns,
@@ -1327,7 +1327,7 @@ class NinjaAdminSite:
                 column = columns_by_field[field_key]
                 cell_metadata[field_key] = {
                     "field": field_key,
-                    "headerName": column["headerName"],
+                    "header_name": column["header_name"],
                     "value": value,
                     "display_value": display_value,
                     "empty": is_empty,

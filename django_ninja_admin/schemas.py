@@ -368,7 +368,7 @@ class FormResponse(Schema):
 
 class Column(Schema):
     field: str
-    headerName: str
+    header_name: str
     display_link: bool = False
     boolean: bool = False
     empty_value_display: str | None = None
@@ -385,7 +385,7 @@ class Column(Schema):
 
 class CellMetadata(Schema):
     field: str
-    headerName: str
+    header_name: str
     value: Any = None
     display_value: Any = None
     empty: bool = False

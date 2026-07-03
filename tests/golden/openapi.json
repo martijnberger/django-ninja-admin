@@ -615,8 +615,8 @@
             "title": "Field",
             "type": "string"
           },
-          "headerName": {
-            "title": "Headername",
+          "header_name": {
+            "title": "Header Name",
             "type": "string"
           },
           "ordering_field": {
@@ -641,7 +641,7 @@
         },
         "required": [
           "field",
-          "headerName"
+          "header_name"
         ],
         "title": "CellMetadata",
         "type": "object"
@@ -1156,8 +1156,8 @@
             "title": "Field",
             "type": "string"
           },
-          "headerName": {
-            "title": "Headername",
+          "header_name": {
+            "title": "Header Name",
             "type": "string"
           },
           "ordering_field": {
@@ -1217,7 +1217,7 @@
         },
         "required": [
           "field",
-          "headerName"
+          "header_name"
         ],
         "title": "Column",
         "type": "object"
