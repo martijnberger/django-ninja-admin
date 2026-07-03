@@ -80,8 +80,12 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
         {"app_label": "testapp", "model": "product", "object_id": str(sample.pk), "action_flag": ADDITION},
     )
     assert filtered.status_code == 200
-    assert [item["id"] for item in filtered.json()["results"]] == [product_addition.pk]
-    assert filtered.json()["results"][0]["change_message_text"] == "Added."
+    filtered_item = filtered.json()["results"][0]
+    assert filtered_item["id"] == product_addition.pk
+    assert filtered_item["user_id"] == actor.pk
+    assert filtered_item["content_type_id"] == product_ct.pk
+    assert filtered_item["change_message"] == [{"added": {}}]
+    assert filtered_item["change_message_text"] == "Added."
 
     forbidden = client.get("/admin-api/history", {"app_label": "testapp", "model": "category"})
     assert forbidden.status_code == 403

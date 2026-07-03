@@ -846,10 +846,10 @@ class NinjaAdminSite:
                 )
                 results.append(
                     {
-                        "id": item.pk,
+                        "id": _jsonish_value(item.pk),
                         "action_time": item.action_time,
-                        "user_id": item.user_id,
-                        "content_type_id": item.content_type_id,
+                        "user_id": _jsonish_value(item.user_id),
+                        "content_type_id": _jsonish_value(item.content_type_id),
                         "model": f"{opts.app_label}.{opts.model_name}" if opts is not None else None,
                         "app_label": opts.app_label if opts is not None else None,
                         "model_name": opts.model_name if opts is not None else None,
@@ -859,7 +859,7 @@ class NinjaAdminSite:
                         "object_repr": item.object_repr,
                         **object_links,
                         "action_flag": item.action_flag,
-                        "change_message": message,
+                        "change_message": _jsonish_value(message),
                         "change_message_text": item.get_change_message(),
                     }
                 )
@@ -1454,7 +1454,7 @@ class NinjaAdminSite:
             list_editing_total_form_count = formset.total_form_count()
             list_editing_initial_form_count = formset.initial_form_count()
             for index, obj in enumerate(changelist.result_list):
-                object_id = changelist.object_id_for(obj)
+                object_id = _jsonish_value(changelist.object_id_for(obj))
                 form = form_class(instance=obj, prefix=f"{formset.prefix}-{index}")
                 field_descriptions = model_admin.get_changelist_form_fields_description(request, obj, form=form)
                 editable_fields = [field for field in field_descriptions if field["name"] in model_admin.list_editable]

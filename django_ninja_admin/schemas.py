@@ -842,7 +842,7 @@ class ChangelistConfig(Schema):
 
 class ListEditingRow(Schema):
     index: int
-    pk: Any
+    pk: FieldMetadataValue
     pk_name: str
     form_prefix: str | None = None
     empty_permitted: bool = False
@@ -863,10 +863,10 @@ class ChangelistResponse(Schema):
 
 
 class HistoryItem(Schema):
-    id: Any
+    id: FieldMetadataValue
     action_time: datetime
-    user_id: Any
-    content_type_id: Any = None
+    user_id: FieldMetadataValue
+    content_type_id: FieldMetadataValue = None
     model: str | None = None
     app_label: str | None = None
     model_name: str | None = None
@@ -877,7 +877,7 @@ class HistoryItem(Schema):
     detail_url: str | None = None
     change_form_url: str | None = None
     action_flag: int
-    change_message: Any
+    change_message: FieldMetadataValue
     change_message_text: str
 
 

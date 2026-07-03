@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.37 - 2026-07-03
+
 ### Changed
 
 - Typed validator detail, widget-attribute, subwidget, input-format, and
@@ -17,6 +19,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   OpenAPI fields.
 - Typed form and inline prepopulated-field maps plus form radio-field
   orientation maps.
+- Typed list-editing row primary keys and history item identifiers/change
+  messages as JSON-compatible OpenAPI fields.
 
 ## 0.1.36 - 2026-07-03
 

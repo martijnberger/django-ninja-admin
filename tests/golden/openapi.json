@@ -3723,14 +3723,18 @@
             "title": "Change Form Url"
           },
           "change_message": {
-            "title": "Change Message"
+            "$ref": "#/components/schemas/FieldMetadataValue"
           },
           "change_message_text": {
             "title": "Change Message Text",
             "type": "string"
           },
           "content_type_id": {
-            "title": "Content Type Id"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "detail_url": {
             "anyOf": [
@@ -3744,7 +3748,7 @@
             "title": "Detail Url"
           },
           "id": {
-            "title": "Id"
+            "$ref": "#/components/schemas/FieldMetadataValue"
           },
           "model": {
             "anyOf": [
@@ -3806,7 +3810,7 @@
             "type": "string"
           },
           "user_id": {
-            "title": "User Id"
+            "$ref": "#/components/schemas/FieldMetadataValue"
           }
         },
         "required": [
@@ -4190,7 +4194,7 @@
             "type": "integer"
           },
           "pk": {
-            "title": "Pk"
+            "$ref": "#/components/schemas/FieldMetadataValue"
           },
           "pk_name": {
             "title": "Pk Name",
