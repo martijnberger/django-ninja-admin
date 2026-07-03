@@ -1,11 +1,8 @@
 import json
 import re
 from collections.abc import Sequence
-from decimal import Decimal
 from functools import wraps
-from types import UnionType
-from typing import Any, Literal, Union, cast, get_args, get_origin
-from uuid import UUID
+from typing import Any, cast
 from weakref import WeakSet
 
 from asgiref.sync import async_to_sync
@@ -85,6 +82,7 @@ from django_ninja_admin.utils.lookup import (
     lookup_field,
 )
 from django_ninja_admin.utils.quote import quote, unquote
+from django_ninja_admin.utils.schema_examples import json_example_value, pydantic_model_example
 
 all_sites = WeakSet()
 DEFAULT_AUTH = object()
@@ -1938,42 +1936,10 @@ class NinjaAdminSite:
         return "example"
 
     def _pydantic_model_example(self, schema):
-        return {
-            name: self._annotation_example_value(field.annotation)
-            for name, field in schema.model_fields.items()
-            if field.is_required()
-        }
-
-    def _annotation_example_value(self, annotation):
-        origin = get_origin(annotation)
-        args = get_args(annotation)
-        if origin is Literal:
-            return self._json_example_value(args[0]) if args else "example"
-        if origin in {Union, UnionType} and args:
-            return self._annotation_example_value(next((arg for arg in args if arg is not type(None)), args[0]))
-        if origin in {list, set, tuple, frozenset}:
-            return [self._annotation_example_value(args[0])] if args else ["example"]
-        if origin is dict:
-            value_type = args[1] if len(args) > 1 else str
-            return {"key": self._annotation_example_value(value_type)}
-        if annotation is bool:
-            return True
-        if annotation is int:
-            return 1
-        if annotation is float:
-            return 1.5
-        if annotation is Decimal:
-            return "1.00"
-        if annotation is UUID:
-            return "550e8400-e29b-41d4-a716-446655440000"
-        return "example"
+        return pydantic_model_example(schema)
 
     def _json_example_value(self, value):
-        if isinstance(value, Decimal | UUID):
-            return str(value)
-        if isinstance(value, str | int | float | bool) or value is None:
-            return value
-        return str(value)
+        return json_example_value(value)
 
     def _multipart_openapi_extra(self, payload_schema, file_fields, *, required_data, required_file_fields=()):
         properties = {

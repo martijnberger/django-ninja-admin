@@ -2,8 +2,7 @@ import copy
 from base64 import b64encode
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
-from math import ceil, floor
-from typing import Annotated, Any, ClassVar, Literal, cast, get_args, get_origin
+from typing import Annotated, Any, ClassVar, Literal, cast
 from uuid import UUID
 
 from django import forms
@@ -38,7 +37,6 @@ from pydantic import (
     create_model,
 )
 from pydantic_core import SchemaError
-from pydantic_core import ValidationError as PydanticCoreValidationError
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
@@ -51,6 +49,7 @@ from django_ninja_admin.utils.forms import (
     image_value_metadata,
 )
 from django_ninja_admin.utils.lookup import field_name_for_display
+from django_ninja_admin.utils.schema_examples import schema_example, schema_type_example
 
 AdminJsonValue = dict[str, Any] | list[Any] | str | int | float | bool | None
 PydanticCreateModel = cast(Any, create_model)
@@ -385,7 +384,7 @@ class BaseAdmin:
         return cache[cache_key]
 
     def _schema_example(self, schema):
-        return (schema.model_json_schema().get("examples") or [{}])[0]
+        return schema_example(schema)
 
     def _form_data_example(self, form_fields, *, selected_fields=None, partial=False, overrides=None):
         data = {}
@@ -945,151 +944,7 @@ class BaseAdmin:
         return "example"
 
     def _schema_type_example(self, field_type, default):
-        if default is not None and default is not ...:
-            return default
-        origin = get_origin(field_type)
-        args = get_args(field_type)
-        if origin is Annotated and args:
-            return self._annotated_schema_type_example(field_type, args[0], args[1:])
-        if origin is Literal and args:
-            return args[0]
-        if origin in {list, set}:
-            return [self._schema_type_example(args[0] if args else str, None)]
-        if origin is tuple:
-            if len(args) == 2 and args[1] is Ellipsis:
-                return [self._schema_type_example(args[0], None)]
-            return [self._schema_type_example(arg, None) for arg in args]
-        if origin in {dict}:
-            value_type = args[1] if len(args) > 1 else Any
-            return {"example": self._schema_type_example(value_type, None)}
-        if args:
-            non_null_args = [arg for arg in args if arg is not type(None)]
-            if non_null_args:
-                return self._schema_type_example(non_null_args[0], None)
-        if field_type is str:
-            return "example"
-        if field_type is int:
-            return 1
-        if field_type is float:
-            return 1.5
-        if field_type is bool:
-            return True
-        if field_type is Decimal:
-            return "9.99"
-        if field_type is UUID:
-            return "00000000-0000-4000-8000-000000000000"
-        if field_type is date:
-            return "2026-07-02"
-        if field_type is datetime:
-            return "2026-07-02T12:00:00+00:00"
-        if field_type is time:
-            return "12:00:00"
-        if field_type is timedelta:
-            return "01:00:00"
-        if field_type is AnyUrl:
-            return "https://example.com/"
-        if field_type is IPvAnyAddress:
-            return "192.0.2.1"
-        if field_type is FileFieldValue:
-            return {"name": "files/example.dat", "url": "/media/files/example.dat"}
-        if field_type is ImageFieldValue:
-            return {
-                "name": "images/example.png",
-                "url": "/media/images/example.png",
-                "width": 640,
-                "height": 480,
-            }
-        return "example"
-
-    def _annotated_schema_type_example(self, field_type, base_type, metadata):
-        candidates = [
-            self._schema_type_example(base_type, None),
-            *self._constraint_example_candidates(base_type, metadata),
-        ]
-        adapter = TypeAdapter(field_type)
-        for candidate in candidates:
-            try:
-                adapter.validate_python(candidate)
-            except PydanticCoreValidationError:
-                continue
-            return candidate
-        return candidates[0]
-
-    def _constraint_example_candidates(self, base_type, metadata):
-        constraints = self._constraint_metadata(metadata)
-        origin = get_origin(base_type)
-        args = get_args(base_type)
-        if base_type is str:
-            min_length = constraints.get("min_length")
-            max_length = constraints.get("max_length")
-            length = min_length if min_length is not None else 1
-            if max_length is not None:
-                length = min(length, max_length)
-            return ["x" * max(0, length)]
-        if base_type is int:
-            return self._integer_constraint_candidates(constraints)
-        if base_type is float:
-            return self._float_constraint_candidates(constraints)
-        if base_type is Decimal:
-            return self._decimal_constraint_candidates(constraints)
-        if origin in {list, set}:
-            min_length = constraints.get("min_length") or 1
-            item_example = self._schema_type_example(args[0] if args else str, None)
-            return [[item_example for _ in range(min_length)]]
-        return []
-
-    def _constraint_metadata(self, metadata):
-        constraints = {}
-        for item in metadata:
-            for nested in getattr(item, "metadata", ()):
-                constraints.update(self._constraint_metadata((nested,)))
-            for name in ("ge", "gt", "le", "lt", "min_length", "max_length"):
-                value = getattr(item, name, None)
-                if value is not None:
-                    constraints[name] = value
-        return constraints
-
-    def _integer_constraint_candidates(self, constraints):
-        candidates = []
-        if "ge" in constraints:
-            candidates.append(ceil(constraints["ge"]))
-        if "gt" in constraints:
-            candidates.append(floor(constraints["gt"]) + 1)
-        if "le" in constraints:
-            candidates.append(floor(constraints["le"]))
-        if "lt" in constraints:
-            candidates.append(ceil(constraints["lt"]) - 1)
-        return candidates
-
-    def _float_constraint_candidates(self, constraints):
-        return self._ordered_numeric_constraint_candidates(constraints, float, 0.5)
-
-    def _decimal_constraint_candidates(self, constraints):
-        return [
-            str(candidate)
-            for candidate in self._ordered_numeric_constraint_candidates(
-                constraints,
-                Decimal,
-                Decimal("0.01"),
-            )
-        ]
-
-    def _ordered_numeric_constraint_candidates(self, constraints, coerce, exclusive_step):
-        lower = None
-        upper = None
-        if "ge" in constraints:
-            lower = coerce(constraints["ge"])
-        if "gt" in constraints:
-            lower = coerce(constraints["gt"]) + exclusive_step
-        if "le" in constraints:
-            upper = coerce(constraints["le"])
-        if "lt" in constraints:
-            upper = coerce(constraints["lt"]) - exclusive_step
-        candidates = []
-        if lower is not None and upper is not None:
-            candidates.append((lower + upper) / 2)
-        candidates.extend(candidate for candidate in (lower, upper) if candidate is not None)
-        return candidates
+        return schema_type_example(field_type, default)
 
     def get_output_schema(self, request=None):
         if self.output_schema is not None:
