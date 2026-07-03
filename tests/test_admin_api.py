@@ -241,9 +241,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert partial_payload_example["inlines"]["testapp.productimage"]["delete"] == [2]
     mutation_response_schema = components["ProductAdminMutationResponse"]
     assert mutation_response_schema["required"] == ["data"]
-    mutation_data_options = mutation_response_schema["properties"]["data"]["anyOf"]
-    assert {"$ref": "#/components/schemas/ProductAdminMutationData"} in mutation_data_options
-    assert any(option.get("type") == "object" for option in mutation_data_options)
+    assert mutation_response_schema["properties"]["data"] == {"$ref": "#/components/schemas/ProductAdminMutationData"}
     assert (
         components["ProductAdminMutationData"]["properties"]["name"]
         == components["ProductAdminOut"]["properties"]["name"]
@@ -256,24 +254,12 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert schema_body["paths"]["/admin-api/testapp/product"]["post"]["responses"]["201"]["content"][
         "application/json"
     ]["schema"] == {"$ref": "#/components/schemas/ProductAdminMutationResponse"}
-    create_accepted_schema = schema_body["paths"]["/admin-api/testapp/product"]["post"]["responses"]["202"]["content"][
-        "application/json"
-    ]["schema"]
-    assert create_accepted_schema["type"] == "object"
-    assert create_accepted_schema["additionalProperties"] is True
+    assert "202" not in schema_body["paths"]["/admin-api/testapp/product"]["post"]["responses"]
     assert schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["patch"]["responses"]["200"]["content"][
         "application/json"
     ]["schema"] == {"$ref": "#/components/schemas/ProductAdminMutationResponse"}
-    update_accepted_schema = schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["patch"]["responses"][
-        "202"
-    ]["content"]["application/json"]["schema"]
-    assert update_accepted_schema["type"] == "object"
-    assert update_accepted_schema["additionalProperties"] is True
-    delete_accepted_schema = schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["delete"]["responses"][
-        "202"
-    ]["content"]["application/json"]["schema"]
-    assert delete_accepted_schema["type"] == "object"
-    assert delete_accepted_schema["additionalProperties"] is True
+    assert "202" not in schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["patch"]["responses"]
+    assert "202" not in schema_body["paths"]["/admin-api/testapp/product/{object_id}"]["delete"]["responses"]
     assert set(components["ProductAdminCreateData"]["required"]) == {"name", "category", "price", "stock_status"}
     assert "required" not in components["ProductAdminPartialUpdateData"]
     assert components["ProductAdminCreateData"]["properties"]["category"] == {
@@ -1021,11 +1007,10 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         assert statuses <= set(operation["responses"])
         for status in statuses:
             assert _response_schema_ref(operation, status) == "#/components/schemas/ErrorResponse"
-    delete_success_schema = paths["/admin-api/testapp/product/{object_id}"]["delete"]["responses"]["200"]["content"][
-        "application/json"
-    ]["schema"]
-    assert delete_success_schema["type"] == "object"
-    assert delete_success_schema["additionalProperties"] is True
+    delete_responses = paths["/admin-api/testapp/product/{object_id}"]["delete"]["responses"]
+    assert "200" not in delete_responses
+    assert "202" not in delete_responses
+    assert "content" not in delete_responses["204"]
 
 
 def _request_schema_ref(operation):
@@ -3725,9 +3710,12 @@ def test_context_uses_site_customization_and_permission_hook(admin_client):
 def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, sample):
     schema = admin_client.get("/custom-form-admin/openapi.json").json()
     create_data_schema = schema["components"]["schemas"]["ProductAdminCreateData"]
+    delete_operation = schema["paths"]["/custom-form-admin/testapp/product/{object_id}"]["delete"]
 
     assert "manual" not in create_data_schema["properties"]
     assert set(create_data_schema["required"]) == {"name", "category", "price", "stock_status"}
+    assert _response_schema_ref(delete_operation, "200") == "#/components/schemas/ProductDeleteHookResponse"
+    assert _response_schema_ref(delete_operation, "202") == "#/components/schemas/ProductDeleteHookResponse"
 
     form = admin_client.get("/custom-form-admin/testapp/product/form")
     assert form.status_code == 200
@@ -3785,7 +3773,6 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
     hooked_tag = Tag.objects.get(name="Hooked")
     assert created_body["data"]["name"] == "Allowed"
     assert created_body["data"]["description"] == "Created through custom form [add:save_form] [add:save_model]"
-    assert created_body["data"]["response_hook"] == "add"
     assert set(created_body["data"]["tags"]) == {*tag_ids, hooked_tag.pk}
     assert set(Product.objects.get(pk=created_id).tags.values_list("pk", flat=True)) == {*tag_ids, hooked_tag.pk}
 
@@ -3797,7 +3784,6 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
     assert changed.status_code == 200
     changed_body = changed.json()
     assert changed_body["data"]["description"] == "Changed through custom form [change:save_form] [change:save_model]"
-    assert changed_body["data"]["response_hook"] == "change"
     assert set(changed_body["data"]["tags"]) == {*tag_ids, hooked_tag.pk}
     assert Product.objects.get(pk=created_id).description == (
         "Changed through custom form [change:save_form] [change:save_model]"
@@ -3829,24 +3815,25 @@ def test_custom_form_class_drives_schema_metadata_and_validation(admin_client, s
     assert not Product.objects.filter(pk=bulk_product.pk).exists()
 
 
-def test_response_hooks_can_return_custom_status(admin_client, sample, monkeypatch):
-    product_admin = site.get_model_admin(Product)
-
-    def response_add(request, obj, form, inline_results):
-        return Status(202, {"hook": "add", "id": obj.pk, "name": obj.name})
-
-    def response_change(request, obj, form, inline_results):
-        return Status(202, {"hook": "change", "id": obj.pk, "description": obj.description})
-
-    def response_delete(request, obj_display, obj_id):
-        return Status(202, {"hook": "delete", "id": obj_id, "display": obj_display})
-
-    monkeypatch.setattr(product_admin, "response_add", response_add)
-    monkeypatch.setattr(product_admin, "response_change", response_change)
-    monkeypatch.setattr(product_admin, "response_delete", response_delete)
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_response_hooks_can_return_custom_status(admin_client, sample):
+    schema = admin_client.get("/status-hook-admin/openapi.json").json()
+    paths = schema["paths"]
+    assert (
+        _response_schema_ref(paths["/status-hook-admin/testapp/product"]["post"], "202")
+        == "#/components/schemas/ProductAddHookResponse"
+    )
+    assert (
+        _response_schema_ref(paths["/status-hook-admin/testapp/product/{object_id}"]["patch"], "202")
+        == "#/components/schemas/ProductChangeHookResponse"
+    )
+    assert (
+        _response_schema_ref(paths["/status-hook-admin/testapp/product/{object_id}"]["delete"], "202")
+        == "#/components/schemas/ProductDeleteStatusHookResponse"
+    )
 
     created = admin_client.post(
-        "/admin-api/testapp/product",
+        "/status-hook-admin/testapp/product",
         data={
             "data": {
                 "name": "Status Hook",
@@ -3865,7 +3852,7 @@ def test_response_hooks_can_return_custom_status(admin_client, sample, monkeypat
     assert Product.objects.filter(pk=created_id, name="Status Hook").exists()
 
     changed = admin_client.patch(
-        f"/admin-api/testapp/product/{created_id}",
+        f"/status-hook-admin/testapp/product/{created_id}",
         data={"data": {"description": "Custom status response"}},
         content_type="application/json",
     )
@@ -3878,7 +3865,7 @@ def test_response_hooks_can_return_custom_status(admin_client, sample, monkeypat
     }
     assert Product.objects.get(pk=created_id).description == "Custom status response"
 
-    deleted = admin_client.delete(f"/admin-api/testapp/product/{created_id}")
+    deleted = admin_client.delete(f"/status-hook-admin/testapp/product/{created_id}")
 
     assert deleted.status_code == 202
     assert deleted.json() == {"hook": "delete", "id": str(created_id), "display": "Status Hook"}

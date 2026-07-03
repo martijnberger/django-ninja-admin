@@ -2,7 +2,7 @@ from django import forms
 from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.urls import path
-from ninja import Status
+from ninja import Schema, Status
 
 from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline
 from tests.testapp.models import Category, Product, ProductImage, Tag
@@ -39,10 +39,35 @@ class ProductAdminForm(forms.ModelForm):
         return name
 
 
+class ProductDeleteHookResponse(Schema):
+    deleted_id: str
+    deleted_display: str
+    response_hook: str
+
+
+class ProductAddHookResponse(Schema):
+    hook: str
+    id: int
+    name: str
+
+
+class ProductChangeHookResponse(Schema):
+    hook: str
+    id: int
+    description: str
+
+
+class ProductDeleteStatusHookResponse(Schema):
+    hook: str
+    id: str
+    display: str
+
+
 class CustomFormProductAdmin(ModelAdmin):
     form_class = ProductAdminForm
     filter_horizontal = ("tags",)
     ordering = ("name",)
+    response_delete_schema = ProductDeleteHookResponse
 
     def save_form(self, request, form, change):
         obj = super().save_form(request, form, change)
@@ -87,6 +112,26 @@ custom_form_site = NinjaAdminSite(name="custom_form_admin", include_auth=False)
 custom_form_site.register(Category, ModelAdmin)
 custom_form_site.register(Tag, ModelAdmin)
 custom_form_site.register(Product, CustomFormProductAdmin)
+
+
+class StatusHookProductAdmin(ModelAdmin):
+    response_add_schema = ProductAddHookResponse
+    response_change_schema = ProductChangeHookResponse
+    response_delete_schema = ProductDeleteStatusHookResponse
+
+    def response_add(self, request, obj, form, inline_results):
+        return Status(202, {"hook": "add", "id": obj.pk, "name": obj.name})
+
+    def response_change(self, request, obj, form, inline_results):
+        return Status(202, {"hook": "change", "id": obj.pk, "description": obj.description})
+
+    def response_delete(self, request, obj_display, obj_id):
+        return Status(202, {"hook": "delete", "id": obj_id, "display": obj_display})
+
+
+status_hook_site = NinjaAdminSite(name="status_hook_admin", include_auth=False)
+status_hook_site.register(Category, ModelAdmin)
+status_hook_site.register(Product, StatusHookProductAdmin)
 
 
 class FormfieldHookProductAdmin(ModelAdmin):
@@ -338,6 +383,7 @@ inline_multivalue_site.register(Product, InlineMultiValueProductAdmin)
 
 urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
+    path("status-hook-admin/", status_hook_site.urls),
     path("custom-formfield-admin/", custom_formfield_site.urls),
     path("split-datetime-admin/", split_datetime_site.urls),
     path("multi-value-admin/", multi_value_site.urls),

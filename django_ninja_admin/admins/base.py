@@ -312,7 +312,7 @@ class BaseAdmin:
                         ]
                     }
                 ),
-                data=(dict[str, Any] | data_schema, ...),
+                data=(data_schema, ...),
                 inlines=(dict[str, Any] | None, None),
             )
             self._mutation_response_schema_cache = cache

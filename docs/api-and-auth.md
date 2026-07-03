@@ -249,6 +249,53 @@ a required top-level status field:
 }
 ```
 
+`response_add()` and `response_change()` should return the standard typed
+mutation response shape unless they return a `ninja.Status` with a custom
+status/body. The standard shape is serialized through the model admin output
+schema and is typed as:
+
+```json
+{
+  "data": {
+    "id": 1,
+    "name": "Tripod"
+  },
+  "inlines": null
+}
+```
+
+For custom `Status(...)` bodies, declare response schemas so OpenAPI can stay
+typed:
+
+```python
+from ninja import Schema, Status
+
+
+class DeleteHookResponse(Schema):
+    deleted_id: str
+    deleted_display: str
+    response_hook: str
+
+
+class ProductAdmin(ModelAdmin):
+    response_delete_schema = DeleteHookResponse
+
+    def response_delete(self, request, obj_display, obj_id):
+        return Status(
+            200,
+            {
+                "deleted_id": obj_id,
+                "deleted_display": obj_display,
+                "response_hook": "delete",
+            },
+        )
+```
+
+The same pattern is available as `response_add_schema` and
+`response_change_schema`. A schema value is advertised for the conventional
+custom hook statuses (`200`/`202` for add and delete, `201`/`202` for change).
+Use a status-to-schema mapping when a hook needs different schemas per status.
+
 ## Permissions Metadata
 
 `GET /permissions` returns the current user's site-level permission state plus

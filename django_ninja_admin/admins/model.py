@@ -51,6 +51,9 @@ class ModelAdmin(BaseAdmin):
     actions_on_top = True
     actions_on_bottom = False
     actions_selection_counter = True
+    response_add_schema: ClassVar[Any] = None
+    response_change_schema: ClassVar[Any] = None
+    response_delete_schema: ClassVar[Any] = None
 
     changelist_options: ClassVar[list[str]] = [
         "actions_on_top",
@@ -550,8 +553,14 @@ class ModelAdmin(BaseAdmin):
     def response_add(self, request, obj, form, inline_results):
         return {"data": self.serialize_object(obj, request), "inlines": self._public_inline_results(inline_results)}
 
+    def get_response_add_schema(self, request=None):
+        return self.response_add_schema
+
     def response_change(self, request, obj, form, inline_results):
         return {"data": self.serialize_object(obj, request), "inlines": self._public_inline_results(inline_results)}
+
+    def get_response_change_schema(self, request=None):
+        return self.response_change_schema
 
     def _public_inline_results(self, inline_results):
         if not inline_results:
@@ -573,6 +582,9 @@ class ModelAdmin(BaseAdmin):
 
     def response_delete(self, request, obj_display, obj_id):
         return None
+
+    def get_response_delete_schema(self, request=None):
+        return self.response_delete_schema
 
     def response_action(self, request, queryset, payload):
         payload = self._action_payload_value(payload)

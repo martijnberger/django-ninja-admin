@@ -12,6 +12,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
   keeping semantic field metadata while dropping generated HTML names, IDs,
   ARIA/rendered attrs, widget template names, rendered option groups, rendered
   subwidgets, hidden-initial widgets, and clear-checkbox HTML identifiers.
+- Added `response_add_schema`, `response_change_schema`, and
+  `response_delete_schema` hooks for custom mutation/delete `Status(...)`
+  responses, and stopped advertising generic 200/202 objects for default model
+  mutation routes.
 
 ## 0.1.25 - 2026-07-03
 

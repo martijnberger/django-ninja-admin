@@ -432,6 +432,13 @@ class NinjaAdminSite:
             response_map[status_code] = ErrorResponse
         return response_map
 
+    def _custom_hook_responses(self, schema, statuses):
+        if schema is None:
+            return {}
+        if isinstance(schema, dict):
+            return schema
+        return dict.fromkeys(statuses, schema)
+
     def _auth_error_responses(self, *, include_forbidden=False):
         if self.auth is None:
             return {}
@@ -954,6 +961,9 @@ class NinjaAdminSite:
         bulk_response_schema = model_admin.get_bulk_response_schema(None)
         action_payload_schema = model_admin.get_action_payload_schema(None)
         action_response_schema = model_admin.get_action_response_schema(None)
+        add_hook_responses = site._custom_hook_responses(model_admin.get_response_add_schema(None), (200, 202))
+        change_hook_responses = site._custom_hook_responses(model_admin.get_response_change_schema(None), (201, 202))
+        delete_hook_responses = site._custom_hook_responses(model_admin.get_response_delete_schema(None), (200, 202))
         action_response = {
             200: action_response_schema,
             202: dict[str, Any],
@@ -968,9 +978,8 @@ class NinjaAdminSite:
         create_required_file_fields = site._required_file_form_field_names(model_admin, change=False)
         change_file_fields = site._file_form_field_names(model_admin, change=True)
         create_response = {
-            200: dict[str, Any],
             201: mutation_response_schema,
-            202: dict[str, Any],
+            **add_hook_responses,
             204: None,
             **auth_errors,
             400: ErrorResponse,
@@ -979,8 +988,7 @@ class NinjaAdminSite:
         }
         change_response = {
             200: mutation_response_schema,
-            201: dict[str, Any],
-            202: dict[str, Any],
+            **change_hook_responses,
             204: None,
             **auth_errors,
             400: ErrorResponse,
@@ -1256,8 +1264,7 @@ class NinjaAdminSite:
         @router.delete(
             f"{prefix}/{{object_id}}",
             response={
-                200: dict[str, Any],
-                202: dict[str, Any],
+                **delete_hook_responses,
                 204: None,
                 **auth_errors,
                 400: ErrorResponse,
