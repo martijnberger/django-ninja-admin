@@ -14,7 +14,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `DeletedObject` OpenAPI components instead of unconstrained message and
   deleted-object item schemas.
 - Expanded the package typecheck gate to cover action/decorator/app config and
-  auth-admin modules, including dynamic admin metadata helpers.
+  auth-admin/log-model modules, including dynamic admin metadata helpers and
+  Django model descriptor casts.
 
 ## 0.1.26 - 2026-07-03
 

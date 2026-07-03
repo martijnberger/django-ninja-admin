@@ -1,5 +1,5 @@
 import json
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -98,11 +98,12 @@ class LogEntry(models.Model):
         return self.action_flag == DELETION
 
     def get_change_message(self):
-        if self.change_message and self.change_message[0] == "[":
+        change_message_value = cast(str, self.change_message)
+        if change_message_value and change_message_value[0] == "[":
             try:
-                change_message = json.loads(self.change_message)
+                change_message = json.loads(change_message_value)
             except json.JSONDecodeError:
-                return self.change_message
+                return change_message_value
             messages = []
             for sub_message in change_message:
                 if "added" in sub_message:
@@ -130,16 +131,19 @@ class LogEntry(models.Model):
                     messages.append(gettext("Deleted {name} \u201c{object}\u201d.").format(**sub_message["deleted"]))
             change_message = " ".join(message[0].upper() + message[1:] for message in messages)
             return change_message or gettext("No fields changed.")
-        return self.change_message
+        return change_message_value
 
     def get_edited_object(self):
-        return self.content_type.get_object_for_this_type(pk=self.object_id)
+        content_type = cast(ContentType, self.content_type)
+        return content_type.get_object_for_this_type(pk=self.object_id)
 
     def get_admin_url(self):
-        if self.content_type and self.object_id:
-            url_name = f"admin:{self.content_type.app_label}_{self.content_type.model}_change"
+        content_type = cast(ContentType | None, self.content_type)
+        object_id = cast(Any, self.object_id)
+        if content_type and object_id:
+            url_name = f"admin:{content_type.app_label}_{content_type.model}_change"
             try:
-                return reverse(url_name, args=(quote(self.object_id),))
+                return reverse(url_name, args=(quote(object_id),))
             except NoReverseMatch:
                 return None
         return None
