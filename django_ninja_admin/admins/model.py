@@ -1,7 +1,7 @@
 import re
 from functools import reduce, wraps
 from operator import or_
-from typing import Annotated, Any, ClassVar, Literal
+from typing import Annotated, Any, ClassVar, Literal, cast
 
 from django.apps import apps
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
@@ -26,6 +26,7 @@ from django_ninja_admin.utils.deletion import get_deleted_objects
 
 HORIZONTAL, VERTICAL = 1, 2
 DEFAULT_ROUTE_AUTH = object()
+PydanticCreateModel = cast(Any, create_model)
 
 
 class ModelAdmin(BaseAdmin):
@@ -78,7 +79,7 @@ class ModelAdmin(BaseAdmin):
         self.model = model
         self.opts = model._meta
         self.admin_site = admin_site
-        self.paginator = self.paginator or admin_site.paginator
+        self.paginator = cast(Any, self.paginator or admin_site.paginator)
 
     def __repr__(self):
         return f"<{self.__class__.__qualname__}: model={self.model.__qualname__} site={self.admin_site!r}>"
@@ -168,7 +169,7 @@ class ModelAdmin(BaseAdmin):
                     inline_schema | None,
                     Field(default=None, alias=inline_id),
                 )
-            cache[cache_key] = create_model(
+            cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminInlinePayload",
                 __base__=AdminInlinePayloadSchema,
                 __config__=ConfigDict(
@@ -194,7 +195,7 @@ class ModelAdmin(BaseAdmin):
         if cache_key not in cache:
             operation = "PartialUpdate" if partial else "Update" if change else "Create"
             inline_example = self._inline_payload_example_for_mutation(inline_payload_schema, change=change)
-            cache[cache_key] = create_model(
+            cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}Admin{operation}Payload",
                 __base__=Schema,
                 __config__=ConfigDict(
@@ -403,7 +404,7 @@ class ModelAdmin(BaseAdmin):
 
     def _action_payload_root_schema(self, variants):
         if not variants:
-            return create_model(
+            return PydanticCreateModel(
                 f"{self.model.__name__}AdminActionPayload",
                 __base__=Schema,
                 action=(str, ...),
@@ -431,7 +432,7 @@ class ModelAdmin(BaseAdmin):
             fields["data"] = (None, None)
         else:
             fields["data"] = (input_schema, ...)
-        return create_model(
+        return PydanticCreateModel(
             f"{self.model.__name__}Admin{self._schema_name_part(name)}ActionPayload",
             __base__=Schema,
             **fields,

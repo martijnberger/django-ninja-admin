@@ -14,6 +14,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Expanded the package typecheck gate to cover site/route registration logic,
   including typed app-list dictionaries, auth callables, Ninja query metadata,
   and Pydantic payload extraction.
+- Expanded the package typecheck gate to cover inline and model admin modules,
+  including dynamic Pydantic payload schemas and inline model metadata.
 
 ## 0.1.27 - 2026-07-03
 

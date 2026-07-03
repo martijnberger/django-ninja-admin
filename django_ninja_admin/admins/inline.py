@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from django import forms
 from django.contrib.auth import get_permission_codename
@@ -10,6 +10,8 @@ from django_ninja_admin.admins.base import BaseAdmin
 from django_ninja_admin.exceptions import AdminValidationError
 from django_ninja_admin.schemas import AdminInlineOperationsSchema, AdminInlineRowSchema
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
+
+PydanticCreateModel = cast(Any, create_model)
 
 
 class InlineModelAdmin(BaseAdmin):
@@ -28,8 +30,9 @@ class InlineModelAdmin(BaseAdmin):
     def __init__(self, parent_model, admin_site):
         self.admin_site = admin_site
         self.parent_model = parent_model
-        self.opts = self.model._meta
-        self.has_registered_model = admin_site.is_registered(self.model)
+        model = cast(Any, self.model)
+        self.opts = model._meta
+        self.has_registered_model = admin_site.is_registered(model)
         if self.verbose_name_plural is None:
             if self.verbose_name is None:
                 self.verbose_name_plural = self.opts.verbose_name_plural
@@ -65,7 +68,8 @@ class InlineModelAdmin(BaseAdmin):
         return value
 
     def _raise_count_option_error(self, option, message):
-        inline_id = f"{self.model._meta.app_label}.{self.model._meta.model_name}"
+        model = cast(Any, self.model)
+        inline_id = f"{model._meta.app_label}.{model._meta.model_name}"
         raise AdminValidationError([{"message": message, "param": f"inlines.{inline_id}.{option}"}])
 
     def get_queryset(self, request):
@@ -121,6 +125,7 @@ class InlineModelAdmin(BaseAdmin):
             require_pk,
         )
         if cache_key not in cache:
+            model = cast(Any, self.model)
             fields = {}
             if require_pk:
                 fields["pk"] = (Any, ...)
@@ -137,8 +142,8 @@ class InlineModelAdmin(BaseAdmin):
             )
             if require_pk:
                 example = {"pk": 1, **example}
-            cache[cache_key] = create_model(
-                f"{self.model.__name__}Inline{operation}Row",
+            cache[cache_key] = PydanticCreateModel(
+                f"{model.__name__}Inline{operation}Row",
                 __base__=AdminInlineRowSchema,
                 __config__=ConfigDict(json_schema_extra={"examples": [example]}),
                 **fields,
@@ -152,8 +157,9 @@ class InlineModelAdmin(BaseAdmin):
         change_schema = self.get_inline_row_schema(request, obj, change=True, partial=True, require_pk=True)
         cache_key = ("inline-operations", change, add_schema, change_schema)
         if cache_key not in cache:
-            cache[cache_key] = create_model(
-                f"{self.model.__name__}InlineOperations",
+            model = cast(Any, self.model)
+            cache[cache_key] = PydanticCreateModel(
+                f"{model.__name__}InlineOperations",
                 __base__=AdminInlineOperationsSchema,
                 __config__=ConfigDict(
                     json_schema_extra={
