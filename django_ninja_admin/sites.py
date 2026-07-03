@@ -1000,8 +1000,31 @@ class NinjaAdminSite:
             },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_list",
+            description=(
+                "List registered model objects. Supports search (`q`), ordering (`o` with 1-based column "
+                "indexes), pagination (`p`/`page`, `pp`, `all`), facets (`_facets`), alternate row identity "
+                "(`_to_field`), and Django-style field lookup filters such as `field__in`, `field__isnull`, "
+                "and date hierarchy parameters like `created_at__year`."
+            ),
         )
-        def changelist(request):
+        def changelist(
+            request,
+            q: str | None = Query(None, description="Search term matched against the admin search fields."),
+            o: str | None = Query(
+                None,
+                description="Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+            ),
+            p: str | None = Query(None, description="1-based page number, or `last`."),
+            page: str | None = Query(None, description="Legacy alias for `p`; generated links use `p`."),
+            pp: str | None = Query(None, description="Page size override."),
+            all_: str | None = Query(None, alias="all", description="Show all rows when allowed by the admin."),
+            facets: str | None = Query(None, alias="_facets", description="Enable optional facet counts."),
+            to_field: str | None = Query(
+                None,
+                alias="_to_field",
+                description="Use an allowed alternate object id field.",
+            ),
+        ):
             return site._changelist_response(request, model_admin)
 
         @router.get(

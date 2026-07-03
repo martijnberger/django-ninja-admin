@@ -5832,8 +5832,154 @@
     },
     "/admin-api/auth/group": {
       "get": {
+        "description": "List registered model objects. Supports search (`q`), ordering (`o` with 1-based column indexes), pagination (`p`/`page`, `pp`, `all`), facets (`_facets`), alternate row identity (`_to_field`), and Django-style field lookup filters such as `field__in`, `field__isnull`, and date hierarchy parameters like `created_at__year`.",
         "operationId": "auth_group_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Search term matched against the admin search fields.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search term matched against the admin search fields.",
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+            "in": "query",
+            "name": "o",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+              "title": "O"
+            }
+          },
+          {
+            "description": "1-based page number, or `last`.",
+            "in": "query",
+            "name": "p",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "1-based page number, or `last`.",
+              "title": "P"
+            }
+          },
+          {
+            "description": "Legacy alias for `p`; generated links use `p`.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Legacy alias for `p`; generated links use `p`.",
+              "title": "Page"
+            }
+          },
+          {
+            "description": "Page size override.",
+            "in": "query",
+            "name": "pp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Page size override.",
+              "title": "Pp"
+            }
+          },
+          {
+            "description": "Show all rows when allowed by the admin.",
+            "in": "query",
+            "name": "all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show all rows when allowed by the admin.",
+              "title": "All"
+            }
+          },
+          {
+            "description": "Enable optional facet counts.",
+            "in": "query",
+            "name": "_facets",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Enable optional facet counts.",
+              "title": "Facets"
+            }
+          },
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -6863,8 +7009,154 @@
     },
     "/admin-api/auth/user": {
       "get": {
+        "description": "List registered model objects. Supports search (`q`), ordering (`o` with 1-based column indexes), pagination (`p`/`page`, `pp`, `all`), facets (`_facets`), alternate row identity (`_to_field`), and Django-style field lookup filters such as `field__in`, `field__isnull`, and date hierarchy parameters like `created_at__year`.",
         "operationId": "auth_user_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Search term matched against the admin search fields.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search term matched against the admin search fields.",
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+            "in": "query",
+            "name": "o",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+              "title": "O"
+            }
+          },
+          {
+            "description": "1-based page number, or `last`.",
+            "in": "query",
+            "name": "p",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "1-based page number, or `last`.",
+              "title": "P"
+            }
+          },
+          {
+            "description": "Legacy alias for `p`; generated links use `p`.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Legacy alias for `p`; generated links use `p`.",
+              "title": "Page"
+            }
+          },
+          {
+            "description": "Page size override.",
+            "in": "query",
+            "name": "pp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Page size override.",
+              "title": "Pp"
+            }
+          },
+          {
+            "description": "Show all rows when allowed by the admin.",
+            "in": "query",
+            "name": "all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show all rows when allowed by the admin.",
+              "title": "All"
+            }
+          },
+          {
+            "description": "Enable optional facet counts.",
+            "in": "query",
+            "name": "_facets",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Enable optional facet counts.",
+              "title": "Facets"
+            }
+          },
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -8428,8 +8720,154 @@
     },
     "/admin-api/testapp/category": {
       "get": {
+        "description": "List registered model objects. Supports search (`q`), ordering (`o` with 1-based column indexes), pagination (`p`/`page`, `pp`, `all`), facets (`_facets`), alternate row identity (`_to_field`), and Django-style field lookup filters such as `field__in`, `field__isnull`, and date hierarchy parameters like `created_at__year`.",
         "operationId": "testapp_category_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Search term matched against the admin search fields.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search term matched against the admin search fields.",
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+            "in": "query",
+            "name": "o",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+              "title": "O"
+            }
+          },
+          {
+            "description": "1-based page number, or `last`.",
+            "in": "query",
+            "name": "p",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "1-based page number, or `last`.",
+              "title": "P"
+            }
+          },
+          {
+            "description": "Legacy alias for `p`; generated links use `p`.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Legacy alias for `p`; generated links use `p`.",
+              "title": "Page"
+            }
+          },
+          {
+            "description": "Page size override.",
+            "in": "query",
+            "name": "pp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Page size override.",
+              "title": "Pp"
+            }
+          },
+          {
+            "description": "Show all rows when allowed by the admin.",
+            "in": "query",
+            "name": "all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show all rows when allowed by the admin.",
+              "title": "All"
+            }
+          },
+          {
+            "description": "Enable optional facet counts.",
+            "in": "query",
+            "name": "_facets",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Enable optional facet counts.",
+              "title": "Facets"
+            }
+          },
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -9459,8 +9897,154 @@
     },
     "/admin-api/testapp/product": {
       "get": {
+        "description": "List registered model objects. Supports search (`q`), ordering (`o` with 1-based column indexes), pagination (`p`/`page`, `pp`, `all`), facets (`_facets`), alternate row identity (`_to_field`), and Django-style field lookup filters such as `field__in`, `field__isnull`, and date hierarchy parameters like `created_at__year`.",
         "operationId": "testapp_product_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Search term matched against the admin search fields.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search term matched against the admin search fields.",
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+            "in": "query",
+            "name": "o",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+              "title": "O"
+            }
+          },
+          {
+            "description": "1-based page number, or `last`.",
+            "in": "query",
+            "name": "p",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "1-based page number, or `last`.",
+              "title": "P"
+            }
+          },
+          {
+            "description": "Legacy alias for `p`; generated links use `p`.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Legacy alias for `p`; generated links use `p`.",
+              "title": "Page"
+            }
+          },
+          {
+            "description": "Page size override.",
+            "in": "query",
+            "name": "pp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Page size override.",
+              "title": "Pp"
+            }
+          },
+          {
+            "description": "Show all rows when allowed by the admin.",
+            "in": "query",
+            "name": "all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show all rows when allowed by the admin.",
+              "title": "All"
+            }
+          },
+          {
+            "description": "Enable optional facet counts.",
+            "in": "query",
+            "name": "_facets",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Enable optional facet counts.",
+              "title": "Facets"
+            }
+          },
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -10990,8 +11574,154 @@
     },
     "/admin-api/testapp/tag": {
       "get": {
+        "description": "List registered model objects. Supports search (`q`), ordering (`o` with 1-based column indexes), pagination (`p`/`page`, `pp`, `all`), facets (`_facets`), alternate row identity (`_to_field`), and Django-style field lookup filters such as `field__in`, `field__isnull`, and date hierarchy parameters like `created_at__year`.",
         "operationId": "testapp_tag_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Search term matched against the admin search fields.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search term matched against the admin search fields.",
+              "title": "Q"
+            }
+          },
+          {
+            "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+            "in": "query",
+            "name": "o",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
+              "title": "O"
+            }
+          },
+          {
+            "description": "1-based page number, or `last`.",
+            "in": "query",
+            "name": "p",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "1-based page number, or `last`.",
+              "title": "P"
+            }
+          },
+          {
+            "description": "Legacy alias for `p`; generated links use `p`.",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Legacy alias for `p`; generated links use `p`.",
+              "title": "Page"
+            }
+          },
+          {
+            "description": "Page size override.",
+            "in": "query",
+            "name": "pp",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Page size override.",
+              "title": "Pp"
+            }
+          },
+          {
+            "description": "Show all rows when allowed by the admin.",
+            "in": "query",
+            "name": "all",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Show all rows when allowed by the admin.",
+              "title": "All"
+            }
+          },
+          {
+            "description": "Enable optional facet counts.",
+            "in": "query",
+            "name": "_facets",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Enable optional facet counts.",
+              "title": "Facets"
+            }
+          },
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {

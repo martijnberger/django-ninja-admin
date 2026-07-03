@@ -761,6 +761,29 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         assert operation["tags"] == tags
         assert operation["security"] == [{"SessionAuthIsStaff": []}]
 
+    list_operation = paths["/admin-api/testapp/product"]["get"]
+    assert "Django-style field lookup filters" in list_operation["description"]
+    assert [parameter["name"] for parameter in list_operation["parameters"]] == [
+        "q",
+        "o",
+        "p",
+        "page",
+        "pp",
+        "all",
+        "_facets",
+        "_to_field",
+    ]
+    assert {parameter["name"]: parameter["in"] for parameter in list_operation["parameters"]} == {
+        "q": "query",
+        "o": "query",
+        "p": "query",
+        "page": "query",
+        "pp": "query",
+        "all": "query",
+        "_facets": "query",
+        "_to_field": "query",
+    }
+
     assert _request_schema_ref(paths["/admin-api/testapp/product"]["post"]) == (
         "#/components/schemas/ProductAdminCreatePayload"
     )
