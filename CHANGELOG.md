@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Continued the test-suite split by moving inline form-description, inline
+  Pydantic payload, inline formset, permission, rollback, and change-message
+  coverage into `tests/test_inlines.py`.
+
 ## 0.1.30 - 2026-07-03
 
 ### Changed
