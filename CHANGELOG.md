@@ -15,6 +15,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving richer form-field Pydantic schema,
   parent/bulk/inline form schema override, and typed choice coercion coverage
   into `tests/test_form_field_schemas.py`.
+- Continued the test-suite split by moving broad OpenAPI component, route
+  response-map, operation-id, example, and generated contract coverage into
+  `tests/test_openapi_contracts.py`.
 
 ## 0.1.33 - 2026-07-03
 
