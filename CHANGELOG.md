@@ -12,6 +12,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Extracted shared schema/example helpers into
   `django_ninja_admin.utils.schema_examples` for generated OpenAPI examples
   and choice-field schema/example handling.
+- Extracted shared Pydantic constraint helpers into
+  `django_ninja_admin.utils.schema_constraints`.
 
 ## 0.1.34 - 2026-07-03
 
