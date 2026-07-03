@@ -12,6 +12,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving inline form-description, inline
   Pydantic payload, inline formset, permission, rollback, and change-message
   coverage into `tests/test_inlines.py`.
+- Continued the test-suite split by moving changelist facets, date hierarchy,
+  bounded date filters, lookup validation, and remote `to_field` related-list
+  filter coverage into `tests/test_changelist_filters.py`.
 
 ## 0.1.30 - 2026-07-03
 
