@@ -92,12 +92,6 @@ class SessionResponse(Schema):
     csrf_token: str
 
 
-class MessageResponse(Schema):
-    model_config = ConfigDict(json_schema_extra={"examples": [{"detail": "Object deleted."}]})
-
-    detail: str
-
-
 class ActionResponse(Schema):
     model_config = ConfigDict(
         json_schema_extra={
@@ -684,26 +678,6 @@ class ChangelistResponse(Schema):
     list_editing_initial_form_count: int | None = None
     list_editing_formset: list[list[FieldDescription]] = Field(default_factory=list)
     list_editing_rows: list[ListEditingRow] = Field(default_factory=list)
-
-
-class MutationPayload(Schema):
-    data: dict[str, Any] = Field(default_factory=dict)
-    inlines: dict[str, Any] | None = None
-
-
-class ActionPayload(Schema):
-    action: str
-    selected_ids: list[Any] = Field(default_factory=list)
-    select_across: bool = False
-
-
-class BulkPayload(Schema):
-    data: list[dict[str, Any]]
-
-
-class MutationResponse(Schema):
-    data: dict[str, Any]
-    inlines: dict[str, Any] | None = None
 
 
 class HistoryItem(Schema):

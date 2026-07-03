@@ -16,6 +16,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `django_ninja_admin.utils.schema_constraints`.
 - Routed site pagination payload helpers through the shared `Pagination`
   schema used by changelist, history, and autocomplete responses.
+- Removed unused generic payload/response schema classes in favor of the
+  dynamic model-specific components advertised in OpenAPI.
 
 ## 0.1.34 - 2026-07-03
 

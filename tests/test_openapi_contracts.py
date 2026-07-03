@@ -51,6 +51,13 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "FileFieldValue",
         "ImageFieldValue",
     } <= set(components)
+    assert {
+        "MutationPayload",
+        "MutationResponse",
+        "ActionPayload",
+        "BulkPayload",
+        "MessageResponse",
+    }.isdisjoint(components)
     assert components["ProductAdminOut"]["properties"]["id"] == {
         "maximum": 9223372036854775807,
         "minimum": -9223372036854775808,
