@@ -17,6 +17,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving history route filtering,
   pagination, object-permission, and page-scoped visibility coverage into
   `tests/test_history.py`.
+- Continued the test-suite split by moving autocomplete route pagination,
+  remote paginator/search hooks, `to_field`, `limit_choices_to`, source-access,
+  and page-scoped object-permission coverage into `tests/test_autocomplete.py`.
 
 ## 0.1.29 - 2026-07-03
 
