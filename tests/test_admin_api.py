@@ -30,7 +30,6 @@ from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from django.test.utils import CaptureQueriesContext, isolate_apps
 from django.utils import timezone
 from ninja import Status
-from ninja.security import SessionAuthIsStaff
 from PIL import Image
 from pydantic import AnyUrl, IPvAnyAddress
 from pydantic import Field as PydanticField
@@ -320,76 +319,6 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     }
 
 
-def test_site_routes_return_typed_auth_errors(db):
-    response = Client().get("/admin-api/apps")
-
-    assert response.status_code in {401, 403}
-    body = response.json()
-    assert set(body) == {"errors"}
-    assert body["errors"][0]["param"] == "non_field_errors"
-
-
-@override_settings(
-    MIDDLEWARE=[
-        "django.contrib.sessions.middleware.SessionMiddleware",
-        "django.middleware.csrf.CsrfViewMiddleware",
-        "django.contrib.auth.middleware.AuthenticationMiddleware",
-    ]
-)
-def test_session_bootstrap_login_csrf_mutation_and_logout(db, sample):
-    user = get_user_model().objects.create_user("bootstrap-admin", password="pw", is_staff=True)
-    user.user_permissions.set(Permission.objects.all())
-    client = Client(enforce_csrf_checks=True)
-
-    csrf_response = client.get("/admin-api/csrf")
-    assert csrf_response.status_code == 200
-    csrf_token = csrf_response.json()["csrf_token"]
-    assert csrf_token
-    assert client.get("/admin-api/apps").status_code == 401
-
-    bad_login = client.post(
-        "/admin-api/login",
-        data={"username": "bootstrap-admin", "password": "wrong"},
-        content_type="application/json",
-        HTTP_X_CSRFTOKEN=csrf_token,
-    )
-    assert bad_login.status_code == 400
-    ErrorResponse.model_validate(bad_login.json())
-    assert bad_login.json()["errors"] == [{"message": "Invalid username or password.", "param": "username"}]
-
-    login_response = client.post(
-        "/admin-api/login",
-        data={"username": "bootstrap-admin", "password": "pw"},
-        content_type="application/json",
-        HTTP_X_CSRFTOKEN=csrf_token,
-    )
-    assert login_response.status_code == 200
-    login_body = login_response.json()
-    assert login_body["is_authenticated"] is True
-    assert login_body["is_staff"] is True
-    assert login_body["has_permission"] is True
-    assert login_body["csrf_token"]
-
-    mutation = client.patch(
-        f"/admin-api/testapp/product/{sample.pk}",
-        data={"data": {"description": "Bootstrapped session"}},
-        content_type="application/json",
-        HTTP_X_CSRFTOKEN=login_body["csrf_token"],
-    )
-    assert mutation.status_code == 200
-    sample.refresh_from_db()
-    assert sample.description == "Bootstrapped session"
-
-    logout_response = client.post(
-        "/admin-api/logout",
-        content_type="application/json",
-        HTTP_X_CSRFTOKEN=login_body["csrf_token"],
-    )
-    assert logout_response.status_code == 200
-    assert logout_response.json()["is_authenticated"] is False
-    assert client.get("/admin-api/apps").status_code == 401
-
-
 def test_error_response_runtime_shapes_are_consistent(admin_client, staff_client, sample):
     def assert_error_body(response, status):
         assert response.status_code == status
@@ -505,112 +434,6 @@ RENDERED_FIELD_ATTR_KEYS = {
 
 def assert_no_rendered_field_attrs(attrs):
     assert RENDERED_FIELD_ATTR_KEYS.isdisjoint(attrs)
-
-
-def test_permissions_route_reports_site_permission(admin_client):
-    staff_response = admin_client.get("/admin-api/permissions")
-
-    assert staff_response.status_code == 200
-    body = staff_response.json()
-    permission_state_keys = ("is_authenticated", "is_active", "is_staff", "is_superuser", "has_permission")
-    assert {key: body[key] for key in permission_state_keys} == {
-        "is_authenticated": True,
-        "is_active": True,
-        "is_staff": True,
-        "is_superuser": False,
-        "has_permission": True,
-    }
-    assert isinstance(body["models"], list)
-    model_keys = {(model["app_label"], model["model_name"]) for model in body["models"]}
-    assert {("testapp", "category"), ("testapp", "product"), ("testapp", "tag")} <= model_keys
-    product_permissions = next(model["perms"] for model in body["models"] if model["model_name"] == "product")
-    assert product_permissions == {
-        "has_add_permission": True,
-        "has_change_permission": True,
-        "has_delete_permission": True,
-        "has_view_permission": True,
-    }
-
-
-def test_permissions_route_uses_custom_model_permission_hooks(admin_client, monkeypatch):
-    product_admin = site.get_model_admin(Product)
-
-    monkeypatch.setattr(product_admin, "has_add_permission", lambda request: False)
-    monkeypatch.setattr(product_admin, "has_delete_permission", lambda request, obj=None: False)
-
-    response = admin_client.get("/admin-api/permissions")
-
-    assert response.status_code == 200
-    product = next(model for model in response.json()["models"] if model["model_name"] == "product")
-    assert product["perms"] == {
-        "has_add_permission": False,
-        "has_change_permission": True,
-        "has_delete_permission": False,
-        "has_view_permission": True,
-    }
-
-
-@override_settings(ROOT_URLCONF="tests.custom_urls")
-def test_permissions_route_supports_auth_none_sites():
-    public_response = Client().get("/public-permissions-admin/permissions")
-
-    assert public_response.status_code == 200
-    assert public_response.json() == {
-        "is_authenticated": False,
-        "is_active": False,
-        "is_staff": False,
-        "is_superuser": False,
-        "has_permission": False,
-        "models": [],
-    }
-
-    schema = Client().get("/public-permissions-admin/openapi.json").json()
-    operation = schema["paths"]["/public-permissions-admin/permissions"]["get"]
-    assert "security" not in operation
-    assert "401" not in operation["responses"]
-    assert "403" not in operation["responses"]
-
-
-@override_settings(ROOT_URLCONF="tests.custom_urls")
-def test_include_auth_uses_safe_user_and_group_admins(db):
-    client = Client()
-    user = get_user_model().objects.create_user("auth-safe", password="hashed", is_staff=True)
-    user.user_permissions.set(Permission.objects.all())
-    client.force_login(user)
-
-    user_form = client.get("/auth-models-admin/auth/user/form")
-    assert user_form.status_code == 200
-    user_field_names = {field["name"] for field in user_form.json()["form"]["fields"]}
-    assert {"password", "is_superuser", "user_permissions", "groups"}.isdisjoint(user_field_names)
-
-    group_form = client.get("/auth-models-admin/auth/group/form")
-    assert group_form.status_code == 200
-    group_field_names = {field["name"] for field in group_form.json()["form"]["fields"]}
-    assert "permissions" not in group_field_names
-
-    response = client.patch(
-        f"/auth-models-admin/auth/user/{user.pk}",
-        data={
-            "data": {
-                "password": "plain",
-                "is_superuser": True,
-                "user_permissions": [Permission.objects.first().pk],
-                "groups": [],
-            }
-        },
-        content_type="application/json",
-    )
-
-    assert response.status_code == 422
-    assert {
-        "data.password",
-        "data.is_superuser",
-        "data.user_permissions",
-        "data.groups",
-    }.issubset({error["param"] for error in response.json()["errors"]})
-    user.refresh_from_db()
-    assert user.check_password("hashed")
-    assert user.is_superuser is False
 
 
 def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):
@@ -2137,33 +1960,6 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert _response_schema_ref(auto_multi_post_operation, "200") == "#/components/schemas/ProductStatsResponse"
     assert_custom_route_error_responses(auto_multi_post_operation)
     assert "/custom-admin/hidden-status" not in schema["paths"]
-
-
-@override_settings(ROOT_URLCONF="tests.custom_urls")
-def test_site_auth_accepts_ninja_auth_sequences():
-    client = Client()
-
-    assert client.get("/multi-auth-admin/whoami").status_code == 401
-    assert client.get("/multi-auth-admin/openapi.json").status_code == 401
-    primary = client.get("/multi-auth-admin/whoami", headers={"X-Primary-Token": "primary"})
-    secondary = client.get("/multi-auth-admin/whoami", headers={"X-Secondary-Token": "secondary"})
-    invalid = client.get("/multi-auth-admin/whoami", headers={"X-Primary-Token": "wrong"})
-    schema_response = client.get("/multi-auth-admin/openapi.json", headers={"X-Primary-Token": "primary"})
-
-    assert primary.status_code == 200
-    assert primary.json() == {"auth": "primary"}
-    assert secondary.status_code == 200
-    assert secondary.json() == {"auth": "secondary"}
-    assert invalid.status_code == 401
-    assert schema_response.status_code == 200
-
-    schema = schema_response.json()
-    operation = schema["paths"]["/multi-auth-admin/whoami"]["get"]
-    assert operation["operationId"] == "multi_auth_whoami"
-    assert {"PrimaryTokenAuth": []} in operation["security"]
-    assert {"SecondaryTokenAuth": []} in operation["security"]
-    assert schema["components"]["securitySchemes"]["PrimaryTokenAuth"]["in"] == "header"
-    assert schema["components"]["securitySchemes"]["SecondaryTokenAuth"]["name"] == "X-Secondary-Token"
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
@@ -7864,25 +7660,6 @@ def test_view_on_site_requires_model_access(staff_client, sample):
     content_type = ContentType.objects.get_for_model(Product)
     response = staff_client().get(f"/admin-api/view-on-site/{content_type.pk}/{sample.pk}")
     assert response.status_code == 403
-
-
-def test_unauthenticated_is_rejected(db):
-    response = Client().get("/admin-api/apps")
-    assert response.status_code in {401, 403}
-
-
-def test_admin_site_auth_contracts():
-    default_site = NinjaAdminSite(include_auth=False)
-    assert isinstance(default_site.auth, SessionAuthIsStaff)
-
-    no_auth_site = NinjaAdminSite(auth=None, include_auth=False)
-    assert no_auth_site.auth is None
-
-    def custom_auth(request):
-        return "token"
-
-    custom_auth_site = NinjaAdminSite(auth=custom_auth, include_auth=False)
-    assert custom_auth_site.auth is custom_auth
 
 
 def test_no_drf_imports():

@@ -7,6 +7,14 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Continued the test-suite split by moving permission, auth-contract, safe
+  `include_auth`, and session bootstrap coverage into
+  `tests/test_permissions_auth.py`, with additional OpenAPI assertions that
+  default auth-admin write schemas do not advertise sensitive user/group
+  fields.
+
 ## 0.1.29 - 2026-07-03
 
 ### Changed
