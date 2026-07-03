@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Continued the test-suite split by moving site registration, autodiscover
+  rollback, OpenAPI cache invalidation, custom admin route, and context
+  customization coverage into `tests/test_site.py`.
+
 ## 0.1.31 - 2026-07-03
 
 ### Changed
