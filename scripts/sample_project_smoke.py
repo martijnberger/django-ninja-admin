@@ -10,6 +10,8 @@ import textwrap
 from collections.abc import Callable
 from pathlib import Path
 
+from smoke_utils import build_or_resolve_wheel, smoke_uv_env
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -55,14 +57,8 @@ def run_sample_project(
         dist_dir = tmp_path / "dist"
         project_dir = tmp_path / "project"
         venv_dir = tmp_path / ".venv"
-        uv_env = os.environ.copy()
-        smoke_cache_dir = Path(tempfile.gettempdir()) / "django-ninja-admin-uv-cache"
-        uv_env["UV_CACHE_DIR"] = os.environ.get("DJANGO_NINJA_ADMIN_SMOKE_UV_CACHE", str(smoke_cache_dir))
-
-        run([uv, "build", "--wheel", "--out-dir", str(dist_dir)], env=uv_env)
-        wheels = sorted(dist_dir.glob("django_ninja_admin-*.whl"))
-        if not wheels:
-            raise SystemExit("No django-ninja-admin wheel was built.")
+        uv_env = smoke_uv_env()
+        wheel = build_or_resolve_wheel(uv, dist_dir, env=uv_env)
 
         run([uv, "venv", "--python", sys.executable, str(venv_dir)], env=uv_env)
         python = venv_python(venv_dir)
@@ -74,7 +70,7 @@ def run_sample_project(
                 "--python",
                 str(python),
                 *smoke_django_requirements(),
-                str(wheels[-1]),
+                str(wheel),
             ],
             env=uv_env,
         )

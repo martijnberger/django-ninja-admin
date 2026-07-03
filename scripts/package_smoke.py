@@ -7,6 +7,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from smoke_utils import build_or_resolve_wheel, smoke_uv_env
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -23,14 +25,8 @@ def main() -> None:
         tmp_path = Path(tmp)
         dist_dir = tmp_path / "dist"
         install_dir = tmp_path / "install"
-        uv_env = os.environ.copy()
-        smoke_cache_dir = Path(tempfile.gettempdir()) / "django-ninja-admin-uv-cache"
-        uv_env["UV_CACHE_DIR"] = os.environ.get("DJANGO_NINJA_ADMIN_SMOKE_UV_CACHE", str(smoke_cache_dir))
-        run([uv, "build", "--wheel", "--out-dir", str(dist_dir)], env=uv_env)
-
-        wheels = sorted(dist_dir.glob("django_ninja_admin-*.whl"))
-        if not wheels:
-            raise SystemExit("No django-ninja-admin wheel was built.")
+        uv_env = smoke_uv_env()
+        wheel = build_or_resolve_wheel(uv, dist_dir, env=uv_env)
 
         run(
             [
@@ -42,7 +38,7 @@ def main() -> None:
                 "--no-deps",
                 "--target",
                 str(install_dir),
-                str(wheels[-1]),
+                str(wheel),
             ],
             env=uv_env,
         )

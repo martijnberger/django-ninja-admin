@@ -7,6 +7,13 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Reused a single prebuilt wheel artifact across CI smoke jobs via
+  `DJANGO_NINJA_ADMIN_WHEEL`, while keeping local smoke commands able to build
+  their own wheel.
+- Expanded script type checking to cover release smoke scripts.
+
 ## 0.1.35 - 2026-07-03
 
 ### Changed

@@ -18,6 +18,10 @@ just check
 - `just package-smoke` to build a wheel, install it into a temporary target,
   import the public API, and confirm wheel metadata does not depend on DRF or
   drf-spectacular.
+- CI builds and checks the distribution once, uploads the checked wheel, and
+  passes it to smoke jobs with `DJANGO_NINJA_ADMIN_WHEEL`; local smoke commands
+  still build their own wheel unless that variable points at a wheel file or
+  directory.
 - `just sample-project-smoke` to install the built wheel into a temporary
   Django project, register a model, mount `site.urls`, open docs/OpenAPI, and
   exercise authenticated model discovery.

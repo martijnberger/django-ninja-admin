@@ -63,12 +63,21 @@ jobs:
 
       - name: Build and check distribution
         env:
+          DJANGO_NINJA_ADMIN_DIST_DIR: dist
           DJANGO_NINJA_ADMIN_DIST_UV_CACHE: /tmp/django-ninja-admin-uv-cache
         run: just dist-check
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: django-ninja-admin-wheel
+          path: dist/*.whl
+          if-no-files-found: error
 
   checks:
     name: Django ${{ matrix.django-label }} / Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    needs: dist
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
@@ -123,6 +132,12 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: django-ninja-admin-wheel
+          path: dist
+
       - name: Select Django version
         run: uv pip install "django${{ matrix.django }}"
 
@@ -139,14 +154,19 @@ jobs:
         run: just coverage-test
 
       - name: Package smoke
+        env:
+          DJANGO_NINJA_ADMIN_WHEEL: dist
         run: just package-smoke
 
       - name: Sample project smoke
         env:
+          DJANGO_NINJA_ADMIN_WHEEL: dist
           DJANGO_NINJA_ADMIN_SMOKE_DJANGO: django${{ matrix.django }}
         run: just sample-project-smoke
 
       - name: Generated client smoke
+        env:
+          DJANGO_NINJA_ADMIN_WHEEL: dist
         run: just generated-client-smoke
 
   postgres:
