@@ -221,6 +221,7 @@ def write_sample_project(project_dir: Path) -> None:
         """
         import json
         import os
+        from urllib.parse import urlencode
 
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "sample_project.settings")
 
@@ -239,6 +240,8 @@ def write_sample_project(project_dir: Path) -> None:
                 self.client = client
                 self.schema = schema
                 self.operations = {}
+                self.path_parameters = {}
+                self.query_parameters = {}
                 for path, path_item in schema["paths"].items():
                     for method, operation in path_item.items():
                         if method.lower() not in {"delete", "get", "patch", "post", "put"}:
@@ -246,14 +249,32 @@ def write_sample_project(project_dir: Path) -> None:
                         operation_id = operation.get("operationId")
                         if operation_id:
                             self.operations[operation_id] = (method.upper(), path, operation)
+                            parameters = operation.get("parameters", [])
+                            self.path_parameters[operation_id] = {
+                                parameter["name"] for parameter in parameters if parameter.get("in") == "path"
+                            }
+                            self.query_parameters[operation_id] = {
+                                parameter["name"] for parameter in parameters if parameter.get("in") == "query"
+                            }
 
             def request(self, operation_id, *, path_params=None, payload=None, query=None):
                 method, path, _operation = self.operations[operation_id]
+                path_params = path_params or {}
+                unknown_path_params = set(path_params) - self.path_parameters[operation_id]
+                if unknown_path_params:
+                    raise AssertionError(f"Unknown path params for {operation_id}: {sorted(unknown_path_params)}")
+                missing_path_params = self.path_parameters[operation_id] - set(path_params)
+                if missing_path_params:
+                    raise AssertionError(f"Missing path params for {operation_id}: {sorted(missing_path_params)}")
                 for name, value in (path_params or {}).items():
                     path = path.replace("{" + name + "}", str(value))
                 if query:
-                    query_string = "&".join(f"{key}={value}" for key, value in query.items())
-                    path = f"{path}?{query_string}"
+                    unknown_query_params = set(query) - self.query_parameters[operation_id]
+                    if unknown_query_params:
+                        raise AssertionError(
+                            f"Unknown query params for {operation_id}: {sorted(unknown_query_params)}"
+                        )
+                    path = f"{path}?{urlencode(query, doseq=True)}"
                 if payload is None:
                     return self.client.generic(method, path)
                 return self.client.generic(
@@ -290,9 +311,16 @@ def write_sample_project(project_dir: Path) -> None:
             "sample_app_product_change_form",
         }
         assert expected_operations <= set(consumer.operations)
+        assert {"q", "o", "p", "page", "pp", "all", "_facets", "_to_field"} <= consumer.query_parameters[
+            "sample_app_product_list"
+        ]
+        assert consumer.path_parameters["sample_app_product_detail"] == {"object_id"}
+        assert "_to_field" in consumer.query_parameters["sample_app_product_detail"]
 
-        list_response = consumer.request("sample_app_product_list")
+        list_response = consumer.request("sample_app_product_list", query={"q": "Existing", "pp": 1, "_facets": 1})
         assert list_response.status_code == 200, list_response.content
+        assert list_response.json()["config"]["result_count"] == 1
+        assert list_response.json()["config"]["per_page"] == 1
 
         create_payload = consumer.example("sample_app_product_create", "create")
         create_payload["data"].update(

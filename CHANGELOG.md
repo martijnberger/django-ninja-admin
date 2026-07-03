@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.38 - 2026-07-03
+
 ### Changed
 
 - Typed action selected IDs, bulk row primary keys, and inline change/delete
@@ -15,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   schema; custom response bodies should use declared hook response schemas.
 - Typed default mutation inline response values as per-inline add/change/delete
   operation result schemas.
+- Expanded the generated-client smoke check to validate declared path/query
+  parameters before exercising changelist queries from an installed wheel.
 
 ## 0.1.37 - 2026-07-03
 
