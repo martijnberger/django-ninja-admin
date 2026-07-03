@@ -1,12 +1,15 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.paginator import Paginator
+from django.db import connection, models
 from django.http import QueryDict
 from django.test import RequestFactory
+from django.test.utils import CaptureQueriesContext
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, display, site
 from django_ninja_admin.changelist import ChangeList
-from tests.testapp.models import Category, Product
+from tests.testapp.models import Category, Product, Tag
 
 RENDERED_FIELD_ATTR_KEYS = {
     "aria_describedby",
@@ -530,3 +533,261 @@ def test_changelist_can_skip_full_result_count(admin_client, sample, monkeypatch
     assert config["full_count"] is None
     assert config["show_full_result_count"] is False
     assert config["show_admin_actions"] is True
+
+
+def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    match_one = Tag.objects.create(name="Search Match One")
+    match_two = Tag.objects.create(name="Search Match Two")
+    sample.tags.add(match_one, match_two)
+    monkeypatch.setattr(product_admin, "search_fields", ("tags__name",))
+
+    response = admin_client.get("/admin-api/testapp/product?q=Search")
+
+    assert response.status_code == 200
+    assert response.json()["config"]["result_count"] == 1
+    assert [row["cells"]["name"] for row in response.json()["rows"]] == ["Alpha"]
+
+
+def test_changelist_multi_column_ordering_metadata(admin_client, sample):
+    Product.objects.create(name="Gamma", category=sample.category, price="3.00")
+
+    response = admin_client.get("/admin-api/testapp/product?o=3,-1")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["config"]["ordering"] == ["price", "-name", "-pk"]
+    assert [row["cells"]["name"] for row in body["rows"]][:2] == ["Gamma", "Beta"]
+
+    columns_by_field = {column["field"]: column for column in body["columns"]}
+    price_column = columns_by_field["price"]
+    name_column = columns_by_field["name"]
+    stock_column = columns_by_field["stock_status"]
+    assert price_column["sorted"] is True
+    assert price_column["ascending"] is True
+    assert price_column["sort_priority"] == 1
+    assert price_column["ascending_query_string"] == "?o=3,-1"
+    assert price_column["descending_query_string"] == "?o=-3,-1"
+    assert price_column["remove_sorting_query_string"] == "?o=-1"
+    assert name_column["sorted"] is True
+    assert name_column["ascending"] is False
+    assert name_column["sort_priority"] == 2
+    assert name_column["ascending_query_string"] == "?o=1,3"
+    assert name_column["descending_query_string"] == "?o=-1,3"
+    assert name_column["remove_sorting_query_string"] == "?o=3"
+    assert stock_column["sorted"] is False
+    assert stock_column["sort_priority"] is None
+
+
+def test_changelist_search_supports_lookup_suffixes(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    Product.objects.create(
+        name="Alphabet",
+        category=sample.category,
+        price="14.00",
+        description="Starts the same",
+    )
+    Product.objects.create(
+        name="Beta Alpha",
+        category=sample.category,
+        price="5.00",
+        description="Contains the word later",
+    )
+
+    monkeypatch.setattr(product_admin, "search_fields", ("^name",))
+    startswith = admin_client.get("/admin-api/testapp/product?q=Alpha")
+    assert startswith.status_code == 200
+    assert [row["cells"]["name"] for row in startswith.json()["rows"]] == ["Alpha", "Alphabet"]
+
+    monkeypatch.setattr(product_admin, "search_fields", ("=name",))
+    iexact = admin_client.get("/admin-api/testapp/product?q=alpha")
+    assert iexact.status_code == 200
+    assert [row["cells"]["name"] for row in iexact.json()["rows"]] == ["Alpha"]
+
+    monkeypatch.setattr(product_admin, "search_fields", ("category__id__exact",))
+    category_exact = admin_client.get(f"/admin-api/testapp/product?q={sample.category_id}")
+    assert category_exact.status_code == 200
+    assert category_exact.json()["config"]["result_count"] == 4
+
+    padded_category = admin_client.get(f"/admin-api/testapp/product?q={sample.category_id:03d}")
+    assert padded_category.status_code == 200
+    assert padded_category.json()["config"]["result_count"] == 0
+
+
+def test_changelist_auto_selects_related_list_display_fields(db):
+    user = get_user_model().objects.create_user("query-admin", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+
+    changelist = ChangeList(request, site.get_model_admin(Product))
+
+    assert changelist.auto_select_related_fields() == ["category"]
+    assert "category" in changelist.queryset.query.select_related
+
+
+def test_changelist_auto_selects_related_display_ordering_paths(db, sample):
+    @display(description="Category label", ordering="category__name")
+    def category_label(obj):
+        return obj.category.name
+
+    class RelatedOrderingProductAdmin(ModelAdmin):
+        list_display = ("name", category_label)
+        ordering = ("name",)
+
+    Category.objects.create(name="Accessories")
+    Product.objects.create(name="Gamma", category=sample.category, price="8.00")
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, RelatedOrderingProductAdmin)
+    user = get_user_model().objects.create_user("query-admin-callable", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+    model_admin = admin_site.get_model_admin(Product)
+
+    changelist = ChangeList(request, model_admin)
+
+    assert changelist.auto_select_related_fields() == ["category"]
+    assert "category" in changelist.queryset.query.select_related
+    with CaptureQueriesContext(connection) as queries:
+        rendered = [category_label(obj) for obj in changelist.result_list]
+
+    assert rendered == ["Cameras", "Cameras", "Cameras"]
+    assert len(queries) == 0
+
+
+def test_changelist_auto_selects_relation_path_list_display_fields(db, sample):
+    class RelationPathProductAdmin(ModelAdmin):
+        list_display = ("name", "category__name")
+        sortable_by = ("name",)
+        ordering = ("name",)
+
+    Product.objects.create(name="Gamma", category=sample.category, price="8.00")
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, RelationPathProductAdmin)
+    user = get_user_model().objects.create_user("query-admin-relation-path", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+    model_admin = admin_site.get_model_admin(Product)
+
+    changelist = ChangeList(request, model_admin)
+
+    assert changelist.auto_select_related_fields() == ["category"]
+    assert "category" in changelist.queryset.query.select_related
+    with CaptureQueriesContext(connection) as queries:
+        rendered = [obj.category.name for obj in changelist.result_list]
+
+    assert rendered == ["Cameras", "Cameras", "Cameras"]
+    assert len(queries) == 0
+
+
+def test_changelist_applies_list_prefetch_related_for_callable_display(db, sample):
+    @display(description="Tag names")
+    def tag_names(obj):
+        return ", ".join(sorted(tag.name for tag in obj.tags.all()))
+
+    class PrefetchProductAdmin(ModelAdmin):
+        list_display = ("name", tag_names)
+        list_prefetch_related = ("tags",)
+        ordering = ("name",)
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, PrefetchProductAdmin)
+    user = get_user_model().objects.create_user("query-admin-prefetch", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+    model_admin = admin_site.get_model_admin(Product)
+
+    changelist = ChangeList(request, model_admin)
+
+    assert changelist.list_prefetch_related == ("tags",)
+    assert changelist.queryset._prefetch_related_lookups == ("tags",)
+    with CaptureQueriesContext(connection) as queries:
+        rendered = [tag_names(obj) for obj in changelist.result_list]
+
+    assert rendered == ["Compact, Featured", ""]
+    assert len(queries) == 0
+
+
+def test_changelist_applies_prefetch_objects_for_callable_display(db, sample):
+    @display(description="Prefetched tag names")
+    def prefetched_tag_names(obj):
+        return ", ".join(tag.name for tag in obj.prefetched_tags)
+
+    class PrefetchObjectProductAdmin(ModelAdmin):
+        list_display = ("name", prefetched_tag_names)
+        list_prefetch_related = (
+            models.Prefetch("tags", queryset=Tag.objects.order_by("name"), to_attr="prefetched_tags"),
+        )
+        ordering = ("name",)
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, PrefetchObjectProductAdmin)
+    user = get_user_model().objects.create_user("query-admin-prefetch-object", password="pw", is_staff=True)
+    user.user_permissions.set(Permission.objects.all())
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+    model_admin = admin_site.get_model_admin(Product)
+
+    changelist = ChangeList(request, model_admin)
+
+    assert isinstance(changelist.list_prefetch_related[0], models.Prefetch)
+    assert isinstance(changelist.queryset._prefetch_related_lookups[0], models.Prefetch)
+    with CaptureQueriesContext(connection) as queries:
+        rendered = [prefetched_tag_names(obj) for obj in changelist.result_list]
+
+    assert rendered == ["Compact, Featured", ""]
+    assert len(queries) == 0
+
+
+def test_changelist_route_uses_model_admin_hook(admin_client, sample, monkeypatch):
+    class CustomChangeList(ChangeList):
+        def filter_descriptions(self):
+            return []
+
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "get_changelist", lambda request, **kwargs: CustomChangeList)
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    assert response.json()["config"]["filters"] == []
+
+
+def test_changelist_route_uses_model_admin_paginator_hook(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    Product.objects.create(name="Gamma", category=sample.category, price="8.00")
+    calls = {}
+
+    def get_paginator(request, queryset, per_page, orphans=0, allow_empty_first_page=True):
+        calls["path"] = request.path
+        calls["model"] = queryset.model
+        calls["is_queryset"] = isinstance(queryset, models.QuerySet)
+        calls["per_page"] = per_page
+        calls["orphans"] = orphans
+        calls["allow_empty_first_page"] = allow_empty_first_page
+        return Paginator(
+            queryset,
+            per_page,
+            orphans=orphans,
+            allow_empty_first_page=allow_empty_first_page,
+        )
+
+    monkeypatch.setattr(product_admin, "get_paginator", get_paginator)
+
+    response = admin_client.get("/admin-api/testapp/product?pp=1")
+
+    assert response.status_code == 200
+    assert response.json()["config"]["page_count"] == 3
+    assert calls == {
+        "path": "/admin-api/testapp/product",
+        "model": Product,
+        "is_queryset": True,
+        "per_page": 1,
+        "orphans": 0,
+        "allow_empty_first_page": True,
+    }

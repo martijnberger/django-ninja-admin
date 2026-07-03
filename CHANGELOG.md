@@ -15,6 +15,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving core changelist list/detail,
   search, pagination, ordering, row metadata, action UI, and list-editable
   metadata coverage into `tests/test_changelist_core.py`.
+- Continued the test-suite split by moving remaining changelist null-filter,
+  direct lookup, search distinct/suffix, relation loading, prefetch, and
+  changelist/paginator hook coverage out of `tests/test_admin_api.py`.
 
 ## 0.1.31 - 2026-07-03
 

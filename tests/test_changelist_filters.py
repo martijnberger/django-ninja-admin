@@ -6,7 +6,16 @@ from django.test import RequestFactory, override_settings
 from django.test.utils import isolate_apps
 from django.utils import timezone
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, RelatedOnlyFieldListFilter, ShowFacets, site
+from django_ninja_admin import (
+    AllValuesFieldListFilter,
+    EmptyFieldListFilter,
+    ModelAdmin,
+    NinjaAdminSite,
+    RelatedOnlyFieldListFilter,
+    ShowFacets,
+    SimpleListFilter,
+    site,
+)
 from django_ninja_admin.changelist import ChangeList
 from tests.testapp.models import Category, CategorySlugLink, Product, ProductImage
 
@@ -380,3 +389,201 @@ def test_related_list_filters_use_remote_to_field_values(admin_client, monkeypat
     assert {"Cameras", "Accessories"}.issubset(related_only_choices)
     assert "Unused" not in related_only_choices
     assert related_only_choices["Cameras"]["query_string"] == "?category__slug__exact=cameras"
+
+
+def test_choices_list_filter_supports_null_choice(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", ("condition",))
+    Product.objects.filter(pk=sample.pk).update(condition="new")
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    condition_filter = next(
+        item for item in response.json()["config"]["filters"] if item["parameter_name"] == "condition__exact"
+    )
+    choices_by_display = {choice["display"]: choice for choice in condition_filter["choices"]}
+    assert choices_by_display["Unspecified"]["query_string"] == "?condition__isnull=1"
+    assert choices_by_display["New"]["query_string"] == "?condition__exact=new"
+
+    unspecified = admin_client.get("/admin-api/testapp/product?condition__isnull=1")
+    assert unspecified.status_code == 200
+    unspecified_body = unspecified.json()
+    assert unspecified_body["config"]["result_count"] == 1
+    assert unspecified_body["rows"][0]["cells"]["name"] == "Beta"
+    condition_filter = next(
+        item for item in unspecified_body["config"]["filters"] if item["parameter_name"] == "condition__exact"
+    )
+    selected_unspecified = next(choice for choice in condition_filter["choices"] if choice["display"] == "Unspecified")
+    assert selected_unspecified["selected"] is True
+
+    concrete = admin_client.get("/admin-api/testapp/product?condition__exact=new")
+    assert concrete.status_code == 200
+    assert concrete.json()["config"]["result_count"] == 1
+    assert concrete.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+
+def test_all_values_list_filter_supports_null_choice(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", (("condition", AllValuesFieldListFilter),))
+    Product.objects.filter(pk=sample.pk).update(condition="used")
+    Product.objects.create(name="Tripod", category=sample.category, price="6.00", condition="new")
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    condition_filter = next(item for item in response.json()["config"]["filters"] if item["title"] == "condition")
+    choices_by_display = {choice["display"]: choice for choice in condition_filter["choices"]}
+    assert choices_by_display["-"]["query_string"] == "?condition__isnull=1"
+    assert choices_by_display["-"]["query_string"] != choices_by_display["All"]["query_string"]
+
+    null_response = admin_client.get(f"/admin-api/testapp/product{choices_by_display['-']['query_string']}")
+
+    assert null_response.status_code == 200
+    assert null_response.json()["config"]["result_count"] == 1
+    condition_filter = next(item for item in null_response.json()["config"]["filters"] if item["title"] == "condition")
+    null_choice = next(choice for choice in condition_filter["choices"] if choice["display"] == "-")
+    assert null_choice["selected"] is True
+
+
+def test_list_filters_reject_invalid_isnull_values(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    monkeypatch.setattr(product_admin, "list_filter", ("condition",))
+    choices_response = admin_client.get("/admin-api/testapp/product?condition__isnull=maybe")
+    assert choices_response.status_code == 400
+    assert choices_response.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
+
+    monkeypatch.setattr(product_admin, "list_filter", ("category",))
+    related_response = admin_client.get("/admin-api/testapp/product?category__isnull=maybe")
+    assert related_response.status_code == 400
+    assert related_response.json()["errors"] == [{"message": "Invalid lookup value.", "param": "category__isnull"}]
+
+    monkeypatch.setattr(product_admin, "list_filter", (("condition", AllValuesFieldListFilter),))
+    all_values_response = admin_client.get("/admin-api/testapp/product?condition__isnull=maybe")
+    assert all_values_response.status_code == 400
+    assert all_values_response.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
+
+
+def test_changelist_direct_lookup_params_prepare_in_and_isnull_values(admin_client, sample):
+    beta = Product.objects.get(name="Beta")
+    Product.objects.filter(pk=sample.pk).update(condition="new")
+
+    in_lookup = admin_client.get(f"/admin-api/testapp/product?id__in={sample.pk},{beta.pk}")
+
+    assert in_lookup.status_code == 200
+    assert in_lookup.json()["config"]["result_count"] == 2
+
+    repeated_in_lookup = admin_client.get(f"/admin-api/testapp/product?id__in={sample.pk}&id__in={beta.pk}")
+    assert repeated_in_lookup.status_code == 200
+    assert repeated_in_lookup.json()["config"]["result_count"] == 2
+
+    mixed_in_lookup = admin_client.get(f"/admin-api/testapp/product?id__in={sample.pk}&id__in={beta.pk},999999")
+    assert mixed_in_lookup.status_code == 200
+    assert mixed_in_lookup.json()["config"]["result_count"] == 2
+
+    non_null = admin_client.get("/admin-api/testapp/product?condition__isnull=0")
+    assert non_null.status_code == 200
+    assert non_null.json()["config"]["result_count"] == 1
+    assert non_null.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+    null = admin_client.get("/admin-api/testapp/product?condition__isnull=true")
+    assert null.status_code == 200
+    assert null.json()["config"]["result_count"] == 1
+    assert null.json()["rows"][0]["cells"]["name"] == "Beta"
+
+    invalid_in = admin_client.get("/admin-api/testapp/product?id__in=not-a-number")
+    assert invalid_in.status_code == 400
+    assert invalid_in.json()["errors"] == [{"message": "Invalid lookup value.", "param": "id__in"}]
+
+    invalid_isnull = admin_client.get("/admin-api/testapp/product?condition__isnull=maybe")
+    assert invalid_isnull.status_code == 400
+    assert invalid_isnull.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
+
+
+def test_empty_field_list_filter_validates_values(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", (("description", EmptyFieldListFilter),))
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    description_filter = next(
+        item for item in response.json()["config"]["filters"] if item["parameter_name"] == "description__isempty"
+    )
+    choices_by_display = {choice["display"]: choice for choice in description_filter["choices"]}
+    assert choices_by_display["Empty"]["query_string"] == "?description__isempty=1"
+    assert choices_by_display["Not empty"]["query_string"] == "?description__isempty=0"
+
+    empty = admin_client.get("/admin-api/testapp/product?description__isempty=1")
+    assert empty.status_code == 200
+    assert empty.json()["config"]["result_count"] == 1
+    assert empty.json()["rows"][0]["cells"]["name"] == "Beta"
+
+    not_empty = admin_client.get("/admin-api/testapp/product?description__isempty=0")
+    assert not_empty.status_code == 200
+    assert not_empty.json()["config"]["result_count"] == 1
+    assert not_empty.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+    invalid = admin_client.get("/admin-api/testapp/product?description__isempty=maybe")
+    assert invalid.status_code == 400
+    assert invalid.json()["errors"] == [{"message": "Invalid lookup value.", "param": "description__isempty"}]
+
+
+def test_simple_list_filter_without_lookups_is_hidden(admin_client, sample, monkeypatch):
+    class HiddenFilter(SimpleListFilter):
+        title = "hidden"
+        parameter_name = "hidden"
+
+        def lookups(self, request, model_admin):
+            return ()
+
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", (HiddenFilter,))
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    assert response.json()["config"]["filters"] == []
+
+
+def test_related_field_list_filter_includes_many_to_many_empty_choice(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_filter", ("tags",))
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    tag_filter = next(
+        item for item in response.json()["config"]["filters"] if item["parameter_name"] == "tags__id__exact"
+    )
+    choices_by_display = {choice["display"]: choice for choice in tag_filter["choices"]}
+    assert choices_by_display["None"]["query_string"] == "?tags__isnull=1"
+
+    empty = admin_client.get("/admin-api/testapp/product?tags__isnull=1")
+
+    assert empty.status_code == 200
+    assert empty.json()["config"]["result_count"] == 1
+    assert empty.json()["rows"][0]["cells"]["name"] == "Beta"
+    tag_filter = next(item for item in empty.json()["config"]["filters"] if item["parameter_name"] == "tags__id__exact")
+    selected_none = next(choice for choice in tag_filter["choices"] if choice["display"] == "None")
+    assert selected_none["selected"] is True
+
+
+def test_related_only_list_filter_honors_related_admin_ordering(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    category_admin = site.get_model_admin(Category)
+    zooms = Category.objects.create(name="Zooms")
+    Category.objects.create(name="Accessories")
+    Product.objects.create(name="Tripod", category=zooms, price="6.00", description="Stable")
+    monkeypatch.setattr(product_admin, "list_filter", (("category", RelatedOnlyFieldListFilter),))
+    monkeypatch.setattr(category_admin, "ordering", ("-name",))
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    category_filter = next(
+        item for item in response.json()["config"]["filters"] if item["parameter_name"] == "category__id__exact"
+    )
+    choices = [choice["display"] for choice in category_filter["choices"] if choice["display"] != "All"]
+    assert choices == ["Zooms", "Cameras"]
