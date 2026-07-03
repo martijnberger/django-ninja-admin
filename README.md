@@ -53,3 +53,5 @@ accept pytest selectors. `just ci` is an alias for the full local gate.
 See [API And Authentication](docs/api-and-auth.md) for Ninja-native
 customization hooks (`form_class`, `output_schema`, and
 `schema_field_overrides`) plus examples for default, custom, and disabled auth.
+See [API Versioning And Deprecation](docs/versioning.md) for the OpenAPI
+contract review and release compatibility policy.

@@ -78,6 +78,9 @@ behavior, or permission boundaries.
 - Keep a short expected-change note for any OpenAPI diff that removes a field,
   renames a component, changes required fields, changes response status maps,
   or changes typed error bodies.
+- Apply the API versioning and deprecation policy in
+  [`docs/versioning.md`](versioning.md) before accepting any wire-contract
+  change after Milestone 3.
 - Re-run the copyright/license audit after substantial Django-derived or
   upstream-derived ports.
 
@@ -104,6 +107,5 @@ behavior, or permission boundaries.
 - Release notes describe API contract impact from the previous package version.
 - Copyright notices for Django-derived and upstream-derived code have been
   reviewed and recorded in `docs/copyright-audit.md`.
-- The version follows semantic versioning: patch for compatible bug fixes,
-  minor for compatible feature additions, and major for contract-breaking API
-  or wire-shape changes.
+- The version follows the API versioning and deprecation policy in
+  [`docs/versioning.md`](versioning.md).
