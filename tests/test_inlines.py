@@ -49,6 +49,7 @@ def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypa
     assert inline["extra"] == 2
     assert inline["min_num"] == 1
     assert inline["max_num"] == 5
+    assert inline["prepopulated"] == {}
     assert inline["fieldset_layout"] == [
         {
             "name": None,

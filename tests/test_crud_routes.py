@@ -36,8 +36,11 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     category = sample.category
     form = admin_client.get("/admin-api/testapp/product/form")
     assert form.status_code == 200
-    assert form.json()["form"]["model"] == "testapp.product"
-    fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
+    form_body = form.json()["form"]
+    assert form_body["model"] == "testapp.product"
+    assert form_body["prepopulated"] == {"description": ["name"]}
+    assert form_body["radio_fields"] == {"stock_status": VERTICAL}
+    fields_by_name = {field["name"]: field for field in form_body["fields"]}
     assert fields_by_name["name"]["attrs"]["error_messages"]["required"] == "This field is required."
     assert fields_by_name["name"]["attrs"]["localize"] is False
     assert fields_by_name["name"]["attrs"]["is_localized"] is False

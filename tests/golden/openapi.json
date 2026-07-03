@@ -3199,14 +3199,14 @@
             "$ref": "#/components/schemas/PermissionMap"
           },
           "prepopulated": {
-            "additionalProperties": true,
-            "title": "Prepopulated",
-            "type": "object"
+            "$ref": "#/components/schemas/PrepopulatedFieldMap"
           },
           "radio_fields": {
-            "additionalProperties": true,
-            "title": "Radio Fields",
-            "type": "object"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/RadioFieldMap"
+              }
+            ]
           },
           "raw_id_fields": {
             "items": {
@@ -4074,9 +4074,7 @@
             "$ref": "#/components/schemas/PermissionMap"
           },
           "prepopulated": {
-            "additionalProperties": true,
-            "title": "Prepopulated",
-            "type": "object"
+            "$ref": "#/components/schemas/PrepopulatedFieldMap"
           },
           "readonly_fields": {
             "items": {
@@ -4432,6 +4430,15 @@
           "is_superuser"
         ],
         "title": "PermissionsResponse",
+        "type": "object"
+      },
+      "PrepopulatedFieldMap": {
+        "additionalProperties": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "type": "object"
       },
       "PrepopulatedMetadata": {
@@ -5755,6 +5762,19 @@
           }
         },
         "title": "ProductImageInlineOperations",
+        "type": "object"
+      },
+      "RadioFieldMap": {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            }
+          ]
+        },
         "type": "object"
       },
       "RadioMetadata": {

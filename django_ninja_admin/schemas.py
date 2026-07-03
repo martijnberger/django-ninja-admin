@@ -626,13 +626,17 @@ class FieldsetDescription(Schema):
     rows: list[FieldsetRow] = Field(default_factory=list)
 
 
+type PrepopulatedFieldMap = dict[str, list[str]]
+type RadioFieldMap = dict[str, str | int]
+
+
 class FormDescription(Schema):
     model: str
     readonly_fields: list[str]
     fields: list[FieldDescription]
     media: FormMediaDescription = Field(default_factory=FormMediaDescription)
     fieldset_layout: list[FieldsetDescription] = Field(default_factory=list)
-    prepopulated: dict[str, Any]
+    prepopulated: PrepopulatedFieldMap
     permissions: PermissionMap
     save_as: bool = False
     save_as_continue: bool = True
@@ -640,7 +644,7 @@ class FormDescription(Schema):
     filter_horizontal: list[str] = Field(default_factory=list)
     filter_vertical: list[str] = Field(default_factory=list)
     raw_id_fields: list[str] = Field(default_factory=list)
-    radio_fields: dict[str, Any] = Field(default_factory=dict)
+    radio_fields: RadioFieldMap = Field(default_factory=dict)
     view_on_site: bool = True
     autocomplete_fields: list[str] = Field(default_factory=list)
 
@@ -657,7 +661,7 @@ class InlineDescription(Schema):
     model: str
     readonly_fields: list[str]
     fieldset_layout: list[FieldsetDescription] = Field(default_factory=list)
-    prepopulated: dict[str, Any]
+    prepopulated: PrepopulatedFieldMap
     media: FormMediaDescription = Field(default_factory=FormMediaDescription)
     permissions: PermissionMap
     formset_prefix: str | None = None

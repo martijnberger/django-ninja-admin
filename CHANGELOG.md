@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   values in `FieldDescription.attrs`.
 - Typed changelist row IDs, cells, and cell metadata values as JSON-compatible
   OpenAPI fields.
+- Typed form and inline prepopulated-field maps plus form radio-field
+  orientation maps.
 
 ## 0.1.36 - 2026-07-03
 

@@ -484,6 +484,11 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     form_description_props = components["FormDescription"]["properties"]
     assert "fieldsets" not in form_description_props
     assert form_description_props["fieldset_layout"]["items"] == {"$ref": "#/components/schemas/FieldsetDescription"}
+    assert form_description_props["prepopulated"] == {"$ref": "#/components/schemas/PrepopulatedFieldMap"}
+    assert form_description_props["radio_fields"]["allOf"] == [{"$ref": "#/components/schemas/RadioFieldMap"}]
+    assert components["PrepopulatedFieldMap"]["additionalProperties"]["items"] == {"type": "string"}
+    assert {"type": "string"} in components["RadioFieldMap"]["additionalProperties"]["anyOf"]
+    assert {"type": "integer"} in components["RadioFieldMap"]["additionalProperties"]["anyOf"]
     fieldset_description_props = components["FieldsetDescription"]["properties"]
     assert fieldset_description_props["name"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert fieldset_description_props["classes"]["items"] == {"type": "string"}
@@ -492,6 +497,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     inline_response_props = components["InlineDescription"]["properties"]
     assert "fieldsets" not in inline_response_props
     assert inline_response_props["fieldset_layout"]["items"] == {"$ref": "#/components/schemas/FieldsetDescription"}
+    assert inline_response_props["prepopulated"] == {"$ref": "#/components/schemas/PrepopulatedFieldMap"}
     assert inline_response_props["management_form"]["items"] == {"$ref": "#/components/schemas/FieldDescription"}
     assert inline_response_props["empty_form"]["items"] == {"$ref": "#/components/schemas/FieldDescription"}
     assert inline_response_props["formset_row_metadata"]["items"] == {
