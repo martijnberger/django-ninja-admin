@@ -249,25 +249,19 @@ FIELD_DESCRIPTION_ATTRS_EXAMPLE = {
     "help_text": "Public display name.",
     "widget": "TextInput",
     "ordering_field": "name",
-    "html_name": "name",
-    "auto_id": "id_name",
-    "id_for_label": "id_name",
-    "aria_describedby": "id_name_helptext",
-    "rendered_attrs": {
-        "id": "id_name",
-        "required": True,
-        "aria-describedby": "id_name_helptext",
+    "max_length": 80,
+    "initial": "Tripod",
+    "value": "Tripod",
+    "choices": [["in_stock", "In Stock"], ["out_of_stock", "Out of Stock"]],
+    "admin_widget": "autocomplete",
+    "autocomplete": {
+        "url": "/admin-api/autocomplete",
+        "app_label": "shop",
+        "model_name": "product",
+        "field_name": "category",
+        "related_model": "shop.category",
+        "multiple": False,
     },
-    "rendered_subwidgets": [
-        {
-            "index": 0,
-            "name": "release_window_0",
-            "auto_id": "id_release_window_0",
-            "id_for_label": "id_release_window_0",
-            "attrs": {"id": "id_release_window_0"},
-            "type": "text",
-        }
-    ],
 }
 
 
@@ -275,7 +269,7 @@ class FieldDescription(Schema):
     name: str
     type: str
     attrs: dict[str, Any] = Field(
-        description="Django form/admin metadata for frontend renderers.",
+        description="Semantic form/admin metadata for frontend renderers.",
         json_schema_extra={"examples": [FIELD_DESCRIPTION_ATTRS_EXAMPLE]},
     )
 

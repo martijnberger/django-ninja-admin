@@ -1481,34 +1481,35 @@
         "properties": {
           "attrs": {
             "additionalProperties": true,
-            "description": "Django form/admin metadata for frontend renderers.",
+            "description": "Semantic form/admin metadata for frontend renderers.",
             "examples": [
               {
-                "aria_describedby": "id_name_helptext",
-                "auto_id": "id_name",
-                "help_text": "Public display name.",
-                "html_name": "name",
-                "id_for_label": "id_name",
-                "label": "Name",
-                "ordering_field": "name",
-                "rendered_attrs": {
-                  "aria-describedby": "id_name_helptext",
-                  "id": "id_name",
-                  "required": true
+                "admin_widget": "autocomplete",
+                "autocomplete": {
+                  "app_label": "shop",
+                  "field_name": "category",
+                  "model_name": "product",
+                  "multiple": false,
+                  "related_model": "shop.category",
+                  "url": "/admin-api/autocomplete"
                 },
-                "rendered_subwidgets": [
-                  {
-                    "attrs": {
-                      "id": "id_release_window_0"
-                    },
-                    "auto_id": "id_release_window_0",
-                    "id_for_label": "id_release_window_0",
-                    "index": 0,
-                    "name": "release_window_0",
-                    "type": "text"
-                  }
+                "choices": [
+                  [
+                    "in_stock",
+                    "In Stock"
+                  ],
+                  [
+                    "out_of_stock",
+                    "Out of Stock"
+                  ]
                 ],
+                "help_text": "Public display name.",
+                "initial": "Tripod",
+                "label": "Name",
+                "max_length": 80,
+                "ordering_field": "name",
                 "required": true,
+                "value": "Tripod",
                 "widget": "TextInput"
               }
             ],

@@ -934,15 +934,14 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert inline_row_metadata_props["empty_permitted"]["type"] == "boolean"
     assert inline_row_metadata_props["object_id"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     field_attrs_schema = components["FieldDescription"]["properties"]["attrs"]
-    assert field_attrs_schema["description"] == "Django form/admin metadata for frontend renderers."
+    assert field_attrs_schema["description"] == "Semantic form/admin metadata for frontend renderers."
     field_attrs_example = field_attrs_schema["examples"][0]
     assert field_attrs_example["ordering_field"] == "name"
-    assert field_attrs_example["rendered_attrs"] == {
-        "id": "id_name",
-        "required": True,
-        "aria-describedby": "id_name_helptext",
-    }
-    assert field_attrs_example["rendered_subwidgets"][0]["name"] == "release_window_0"
+    assert field_attrs_example["admin_widget"] == "autocomplete"
+    assert field_attrs_example["autocomplete"]["related_model"] == "shop.category"
+    assert "html_name" not in field_attrs_example
+    assert "rendered_attrs" not in field_attrs_example
+    assert "rendered_subwidgets" not in field_attrs_example
     error_examples = components["ErrorResponse"]["examples"]
     assert error_examples[0] == {"errors": [{"param": "name", "message": ["This field is required."]}]}
     assert error_examples[1]["errors"] == [{"param": "non_field_errors", "message": "Permission denied."}]
