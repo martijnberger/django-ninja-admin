@@ -16,6 +16,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
   and Pydantic payload extraction.
 - Expanded the package typecheck gate to cover inline and model admin modules,
   including dynamic Pydantic payload schemas and inline model metadata.
+- Expanded the package typecheck gate to cover the base admin schema/form
+  machinery, including subclass-provided admin attributes, dynamic Pydantic
+  schemas, list-valued relation/choice types, and validator-derived bounds.
+- Simplified the package typecheck gate to run `ty check django_ninja_admin`
+  now that the full package passes.
 
 ## 0.1.27 - 2026-07-03
 

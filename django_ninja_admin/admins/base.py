@@ -3,7 +3,7 @@ from base64 import b64encode
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from math import ceil, floor
-from typing import Annotated, Any, ClassVar, Literal, get_args, get_origin
+from typing import Annotated, Any, ClassVar, Literal, cast, get_args, get_origin
 from uuid import UUID
 
 from django import forms
@@ -51,6 +51,7 @@ from django_ninja_admin.utils.forms import (
 from django_ninja_admin.utils.lookup import field_name_for_display
 
 AdminJsonValue = dict[str, Any] | list[Any] | str | int | float | bool | None
+PydanticCreateModel = cast(Any, create_model)
 
 
 def _parse_duration_value(value):
@@ -109,6 +110,9 @@ def _choice_membership_validator(choices):
 
 
 class BaseAdmin:
+    model: Any = None
+    opts: Any = None
+    admin_site: Any = None
     autocomplete_fields = ()
     raw_id_fields = ()
     fields = None
@@ -124,6 +128,8 @@ class BaseAdmin:
     radio_fields: ClassVar[dict[str, Any]] = {}
     prepopulated_fields: ClassVar[dict[str, Any]] = {}
     readonly_fields = ()
+    list_display = ()
+    list_editable = ()
     ordering = None
     sortable_by = None
     view_on_site = True
@@ -136,6 +142,12 @@ class BaseAdmin:
 
     def get_autocomplete_fields(self, request):
         return self.autocomplete_fields
+
+    def get_list_display(self, request):
+        return self.list_display
+
+    def get_list_filter(self, request):
+        return getattr(self, "list_filter", ())
 
     def get_empty_value_display(self):
         return mark_safe(getattr(self, "empty_value_display", self.admin_site.empty_value_display))
@@ -253,7 +265,7 @@ class BaseAdmin:
                 else:
                     schema_fields[field_name] = (field_type | None, None)
             operation = name_suffix or ("PartialUpdate" if partial else "Update" if change else "Create")
-            cache[cache_key] = create_model(
+            cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}Admin{operation}Data",
                 __base__=AdminWriteSchema,
                 __config__=ConfigDict(
@@ -279,7 +291,7 @@ class BaseAdmin:
         cache_key = ("mutation", change, partial, data_schema)
         if cache_key not in cache:
             operation = "PartialUpdate" if partial else "Update" if change else "Create"
-            cache[cache_key] = create_model(
+            cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}Admin{operation}Payload",
                 __base__=Schema,
                 __config__=ConfigDict(json_schema_extra={"examples": [{"data": self._schema_example(data_schema)}]}),
@@ -294,12 +306,12 @@ class BaseAdmin:
         output_schema = self.get_output_schema(request)
         cache_key = ("mutation-response", output_schema)
         if cache_key not in cache:
-            data_schema = create_model(
+            data_schema = PydanticCreateModel(
                 f"{self.model.__name__}AdminMutationData",
                 __base__=output_schema,
                 __config__=ConfigDict(extra="allow"),
             )
-            cache[cache_key] = create_model(
+            cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminMutationResponse",
                 __base__=Schema,
                 __config__=ConfigDict(
@@ -337,7 +349,7 @@ class BaseAdmin:
                     choices_as_literal=False,
                 )
                 row_fields[field_name] = (field_type | None, None)
-            row_schema = create_model(
+            row_schema = PydanticCreateModel(
                 f"{self.model.__name__}AdminBulkRow",
                 __base__=AdminBulkRowSchema,
                 __config__=ConfigDict(
@@ -345,7 +357,7 @@ class BaseAdmin:
                 ),
                 **row_fields,
             )
-            cache[cache_key] = create_model(
+            cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminBulkPayload",
                 __base__=Schema,
                 __config__=ConfigDict(json_schema_extra={"examples": [{"data": [self._schema_example(row_schema)]}]}),
@@ -359,7 +371,7 @@ class BaseAdmin:
         output_schema = self.get_output_schema(request)
         cache_key = ("bulk-response", output_schema)
         if cache_key not in cache:
-            cache[cache_key] = create_model(
+            cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminBulkResponse",
                 __base__=Schema,
                 __config__=ConfigDict(
@@ -497,7 +509,10 @@ class BaseAdmin:
 
     def _get_pydantic_type_for_form_field(self, field, *, choices_as_literal=True):
         if isinstance(field, ModelMultipleChoiceField):
-            return list[self.get_pydantic_type_for_model_output_field(self.get_model_choice_target_field(field))]
+            item_type = cast(
+                Any, self.get_pydantic_type_for_model_output_field(self.get_model_choice_target_field(field))
+            )
+            return list[item_type]
         if isinstance(field, ModelChoiceField):
             return self.get_pydantic_type_for_model_output_field(self.get_model_choice_target_field(field))
         if isinstance(field, forms.NullBooleanField):
@@ -539,9 +554,14 @@ class BaseAdmin:
         if isinstance(field, forms.JSONField):
             return AdminJsonValue
         if isinstance(field, forms.TypedMultipleChoiceField):
-            return list[self.get_pydantic_type_for_typed_choice_field(field, choices_as_literal=choices_as_literal)]
+            item_type = cast(
+                Any,
+                self.get_pydantic_type_for_typed_choice_field(field, choices_as_literal=choices_as_literal),
+            )
+            return list[item_type]
         if isinstance(field, forms.MultipleChoiceField):
-            return list[self.get_pydantic_type_for_choices(field.choices, as_literal=choices_as_literal)]
+            item_type = cast(Any, self.get_pydantic_type_for_choices(field.choices, as_literal=choices_as_literal))
+            return list[item_type]
         if isinstance(field, forms.FileField):
             return str
         if isinstance(field, forms.TypedChoiceField):
@@ -648,12 +668,15 @@ class BaseAdmin:
                     limit_value = limit_value()
                 except Exception:
                     continue
+            if limit_value is None:
+                continue
+            limit_value = cast(Any, limit_value)
             if isinstance(validator, MinLengthValidator):
-                constraints["min_length"] = max(constraints.get("min_length", limit_value), limit_value)
+                constraints["min_length"] = max(cast(Any, constraints.get("min_length", limit_value)), limit_value)
             elif isinstance(validator, MaxLengthValidator) and (
                 field_max_length is None or limit_value < field_max_length
             ):
-                constraints["max_length"] = min(constraints.get("max_length", limit_value), limit_value)
+                constraints["max_length"] = min(cast(Any, constraints.get("max_length", limit_value)), limit_value)
         return constraints
 
     def get_pydantic_pattern_for_form_field(self, field):
@@ -1101,9 +1124,8 @@ class BaseAdmin:
             if field.remote_field and not self._is_auth_password_field(field):
                 custom_fields.append((f"{field.name}_label", str, None))
         for field in self.model._meta.many_to_many:
-            custom_fields.append(
-                (field.name, list[self.get_pydantic_type_for_model_output_field(field.target_field)], [])
-            )
+            item_type = cast(Any, self.get_pydantic_type_for_model_output_field(field.target_field))
+            custom_fields.append((field.name, list[item_type], []))
         custom_fields.extend(
             (name, field_type, default)
             for name, value in overrides.items()
@@ -1190,12 +1212,15 @@ class BaseAdmin:
                     limit_value = limit_value()
                 except Exception:
                     continue
+            if limit_value is None:
+                continue
+            limit_value = cast(Any, limit_value)
             if isinstance(validator, MinLengthValidator):
-                constraints["min_length"] = max(constraints.get("min_length", limit_value), limit_value)
+                constraints["min_length"] = max(cast(Any, constraints.get("min_length", limit_value)), limit_value)
             elif isinstance(validator, MaxLengthValidator) and (
                 field_max_length is None or limit_value < field_max_length
             ):
-                constraints["max_length"] = min(constraints.get("max_length", limit_value), limit_value)
+                constraints["max_length"] = min(cast(Any, constraints.get("max_length", limit_value)), limit_value)
         return constraints
 
     def get_pydantic_pattern_for_model_field(self, field):
