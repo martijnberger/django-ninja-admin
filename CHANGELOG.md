@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Expanded the admin-check test split to cover inline formset validation,
+  parent foreign-key exclusions, relation-path list-display checks, and action
+  permission-hook validation.
+
 ## 0.1.28 - 2026-07-03
 
 ### Changed
