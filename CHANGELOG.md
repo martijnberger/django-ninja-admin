@@ -20,6 +20,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving autocomplete route pagination,
   remote paginator/search hooks, `to_field`, `limit_choices_to`, source-access,
   and page-scoped object-permission coverage into `tests/test_autocomplete.py`.
+- Continued the test-suite split by moving action dispatch, `delete_selected`,
+  list-editable bulk update, `_to_field` row identity, and bulk hook coverage
+  into `tests/test_actions_bulk.py`.
 
 ## 0.1.29 - 2026-07-03
 
