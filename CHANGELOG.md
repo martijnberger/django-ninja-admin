@@ -10,6 +10,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Bounded history and autocomplete object-level permission filtering to the
   current database page, avoiding full-queryset materialization when custom
   object permission hooks are present.
+- Tightened typed error contracts with explicit `ErrorMessage` and recursive
+  `DeletedObject` OpenAPI components instead of unconstrained message and
+  deleted-object item schemas.
 
 ## 0.1.26 - 2026-07-03
 

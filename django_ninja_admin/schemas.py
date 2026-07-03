@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any
 
+from django.utils.functional import Promise
 from ninja import Schema
 from pydantic import ConfigDict, Field, field_serializer, field_validator
 
@@ -25,9 +26,24 @@ class AdminBulkRowSchema(Schema):
     model_config = ConfigDict(extra="forbid")
 
 
+type DeletedObject = str | list[DeletedObject]
+type ErrorMessage = str | list[str]
+
+
 class ErrorItem(Schema):
-    message: Any
+    message: ErrorMessage
     param: str = "non_field_errors"
+
+    @field_validator("message", mode="before")
+    @classmethod
+    def coerce_lazy_message(cls, value):
+        if isinstance(value, (list, tuple)):
+            return [str(item) if isinstance(item, Promise) else item for item in value]
+        if value is None:
+            return ""
+        if isinstance(value, Promise):
+            return str(value)
+        return value
 
 
 class ErrorResponse(Schema):
@@ -52,7 +68,7 @@ class ErrorResponse(Schema):
     )
 
     errors: list[ErrorItem]
-    deleted_objects: list[Any] | None = None
+    deleted_objects: list[DeletedObject] | None = None
     protected: list[str] | None = None
     perms_needed: list[str] | None = None
     model_count: dict[str, int] | None = None

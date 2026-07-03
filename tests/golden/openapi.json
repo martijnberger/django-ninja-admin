@@ -1379,10 +1379,23 @@
         "title": "DateHierarchyDescription",
         "type": "object"
       },
+      "DeletedObject": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/DeletedObject"
+            },
+            "type": "array"
+          }
+        ]
+      },
       "ErrorItem": {
         "properties": {
           "message": {
-            "title": "Message"
+            "$ref": "#/components/schemas/ErrorMessage"
           },
           "param": {
             "default": "non_field_errors",
@@ -1395,6 +1408,19 @@
         ],
         "title": "ErrorItem",
         "type": "object"
+      },
+      "ErrorMessage": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ]
       },
       "ErrorResponse": {
         "examples": [
@@ -1441,7 +1467,9 @@
           "deleted_objects": {
             "anyOf": [
               {
-                "items": {},
+                "items": {
+                  "$ref": "#/components/schemas/DeletedObject"
+                },
                 "type": "array"
               },
               {

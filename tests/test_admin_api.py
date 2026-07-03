@@ -454,7 +454,7 @@ def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, samp
 
     assert components["ErrorItem"] == {
         "properties": {
-            "message": {"title": "Message"},
+            "message": {"$ref": "#/components/schemas/ErrorMessage"},
             "param": {
                 "default": "non_field_errors",
                 "title": "Param",
@@ -465,6 +465,18 @@ def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, samp
         "title": "ErrorItem",
         "type": "object",
     }
+    assert components["ErrorMessage"] == {
+        "anyOf": [
+            {"type": "string"},
+            {"items": {"type": "string"}, "type": "array"},
+        ]
+    }
+    assert components["DeletedObject"] == {
+        "anyOf": [
+            {"type": "string"},
+            {"items": {"$ref": "#/components/schemas/DeletedObject"}, "type": "array"},
+        ]
+    }
     assert components["ErrorResponse"]["required"] == ["errors"]
     assert components["ErrorResponse"]["properties"] == {
         "errors": {
@@ -474,7 +486,7 @@ def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, samp
         },
         "deleted_objects": {
             "anyOf": [
-                {"items": {}, "type": "array"},
+                {"items": {"$ref": "#/components/schemas/DeletedObject"}, "type": "array"},
                 {"type": "null"},
             ],
             "title": "Deleted Objects",
@@ -510,6 +522,14 @@ def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, samp
         ("/admin-api/testapp/product/{object_id}", "delete", "409"),
     ]:
         assert _response_schema_ref(schema["paths"][path][method], status) == "#/components/schemas/ErrorResponse"
+    ErrorResponse.model_validate(
+        {
+            "errors": [{"message": ["This field is required."], "param": "name"}],
+            "deleted_objects": ["Alpha", ["Front", ["Nested child"]]],
+        }
+    )
+    with pytest.raises(PydanticValidationError):
+        ErrorResponse.model_validate({"errors": [{"message": {"detail": "Nope"}, "param": "name"}]})
 
 
 def test_error_response_runtime_shapes_are_consistent(admin_client, staff_client, sample):
