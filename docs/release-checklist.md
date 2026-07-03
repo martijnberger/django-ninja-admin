@@ -64,7 +64,8 @@ behavior, or permission boundaries.
   comparing release candidates or reviewed OpenAPI artifacts.
 - Run `just generated-client-smoke` to prove a clean installed project can use
   OpenAPI operation IDs, request examples, and schema-declared path/query
-  parameters for core model workflows.
+  parameters for core model workflows, and can parse documented error responses
+  against the advertised response schemas.
 - Run `just sample-project-full` to exercise the expanded installed-wheel
   sample project before beta/stable release candidates and after broad changes
   to forms, inlines, actions, filtering, file uploads, history, or custom

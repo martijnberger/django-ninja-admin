@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Expanded the installed-wheel generated-client smoke to validate documented
+  error responses against the OpenAPI response schemas.
+
 ## 0.1.38 - 2026-07-03
 
 ### Changed

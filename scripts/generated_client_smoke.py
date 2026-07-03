@@ -284,6 +284,99 @@ def write_sample_project(project_dir: Path) -> None:
                     content_type="application/json",
                 )
 
+            def assert_response_matches_schema(self, operation_id, response):
+                schema = self.response_schema(operation_id, response.status_code)
+                if schema is None:
+                    return
+                self.validate_schema(schema, response.json(), path=f"{operation_id}.{response.status_code}")
+
+            def response_schema(self, operation_id, status_code):
+                _method, _path, operation = self.operations[operation_id]
+                response = operation["responses"].get(str(status_code))
+                if response is None:
+                    raise AssertionError(f"{operation_id} does not advertise HTTP {status_code}")
+                media_type = response.get("content", {}).get("application/json")
+                if media_type is None:
+                    return None
+                return media_type.get("schema")
+
+            def resolve_schema(self, schema):
+                ref = schema.get("$ref")
+                if ref is None:
+                    return schema
+                prefix = "#/components/schemas/"
+                if not ref.startswith(prefix):
+                    raise AssertionError(f"Unsupported schema ref: {ref}")
+                return self.schema["components"]["schemas"][ref.removeprefix(prefix)]
+
+            def validate_schema(self, schema, value, *, path):
+                schema = self.resolve_schema(schema)
+                if "anyOf" in schema:
+                    failures = []
+                    for option in schema["anyOf"]:
+                        try:
+                            self.validate_schema(option, value, path=path)
+                            return
+                        except AssertionError as exc:
+                            failures.append(str(exc))
+                    raise AssertionError(f"{path} did not match anyOf: {failures}")
+                for option in schema.get("allOf", []):
+                    self.validate_schema(option, value, path=path)
+                if "allOf" in schema and "type" not in schema and "properties" not in schema:
+                    return
+                if "enum" in schema and value not in schema["enum"]:
+                    raise AssertionError(f"{path} expected one of {schema['enum']!r}, got {value!r}")
+                json_type = schema.get("type")
+                if json_type is None and "properties" in schema:
+                    json_type = "object"
+                if json_type == "null":
+                    if value is not None:
+                        raise AssertionError(f"{path} expected null, got {type(value).__name__}")
+                    return
+                if json_type == "object":
+                    if not isinstance(value, dict):
+                        raise AssertionError(f"{path} expected object, got {type(value).__name__}")
+                    properties = schema.get("properties", {})
+                    for field_name in schema.get("required", []):
+                        if field_name not in value:
+                            raise AssertionError(f"{path} missing required field {field_name!r}")
+                    for field_name, field_value in value.items():
+                        if field_name in properties:
+                            self.validate_schema(properties[field_name], field_value, path=f"{path}.{field_name}")
+                            continue
+                        additional = schema.get("additionalProperties", True)
+                        if additional is False:
+                            raise AssertionError(f"{path} unexpected field {field_name!r}")
+                        if isinstance(additional, dict):
+                            self.validate_schema(additional, field_value, path=f"{path}.{field_name}")
+                    return
+                if json_type == "array":
+                    if not isinstance(value, list):
+                        raise AssertionError(f"{path} expected array, got {type(value).__name__}")
+                    item_schema = schema.get("items")
+                    if item_schema is not None:
+                        for index, item in enumerate(value):
+                            self.validate_schema(item_schema, item, path=f"{path}[{index}]")
+                    return
+                if json_type == "string":
+                    if not isinstance(value, str):
+                        raise AssertionError(f"{path} expected string, got {type(value).__name__}")
+                    return
+                if json_type == "integer":
+                    if not isinstance(value, int) or isinstance(value, bool):
+                        raise AssertionError(f"{path} expected integer, got {type(value).__name__}")
+                    return
+                if json_type == "number":
+                    if not isinstance(value, (int, float)) or isinstance(value, bool):
+                        raise AssertionError(f"{path} expected number, got {type(value).__name__}")
+                    return
+                if json_type == "boolean":
+                    if not isinstance(value, bool):
+                        raise AssertionError(f"{path} expected boolean, got {type(value).__name__}")
+                    return
+                if json_type is not None:
+                    raise AssertionError(f"{path} has unsupported schema type {json_type!r}")
+
             def example(self, operation_id, name):
                 _method, _path, operation = self.operations[operation_id]
                 return operation["requestBody"]["content"]["application/json"]["examples"][name]["value"].copy()
@@ -300,6 +393,7 @@ def write_sample_project(project_dir: Path) -> None:
         schema_response = client.get("/admin-api/openapi.json")
         assert schema_response.status_code == 200, schema_response.content
         consumer = OpenAPIConsumer(client, schema_response.json())
+        anonymous_consumer = OpenAPIConsumer(Client(), schema_response.json())
 
         expected_operations = {
             "sample_app_product_list",
@@ -317,12 +411,25 @@ def write_sample_project(project_dir: Path) -> None:
         assert consumer.path_parameters["sample_app_product_detail"] == {"object_id"}
         assert "_to_field" in consumer.query_parameters["sample_app_product_detail"]
 
+        unauthorized_response = anonymous_consumer.request("sample_app_product_list")
+        assert unauthorized_response.status_code == 401, unauthorized_response.content
+        anonymous_consumer.assert_response_matches_schema("sample_app_product_list", unauthorized_response)
+
         list_response = consumer.request("sample_app_product_list", query={"q": "Existing", "pp": 1, "_facets": 1})
         assert list_response.status_code == 200, list_response.content
         assert list_response.json()["config"]["result_count"] == 1
         assert list_response.json()["config"]["per_page"] == 1
 
+        missing_response = consumer.request("sample_app_product_detail", path_params={"object_id": 999999})
+        assert missing_response.status_code == 404, missing_response.content
+        consumer.assert_response_matches_schema("sample_app_product_detail", missing_response)
+
         create_payload = consumer.example("sample_app_product_create", "create")
+        invalid_create_payload = {"data": {**create_payload["data"], "category": 999999}}
+        invalid_create_response = consumer.request("sample_app_product_create", payload=invalid_create_payload)
+        assert invalid_create_response.status_code == 400, invalid_create_response.content
+        consumer.assert_response_matches_schema("sample_app_product_create", invalid_create_response)
+
         create_payload["data"].update(
             {
                 "name": "Created from OpenAPI",
@@ -365,6 +472,11 @@ def write_sample_project(project_dir: Path) -> None:
                 "data": {"status": "in_stock", "note": "schema consumer"},
             }
         )
+        invalid_action_payload = {**action_payload, "data": {"status": "not_a_stock_status"}}
+        invalid_action_response = consumer.request("sample_app_product_action", payload=invalid_action_payload)
+        assert invalid_action_response.status_code == 422, invalid_action_response.content
+        consumer.assert_response_matches_schema("sample_app_product_action", invalid_action_response)
+
         action_response = consumer.request("sample_app_product_action", payload=action_payload)
         assert action_response.status_code == 200, action_response.content
         assert action_response.json() == {"updated": 1, "status": "in_stock", "note": "schema consumer"}
