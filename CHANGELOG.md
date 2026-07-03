@@ -14,6 +14,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   and choice-field schema/example handling.
 - Extracted shared Pydantic constraint helpers into
   `django_ninja_admin.utils.schema_constraints`.
+- Routed site pagination payload helpers through the shared `Pagination`
+  schema used by changelist, history, and autocomplete responses.
 
 ## 0.1.34 - 2026-07-03
 

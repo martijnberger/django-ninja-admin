@@ -59,6 +59,7 @@ from django_ninja_admin.schemas import (
     ErrorResponse,
     FormResponse,
     HistoryResponse,
+    Pagination,
     PermissionsResponse,
     SessionLoginPayload,
     SessionResponse,
@@ -305,27 +306,27 @@ class NinjaAdminSite:
 
     def pagination_payload(self, paginator, page_obj):
         has_next = page_obj.has_next()
-        return {
-            "count": paginator.count,
-            "num_pages": paginator.num_pages,
-            "page": page_obj.number,
-            "per_page": paginator.per_page,
-            "has_next": has_next,
-            "has_previous": page_obj.has_previous(),
-            "more": has_next,
-        }
+        return Pagination(
+            count=paginator.count,
+            num_pages=paginator.num_pages,
+            page=page_obj.number,
+            per_page=paginator.per_page,
+            has_next=has_next,
+            has_previous=page_obj.has_previous(),
+            more=has_next,
+        ).model_dump(mode="json")
 
     def visibility_filtered_pagination_payload(self, page_obj, visible_items):
         visible_count = len(visible_items)
-        return {
-            "count": visible_count,
-            "num_pages": 1 if visible_count else 0,
-            "page": page_obj.number,
-            "per_page": page_obj.paginator.per_page,
-            "has_next": False,
-            "has_previous": page_obj.has_previous(),
-            "more": False,
-        }
+        return Pagination(
+            count=visible_count,
+            num_pages=1 if visible_count else 0,
+            page=page_obj.number,
+            per_page=page_obj.paginator.per_page,
+            has_next=False,
+            has_previous=page_obj.has_previous(),
+            more=False,
+        ).model_dump(mode="json")
 
     @property
     def urls(self):

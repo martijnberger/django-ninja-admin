@@ -1,5 +1,6 @@
 import pytest
 from django.core.exceptions import ImproperlyConfigured
+from django.core.paginator import Paginator
 from django.db import models
 from django.test import Client, override_settings
 from django.test.utils import isolate_apps
@@ -11,6 +12,38 @@ from tests.testapp.models import Category, Product, Tag
 
 def _response_schema_ref(operation, status):
     return operation["responses"][status]["content"]["application/json"]["schema"]["$ref"]
+
+
+def test_site_pagination_payload_uses_shared_pagination_shape(db):
+    admin_site = NinjaAdminSite(include_auth=False)
+    paginator = Paginator([1, 2, 3], 1)
+    page = paginator.page(2)
+
+    assert admin_site.pagination_payload(paginator, page) == {
+        "count": 3,
+        "num_pages": 3,
+        "page": 2,
+        "per_page": 1,
+        "has_next": True,
+        "has_previous": True,
+        "more": True,
+    }
+
+
+def test_site_visibility_filtered_pagination_payload_uses_shared_pagination_shape(db):
+    admin_site = NinjaAdminSite(include_auth=False)
+    paginator = Paginator([1, 2, 3], 2)
+    page = paginator.page(2)
+
+    assert admin_site.visibility_filtered_pagination_payload(page, [3]) == {
+        "count": 1,
+        "num_pages": 1,
+        "page": 2,
+        "per_page": 2,
+        "has_next": False,
+        "has_previous": True,
+        "more": False,
+    }
 
 
 def test_site_registration_contracts_and_decorator(db):
