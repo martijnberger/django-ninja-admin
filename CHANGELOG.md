@@ -17,6 +17,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving model-route validation, delete,
   `_to_field`, action/bulk/autocomplete smoke, and view-on-site coverage into
   `tests/test_model_routes.py`.
+- Continued the test-suite split by moving change-form description, readonly
+  display metadata, layout/widget metadata, and relation `limit_choices_to`
+  coverage into `tests/test_form_descriptions.py`.
 
 ## 0.1.32 - 2026-07-03
 
