@@ -22,7 +22,7 @@ typecheck-package:
     UV_CACHE_DIR=.uv-cache uv run ty check django_ninja_admin
 
 typecheck-scripts:
-    UV_CACHE_DIR=.uv-cache uv run ty check scripts/dist_check.py scripts/generated_client_smoke.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/sample_project_full.py scripts/sample_project_smoke.py scripts/smoke_utils.py
+    UV_CACHE_DIR=.uv-cache uv run ty check scripts/dist_check.py scripts/generated_client_smoke.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/sample_project_smoke.py scripts/smoke_utils.py
 
 typecheck: typecheck-package typecheck-scripts
 

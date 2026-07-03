@@ -127,10 +127,10 @@ Tooling and structure debt; mostly mechanical, high leverage.
   `addopts` (it makes `pytest -q` double-quiet).
 - **Coverage**: pytest-cov with `fail_under = 90` (currently ~91%) and a CI
   job.
-- **CI**: add build + `twine check` job; run `just generated-client-smoke` in
-  CI; add `concurrency` cancellation; build the wheel once and share across
-  matrix cells; fold `scripts/sample_project_full.py` into the smoke script
-  behind a `--full` flag or delete it.
+- **CI**: keep build + `twine check`, generated-client smoke, concurrency
+  cancellation, PostgreSQL, and installed-wheel smoke gates aligned with the
+  Django/Python matrix; preserve the single checked-wheel artifact flow as the
+  matrix evolves.
 - **Dedup and dead code**: extract the shared schema machinery (Decision 8);
   remove superseded helpers, never-raised exceptions with registered
   handlers, and unused schema classes; replace broad `except Exception`
