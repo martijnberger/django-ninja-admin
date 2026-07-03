@@ -26,6 +26,9 @@ typecheck-scripts:
 
 typecheck: typecheck-package typecheck-scripts
 
+pre-commit:
+    UV_CACHE_DIR=.uv-cache uv run pre-commit run --all-files
+
 package-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/package_smoke.py
 
