@@ -14,6 +14,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving schema override, custom output
   method, non-auth password field, and Ninja `register_field()` inference
   coverage into `tests/test_schema_customization.py`.
+- Continued the test-suite split by moving model-route validation, delete,
+  `_to_field`, action/bulk/autocomplete smoke, and view-on-site coverage into
+  `tests/test_model_routes.py`.
 
 ## 0.1.32 - 2026-07-03
 
