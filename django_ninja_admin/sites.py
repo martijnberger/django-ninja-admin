@@ -69,6 +69,7 @@ from django_ninja_admin.schemas import (
 from django_ninja_admin.utils.deletion import deletion_error_payload
 from django_ninja_admin.utils.format_error import format_error
 from django_ninja_admin.utils.forms import (
+    _jsonish_value,
     fieldset_layout_description,
     form_errors,
     form_field_descriptions,
@@ -1386,10 +1387,11 @@ class NinjaAdminSite:
             cell_metadata = {}
             for field in list_display:
                 field_key = field_name_for_display(field)
-                value = lookup_field(field, obj, model_admin)
+                raw_value = lookup_field(field, obj, model_admin)
+                value = _jsonish_value(raw_value)
                 display_metadata = display_metadata_for_field(field, model_admin.model, model_admin)
                 field_empty_value = display_metadata["empty_value_display"] or empty_value
-                is_empty = value in (None, "")
+                is_empty = raw_value in (None, "")
                 display_value = field_empty_value if is_empty else value
                 cells[field_key] = display_value
                 column = columns_by_field[field_key]
@@ -1406,7 +1408,7 @@ class NinjaAdminSite:
                     "editable": field_key in model_admin.list_editable,
                     "empty_value_display": field_empty_value,
                 }
-            object_id = changelist.object_id_for(obj)
+            object_id = _jsonish_value(changelist.object_id_for(obj))
             rows.append(
                 {
                     "id": object_id,

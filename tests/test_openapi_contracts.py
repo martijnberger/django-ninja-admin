@@ -446,8 +446,13 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["Row"]["properties"]["cell_metadata"]["additionalProperties"] == {
         "$ref": "#/components/schemas/CellMetadata"
     }
+    assert components["Row"]["properties"]["id"] == {"$ref": "#/components/schemas/FieldMetadataValue"}
+    assert components["Row"]["properties"]["cells"]["additionalProperties"] == {
+        "$ref": "#/components/schemas/FieldMetadataValue"
+    }
     cell_metadata_props = components["CellMetadata"]["properties"]
-    assert cell_metadata_props["display_value"]["title"] == "Display Value"
+    assert cell_metadata_props["value"]["allOf"] == [{"$ref": "#/components/schemas/FieldMetadataValue"}]
+    assert cell_metadata_props["display_value"]["allOf"] == [{"$ref": "#/components/schemas/FieldMetadataValue"}]
     assert cell_metadata_props["empty"]["type"] == "boolean"
     assert cell_metadata_props["editable"]["type"] == "boolean"
     changelist_response_props = components["ChangelistResponse"]["properties"]

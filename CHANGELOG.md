@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   select-date form metadata OpenAPI components.
 - Typed combo-field child metadata and JSON-compatible scalar field metadata
   values in `FieldDescription.attrs`.
+- Typed changelist row IDs, cells, and cell metadata values as JSON-compatible
+  OpenAPI fields.
 
 ## 0.1.36 - 2026-07-03
 

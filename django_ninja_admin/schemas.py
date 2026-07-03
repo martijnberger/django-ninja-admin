@@ -703,8 +703,8 @@ class Column(Schema):
 class CellMetadata(Schema):
     field: str
     header_name: str
-    value: Any = None
-    display_value: Any = None
+    value: FieldMetadataValue = None
+    display_value: FieldMetadataValue = None
     empty: bool = False
     boolean: bool = False
     display_link: bool = False
@@ -715,10 +715,10 @@ class CellMetadata(Schema):
 
 
 class Row(Schema):
-    id: Any
+    id: FieldMetadataValue
     index: int = 0
     result_index: int = 0
-    cells: dict[str, Any]
+    cells: dict[str, FieldMetadataValue]
     cell_metadata: dict[str, CellMetadata] = Field(default_factory=dict)
     detail_url: str | None = None
     change_form_url: str | None = None

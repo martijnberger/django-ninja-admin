@@ -277,6 +277,9 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     beta_stock_cell = rows_by_name["Beta"]["cell_metadata"]["stock_status"]
     assert beta_stock_cell["editable"] is True
     assert beta_stock_cell["display_link"] is False
+    assert rows_by_name["Alpha"]["cells"]["price"] == "12.50"
+    assert rows_by_name["Alpha"]["cell_metadata"]["price"]["value"] == "12.50"
+    assert rows_by_name["Alpha"]["cell_metadata"]["price"]["display_value"] == "12.50"
 
     show_all_by_presence = admin_client.get("/admin-api/testapp/product?all=0")
     assert show_all_by_presence.status_code == 200

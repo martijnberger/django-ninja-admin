@@ -617,7 +617,11 @@
             "type": "boolean"
           },
           "display_value": {
-            "title": "Display Value"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           },
           "editable": {
             "default": false,
@@ -665,7 +669,11 @@
             "type": "boolean"
           },
           "value": {
-            "title": "Value"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
           }
         },
         "required": [
@@ -6005,7 +6013,9 @@
             "type": "object"
           },
           "cells": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldMetadataValue"
+            },
             "title": "Cells",
             "type": "object"
           },
@@ -6043,7 +6053,7 @@
             "title": "Detail Url"
           },
           "id": {
-            "title": "Id"
+            "$ref": "#/components/schemas/FieldMetadataValue"
           },
           "index": {
             "default": 0,
