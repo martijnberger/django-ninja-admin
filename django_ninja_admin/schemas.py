@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from ninja import Schema
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_serializer
 
 
 class AdminWriteSchema(Schema):
@@ -265,15 +265,6 @@ FIELD_DESCRIPTION_ATTRS_EXAMPLE = {
 }
 
 
-class FieldDescription(Schema):
-    name: str
-    type: str
-    attrs: dict[str, Any] = Field(
-        description="Semantic form/admin metadata for frontend renderers.",
-        json_schema_extra={"examples": [FIELD_DESCRIPTION_ATTRS_EXAMPLE]},
-    )
-
-
 class FileFieldValue(Schema):
     name: str
     url: str | None = None
@@ -282,6 +273,152 @@ class FileFieldValue(Schema):
 class ImageFieldValue(FileFieldValue):
     width: int | None = None
     height: int | None = None
+
+
+class SelectedOption(Schema):
+    id: str
+    text: str
+
+
+class FieldAttributes(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    required: bool | None = None
+    label: str | None = None
+    help_text: str | None = None
+    read_only: bool | None = None
+    disabled: bool | None = None
+    localize: bool | None = None
+    validators: list[str] | None = None
+    validator_details: list[dict[str, Any]] | None = None
+    error_messages: dict[str, Any] | None = None
+    boolean: bool | None = None
+    empty_value_display: str | None = None
+    ordering_field: str | None = None
+
+    widget: str | None = None
+    widget_attrs: dict[str, Any] | None = None
+    is_hidden: bool | None = None
+    is_localized: bool | None = None
+    multiple: bool | None = None
+    template_name: str | None = None
+    use_fieldset: bool | None = None
+    input_type: str | None = None
+    format: str | None = None
+    needs_multipart_form: bool | None = None
+    option_template_name: str | None = None
+    add_id_index: bool | None = None
+    checked_attribute: dict[str, Any] | str | bool | None = None
+    supports_microseconds: bool | None = None
+    admin_widget: str | None = None
+    radio_orientation: Any = None
+
+    model_field_name: str | None = None
+    model_field_class: str | None = None
+    internal_type: str | None = None
+    blank: bool | None = None
+    null: bool | None = None
+    editable: bool | None = None
+    primary_key: bool | None = None
+    unique: bool | None = None
+    db_index: bool | None = None
+    attname: str | None = None
+    column: str | None = None
+    default: Any = None
+    upload_to: str | None = None
+    image: bool | None = None
+    width_field: str | None = None
+    height_field: str | None = None
+    limit_choices_to: dict[str, Any] | list[Any] | None = None
+
+    html_name: str | None = None
+    auto_id: str | None = None
+    id_for_label: str | None = None
+    aria_describedby: str | None = None
+    form_prefix: str | None = None
+    css_classes: str | None = None
+    html_initial_name: str | None = None
+    html_initial_id: str | None = None
+    rendered_attrs: dict[str, Any] | None = None
+    bound_subwidgets: list[dict[str, Any]] | None = None
+    rendered_optgroups: list[dict[str, Any]] | None = None
+    rendered_subwidgets: list[dict[str, Any]] | None = None
+    show_hidden_initial: bool | None = None
+    hidden_initial_name: str | None = None
+    hidden_initial_id: str | None = None
+    hidden_initial_widget: dict[str, Any] | None = None
+
+    subwidgets: list[dict[str, Any]] | None = None
+    select_date: dict[str, Any] | None = None
+    input_formats: list[Any] | None = None
+    choices: list[list[Any]] | None = None
+    choice_options: list[dict[str, Any]] | None = None
+    choice_coerce: str | None = None
+    choice_groups: list[dict[str, Any]] | None = None
+    combo_fields: list[dict[str, Any]] | None = None
+
+    initial: Any = None
+    value: Any = None
+    max_length: int | None = None
+    min_length: int | None = None
+    strip: bool | None = None
+    empty_value: Any = None
+    min_value: Any = None
+    max_value: Any = None
+    step_size: Any = None
+    step_offset: Any = None
+    max_digits: int | None = None
+    decimal_places: int | None = None
+    null_boolean: bool | None = None
+
+    path: str | None = None
+    recursive: bool | None = None
+    allow_files: bool | None = None
+    allow_folders: bool | None = None
+    match: str | None = None
+    allow_empty_file: bool | None = None
+    allowed_extensions: list[str] | None = None
+    accepted_extensions: list[str] | None = None
+    accepted_content_types: list[str] | None = None
+    current_file: FileFieldValue | ImageFieldValue | None = None
+    clearable_file_input: bool | None = None
+    initial_text: str | None = None
+    input_text: str | None = None
+    clear_checkbox_label: str | None = None
+    clear_checkbox_name: str | None = None
+    clear_checkbox_id: str | None = None
+
+    related_model: str | None = None
+    related_app_label: str | None = None
+    related_model_name: str | None = None
+    related_object_name: str | None = None
+    related_verbose_name: str | None = None
+    related_verbose_name_plural: str | None = None
+    to_field_name: str | None = None
+    to_field_class: str | None = None
+    to_field_internal_type: str | None = None
+    to_field_attname: str | None = None
+    empty_label: str | None = None
+    selected_options: list[SelectedOption] | None = None
+    autocomplete: dict[str, Any] | None = None
+    raw_id: dict[str, Any] | None = None
+    filtered_select: dict[str, Any] | None = None
+    radio: dict[str, Any] | None = None
+    prepopulated_from: list[str] | None = None
+    prepopulated: dict[str, Any] | None = None
+
+
+class FieldDescription(Schema):
+    name: str
+    type: str
+    attrs: FieldAttributes = Field(
+        description="Semantic form/admin metadata for frontend renderers.",
+        json_schema_extra={"examples": [FIELD_DESCRIPTION_ATTRS_EXAMPLE]},
+    )
+
+    @field_serializer("attrs")
+    def serialize_attrs(self, attrs: FieldAttributes):
+        return attrs.model_dump(mode="json", exclude_unset=True)
 
 
 class FormMediaDescription(Schema):

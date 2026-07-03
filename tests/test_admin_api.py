@@ -934,6 +934,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert inline_row_metadata_props["empty_permitted"]["type"] == "boolean"
     assert inline_row_metadata_props["object_id"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     field_attrs_schema = components["FieldDescription"]["properties"]["attrs"]
+    assert field_attrs_schema["$ref"] == "#/components/schemas/FieldAttributes"
     assert field_attrs_schema["description"] == "Semantic form/admin metadata for frontend renderers."
     field_attrs_example = field_attrs_schema["examples"][0]
     assert field_attrs_example["ordering_field"] == "name"
@@ -942,6 +943,17 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert "html_name" not in field_attrs_example
     assert "rendered_attrs" not in field_attrs_example
     assert "rendered_subwidgets" not in field_attrs_example
+    field_attrs_component = components["FieldAttributes"]
+    assert field_attrs_component["additionalProperties"] is False
+    field_attrs_props = field_attrs_component["properties"]
+    assert field_attrs_props["required"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
+    assert field_attrs_props["ordering_field"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    assert field_attrs_props["max_length"]["anyOf"] == [{"type": "integer"}, {"type": "null"}]
+    assert {"$ref": "#/components/schemas/FileFieldValue"} in field_attrs_props["current_file"]["anyOf"]
+    assert {"$ref": "#/components/schemas/ImageFieldValue"} in field_attrs_props["current_file"]["anyOf"]
+    selected_options_schema = field_attrs_props["selected_options"]["anyOf"][0]
+    assert selected_options_schema["items"] == {"$ref": "#/components/schemas/SelectedOption"}
+    assert components["SelectedOption"]["required"] == ["id", "text"]
     error_examples = components["ErrorResponse"]["examples"]
     assert error_examples[0] == {"errors": [{"param": "name", "message": ["This field is required."]}]}
     assert error_examples[1]["errors"] == [{"param": "non_field_errors", "message": "Permission denied."}]

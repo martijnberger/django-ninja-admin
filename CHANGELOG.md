@@ -9,6 +9,26 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Nothing yet.
 
+## 0.1.25 - 2026-07-03
+
+- Added a typed `FieldAttributes` OpenAPI component for
+  `FieldDescription.attrs`, preserving sparse runtime metadata while replacing
+  the previous unconstrained object schema with explicit Pydantic-described
+  form/admin attributes.
+- Added a typed `SelectedOption` component for relation widget selected-option
+  metadata and refreshed the OpenAPI snapshot to advertise file/image metadata,
+  widget details, relation hints, choice metadata, numeric bounds, and
+  prepopulation hints as named field-attribute properties.
+- Removed raw Django `fieldsets` data from form and inline response contracts;
+  consumers should use the normalized `fieldset_layout` schema.
+- Tightened the `FieldDescription.attrs` OpenAPI example so it highlights
+  stable semantic admin metadata instead of renderer/internal bound-field
+  details.
+- Documented changelist query parameters in generated OpenAPI, including
+  pagination, search, ordering, filter, and `_to_field` controls.
+- Typed changelist ordering indexes as integers in response schemas.
+- Documented the alpha API versioning and deprecation policy.
+
 ## 0.1.24 - 2026-07-02
 
 - Honored Ninja `register_field()` model-field mappings in admin-owned schema
