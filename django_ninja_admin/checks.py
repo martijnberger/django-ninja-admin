@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from contextlib import suppress
+from typing import cast
 
 from django.core import checks
 from django.core.exceptions import FieldDoesNotExist
@@ -278,12 +279,20 @@ def _check_pagination_options(model_admin):
     list_max_show_all = getattr(model_admin, "list_max_show_all", None)
     if not _is_integer_option(list_per_page):
         errors.append(_error(model_admin.__class__, "The value of 'list_per_page' must be an integer.", "E067"))
-    elif list_per_page < 1:
-        errors.append(_error(model_admin.__class__, "The value of 'list_per_page' must be greater than zero.", "E104"))
+    else:
+        list_per_page_int = cast(int, list_per_page)
+        if list_per_page_int < 1:
+            errors.append(
+                _error(model_admin.__class__, "The value of 'list_per_page' must be greater than zero.", "E104")
+            )
     if not _is_integer_option(list_max_show_all):
         errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must be an integer.", "E068"))
-    elif list_max_show_all < 0:
-        errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must not be negative.", "E105"))
+    else:
+        list_max_show_all_int = cast(int, list_max_show_all)
+        if list_max_show_all_int < 0:
+            errors.append(
+                _error(model_admin.__class__, "The value of 'list_max_show_all' must not be negative.", "E105")
+            )
     return errors
 
 
@@ -1166,24 +1175,27 @@ def _check_inlines(model_admin):
         max_num = getattr(inline_class, "max_num", None)
         if not _is_integer_option(extra):
             errors.append(_error(inline_class, "The value of 'extra' must be an integer.", "E073"))
-        elif extra < 0:
-            errors.append(_error(inline_class, "The value of 'extra' must not be negative.", "E106"))
+        else:
+            extra_int = cast(int, extra)
+            if extra_int < 0:
+                errors.append(_error(inline_class, "The value of 'extra' must not be negative.", "E106"))
         if min_num is not None and not _is_integer_option(min_num):
             errors.append(_error(inline_class, "The value of 'min_num' must be an integer or None.", "E074"))
-        elif min_num is not None and min_num < 0:
-            errors.append(_error(inline_class, "The value of 'min_num' must not be negative.", "E107"))
+        elif min_num is not None:
+            min_num_int = cast(int, min_num)
+            if min_num_int < 0:
+                errors.append(_error(inline_class, "The value of 'min_num' must not be negative.", "E107"))
         if max_num is not None and not _is_integer_option(max_num):
             errors.append(_error(inline_class, "The value of 'max_num' must be an integer or None.", "E075"))
-        elif max_num is not None and max_num < 0:
-            errors.append(_error(inline_class, "The value of 'max_num' must not be negative.", "E108"))
-        if (
-            _is_integer_option(min_num)
-            and _is_integer_option(max_num)
-            and min_num >= 0
-            and max_num >= 0
-            and min_num > max_num
-        ):
-            errors.append(_error(inline_class, "The value of 'min_num' must not exceed 'max_num'.", "E109"))
+        elif max_num is not None:
+            max_num_int = cast(int, max_num)
+            if max_num_int < 0:
+                errors.append(_error(inline_class, "The value of 'max_num' must not be negative.", "E108"))
+        if _is_integer_option(min_num) and _is_integer_option(max_num):
+            min_num_int = cast(int, min_num)
+            max_num_int = cast(int, max_num)
+            if min_num_int >= 0 and max_num_int >= 0 and min_num_int > max_num_int:
+                errors.append(_error(inline_class, "The value of 'min_num' must not exceed 'max_num'.", "E109"))
         if not isinstance(getattr(inline_class, "can_delete", True), bool):
             errors.append(_error(inline_class, "The value of 'can_delete' must be a boolean.", "E110"))
         if not isinstance(getattr(inline_class, "show_change_link", False), bool):

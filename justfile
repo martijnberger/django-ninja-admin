@@ -19,7 +19,7 @@ format-check:
     UV_CACHE_DIR=.uv-cache uv run ruff format --check .
 
 typecheck-package:
-    UV_CACHE_DIR=.uv-cache uv run ty check django_ninja_admin/actions.py django_ninja_admin/apps.py django_ninja_admin/decorators.py django_ninja_admin/schemas.py django_ninja_admin/exceptions.py django_ninja_admin/constants.py django_ninja_admin/routes.py django_ninja_admin/models.py django_ninja_admin/filters.py django_ninja_admin/changelist.py django_ninja_admin/admins/auth.py django_ninja_admin/utils
+    UV_CACHE_DIR=.uv-cache uv run ty check django_ninja_admin/actions.py django_ninja_admin/apps.py django_ninja_admin/decorators.py django_ninja_admin/schemas.py django_ninja_admin/exceptions.py django_ninja_admin/constants.py django_ninja_admin/routes.py django_ninja_admin/models.py django_ninja_admin/filters.py django_ninja_admin/changelist.py django_ninja_admin/checks.py django_ninja_admin/admins/auth.py django_ninja_admin/utils
 
 typecheck-scripts:
     UV_CACHE_DIR=.uv-cache uv run ty check scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/parity_report.py scripts/dist_check.py

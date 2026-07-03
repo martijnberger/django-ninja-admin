@@ -95,7 +95,7 @@ Statuses:
 
 | Behavior | Status | Evidence | Remaining Work |
 | --- | --- | --- | --- |
-| Ruff/pytest local gates | implemented | `just lint`, `just test`, `just typecheck`, `just check`, `.github/workflows/ci.yml`; typecheck currently covers schemas, exceptions, constants, routes, utils, actions, decorators, app config, log models, filters, changelists, and auth-admin modules | Keep CI and local gates aligned and broaden typecheck coverage to the remaining core admin/site modules |
+| Ruff/pytest local gates | implemented | `just lint`, `just test`, `just typecheck`, `just check`, `.github/workflows/ci.yml`; typecheck currently covers schemas, exceptions, constants, routes, utils, actions, decorators, app config, log models, filters, changelists, admin checks, and auth-admin modules | Keep CI and local gates aligned and broaden typecheck coverage to the remaining core admin/site modules |
 | Package build/install smoke | implemented | `scripts/package_smoke.py`, `scripts/sample_project_smoke.py`, `scripts/sample_project_full.py`, `just package-smoke`, `just sample-project-smoke`, `just sample-project-full`, and `DJANGO_NINJA_ADMIN_SMOKE_DJANGO` installed-project Django pins | Expand sample project scenarios as parity grows |
 | Parity report tooling | implemented | `scripts/parity_report.py`, `tests/test_parity_report.py`, and `just parity-report` | Expand into linked evidence checks as the matrix grows |
 | OpenAPI diff tooling | implemented | `scripts/openapi_diff.py`, `tests/test_openapi_diff.py`, and `just openapi-diff` | Use reviewed OpenAPI artifacts before beta/stable release candidates |
