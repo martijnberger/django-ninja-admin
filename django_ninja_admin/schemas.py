@@ -312,7 +312,6 @@ class FormDescription(Schema):
     readonly_fields: list[str]
     fields: list[FieldDescription]
     media: FormMediaDescription = Field(default_factory=FormMediaDescription)
-    fieldsets: list[Any]
     fieldset_layout: list[FieldsetDescription] = Field(default_factory=list)
     prepopulated: dict[str, Any]
     permissions: PermissionMap
@@ -338,7 +337,6 @@ class InlineFormsetRowMetadata(Schema):
 class InlineDescription(Schema):
     model: str
     readonly_fields: list[str]
-    fieldsets: list[Any]
     fieldset_layout: list[FieldsetDescription] = Field(default_factory=list)
     prepopulated: dict[str, Any]
     media: FormMediaDescription = Field(default_factory=FormMediaDescription)

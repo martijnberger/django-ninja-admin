@@ -1572,7 +1572,6 @@ class NinjaAdminSite:
             inline_desc = {
                 "model": f"{inline.model._meta.app_label}.{inline.model._meta.model_name}",
                 "readonly_fields": list(inline.get_readonly_fields(request, obj)),
-                "fieldsets": list(fieldsets),
                 "fieldset_layout": fieldset_layout_description(fieldsets),
                 "prepopulated": dict(inline.get_prepopulated_fields(request, obj)),
                 "media": form_media_description(formset_class.form()),

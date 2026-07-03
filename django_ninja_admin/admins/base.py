@@ -1401,7 +1401,6 @@ class BaseAdmin:
             "readonly_fields": [field_name_for_display(field) for field in self.get_readonly_fields(request, obj)],
             "fields": self.get_form_fields_description(request, obj, initial=initial),
             "media": form_media_description(form),
-            "fieldsets": list(fieldsets),
             "fieldset_layout": fieldset_layout_description(fieldsets),
             "prepopulated": dict(self.get_prepopulated_fields(request, obj)),
             "permissions": permissions,

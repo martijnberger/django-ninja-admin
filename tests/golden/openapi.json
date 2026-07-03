@@ -1704,11 +1704,6 @@
             "title": "Fieldset Layout",
             "type": "array"
           },
-          "fieldsets": {
-            "items": {},
-            "title": "Fieldsets",
-            "type": "array"
-          },
           "filter_horizontal": {
             "items": {
               "type": "string"
@@ -1784,7 +1779,6 @@
         },
         "required": [
           "fields",
-          "fieldsets",
           "model",
           "permissions",
           "prepopulated",
@@ -2518,11 +2512,6 @@
             "title": "Fieldset Layout",
             "type": "array"
           },
-          "fieldsets": {
-            "items": {},
-            "title": "Fieldsets",
-            "type": "array"
-          },
           "formset": {
             "items": {
               "items": {
@@ -2644,7 +2633,6 @@
         },
         "required": [
           "admin_style",
-          "fieldsets",
           "formset",
           "model",
           "permissions",

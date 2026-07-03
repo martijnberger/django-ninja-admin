@@ -913,6 +913,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     form_response_props = components["FormResponse"]["properties"]
     assert form_response_props["inlines"]["items"] == {"$ref": "#/components/schemas/InlineDescription"}
     form_description_props = components["FormDescription"]["properties"]
+    assert "fieldsets" not in form_description_props
     assert form_description_props["fieldset_layout"]["items"] == {"$ref": "#/components/schemas/FieldsetDescription"}
     fieldset_description_props = components["FieldsetDescription"]["properties"]
     assert fieldset_description_props["name"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
@@ -920,6 +921,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert fieldset_description_props["rows"]["items"] == {"$ref": "#/components/schemas/FieldsetRow"}
     assert components["FieldsetRow"]["properties"]["fields"]["items"] == {"type": "string"}
     inline_response_props = components["InlineDescription"]["properties"]
+    assert "fieldsets" not in inline_response_props
     assert inline_response_props["fieldset_layout"]["items"] == {"$ref": "#/components/schemas/FieldsetDescription"}
     assert inline_response_props["management_form"]["items"] == {"$ref": "#/components/schemas/FieldDescription"}
     assert inline_response_props["empty_form"]["items"] == {"$ref": "#/components/schemas/FieldDescription"}
@@ -6370,16 +6372,7 @@ def test_explicit_form_layouts_accept_callable_readonly_field_names(db, sample):
     form = model_admin.get_form_description(request, sample)["form"]
     fields_by_name = {field["name"]: field for field in form["fields"]}
 
-    assert form["fieldsets"] == [
-        (
-            "Main",
-            {
-                "fields": (("name", "upper_name"), "callable_summary"),
-                "classes": ("wide", "collapse"),
-                "description": "Primary product fields.",
-            },
-        )
-    ]
+    assert "fieldsets" not in form
     assert form["fieldset_layout"] == [
         {
             "name": "Main",
