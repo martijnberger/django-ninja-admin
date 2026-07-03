@@ -107,6 +107,14 @@ def write_sample_project(project_dir: Path) -> None:
 
             def __str__(self):
                 return self.name
+
+
+        class ProductImage(models.Model):
+            product = models.ForeignKey(Product, on_delete=models.CASCADE)
+            title = models.CharField(max_length=100)
+
+            def __str__(self):
+                return self.title
         """,
     )
     write_file(
@@ -116,9 +124,9 @@ def write_sample_project(project_dir: Path) -> None:
 
         from ninja import Schema
 
-        from django_ninja_admin import ModelAdmin, action, site
+        from django_ninja_admin import ModelAdmin, TabularInline, action, site
 
-        from .models import Category, Product
+        from .models import Category, Product, ProductImage
 
 
         class StockStatusActionData(Schema):
@@ -137,11 +145,17 @@ def write_sample_project(project_dir: Path) -> None:
             search_fields = ("name",)
 
 
+        class ProductImageInline(TabularInline):
+            model = ProductImage
+            extra = 0
+
+
         class ProductAdmin(ModelAdmin):
             list_display = ("name", "category", "price", "stock_status")
             list_editable = ("stock_status",)
             search_fields = ("name",)
             actions = ["set_stock_status"]
+            inlines = [ProductImageInline]
 
             @action(
                 description="Set stock status",
@@ -232,7 +246,7 @@ def write_sample_project(project_dir: Path) -> None:
 
         django.setup()
 
-        from sample_app.models import Category, Product
+        from sample_app.models import Category, Product, ProductImage
 
 
         class OpenAPIConsumer:
@@ -400,6 +414,8 @@ def write_sample_project(project_dir: Path) -> None:
             "sample_app_product_create",
             "sample_app_product_detail",
             "sample_app_product_partial_update",
+            "sample_app_product_update",
+            "sample_app_product_delete",
             "sample_app_product_bulk_update",
             "sample_app_product_action",
             "sample_app_product_change_form",
@@ -438,11 +454,15 @@ def write_sample_project(project_dir: Path) -> None:
                 "stock_status": "in_stock",
             }
         )
+        create_payload["inlines"] = {"sample_app.productimage": {"add": [{"title": "Inline from OpenAPI"}]}}
         created_response = consumer.request("sample_app_product_create", payload=create_payload)
         assert created_response.status_code == 201, created_response.content
         created = created_response.json()["data"]
         product_id = created["id"]
         assert created["name"] == "Created from OpenAPI"
+        created_inline = created_response.json()["inlines"]["sample_app.productimage"]["add"][0]
+        assert created_inline["title"] == "Inline from OpenAPI"
+        image_id = created_inline["id"]
 
         detail_response = consumer.request("sample_app_product_detail", path_params={"object_id": product_id})
         assert detail_response.status_code == 200, detail_response.content
@@ -450,6 +470,7 @@ def write_sample_project(project_dir: Path) -> None:
 
         patch_payload = consumer.example("sample_app_product_partial_update", "partial_update")
         patch_payload["data"] = {"name": "Patched from OpenAPI"}
+        patch_payload.pop("inlines", None)
         patched_response = consumer.request(
             "sample_app_product_partial_update",
             path_params={"object_id": product_id},
@@ -457,6 +478,30 @@ def write_sample_project(project_dir: Path) -> None:
         )
         assert patched_response.status_code == 200, patched_response.content
         assert patched_response.json()["data"]["name"] == "Patched from OpenAPI"
+
+        update_payload = consumer.example("sample_app_product_update", "update")
+        update_payload["data"].update(
+            {
+                "name": "Updated from OpenAPI",
+                "category": category.pk,
+                "price": "24.95",
+                "stock_status": "in_stock",
+            }
+        )
+        update_payload["inlines"] = {
+            "sample_app.productimage": {"change": [{"pk": image_id, "title": "Inline changed from OpenAPI"}]}
+        }
+        updated_response = consumer.request(
+            "sample_app_product_update",
+            path_params={"object_id": product_id},
+            payload=update_payload,
+        )
+        assert updated_response.status_code == 200, updated_response.content
+        assert updated_response.json()["data"]["name"] == "Updated from OpenAPI"
+        assert updated_response.json()["inlines"]["sample_app.productimage"]["change"][0]["title"] == (
+            "Inline changed from OpenAPI"
+        )
+        assert ProductImage.objects.get(pk=image_id).title == "Inline changed from OpenAPI"
 
         bulk_payload = consumer.example("sample_app_product_bulk_update", "bulk_update")
         bulk_payload["data"] = [{"pk": product_id, "stock_status": "out_of_stock"}]
@@ -485,6 +530,12 @@ def write_sample_project(project_dir: Path) -> None:
         form_response = consumer.request("sample_app_product_change_form", path_params={"object_id": product_id})
         assert form_response.status_code == 200, form_response.content
         assert form_response.json()["form"]["model"] == "sample_app.product"
+
+        delete_response = consumer.request("sample_app_product_delete", path_params={"object_id": product_id})
+        assert delete_response.status_code == 204, delete_response.content
+        consumer.assert_response_matches_schema("sample_app_product_delete", delete_response)
+        assert not Product.objects.filter(pk=product_id).exists()
+        assert not ProductImage.objects.filter(pk=image_id).exists()
         """,
     )
 
