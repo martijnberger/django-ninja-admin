@@ -18,6 +18,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving remaining changelist null-filter,
   direct lookup, search distinct/suffix, relation loading, prefetch, and
   changelist/paginator hook coverage out of `tests/test_admin_api.py`.
+- Continued the test-suite split by moving mounted custom-form, response-hook,
+  multivalue, temporal/scalar normalization, disabled-field, and formfield-hook
+  coverage into `tests/test_custom_forms.py`.
 
 ## 0.1.31 - 2026-07-03
 
