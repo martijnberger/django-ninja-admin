@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Continued the test-suite split by moving isolated model-field output/write
+  schema coverage into `tests/test_model_field_schemas.py`.
+
 ## 0.1.32 - 2026-07-03
 
 ### Changed
