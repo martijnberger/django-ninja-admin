@@ -73,6 +73,42 @@ def test_schema_field_overrides_are_included_and_serialize_admin_methods(db):
 
 
 @isolate_apps("tests.testapp")
+def test_output_exclude_omits_model_fields_from_schema_examples_and_serialization(db):
+    class OutputCategory(models.Model):
+        name = models.CharField(max_length=20)
+
+        class Meta:
+            app_label = "testapp"
+
+    class OutputAccount(models.Model):
+        name = models.CharField(max_length=20)
+        secret_token = models.CharField(max_length=50)
+        category = models.ForeignKey(OutputCategory, on_delete=models.CASCADE)
+        labels = models.ManyToManyField(OutputCategory, related_name="labeled_accounts", blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    class OutputAccountAdmin(ModelAdmin):
+        output_exclude = ("secret_token", "category", "labels")
+
+    model_admin = OutputAccountAdmin(OutputAccount, NinjaAdminSite(include_auth=False))
+    schema = model_admin.get_output_schema().model_json_schema()
+
+    assert {"secret_token", "category_id", "category_label", "labels"}.isdisjoint(schema["properties"])
+    assert {"secret_token", "category_id", "category_label", "labels"}.isdisjoint(schema["examples"][0])
+
+    account = OutputAccount(
+        id=5,
+        name="Visible",
+        secret_token="hidden",
+        category=OutputCategory(id=7, name="Internal"),
+    )
+
+    assert model_admin.serialize_object(account) == {"id": 5, "name": "Visible"}
+
+
+@isolate_apps("tests.testapp")
 def test_non_auth_password_fields_are_included_in_generated_schemas(db):
     class Credential(models.Model):
         username = models.CharField(max_length=50)

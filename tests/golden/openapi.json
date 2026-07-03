@@ -3349,10 +3349,7 @@
             "data": {
               "1": {
                 "id": 1,
-                "name": "example",
-                "permissions": [
-                  1
-                ]
+                "name": "example"
               }
             }
           }
@@ -3493,10 +3490,7 @@
         "examples": [
           {
             "id": 1,
-            "name": "example",
-            "permissions": [
-              1
-            ]
+            "name": "example"
           }
         ],
         "properties": {
@@ -3510,16 +3504,6 @@
             "maxLength": 150,
             "title": "Name",
             "type": "string"
-          },
-          "permissions": {
-            "default": [],
-            "items": {
-              "maximum": 9223372036854775807,
-              "minimum": -9223372036854775808,
-              "type": "integer"
-            },
-            "title": "Permissions",
-            "type": "array"
           }
         },
         "required": [
@@ -3534,10 +3518,7 @@
           {
             "data": {
               "id": 1,
-              "name": "example",
-              "permissions": [
-                1
-              ]
+              "name": "example"
             },
             "inlines": null
           }
@@ -3567,10 +3548,7 @@
         "examples": [
           {
             "id": 1,
-            "name": "example",
-            "permissions": [
-              1
-            ]
+            "name": "example"
           }
         ],
         "properties": {
@@ -3584,16 +3562,6 @@
             "maxLength": 150,
             "title": "Name",
             "type": "string"
-          },
-          "permissions": {
-            "default": [],
-            "items": {
-              "maximum": 9223372036854775807,
-              "minimum": -9223372036854775808,
-              "type": "integer"
-            },
-            "title": "Permissions",
-            "type": "array"
           }
         },
         "required": [
@@ -7213,18 +7181,11 @@
                 "date_joined": "2026-07-02T12:00:00+00:00",
                 "email": "example",
                 "first_name": "example",
-                "groups": [
-                  1
-                ],
                 "id": 1,
                 "is_active": true,
                 "is_staff": true,
-                "is_superuser": true,
                 "last_login": "2026-07-02T12:00:00+00:00",
                 "last_name": "example",
-                "user_permissions": [
-                  1
-                ],
                 "username": "example"
               }
             }
@@ -7446,18 +7407,11 @@
             "date_joined": "2026-07-02T12:00:00+00:00",
             "email": "example",
             "first_name": "example",
-            "groups": [
-              1
-            ],
             "id": 1,
             "is_active": true,
             "is_staff": true,
-            "is_superuser": true,
             "last_login": "2026-07-02T12:00:00+00:00",
             "last_name": "example",
-            "user_permissions": [
-              1
-            ],
             "username": "example"
           }
         ],
@@ -7478,16 +7432,6 @@
             "title": "First Name",
             "type": "string"
           },
-          "groups": {
-            "default": [],
-            "items": {
-              "maximum": 9223372036854775807,
-              "minimum": -9223372036854775808,
-              "type": "integer"
-            },
-            "title": "Groups",
-            "type": "array"
-          },
           "id": {
             "maximum": 9223372036854775807,
             "minimum": -9223372036854775808,
@@ -7506,12 +7450,6 @@
             "title": "Staff Status",
             "type": "boolean"
           },
-          "is_superuser": {
-            "default": false,
-            "description": "Designates that this user has all permissions without explicitly assigning them.",
-            "title": "Superuser Status",
-            "type": "boolean"
-          },
           "last_login": {
             "anyOf": [
               {
@@ -7528,16 +7466,6 @@
             "maxLength": 150,
             "title": "Last Name",
             "type": "string"
-          },
-          "user_permissions": {
-            "default": [],
-            "items": {
-              "maximum": 9223372036854775807,
-              "minimum": -9223372036854775808,
-              "type": "integer"
-            },
-            "title": "User Permissions",
-            "type": "array"
           },
           "username": {
             "maxLength": 150,
@@ -7563,18 +7491,11 @@
               "date_joined": "2026-07-02T12:00:00+00:00",
               "email": "example",
               "first_name": "example",
-              "groups": [
-                1
-              ],
               "id": 1,
               "is_active": true,
               "is_staff": true,
-              "is_superuser": true,
               "last_login": "2026-07-02T12:00:00+00:00",
               "last_name": "example",
-              "user_permissions": [
-                1
-              ],
               "username": "example"
             },
             "inlines": null
@@ -7607,18 +7528,11 @@
             "date_joined": "2026-07-02T12:00:00+00:00",
             "email": "example",
             "first_name": "example",
-            "groups": [
-              1
-            ],
             "id": 1,
             "is_active": true,
             "is_staff": true,
-            "is_superuser": true,
             "last_login": "2026-07-02T12:00:00+00:00",
             "last_name": "example",
-            "user_permissions": [
-              1
-            ],
             "username": "example"
           }
         ],
@@ -7639,16 +7553,6 @@
             "title": "First Name",
             "type": "string"
           },
-          "groups": {
-            "default": [],
-            "items": {
-              "maximum": 9223372036854775807,
-              "minimum": -9223372036854775808,
-              "type": "integer"
-            },
-            "title": "Groups",
-            "type": "array"
-          },
           "id": {
             "maximum": 9223372036854775807,
             "minimum": -9223372036854775808,
@@ -7667,12 +7571,6 @@
             "title": "Staff Status",
             "type": "boolean"
           },
-          "is_superuser": {
-            "default": false,
-            "description": "Designates that this user has all permissions without explicitly assigning them.",
-            "title": "Superuser Status",
-            "type": "boolean"
-          },
           "last_login": {
             "anyOf": [
               {
@@ -7689,16 +7587,6 @@
             "maxLength": 150,
             "title": "Last Name",
             "type": "string"
-          },
-          "user_permissions": {
-            "default": [],
-            "items": {
-              "maximum": 9223372036854775807,
-              "minimum": -9223372036854775808,
-              "type": "integer"
-            },
-            "title": "User Permissions",
-            "type": "array"
           },
           "username": {
             "maxLength": 150,

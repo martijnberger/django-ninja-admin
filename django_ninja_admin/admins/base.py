@@ -156,6 +156,7 @@ class BaseAdmin:
     formfield_overrides: ClassVar[dict[Any, Any]] = {}
     form_schema_field_overrides: ClassVar[dict[str, Any]] = {}
     output_schema = None
+    output_exclude = ()
     schema_field_overrides: ClassVar[dict[str, Any]] = {}
     filter_vertical = ()
     filter_horizontal = ()
@@ -275,6 +276,9 @@ class BaseAdmin:
 
     def get_schema_field_overrides(self, request=None):
         return self.schema_field_overrides
+
+    def get_output_exclude(self, request=None):
+        return self.output_exclude
 
     def get_form_schema_field_overrides(self, request=None, obj=None, *, change=False):
         return self.form_schema_field_overrides
@@ -798,6 +802,8 @@ class BaseAdmin:
             if field.remote_field:
                 data[f"{field.name}_label"] = "Example"
         for field in self.model._meta.many_to_many:
+            if field.name not in custom_field_names:
+                continue
             data[field.name] = [self._model_field_example_value(field.target_field)]
         for name, field_type, default in custom_fields:
             data.setdefault(name, self._schema_type_example(field_type, default))
@@ -856,10 +862,15 @@ class BaseAdmin:
         if self.output_schema is not None:
             return self.output_schema
         overrides = self.get_schema_field_overrides(request) or {}
+        output_exclude = set(self.get_output_exclude(request) or ())
         fields = []
         custom_fields = [self._model_field_output_custom_field(self.model._meta.pk)]
         for field in self.model._meta.fields:
-            if field.name == self.model._meta.pk.name or self._is_auth_password_field(field):
+            if (
+                field.name == self.model._meta.pk.name
+                or self._is_auth_password_field(field)
+                or self._is_output_excluded(field, output_exclude)
+            ):
                 continue
             if isinstance(field, models.ImageField):
                 custom_fields.append((field.name, ImageFieldValue | None, None))
@@ -884,9 +895,15 @@ class BaseAdmin:
             else:
                 fields.append(field.name)
         for field in self.model._meta.fields:
-            if field.remote_field and not self._is_auth_password_field(field):
+            if (
+                field.remote_field
+                and not self._is_auth_password_field(field)
+                and not self._is_output_excluded(field, output_exclude)
+            ):
                 custom_fields.append((f"{field.name}_label", str, None))
         for field in self.model._meta.many_to_many:
+            if field.name in output_exclude:
+                continue
             item_type = cast(Any, self.get_pydantic_type_for_model_output_field(field.target_field))
             custom_fields.append((field.name, list[item_type], []))
         custom_fields.extend(
@@ -895,6 +912,9 @@ class BaseAdmin:
             for field_type, default in [self._normalize_schema_override(value)]
         )
         return self._output_schema_for_fields(tuple(fields), tuple(custom_fields))
+
+    def _is_output_excluded(self, field, output_exclude):
+        return field.name in output_exclude or getattr(field, "attname", None) in output_exclude
 
     def _model_field_output_custom_field(self, field):
         field_type = self.get_pydantic_type_for_model_output_field(field)
@@ -1089,9 +1109,10 @@ class BaseAdmin:
 
     def serialize_object(self, obj, request=None):
         schema = self.get_output_schema(request)
+        output_exclude = set(self.get_output_exclude(request) or ())
         data = {}
         for field in obj._meta.fields:
-            if self._is_auth_password_field(field):
+            if self._is_auth_password_field(field) or self._is_output_excluded(field, output_exclude):
                 continue
             value = getattr(obj, field.name)
             if isinstance(field, models.ImageField):
@@ -1108,6 +1129,8 @@ class BaseAdmin:
             if field.remote_field and value is not None:
                 data[f"{field.name}_label"] = str(value)
         for field in obj._meta.many_to_many:
+            if field.name in output_exclude:
+                continue
             data[field.name] = list(getattr(obj, field.name).values_list("pk", flat=True)) if obj.pk else []
         for name in self.get_schema_field_overrides(request) or {}:
             if name in data:

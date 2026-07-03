@@ -147,6 +147,17 @@ class ProductAdmin(ModelAdmin):
         return f"${obj.price}"
 ```
 
+### Excluding Output Fields
+
+Use `output_exclude` or `get_output_exclude(request)` to omit model fields from
+generated output schemas and serialized responses while keeping other admin
+behavior intact.
+
+```python
+class AccountAdmin(ModelAdmin):
+    output_exclude = ("secret_token",)
+```
+
 ### Runtime Hooks
 
 Use Django-admin-style hooks for behavior:
@@ -154,6 +165,7 @@ Use Django-admin-style hooks for behavior:
 - `get_form_class(request, obj=None, change=False)`
 - `get_form_schema_field_overrides(request, obj=None, change=False)`
 - `get_output_schema(request=None)`
+- `get_output_exclude(request=None)`
 - `get_form_description(request, obj=None, **kwargs)`
 - `get_queryset(request)`
 - `list_prefetch_related` / `get_list_prefetch_related(request)` for

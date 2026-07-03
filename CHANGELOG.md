@@ -9,6 +9,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Added an `output_exclude` model-admin hook and applied it to default auth
+  admins so sensitive user/group permission fields are omitted from read
+  schemas and serialized responses.
 - Expanded the installed-wheel generated-client smoke to validate documented
   error responses against the OpenAPI response schemas.
 

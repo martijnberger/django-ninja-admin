@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group, Permission
 from django.test import Client, override_settings
 from ninja.security import SessionAuthIsStaff
 
@@ -151,6 +151,8 @@ def test_include_auth_uses_safe_user_and_group_admins(db):
     client = Client()
     user = get_user_model().objects.create_user("auth-safe", password="hashed", is_staff=True)
     user.user_permissions.set(Permission.objects.all())
+    group = Group.objects.create(name="Operators")
+    group.permissions.add(Permission.objects.first())
     client.force_login(user)
 
     user_form = client.get("/auth-models-admin/auth/user/form")
@@ -165,12 +167,23 @@ def test_include_auth_uses_safe_user_and_group_admins(db):
 
     schema = client.get("/auth-models-admin/openapi.json").json()
     sensitive_user_write_fields = {"password", "is_superuser", "user_permissions", "groups"}
+    sensitive_user_output_fields = {"password", "is_superuser", "user_permissions", "groups"}
     for component_name in ("UserAdminCreateData", "UserAdminUpdateData", "UserAdminPartialUpdateData"):
         assert sensitive_user_write_fields.isdisjoint(_component_properties(schema, component_name))
     for component_name in ("UserAdminOut", "UserAdminMutationData"):
-        assert "password" not in _component_properties(schema, component_name)
+        assert sensitive_user_output_fields.isdisjoint(_component_properties(schema, component_name))
     for component_name in ("GroupAdminCreateData", "GroupAdminUpdateData", "GroupAdminPartialUpdateData"):
         assert "permissions" not in _component_properties(schema, component_name)
+    for component_name in ("GroupAdminOut", "GroupAdminMutationData"):
+        assert "permissions" not in _component_properties(schema, component_name)
+
+    user_detail = client.get(f"/auth-models-admin/auth/user/{user.pk}")
+    assert user_detail.status_code == 200
+    assert sensitive_user_output_fields.isdisjoint(user_detail.json())
+
+    group_detail = client.get(f"/auth-models-admin/auth/group/{group.pk}")
+    assert group_detail.status_code == 200
+    assert "permissions" not in group_detail.json()
 
     response = client.patch(
         f"/auth-models-admin/auth/user/{user.pk}",
