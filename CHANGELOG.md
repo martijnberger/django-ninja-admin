@@ -18,6 +18,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving broad OpenAPI component, route
   response-map, operation-id, example, and generated contract coverage into
   `tests/test_openapi_contracts.py`.
+- Completed the `tests/test_admin_api.py` split by moving the remaining
+  runtime error, CRUD/history/change-log, and no-DRF package contract coverage
+  into focused topic modules.
 
 ## 0.1.33 - 2026-07-03
 
