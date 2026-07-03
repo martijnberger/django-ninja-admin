@@ -14,6 +14,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   `tests/test_permissions_auth.py`, with additional OpenAPI assertions that
   default auth-admin write schemas do not advertise sensitive user/group
   fields.
+- Continued the test-suite split by moving history route filtering,
+  pagination, object-permission, and page-scoped visibility coverage into
+  `tests/test_history.py`.
 
 ## 0.1.29 - 2026-07-03
 
