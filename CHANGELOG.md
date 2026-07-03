@@ -12,6 +12,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Continued the test-suite split by moving site registration, autodiscover
   rollback, OpenAPI cache invalidation, custom admin route, and context
   customization coverage into `tests/test_site.py`.
+- Continued the test-suite split by moving core changelist list/detail,
+  search, pagination, ordering, row metadata, action UI, and list-editable
+  metadata coverage into `tests/test_changelist_core.py`.
 
 ## 0.1.31 - 2026-07-03
 
