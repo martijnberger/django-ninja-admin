@@ -7,6 +7,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Expanded the package typecheck gate to cover changelist and list-filter
+  modules, including the validated date-hierarchy field invariant.
+
 ## 0.1.27 - 2026-07-03
 
 - Bounded history and autocomplete object-level permission filtering to the

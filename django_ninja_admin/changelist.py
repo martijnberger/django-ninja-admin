@@ -741,6 +741,7 @@ class ChangeList:
             return None
 
         field = self.date_hierarchy_model_field
+        assert field is not None
         values = self.get_date_hierarchy_values(self.params)
         values = self.select_date_hierarchy_level(values, field)
         queryset = self.date_queryset()
