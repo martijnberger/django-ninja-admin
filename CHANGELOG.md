@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Expanded script type checking to cover release smoke scripts.
 - Typed nested form metadata OpenAPI components for relation widgets,
   filtered selects, radio fields, and prepopulated-field sources.
+- Typed form choice metadata OpenAPI components for two-item choice pairs,
+  choice options, grouped choices, and JSON-compatible raw/coerced values.
 
 ## 0.1.35 - 2026-07-03
 

@@ -1131,6 +1131,93 @@
         "title": "ChangelistResponse",
         "type": "object"
       },
+      "ChoiceGroup": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/ChoiceOption"
+            },
+            "title": "Options",
+            "type": "array"
+          }
+        },
+        "required": [
+          "options"
+        ],
+        "title": "ChoiceGroup",
+        "type": "object"
+      },
+      "ChoiceOption": {
+        "additionalProperties": false,
+        "properties": {
+          "coerced_value": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "raw_value": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FieldMetadataValue"
+              }
+            ]
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "title": "ChoiceOption",
+        "type": "object"
+      },
+      "ChoicePair": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "type": "array"
+      },
       "Column": {
         "properties": {
           "ascending": {
@@ -1710,8 +1797,7 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": true,
-                  "type": "object"
+                  "$ref": "#/components/schemas/ChoiceGroup"
                 },
                 "type": "array"
               },
@@ -1725,8 +1811,7 @@
             "anyOf": [
               {
                 "items": {
-                  "additionalProperties": true,
-                  "type": "object"
+                  "$ref": "#/components/schemas/ChoiceOption"
                 },
                 "type": "array"
               },
@@ -1740,8 +1825,7 @@
             "anyOf": [
               {
                 "items": {
-                  "items": {},
-                  "type": "array"
+                  "$ref": "#/components/schemas/ChoicePair"
                 },
                 "type": "array"
               },
@@ -2645,6 +2729,37 @@
         ],
         "title": "FieldDescription",
         "type": "object"
+      },
+      "FieldMetadataValue": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldMetadataValue"
+            },
+            "type": "object"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/FieldMetadataValue"
+            },
+            "type": "array"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
       "FieldsetDescription": {
         "properties": {

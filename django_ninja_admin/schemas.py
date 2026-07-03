@@ -311,6 +311,26 @@ class SelectedOption(Schema):
     text: str
 
 
+type FieldMetadataValue = dict[str, FieldMetadataValue] | list[FieldMetadataValue] | str | int | float | bool | None
+type ChoicePair = tuple[str | None, str]
+
+
+class ChoiceOption(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    value: str | None = None
+    raw_value: FieldMetadataValue = None
+    label: str
+    coerced_value: FieldMetadataValue = None
+
+
+class ChoiceGroup(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str | None = None
+    options: list[ChoiceOption]
+
+
 class SourceFieldIdentity(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -431,10 +451,10 @@ class FieldAttributes(Schema):
     subwidgets: list[dict[str, Any]] | None = None
     select_date: dict[str, Any] | None = None
     input_formats: list[Any] | None = None
-    choices: list[list[Any]] | None = None
-    choice_options: list[dict[str, Any]] | None = None
+    choices: list[ChoicePair] | None = None
+    choice_options: list[ChoiceOption] | None = None
     choice_coerce: str | None = None
-    choice_groups: list[dict[str, Any]] | None = None
+    choice_groups: list[ChoiceGroup] | None = None
     combo_fields: list[dict[str, Any]] | None = None
 
     initial: Any = None

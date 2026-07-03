@@ -516,6 +516,25 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert field_attrs_props["max_length"]["anyOf"] == [{"type": "integer"}, {"type": "null"}]
     assert {"$ref": "#/components/schemas/FileFieldValue"} in field_attrs_props["current_file"]["anyOf"]
     assert {"$ref": "#/components/schemas/ImageFieldValue"} in field_attrs_props["current_file"]["anyOf"]
+    assert field_attrs_props["choices"]["anyOf"][0]["items"] == {"$ref": "#/components/schemas/ChoicePair"}
+    assert components["ChoicePair"]["minItems"] == 2
+    assert components["ChoicePair"]["maxItems"] == 2
+    assert components["ChoicePair"]["prefixItems"][1] == {"type": "string"}
+    assert field_attrs_props["choice_options"]["anyOf"][0]["items"] == {"$ref": "#/components/schemas/ChoiceOption"}
+    assert components["ChoiceOption"]["additionalProperties"] is False
+    assert components["ChoiceOption"]["required"] == ["label"]
+    assert components["ChoiceOption"]["properties"]["raw_value"]["allOf"] == [
+        {"$ref": "#/components/schemas/FieldMetadataValue"}
+    ]
+    assert components["ChoiceOption"]["properties"]["coerced_value"]["allOf"] == [
+        {"$ref": "#/components/schemas/FieldMetadataValue"}
+    ]
+    assert field_attrs_props["choice_groups"]["anyOf"][0]["items"] == {"$ref": "#/components/schemas/ChoiceGroup"}
+    assert components["ChoiceGroup"]["additionalProperties"] is False
+    assert components["ChoiceGroup"]["required"] == ["options"]
+    assert components["ChoiceGroup"]["properties"]["options"]["items"] == {"$ref": "#/components/schemas/ChoiceOption"}
+    assert {"type": "string"} in components["FieldMetadataValue"]["anyOf"]
+    assert {"type": "null"} in components["FieldMetadataValue"]["anyOf"]
     selected_options_schema = field_attrs_props["selected_options"]["anyOf"][0]
     assert selected_options_schema["items"] == {"$ref": "#/components/schemas/SelectedOption"}
     assert components["SelectedOption"]["required"] == ["id", "text"]
