@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from ninja import Schema
@@ -562,7 +563,7 @@ class MutationResponse(Schema):
 
 class HistoryItem(Schema):
     id: Any
-    action_time: str
+    action_time: datetime
     user_id: Any
     content_type_id: Any = None
     model: str | None = None

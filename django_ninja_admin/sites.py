@@ -811,7 +811,7 @@ class NinjaAdminSite:
                 results.append(
                     {
                         "id": item.pk,
-                        "action_time": item.action_time.isoformat(),
+                        "action_time": item.action_time,
                         "user_id": item.user_id,
                         "content_type_id": item.content_type_id,
                         "model": f"{opts.app_label}.{opts.model_name}" if opts is not None else None,

@@ -834,6 +834,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "$ref": "#/components/schemas/ModelSummary"
     }
     assert _response_schema_ref(paths["/admin-api/history"]["get"], "200") == "#/components/schemas/HistoryResponse"
+    assert components["HistoryItem"]["properties"]["action_time"]["format"] == "date-time"
     assert components["HistoryItem"]["properties"]["change_message_text"]["type"] == "string"
     assert components["HistoryItem"]["properties"]["model"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert components["HistoryItem"]["properties"]["detail_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]

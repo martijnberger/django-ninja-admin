@@ -2245,6 +2245,7 @@
             "type": "integer"
           },
           "action_time": {
+            "format": "date-time",
             "title": "Action Time",
             "type": "string"
           },
