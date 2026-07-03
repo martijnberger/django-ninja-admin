@@ -11,6 +11,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Continued the test-suite split by moving isolated model-field output/write
   schema coverage into `tests/test_model_field_schemas.py`.
+- Continued the test-suite split by moving schema override, custom output
+  method, non-auth password field, and Ninja `register_field()` inference
+  coverage into `tests/test_schema_customization.py`.
 
 ## 0.1.32 - 2026-07-03
 
