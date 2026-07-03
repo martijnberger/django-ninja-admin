@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from decimal import Decimal
 from functools import wraps
 from types import UnionType
-from typing import Any, Literal, Union, get_args, get_origin
+from typing import Any, Literal, Union, cast, get_args, get_origin
 from uuid import UUID
 from weakref import WeakSet
 
@@ -90,6 +90,7 @@ all_sites = WeakSet()
 DEFAULT_AUTH = object()
 CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
 _UNSET = object()
+NinjaQuery = cast(Any, Query)
 
 
 class NinjaAdminSite:
@@ -108,7 +109,7 @@ class NinjaAdminSite:
     def __init__(self, *, name="ninja_admin", auth=DEFAULT_AUTH, include_auth=True):
         self.name = name
         self.include_auth = include_auth
-        self.auth = SessionAuthIsStaff() if auth is DEFAULT_AUTH else auth
+        self.auth: Any = SessionAuthIsStaff() if auth is DEFAULT_AUTH else auth
         self._registry = {}
         self._actions = {"delete_selected": actions.delete_selected}
         self._global_actions = self._actions.copy()
@@ -237,7 +238,7 @@ class NinjaAdminSite:
         return errors
 
     def _build_app_dict(self, request, label=None):
-        app_dict = {}
+        app_dict: dict[str, dict[str, Any]] = {}
         models = {
             model: model_admin
             for model, model_admin in self._registry.items()
@@ -1054,17 +1055,17 @@ class NinjaAdminSite:
         )
         def changelist(
             request,
-            q: str | None = Query(None, description="Search term matched against the admin search fields."),
-            o: str | None = Query(
+            q: str | None = NinjaQuery(None, description="Search term matched against the admin search fields."),
+            o: str | None = NinjaQuery(
                 None,
                 description="Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
             ),
-            p: str | None = Query(None, description="1-based page number, or `last`."),
-            page: str | None = Query(None, description="Legacy alias for `p`; generated links use `p`."),
-            pp: str | None = Query(None, description="Page size override."),
-            all_: str | None = Query(None, alias="all", description="Show all rows when allowed by the admin."),
-            facets: str | None = Query(None, alias="_facets", description="Enable optional facet counts."),
-            to_field: str | None = Query(
+            p: str | None = NinjaQuery(None, description="1-based page number, or `last`."),
+            page: str | None = NinjaQuery(None, description="Legacy alias for `p`; generated links use `p`."),
+            pp: str | None = NinjaQuery(None, description="Page size override."),
+            all_: str | None = NinjaQuery(None, alias="all", description="Show all rows when allowed by the admin."),
+            facets: str | None = NinjaQuery(None, alias="_facets", description="Enable optional facet counts."),
+            to_field: str | None = NinjaQuery(
                 None,
                 alias="_to_field",
                 description="Use an allowed alternate object id field.",
@@ -1180,7 +1181,7 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_detail",
         )
-        def detail(request, object_id: str, to_field: str | None = Query(None, alias="_to_field")):
+        def detail(request, object_id: str, to_field: str | None = NinjaQuery(None, alias="_to_field")):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
             if not model_admin.has_view_or_change_permission(request, obj):
                 raise PermissionDenied
@@ -1198,7 +1199,7 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_change_form",
         )
-        def change_form(request, object_id: str, to_field: str | None = Query(None, alias="_to_field")):
+        def change_form(request, object_id: str, to_field: str | None = NinjaQuery(None, alias="_to_field")):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
             if not model_admin.has_view_or_change_permission(request, obj):
                 raise PermissionDenied
@@ -1217,7 +1218,7 @@ class NinjaAdminSite:
             request,
             object_id: str,
             payload: update_payload_schema,
-            to_field: str | None = Query(None, alias="_to_field"),
+            to_field: str | None = NinjaQuery(None, alias="_to_field"),
         ):
             return site._update_object(request, model_admin, object_id, payload, partial=True, to_field=to_field)
 
@@ -1234,7 +1235,7 @@ class NinjaAdminSite:
             request,
             object_id: str,
             payload: replace_payload_schema,
-            to_field: str | None = Query(None, alias="_to_field"),
+            to_field: str | None = NinjaQuery(None, alias="_to_field"),
         ):
             return site._update_object(request, model_admin, object_id, payload, partial=False, to_field=to_field)
 
@@ -1254,7 +1255,7 @@ class NinjaAdminSite:
             def update_multipart(
                 request,
                 object_id: str,
-                to_field: str | None = Query(None, alias="_to_field"),
+                to_field: str | None = NinjaQuery(None, alias="_to_field"),
             ):
                 obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
@@ -1283,7 +1284,7 @@ class NinjaAdminSite:
             def replace_multipart(
                 request,
                 object_id: str,
-                to_field: str | None = Query(None, alias="_to_field"),
+                to_field: str | None = NinjaQuery(None, alias="_to_field"),
             ):
                 obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
@@ -1312,7 +1313,7 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_delete",
         )
-        def delete(request, object_id: str, to_field: str | None = Query(None, alias="_to_field")):
+        def delete(request, object_id: str, to_field: str | None = NinjaQuery(None, alias="_to_field")):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
             if not model_admin.has_delete_permission(request, obj):
                 raise PermissionDenied
@@ -1663,13 +1664,13 @@ class NinjaAdminSite:
         return FormResponse.model_validate(data).model_dump(mode="json")
 
     def _payload_data(self, payload, *, exclude_unset=True):
-        data = getattr(payload, "data", {})
+        data = cast(Any, getattr(payload, "data", {}))
         if hasattr(data, "model_dump"):
             return data.model_dump(mode="python", exclude_unset=exclude_unset)
         return data
 
     def _payload_inlines(self, payload):
-        inlines = getattr(payload, "inlines", None)
+        inlines = cast(Any, getattr(payload, "inlines", None))
         if hasattr(inlines, "model_dump"):
             return inlines.model_dump(mode="json", by_alias=True, exclude_none=True, exclude_unset=True)
         return inlines

@@ -11,6 +11,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   modules, including the validated date-hierarchy field invariant.
 - Expanded the package typecheck gate to cover admin system checks, with
   explicit narrowing for validated numeric admin options.
+- Expanded the package typecheck gate to cover site/route registration logic,
+  including typed app-list dictionaries, auth callables, Ninja query metadata,
+  and Pydantic payload extraction.
 
 ## 0.1.27 - 2026-07-03
 
