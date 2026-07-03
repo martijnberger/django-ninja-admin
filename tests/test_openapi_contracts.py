@@ -162,6 +162,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "type": "integer",
     }
     assert components["ProductAdminCreateData"]["properties"]["stock_status"]["type"] == "string"
+    assert components["ObjectIdentifier"] == {"anyOf": [{"type": "string"}, {"type": "integer"}, {"type": "number"}]}
     assert components["ProductAdminPartialUpdateData"]["properties"]["manual"] == {
         "anyOf": [{"type": "string"}, {"type": "null"}],
         "title": "Manual",
@@ -181,6 +182,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert any(option.get("type") == "number" for option in price_options)
     assert components["ProductAdminBulkRow"]["required"] == ["pk"]
     assert components["ProductAdminBulkRow"]["additionalProperties"] is False
+    assert components["ProductAdminBulkRow"]["properties"]["pk"] == {"$ref": "#/components/schemas/ObjectIdentifier"}
     assert components["ProductAdminBulkRow"]["examples"][0] == {"pk": 1, "stock_status": "in_stock"}
     assert components["ProductAdminBulkPayload"]["examples"][0] == {"data": [{"pk": 1, "stock_status": "in_stock"}]}
     bulk_response_schema = components["ProductAdminBulkResponse"]
@@ -200,7 +202,13 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductImageInlineAddRow"]["examples"][0] == {"title": "example"}
     assert components["ProductImageInlineChangeRow"]["required"] == ["pk"]
     assert components["ProductImageInlineChangeRow"]["additionalProperties"] is False
+    assert components["ProductImageInlineChangeRow"]["properties"]["pk"] == {
+        "$ref": "#/components/schemas/ObjectIdentifier"
+    }
     assert components["ProductImageInlineChangeRow"]["examples"][0] == {"pk": 1, "title": "example"}
+    assert components["ProductImageInlineOperations"]["properties"]["delete"]["items"] == {
+        "$ref": "#/components/schemas/ObjectIdentifier"
+    }
     assert components["ProductImageInlineOperations"]["examples"][0] == {
         "add": [{"title": "example"}],
         "change": [{"pk": 1, "title": "example"}],
@@ -229,6 +237,9 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     set_status_payload = components["ProductAdminSetStockStatusActionPayload"]
     assert set_status_payload["properties"]["action"]["const"] == "set_stock_status"
     assert set_status_payload["properties"]["data"] == {"$ref": "#/components/schemas/StockStatusActionData"}
+    assert set_status_payload["properties"]["selected_ids"]["items"] == {
+        "$ref": "#/components/schemas/ObjectIdentifier"
+    }
     assert set(set_status_payload["required"]) == {"action", "data"}
     action_responses = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["responses"]
     action_response_schema = action_responses["200"]["content"]["application/json"]["schema"]

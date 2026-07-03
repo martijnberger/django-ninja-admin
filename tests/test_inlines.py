@@ -270,6 +270,17 @@ def test_inline_payload_uses_pydantic_request_validation(admin_client, sample):
     assert response.json()["errors"][0]["param"] == "inlines.testapp.productimage.add.0.title"
 
 
+def test_inline_payload_rejects_nested_delete_identifiers(admin_client, sample):
+    response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {}, "inlines": {"testapp.productimage": {"delete": [{"pk": 1}]}}},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 422
+    assert response.json()["errors"][0]["param"].startswith("inlines.testapp.productimage.delete.0")
+
+
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_inline_multivalue_payload_uses_pydantic_and_formset_normalization(admin_client, sample):
     product = Product.objects.create(

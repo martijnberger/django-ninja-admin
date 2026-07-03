@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Typed action selected IDs, bulk row primary keys, and inline change/delete
+  identifiers as reusable JSON scalar OpenAPI components.
+
 ## 0.1.37 - 2026-07-03
 
 ### Changed

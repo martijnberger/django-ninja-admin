@@ -8,7 +8,7 @@ from pydantic import ConfigDict, Field, create_model
 
 from django_ninja_admin.admins.base import BaseAdmin
 from django_ninja_admin.exceptions import AdminValidationError
-from django_ninja_admin.schemas import AdminInlineOperationsSchema, AdminInlineRowSchema
+from django_ninja_admin.schemas import AdminInlineOperationsSchema, AdminInlineRowSchema, ObjectIdentifier
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 
 PydanticCreateModel = cast(Any, create_model)
@@ -128,7 +128,7 @@ class InlineModelAdmin(BaseAdmin):
             model = cast(Any, self.model)
             fields = {}
             if require_pk:
-                fields["pk"] = (Any, ...)
+                fields["pk"] = (ObjectIdentifier, ...)
             for field_name, form_field in form_fields.items():
                 field_type = self.get_form_schema_field_type(field_name, form_field, overrides=overrides)
                 required = bool(form_field.required and not getattr(form_field, "disabled", False) and not partial)
@@ -174,7 +174,7 @@ class InlineModelAdmin(BaseAdmin):
                 ),
                 add=(list[add_schema], Field(default_factory=list)),
                 change=(list[change_schema], Field(default_factory=list)),
-                delete=(list[Any], Field(default_factory=list)),
+                delete=(list[ObjectIdentifier], Field(default_factory=list)),
             )
             self._inline_operations_schema_cache = cache
         return cache[cache_key]

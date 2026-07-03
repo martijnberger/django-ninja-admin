@@ -30,7 +30,14 @@ from pydantic import (
 )
 
 from django_ninja_admin.exceptions import NotRegistered
-from django_ninja_admin.schemas import AdminBulkRowSchema, AdminWriteSchema, FileFieldValue, ImageFieldValue
+from django_ninja_admin.schemas import (
+    AdminBulkRowSchema,
+    AdminWriteSchema,
+    FieldMetadataValue,
+    FileFieldValue,
+    ImageFieldValue,
+    ObjectIdentifier,
+)
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
 from django_ninja_admin.utils.forms import (
     fieldset_layout_description,
@@ -77,7 +84,7 @@ from django_ninja_admin.utils.schema_examples import (
     schema_type_example,
 )
 
-AdminJsonValue = dict[str, Any] | list[Any] | str | int | float | bool | None
+AdminJsonValue = FieldMetadataValue
 PydanticCreateModel = cast(Any, create_model)
 
 
@@ -323,7 +330,7 @@ class BaseAdmin:
                 __base__=Schema,
                 __config__=ConfigDict(json_schema_extra={"examples": [{"data": self._schema_example(data_schema)}]}),
                 data=(data_schema, ...),
-                inlines=(dict[str, Any] | None, None),
+                inlines=(FieldMetadataValue | None, None),
             )
             self._mutation_payload_schema_cache = cache
         return cache[cache_key]
@@ -352,7 +359,7 @@ class BaseAdmin:
                     }
                 ),
                 data=(data_schema, ...),
-                inlines=(dict[str, Any] | None, None),
+                inlines=(FieldMetadataValue | None, None),
             )
             self._mutation_response_schema_cache = cache
         return cache[cache_key]
@@ -366,7 +373,7 @@ class BaseAdmin:
             if self.list_editable:
                 form_class = self.get_changelist_form_class(request)
                 form_fields = form_class.base_fields
-            row_fields = {"pk": (Any, ...)}
+            row_fields = {"pk": (ObjectIdentifier, ...)}
             for field_name in self.list_editable:
                 form_field = form_fields.get(field_name)
                 field_type = self.get_form_schema_field_type(

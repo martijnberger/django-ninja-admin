@@ -248,7 +248,7 @@
         ],
         "properties": {
           "pk": {
-            "title": "Pk"
+            "$ref": "#/components/schemas/ObjectIdentifier"
           }
         },
         "required": [
@@ -337,7 +337,9 @@
             "type": "boolean"
           },
           "selected_ids": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
             "title": "Selected Ids",
             "type": "array"
           }
@@ -417,14 +419,12 @@
           "inlines": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/FieldMetadataValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Inlines"
+            ]
           }
         },
         "required": [
@@ -3372,7 +3372,7 @@
         ],
         "properties": {
           "pk": {
-            "title": "Pk"
+            "$ref": "#/components/schemas/ObjectIdentifier"
           }
         },
         "required": [
@@ -3448,7 +3448,9 @@
             "type": "boolean"
           },
           "selected_ids": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
             "title": "Selected Ids",
             "type": "array"
           }
@@ -3529,14 +3531,12 @@
           "inlines": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/FieldMetadataValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Inlines"
+            ]
           }
         },
         "required": [
@@ -4256,6 +4256,19 @@
         "title": "ModelSummary",
         "type": "object"
       },
+      "ObjectIdentifier": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      },
       "PageChoice": {
         "properties": {
           "display": {
@@ -4635,7 +4648,7 @@
         ],
         "properties": {
           "pk": {
-            "title": "Pk"
+            "$ref": "#/components/schemas/ObjectIdentifier"
           },
           "stock_status": {
             "anyOf": [
@@ -4829,7 +4842,9 @@
             "type": "boolean"
           },
           "selected_ids": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
             "title": "Selected Ids",
             "type": "array"
           }
@@ -4894,7 +4909,9 @@
             "type": "boolean"
           },
           "selected_ids": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
             "title": "Selected Ids",
             "type": "array"
           }
@@ -5101,14 +5118,12 @@
           "inlines": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/FieldMetadataValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Inlines"
+            ]
           }
         },
         "required": [
@@ -5468,7 +5483,9 @@
             "type": "boolean"
           },
           "selected_ids": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
             "title": "Selected Ids",
             "type": "array"
           }
@@ -5495,7 +5512,9 @@
             "type": "boolean"
           },
           "selected_ids": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
             "title": "Selected Ids",
             "type": "array"
           }
@@ -5703,7 +5722,7 @@
         ],
         "properties": {
           "pk": {
-            "title": "Pk"
+            "$ref": "#/components/schemas/ObjectIdentifier"
           },
           "title": {
             "anyOf": [
@@ -5760,7 +5779,9 @@
             "type": "array"
           },
           "delete": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
             "title": "Delete",
             "type": "array"
           }
@@ -6694,7 +6715,7 @@
         ],
         "properties": {
           "pk": {
-            "title": "Pk"
+            "$ref": "#/components/schemas/ObjectIdentifier"
           }
         },
         "required": [
@@ -6770,7 +6791,9 @@
             "type": "boolean"
           },
           "selected_ids": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
             "title": "Selected Ids",
             "type": "array"
           }
@@ -6835,14 +6858,12 @@
           "inlines": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/FieldMetadataValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Inlines"
+            ]
           }
         },
         "required": [
@@ -7084,7 +7105,7 @@
         ],
         "properties": {
           "pk": {
-            "title": "Pk"
+            "$ref": "#/components/schemas/ObjectIdentifier"
           }
         },
         "required": [
@@ -7238,7 +7259,9 @@
             "type": "boolean"
           },
           "selected_ids": {
-            "items": {},
+            "items": {
+              "$ref": "#/components/schemas/ObjectIdentifier"
+            },
             "title": "Selected Ids",
             "type": "array"
           }
@@ -7406,14 +7429,12 @@
           "inlines": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/FieldMetadataValue"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Inlines"
+            ]
           }
         },
         "required": [

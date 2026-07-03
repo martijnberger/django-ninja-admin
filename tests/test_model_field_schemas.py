@@ -199,8 +199,8 @@ def test_json_model_fields_have_explicit_output_and_write_schemas(db):
     write_json_schema = write_schema.model_json_schema()
     json_value_schema = {
         "anyOf": [
-            {"additionalProperties": True, "type": "object"},
-            {"items": {}, "type": "array"},
+            {"additionalProperties": {"$ref": "#/$defs/FieldMetadataValue"}, "type": "object"},
+            {"items": {"$ref": "#/$defs/FieldMetadataValue"}, "type": "array"},
             {"type": "string"},
             {"type": "integer"},
             {"type": "number"},
@@ -209,23 +209,17 @@ def test_json_model_fields_have_explicit_output_and_write_schemas(db):
         ],
     }
 
-    assert output_json_schema["properties"]["payload"] == {
-        **json_value_schema,
-        "title": "Payload",
-    }
+    assert output_json_schema["$defs"]["FieldMetadataValue"] == json_value_schema
+    assert write_json_schema["$defs"]["FieldMetadataValue"] == json_value_schema
+    assert output_json_schema["properties"]["payload"] == {"$ref": "#/$defs/FieldMetadataValue"}
     assert output_json_schema["properties"]["optional_payload"] == {
-        **json_value_schema,
+        "anyOf": [{"$ref": "#/$defs/FieldMetadataValue"}, {"type": "null"}],
         "default": None,
-        "title": "Optional Payload",
     }
-    assert write_json_schema["properties"]["payload"] == {
-        **json_value_schema,
-        "title": "Payload",
-    }
+    assert write_json_schema["properties"]["payload"] == {"$ref": "#/$defs/FieldMetadataValue"}
     assert write_json_schema["properties"]["optional_payload"] == {
-        **json_value_schema,
+        "anyOf": [{"$ref": "#/$defs/FieldMetadataValue"}, {"type": "null"}],
         "default": None,
-        "title": "Optional Payload",
     }
 
     output_schema.model_validate({"id": 1, "payload": {"nested": [1, "two"]}, "optional_payload": None})

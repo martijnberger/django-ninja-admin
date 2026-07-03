@@ -171,6 +171,18 @@ def test_actions_reject_invalid_selected_ids(admin_client, sample):
     assert response.json()["errors"] == [{"message": "Invalid selected object id.", "param": "selected_ids"}]
 
 
+def test_action_selected_ids_reject_nested_identifiers(admin_client):
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "report_names", "selected_ids": [{"pk": 1}]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 422
+    ErrorResponse.model_validate(response.json())
+    assert response.json()["errors"][0]["param"].startswith("selected_ids.0")
+
+
 def test_action_input_schema_validates_and_dispatches(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/actions",
@@ -298,6 +310,18 @@ def test_bulk_update_checks_object_level_change_permission(admin_client, sample,
     assert response.json()["errors"] == [{"message": "Permission denied.", "param": "data.0.pk"}]
     sample.refresh_from_db()
     assert sample.stock_status == "in_stock"
+
+
+def test_bulk_update_rejects_nested_row_identifiers(admin_client):
+    response = admin_client.put(
+        "/admin-api/testapp/product/bulk",
+        data={"data": [{"pk": {"value": 1}, "stock_status": "out_of_stock"}]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 422
+    ErrorResponse.model_validate(response.json())
+    assert response.json()["errors"][0]["param"].startswith("data.0.pk")
 
 
 def test_bulk_update_rejects_duplicate_rows_and_non_editable_fields(admin_client, sample):

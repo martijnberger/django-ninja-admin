@@ -21,7 +21,7 @@ from django_ninja_admin.constants import ShowFacets
 from django_ninja_admin.exceptions import AdminPermissionError, AdminValidationError
 from django_ninja_admin.models import ADDITION, CHANGE, DELETION, LogEntry
 from django_ninja_admin.routes import AdminRoute
-from django_ninja_admin.schemas import ActionResponse, AdminInlinePayloadSchema
+from django_ninja_admin.schemas import ActionResponse, AdminInlinePayloadSchema, FieldMetadataValue, ObjectIdentifier
 from django_ninja_admin.utils.deletion import get_deleted_objects
 
 HORIZONTAL, VERTICAL = 1, 2
@@ -408,9 +408,9 @@ class ModelAdmin(BaseAdmin):
                 f"{self.model.__name__}AdminActionPayload",
                 __base__=Schema,
                 action=(str, ...),
-                selected_ids=(list[Any], Field(default_factory=list)),
+                selected_ids=(list[ObjectIdentifier], Field(default_factory=list)),
                 select_across=(bool, False),
-                data=(dict[str, Any] | None, None),
+                data=(FieldMetadataValue | None, None),
             )
         union_type = self._union_type(variants)
         discriminated_union = Annotated[union_type, Field(discriminator="action")]
@@ -425,7 +425,7 @@ class ModelAdmin(BaseAdmin):
         input_schema = getattr(func, "action_input_schema", None)
         fields = {
             "action": (action_type, ...),
-            "selected_ids": (list[Any], Field(default_factory=list)),
+            "selected_ids": (list[ObjectIdentifier], Field(default_factory=list)),
             "select_across": (bool, False),
         }
         if input_schema is None:

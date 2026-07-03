@@ -312,6 +312,7 @@ class SelectedOption(Schema):
 
 
 type FieldMetadataValue = dict[str, FieldMetadataValue] | list[FieldMetadataValue] | str | int | float | bool | None
+type ObjectIdentifier = str | int | float
 type ChoicePair = tuple[str | None, str]
 
 
