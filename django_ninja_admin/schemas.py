@@ -377,7 +377,7 @@ class Column(Schema):
     ascending: bool = False
     sort_priority: int | None = None
     ordering_field: str | None = None
-    ordering_index: str | None = None
+    ordering_index: int | None = None
     ascending_query_string: str | None = None
     descending_query_string: str | None = None
     remove_sorting_query_string: str | None = None
@@ -510,7 +510,7 @@ class ChangelistConfig(Schema):
     list_display_links: list[str] = Field(default_factory=list)
     to_field: str | None = None
     object_id_field: str
-    ordering_field_columns: dict[str, str] = Field(default_factory=dict)
+    ordering_field_columns: dict[str, int] = Field(default_factory=dict)
     ordering: list[str] = Field(default_factory=list)
     search_term: str = ""
     has_search: bool = False

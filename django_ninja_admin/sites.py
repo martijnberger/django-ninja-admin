@@ -1296,6 +1296,7 @@ class NinjaAdminSite:
     def _changelist_response(self, request, model_admin):
         changelist = model_admin.get_changelist_instance(request)
         list_display = changelist.list_display
+        ordering_field_columns = {field: int(column) for field, column in changelist.ordering_field_columns.items()}
         columns = [
             {
                 "field": field_name_for_display(field),
@@ -1304,7 +1305,7 @@ class NinjaAdminSite:
                 **display_metadata_for_field(field, model_admin.model, model_admin),
                 "sortable": field in changelist.ordering_field_columns,
                 "ordering_field": changelist.get_ordering_field(field),
-                "ordering_index": changelist.ordering_field_columns.get(field),
+                "ordering_index": ordering_field_columns.get(field),
                 **changelist.column_sort_query_strings(field),
             }
             for field in list_display
@@ -1400,8 +1401,8 @@ class NinjaAdminSite:
                     }
                 )
         model_field_names = [field for field in list_display if self._model_has_field(model_admin.model, field)]
-        ordering_field_columns = {
-            field_name_for_display(field): column for field, column in changelist.ordering_field_columns.items()
+        display_ordering_field_columns = {
+            field_name_for_display(field): column for field, column in ordering_field_columns.items()
         }
         payload = {
             "columns": columns,
@@ -1453,7 +1454,7 @@ class NinjaAdminSite:
                 ],
                 "to_field": changelist.to_field,
                 "object_id_field": changelist.object_id_field,
-                "ordering_field_columns": ordering_field_columns,
+                "ordering_field_columns": display_ordering_field_columns,
                 "ordering": changelist.ordering,
                 **changelist.search_query_strings(),
                 "search_fields": list(changelist.search_fields),

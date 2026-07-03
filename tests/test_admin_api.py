@@ -2788,7 +2788,7 @@ def test_changelist_supports_callable_list_display(admin_client, sample, monkeyp
     assert stock_column["boolean"] is True
     assert stock_column["sortable"] is True
     assert stock_column["ordering_field"] == "stock_status"
-    assert body["config"]["ordering_field_columns"] == {"stock_badge": "2"}
+    assert body["config"]["ordering_field_columns"] == {"stock_badge": 2}
     assert body["rows"][0]["cells"]["name"] == "Beta"
     assert body["rows"][0]["cells"]["stock_badge"] is False
     assert body["rows"][1]["cells"]["name"] == "Alpha"
@@ -2810,9 +2810,9 @@ def test_changelist_supports_relation_path_list_display(admin_client, sample, mo
     assert category_column["header_name"] == "Name"
     assert category_column["sortable"] is True
     assert category_column["ordering_field"] == "category__name"
-    assert category_column["ordering_index"] == "2"
+    assert category_column["ordering_index"] == 2
     assert body["config"]["ordering"] == ["category__name", "-pk"]
-    assert body["config"]["ordering_field_columns"] == {"name": "1", "category__name": "2"}
+    assert body["config"]["ordering_field_columns"] == {"name": 1, "category__name": 2}
     assert body["rows"][0]["cells"] == {"name": "Omega", "category__name": "Accessories"}
     assert body["rows"][1]["cells"]["category__name"] == "Cameras"
 

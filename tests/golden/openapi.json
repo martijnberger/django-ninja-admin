@@ -842,7 +842,7 @@
           },
           "ordering_field_columns": {
             "additionalProperties": {
-              "type": "string"
+              "type": "integer"
             },
             "title": "Ordering Field Columns",
             "type": "object"
@@ -1174,7 +1174,7 @@
           "ordering_index": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "integer"
               },
               {
                 "type": "null"
