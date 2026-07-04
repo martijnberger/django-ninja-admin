@@ -24,6 +24,8 @@ from django_ninja_admin.utils.lookup import (
 ERROR_PREFIX = "django_ninja_admin"
 
 DJANGO_SEQUENCE_OPTION_CODES = {
+    "fields": "E004",
+    "exclude": "E014",
     "raw_id_fields": "E001",
     "filter_vertical": "E017",
     "filter_horizontal": "E018",
@@ -67,6 +69,11 @@ PACKAGE_OPTION_CODES = {
     "inline_fieldset_shape": "E156",
     "list_per_page_range": "E157",
     "list_max_show_all_range": "E158",
+    "form_layout_item_type": "E159",
+    "form_layout_unknown": "E160",
+    "readonly_duplicate": "E161",
+    "form_layout_non_editable": "E162",
+    "list_editable_missing_from_form": "E163",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -330,7 +337,7 @@ def _check_display_options(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_editable' refers to '{item}', which is not included in the admin form.",
-                    "E044",
+                    PACKAGE_OPTION_CODES["list_editable_missing_from_form"],
                 )
             )
     return errors
@@ -593,7 +600,7 @@ def _check_form_layout(model_admin):
             _error(
                 model_admin.__class__,
                 "Both 'fields' and 'fieldsets' are set; use only one form layout option.",
-                "E011",
+                "E005",
             )
         )
     errors.extend(_check_sequence_option(model_admin, "fields"))
@@ -611,7 +618,7 @@ def _check_form_layout(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The field '{item_key}' is duplicated in 'readonly_fields'.",
-                    "E092",
+                    PACKAGE_OPTION_CODES["readonly_duplicate"],
                 )
             )
         seen_readonly_fields.add(item_key)
@@ -622,7 +629,7 @@ def _check_form_layout(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'readonly_fields' refers to '{item}', which is not a field, method, or attribute.",
-                    "E012",
+                    "E035",
                 )
             )
 
@@ -643,19 +650,23 @@ def _check_form_layout(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The form layout refers to '{item}', which is not an editable model field.",
-                    "E014",
+                    PACKAGE_OPTION_CODES["form_layout_unknown"],
                 )
             )
         elif not field.editable:
             errors.append(
-                _error(model_admin.__class__, f"The form layout includes non-editable field '{item}'.", "E015")
+                _error(
+                    model_admin.__class__,
+                    f"The form layout includes non-editable field '{item}'.",
+                    PACKAGE_OPTION_CODES["form_layout_non_editable"],
+                )
             )
         elif _is_manual_through_many_to_many(field):
             errors.append(
                 _error(
                     model_admin.__class__,
                     f"The form layout includes many-to-many field '{item}', which uses a custom through model.",
-                    "E078",
+                    "E013",
                 )
             )
 
@@ -671,7 +682,7 @@ def _fieldsets_fields_and_errors(model_admin):
     errors = []
     fieldsets = getattr(model_admin, "fieldsets", None)
     if not isinstance(fieldsets, (list, tuple)):
-        return fields, [_error(model_admin.__class__, "The value of 'fieldsets' must be a list or tuple.", "E013")]
+        return fields, [_error(model_admin.__class__, "The value of 'fieldsets' must be a list or tuple.", "E007")]
 
     seen_fields = set()
     for index, fieldset in enumerate(fieldsets):
@@ -680,7 +691,7 @@ def _fieldsets_fields_and_errors(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'fieldsets[{index}]' must be a two-item tuple.",
-                    "E013",
+                    "E009",
                 )
             )
             continue
@@ -691,7 +702,7 @@ def _fieldsets_fields_and_errors(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'fieldsets[{index}][1]' must be a dictionary.",
-                    "E013",
+                    "E010",
                 )
             )
             continue
@@ -700,7 +711,7 @@ def _fieldsets_fields_and_errors(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'fieldsets[{index}][1]' must contain a 'fields' option.",
-                    "E013",
+                    "E011",
                 )
             )
             continue
@@ -709,7 +720,7 @@ def _fieldsets_fields_and_errors(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'fieldsets[{index}][1]['fields']' must be a list or tuple.",
-                    "E013",
+                    "E008",
                 )
             )
             continue
@@ -720,7 +731,7 @@ def _fieldsets_fields_and_errors(model_admin):
                     _error(
                         model_admin.__class__,
                         f"Items in 'fieldsets[{index}][1]['fields']' must be strings.",
-                        "E013",
+                        PACKAGE_OPTION_CODES["form_layout_item_type"],
                     )
                 )
                 continue
@@ -730,7 +741,7 @@ def _fieldsets_fields_and_errors(model_admin):
                     _error(
                         model_admin.__class__,
                         f"The field '{field_name}' is duplicated in 'fieldsets'.",
-                        "E064",
+                        "E012",
                     )
                 )
             seen_fields.add(field_name)
@@ -745,16 +756,26 @@ def _check_form_option_items(model_admin, option, *, require_model_field=False):
     seen_fields = set()
     for item in items:
         if not isinstance(item, str):
-            errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E048"))
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"Items in '{option}' must be strings.",
+                    PACKAGE_OPTION_CODES["form_layout_item_type"],
+                )
+            )
             continue
         if option in {"fields", "exclude"}:
             if item in seen_fields:
-                code = "E065" if option == "fields" else "E080"
+                code = "E006" if option == "fields" else "E015"
                 errors.append(_error(model_admin.__class__, f"The field '{item}' is duplicated in '{option}'.", code))
             seen_fields.add(item)
         if require_model_field and _model_field(model_admin, item) is None:
             errors.append(
-                _error(model_admin.__class__, f"The value of '{option}' refers to unknown field '{item}'.", "E049")
+                _error(
+                    model_admin.__class__,
+                    f"The value of '{option}' refers to unknown field '{item}'.",
+                    PACKAGE_OPTION_CODES["form_layout_unknown"],
+                )
             )
     return errors
 

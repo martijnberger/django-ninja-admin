@@ -987,9 +987,9 @@ def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db
     exclude_errors = _check_site(exclude_site)
     fieldsets_errors = _check_site(fieldsets_site)
 
-    assert "django_ninja_admin.E044" in {error.id for error in fields_errors}
-    assert "django_ninja_admin.E044" in {error.id for error in exclude_errors}
-    assert "django_ninja_admin.E044" in {error.id for error in fieldsets_errors}
+    assert "django_ninja_admin.E163" in {error.id for error in fields_errors}
+    assert "django_ninja_admin.E163" in {error.id for error in exclude_errors}
+    assert "django_ninja_admin.E163" in {error.id for error in fieldsets_errors}
 
 
 def test_admin_checks_reject_first_list_editable_without_explicit_display_link(db, make_site):
@@ -1096,10 +1096,10 @@ def test_admin_checks_validate_fields_and_exclude_items(db, make_site):
         "price",
         "category",
     ]
-    assert {error.id for error in fields_errors} == {"django_ninja_admin.E048"}
-    assert {error.id for error in duplicate_fields_errors} == {"django_ninja_admin.E065"}
-    assert {error.id for error in exclude_errors} == {"django_ninja_admin.E048", "django_ninja_admin.E049"}
-    assert {error.id for error in duplicate_exclude_errors} == {"django_ninja_admin.E080"}
+    assert {error.id for error in fields_errors} == {"django_ninja_admin.E159"}
+    assert {error.id for error in duplicate_fields_errors} == {"django_ninja_admin.E006"}
+    assert {error.id for error in exclude_errors} == {"django_ninja_admin.E159", "django_ninja_admin.E160"}
+    assert {error.id for error in duplicate_exclude_errors} == {"django_ninja_admin.E015"}
 
 
 def test_admin_checks_reject_duplicate_readonly_fields(db, make_site):
@@ -1123,9 +1123,9 @@ def test_admin_checks_reject_duplicate_readonly_fields(db, make_site):
     duplicate_name_ids = {error.id for error in duplicate_name_site.get_model_admin(Product).check()}
     duplicate_callable_ids = {error.id for error in duplicate_callable_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E092" not in valid_ids
-    assert duplicate_name_ids == {"django_ninja_admin.E092"}
-    assert duplicate_callable_ids == {"django_ninja_admin.E092"}
+    assert "django_ninja_admin.E161" not in valid_ids
+    assert duplicate_name_ids == {"django_ninja_admin.E161"}
+    assert duplicate_callable_ids == {"django_ninja_admin.E161"}
 
 
 def test_admin_checks_validate_fieldsets_shape_and_duplicates(db, make_site):
@@ -1160,10 +1160,10 @@ def test_admin_checks_validate_fieldsets_shape_and_duplicates(db, make_site):
         "category",
         "description",
     ]
-    assert {error.id for error in _check_site(missing_site)} == {"django_ninja_admin.E013"}
-    assert {error.id for error in _check_site(string_site)} == {"django_ninja_admin.E013"}
-    assert {error.id for error in _check_site(bad_item_site)} == {"django_ninja_admin.E013"}
-    assert {error.id for error in _check_site(duplicate_site)} == {"django_ninja_admin.E064"}
+    assert {error.id for error in _check_site(missing_site)} == {"django_ninja_admin.E011"}
+    assert {error.id for error in _check_site(string_site)} == {"django_ninja_admin.E008"}
+    assert {error.id for error in _check_site(bad_item_site)} == {"django_ninja_admin.E159"}
+    assert {error.id for error in _check_site(duplicate_site)} == {"django_ninja_admin.E012"}
 
 
 def test_admin_checks_validate_radio_fields_shape(db, make_site):
@@ -1249,8 +1249,8 @@ def test_admin_checks_reject_manual_through_many_to_many_form_layouts(db, make_s
     fields_errors = fields_site.get_model_admin(Article).check()
     fieldsets_errors = fieldsets_site.get_model_admin(Article).check()
 
-    assert {error.id for error in fields_errors} == {"django_ninja_admin.E078"}
-    assert {error.id for error in fieldsets_errors} == {"django_ninja_admin.E078"}
+    assert {error.id for error in fields_errors} == {"django_ninja_admin.E013"}
+    assert {error.id for error in fieldsets_errors} == {"django_ninja_admin.E013"}
 
 
 def test_admin_checks_validate_schema_field_overrides(db, make_site):
