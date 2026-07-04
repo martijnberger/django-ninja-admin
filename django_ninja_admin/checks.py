@@ -835,7 +835,16 @@ def _fieldsets_fields_and_errors(model_admin):
 
     seen_fields = set()
     for index, fieldset in enumerate(fieldsets):
-        if not isinstance(fieldset, (list, tuple)) or len(fieldset) != 2:
+        if not isinstance(fieldset, (list, tuple)):
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'fieldsets[{index}]' must be a list or tuple.",
+                    "E008",
+                )
+            )
+            continue
+        if len(fieldset) != 2:
             errors.append(
                 _error(
                     model_admin.__class__,

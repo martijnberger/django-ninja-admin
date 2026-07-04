@@ -1284,6 +1284,12 @@ def test_admin_checks_validate_fieldsets_shape_and_duplicates(db, make_site):
             ("Advanced", {"fields": ("description",)}),
         )
 
+    class BadFieldsetItemTypeProductAdmin(ModelAdmin):
+        fieldsets = ("Main",)
+
+    class BadFieldsetItemLengthProductAdmin(ModelAdmin):
+        fieldsets = (("Main", {"fields": ("name",)}, "extra"),)
+
     class MissingFieldsOptionProductAdmin(ModelAdmin):
         fieldsets = ((None, {"classes": ("collapse",)}),)
 
@@ -1297,6 +1303,8 @@ def test_admin_checks_validate_fieldsets_shape_and_duplicates(db, make_site):
         fieldsets = ((None, {"fields": ("name", ("price", "name"))}),)
 
     valid_site = make_site(Product, ValidFieldsetsProductAdmin)
+    item_type_site = make_site(Product, BadFieldsetItemTypeProductAdmin)
+    item_length_site = make_site(Product, BadFieldsetItemLengthProductAdmin)
     missing_site = make_site(Product, MissingFieldsOptionProductAdmin)
     string_site = make_site(Product, StringFieldsProductAdmin)
     bad_item_site = make_site(Product, BadFieldItemProductAdmin)
@@ -1309,6 +1317,8 @@ def test_admin_checks_validate_fieldsets_shape_and_duplicates(db, make_site):
         "category",
         "description",
     ]
+    assert {error.id for error in _check_site(item_type_site)} == {"django_ninja_admin.E008"}
+    assert {error.id for error in _check_site(item_length_site)} == {"django_ninja_admin.E009"}
     assert {error.id for error in _check_site(missing_site)} == {"django_ninja_admin.E011"}
     assert {error.id for error in _check_site(string_site)} == {"django_ninja_admin.E008"}
     assert {error.id for error in _check_site(bad_item_site)} == {"django_ninja_admin.E159"}

@@ -9,6 +9,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Fixed
 
+- Aligned malformed `fieldsets` item system-check IDs with Django admin:
+  non-list fieldset entries now report `E008`, while wrong-length entries
+  continue to report `E009`.
 - Aligned `raw_id_fields` system checks with Django admin by rejecting field
   attnames such as `category_id`; relation widget options must name the model
   field.
