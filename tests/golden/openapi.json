@@ -8832,13 +8832,14 @@
             }
           },
           {
-            "description": "Page size override.",
+            "description": "Page size override from 1 to 200.",
             "in": "query",
             "name": "pp",
             "required": false,
             "schema": {
               "anyOf": [
                 {
+                  "maximum": 200,
                   "minimum": 1,
                   "type": "integer"
                 },
@@ -8846,7 +8847,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Page size override.",
+              "description": "Page size override from 1 to 200.",
               "title": "Pp"
             }
           },
@@ -9933,13 +9934,14 @@
             }
           },
           {
-            "description": "Page size override.",
+            "description": "Page size override from 1 to 200.",
             "in": "query",
             "name": "pp",
             "required": false,
             "schema": {
               "anyOf": [
                 {
+                  "maximum": 200,
                   "minimum": 1,
                   "type": "integer"
                 },
@@ -9947,7 +9949,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Page size override.",
+              "description": "Page size override from 1 to 200.",
               "title": "Pp"
             }
           },
@@ -11613,13 +11615,14 @@
             }
           },
           {
-            "description": "Page size override.",
+            "description": "Page size override from 1 to 200.",
             "in": "query",
             "name": "pp",
             "required": false,
             "schema": {
               "anyOf": [
                 {
+                  "maximum": 200,
                   "minimum": 1,
                   "type": "integer"
                 },
@@ -11627,7 +11630,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Page size override.",
+              "description": "Page size override from 1 to 200.",
               "title": "Pp"
             }
           },
@@ -12714,13 +12717,14 @@
             }
           },
           {
-            "description": "Page size override.",
+            "description": "Page size override from 1 to 200.",
             "in": "query",
             "name": "pp",
             "required": false,
             "schema": {
               "anyOf": [
                 {
+                  "maximum": 200,
                   "minimum": 1,
                   "type": "integer"
                 },
@@ -12728,7 +12732,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Page size override.",
+              "description": "Page size override from 1 to 200.",
               "title": "Pp"
             }
           },
@@ -14265,13 +14269,14 @@
             }
           },
           {
-            "description": "Page size override.",
+            "description": "Page size override from 1 to 200.",
             "in": "query",
             "name": "pp",
             "required": false,
             "schema": {
               "anyOf": [
                 {
+                  "maximum": 200,
                   "minimum": 1,
                   "type": "integer"
                 },
@@ -14279,7 +14284,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Page size override.",
+              "description": "Page size override from 1 to 200.",
               "title": "Pp"
             }
           },

@@ -406,6 +406,12 @@ def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):
         {"message": "Input should be greater than or equal to 1", "param": "query.pp"}
     ]
 
+    excessive_page_size = admin_client.get("/admin-api/testapp/product?pp=201")
+    assert excessive_page_size.status_code == 422
+    assert excessive_page_size.json()["errors"] == [
+        {"message": "Input should be less than or equal to 200", "param": "query.pp"}
+    ]
+
     bad_ordering = admin_client.get("/admin-api/testapp/product?o=999")
     assert bad_ordering.status_code == 400
 

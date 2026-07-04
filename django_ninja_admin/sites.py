@@ -131,6 +131,7 @@ class NinjaAdminSite:
     enable_nav_sidebar = True
     empty_value_display = "-"
     include_auth = True
+    changelist_max_per_page = 200
     history_max_per_page = 100
     autocomplete_per_page = 20
     autocomplete_max_per_page = 100
@@ -1228,7 +1229,12 @@ class NinjaAdminSite:
                 pattern=r"^(last|[1-9][0-9]*)$",
                 description="Legacy alias for `p`; generated links use `p`.",
             ),
-            pp: int | None = NinjaQuery(None, ge=1, description="Page size override."),
+            pp: int | None = NinjaQuery(
+                None,
+                ge=1,
+                le=site.changelist_max_per_page,
+                description=f"Page size override from 1 to {site.changelist_max_per_page}.",
+            ),
             all_: bool | None = NinjaQuery(
                 None,
                 alias="all",

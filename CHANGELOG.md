@@ -7,8 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.61 - 2026-07-04
+
 ### Changed
 
+- Bounded changelist `pp` page-size overrides to 200 in the OpenAPI contract
+  and shared typed 422 query-validation path.
 - Added a finite OpenAPI pattern for changelist ordering query strings, so
   malformed `o` values are rejected by the shared typed 422 validation
   contract before changelist construction.
