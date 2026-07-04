@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.43 - 2026-07-04
+
 ### Changed
 
 - Extracted shared form-data example selection, relation-target lookup, and
@@ -18,6 +20,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   example helpers.
 - Removed unused internal exception classes left over from earlier admin
   compatibility scaffolding.
+- Removed site-local Pydantic/JSON example shim methods now covered by shared
+  schema example helpers.
 
 ## 0.1.42 - 2026-07-04
 

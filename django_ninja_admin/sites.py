@@ -91,7 +91,6 @@ from django_ninja_admin.utils.quote import quote, unquote
 from django_ninja_admin.utils.schema_examples import (
     choice_example_value,
     form_data_example,
-    json_example_value,
     json_request_examples_extra,
     model_choice_target_field,
     pydantic_model_example,
@@ -1865,7 +1864,7 @@ class NinjaAdminSite:
         payload = {"action": name, "selected_ids": [1], "select_across": False}
         input_schema = getattr(func, "action_input_schema", None)
         if input_schema is not None:
-            payload["data"] = self._pydantic_model_example(input_schema)
+            payload["data"] = pydantic_model_example(input_schema)
         return payload
 
     def _inline_payload_example(self, model_admin, *, change):
@@ -1960,12 +1959,6 @@ class NinjaAdminSite:
         if isinstance(target_field, models.UUIDField):
             return "550e8400-e29b-41d4-a716-446655440000"
         return "example"
-
-    def _pydantic_model_example(self, schema):
-        return pydantic_model_example(schema)
-
-    def _json_example_value(self, value):
-        return json_example_value(value)
 
     def _multipart_openapi_extra(self, payload_schema, file_fields, *, required_data, required_file_fields=()):
         properties = {
