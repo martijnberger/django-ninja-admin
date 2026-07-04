@@ -44,6 +44,38 @@ PACKAGE_OPTION_CODES = {
     "form_schema_field_overrides_type": "E133",
     "form_schema_field_overrides_key": "E134",
     "form_schema_field_overrides_value": "E135",
+    "search_fields_item": "E136",
+    "search_fields_lookup": "E137",
+    "ordering_item": "E138",
+    "date_hierarchy_type": "E139",
+    "action_missing": "E140",
+    "autocomplete_raw_id_conflict": "E141",
+    "autocomplete_radio_conflict": "E142",
+    "raw_id_radio_conflict": "E143",
+    "filter_horizontal_vertical_conflict": "E144",
+}
+
+DJANGO_RELATION_OPTION_CODES = {
+    "autocomplete_fields": {
+        "missing": "E037",
+        "invalid_relation": "E038",
+        "unregistered": "E039",
+        "unsearchable": "E040",
+    },
+    "raw_id_fields": {
+        "missing": "E002",
+        "invalid_relation": "E003",
+    },
+    "filter_horizontal": {
+        "missing": "E019",
+        "not_many_to_many": "E020",
+        "manual_through": "E013",
+    },
+    "filter_vertical": {
+        "missing": "E019",
+        "not_many_to_many": "E020",
+        "manual_through": "E013",
+    },
 }
 
 
@@ -82,8 +114,25 @@ def check_model_admin(model_admin):
     errors.extend(_check_list_filters(model_admin))
     errors.extend(_check_radio_fields(model_admin))
     errors.extend(_check_form_option_conflicts(model_admin))
-    errors.extend(_check_lookup_fields(model_admin, "search_fields", allow_search_prefixes=True))
-    errors.extend(_check_lookup_fields(model_admin, "ordering", allow_descending=True, allow_random=True))
+    errors.extend(
+        _check_lookup_fields(
+            model_admin,
+            "search_fields",
+            item_code=PACKAGE_OPTION_CODES["search_fields_item"],
+            lookup_code=PACKAGE_OPTION_CODES["search_fields_lookup"],
+            allow_search_prefixes=True,
+        )
+    )
+    errors.extend(
+        _check_lookup_fields(
+            model_admin,
+            "ordering",
+            item_code=PACKAGE_OPTION_CODES["ordering_item"],
+            lookup_code="E033",
+            allow_descending=True,
+            allow_random=True,
+        )
+    )
     forward_relation_types = (models.ForeignKey, models.ManyToManyField)
     errors.extend(
         _check_relation_fields(
@@ -691,12 +740,12 @@ def _check_form_option_items(model_admin, option, *, require_model_field=False):
 def _check_prepopulated_fields(model_admin):
     value = getattr(model_admin, "prepopulated_fields", {}) or {}
     if not isinstance(value, dict):
-        return [_error(model_admin.__class__, "The value of 'prepopulated_fields' must be a dictionary.", "E050")]
+        return [_error(model_admin.__class__, "The value of 'prepopulated_fields' must be a dictionary.", "E026")]
 
     errors = []
     for field_name, source_fields in value.items():
         if not isinstance(field_name, str):
-            errors.append(_error(model_admin.__class__, "Keys in 'prepopulated_fields' must be field names.", "E051"))
+            errors.append(_error(model_admin.__class__, "Keys in 'prepopulated_fields' must be field names.", "E027"))
             continue
         field = _model_field(model_admin, field_name)
         if field is None:
@@ -704,7 +753,7 @@ def _check_prepopulated_fields(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'prepopulated_fields' refers to unknown field '{field_name}'.",
-                    "E051",
+                    "E027",
                 )
             )
             continue
@@ -713,7 +762,7 @@ def _check_prepopulated_fields(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'prepopulated_fields' refers to '{field_name}', which cannot be prepopulated.",
-                    "E052",
+                    "E028",
                 )
             )
 
@@ -722,7 +771,7 @@ def _check_prepopulated_fields(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'prepopulated_fields[{field_name!r}]' must be a list or tuple.",
-                    "E053",
+                    "E029",
                 )
             )
             continue
@@ -732,7 +781,7 @@ def _check_prepopulated_fields(model_admin):
                     _error(
                         model_admin.__class__,
                         f"Items in 'prepopulated_fields[{field_name!r}]' must be strings.",
-                        "E054",
+                        "E030",
                     )
                 )
                 continue
@@ -741,7 +790,7 @@ def _check_prepopulated_fields(model_admin):
                     _error(
                         model_admin.__class__,
                         f"The value of 'prepopulated_fields[{field_name!r}]' refers to unknown field '{source_field}'.",
-                        "E054",
+                        "E030",
                     )
                 )
     return errors
@@ -917,6 +966,8 @@ def _check_lookup_fields(
     model_admin,
     option,
     *,
+    item_code,
+    lookup_code,
     allow_search_prefixes=False,
     allow_descending=False,
     allow_random=False,
@@ -942,7 +993,7 @@ def _check_lookup_fields(
         elif isinstance(item, str):
             field_path = item
         else:
-            errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E020"))
+            errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", item_code))
             continue
         if allow_descending:
             field_path = field_path.removeprefix("-")
@@ -951,7 +1002,13 @@ def _check_lookup_fields(
         if allow_search_prefixes and field_path[:1] in {"^", "=", "@"}:
             field_path = field_path[1:]
         errors.extend(
-            _check_field_path(model_admin, field_path, option, "E021", allow_final_lookup=allow_search_prefixes)
+            _check_field_path(
+                model_admin,
+                field_path,
+                option,
+                lookup_code,
+                allow_final_lookup=allow_search_prefixes,
+            )
         )
     return errors
 
@@ -996,14 +1053,19 @@ def _check_relation_fields(
     require_registered_remote=False,
 ):
     errors = []
+    codes = DJANGO_RELATION_OPTION_CODES[option]
     for item in getattr(model_admin, option) or ():
         if not isinstance(item, str):
-            errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", "E022"))
+            errors.append(_error(model_admin.__class__, f"Items in '{option}' must be strings.", codes["missing"]))
             continue
         field = _model_field(model_admin, item)
         if field is None:
             errors.append(
-                _error(model_admin.__class__, f"The value of '{option}' refers to unknown field '{item}'.", "E023")
+                _error(
+                    model_admin.__class__,
+                    f"The value of '{option}' refers to unknown field '{item}'.",
+                    codes["missing"],
+                )
             )
             continue
         if relation_types is not None and not isinstance(field, relation_types):
@@ -1011,24 +1073,36 @@ def _check_relation_fields(
                 _error(
                     model_admin.__class__,
                     f"The field '{item}' must be a forward ForeignKey, OneToOneField, or ManyToManyField.",
-                    "E025",
+                    codes["invalid_relation"],
                 )
             )
             continue
         if many_to_many_only and not isinstance(field, models.ManyToManyField):
-            errors.append(_error(model_admin.__class__, f"The field '{item}' must be a many-to-many field.", "E024"))
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The field '{item}' must be a many-to-many field.",
+                    codes["not_many_to_many"],
+                )
+            )
             continue
         if many_to_many_only and not field.remote_field.through._meta.auto_created:
             errors.append(
                 _error(
                     model_admin.__class__,
                     f"The field '{item}' uses a custom through model and cannot use '{option}'.",
-                    "E047",
+                    codes["manual_through"],
                 )
             )
             continue
         if not many_to_many_only and not getattr(field, "remote_field", None):
-            errors.append(_error(model_admin.__class__, f"The field '{item}' must be a relation field.", "E025"))
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The field '{item}' must be a relation field.",
+                    codes["invalid_relation"],
+                )
+            )
             continue
         if require_registered_remote:
             remote_model = field.remote_field.model
@@ -1036,7 +1110,11 @@ def _check_relation_fields(
                 remote_admin = model_admin.admin_site.get_model_admin(remote_model)
             except NotRegistered:
                 errors.append(
-                    _error(model_admin.__class__, f"The related model for '{item}' is not registered.", "E026")
+                    _error(
+                        model_admin.__class__,
+                        f"The related model for '{item}' is not registered.",
+                        codes["unregistered"],
+                    )
                 )
                 continue
             if not remote_admin.get_search_fields(None):
@@ -1044,7 +1122,7 @@ def _check_relation_fields(
                     _error(
                         model_admin.__class__,
                         f"The related admin for '{item}' must define search_fields.",
-                        "E027",
+                        codes["unsearchable"],
                     )
                 )
     return errors
@@ -1055,7 +1133,13 @@ def _check_date_hierarchy(model_admin):
     if field_name is None:
         return []
     if not isinstance(field_name, str):
-        return [_error(model_admin.__class__, "The value of 'date_hierarchy' must be a field path string.", "E096")]
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'date_hierarchy' must be a field path string.",
+                PACKAGE_OPTION_CODES["date_hierarchy_type"],
+            )
+        ]
     try:
         field = model_field_from_path(model_admin.model, field_name)
     except FieldDoesNotExist:
@@ -1063,11 +1147,11 @@ def _check_date_hierarchy(model_admin):
             _error(
                 model_admin.__class__,
                 f"The value of 'date_hierarchy' refers to unknown field '{field_name}'.",
-                "E028",
+                "E127",
             )
         ]
     if not isinstance(field, (models.DateField, models.DateTimeField)):
-        return [_error(model_admin.__class__, f"The field '{field_name}' is not a date or datetime field.", "E029")]
+        return [_error(model_admin.__class__, f"The field '{field_name}' is not a date or datetime field.", "E128")]
     return []
 
 
@@ -1076,12 +1160,12 @@ def _check_radio_fields(model_admin):
 
     value = getattr(model_admin, "radio_fields", {}) or {}
     if not isinstance(value, dict):
-        return [_error(model_admin.__class__, "The value of 'radio_fields' must be a dictionary.", "E034")]
+        return [_error(model_admin.__class__, "The value of 'radio_fields' must be a dictionary.", "E021")]
 
     errors = []
     for field_name, orientation in value.items():
         if not isinstance(field_name, str):
-            errors.append(_error(model_admin.__class__, "Keys in 'radio_fields' must be field names.", "E035"))
+            errors.append(_error(model_admin.__class__, "Keys in 'radio_fields' must be field names.", "E022"))
             continue
         field = _model_field(model_admin, field_name)
         if field is None:
@@ -1089,7 +1173,7 @@ def _check_radio_fields(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'radio_fields' refers to unknown field '{field_name}'.",
-                    "E036",
+                    "E022",
                 )
             )
             continue
@@ -1098,7 +1182,7 @@ def _check_radio_fields(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The field '{field_name}' must be a relation field or define choices for 'radio_fields'.",
-                    "E037",
+                    "E023",
                 )
             )
         if orientation not in {HORIZONTAL, VERTICAL}:
@@ -1106,7 +1190,7 @@ def _check_radio_fields(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'radio_fields[{field_name!r}]' must be HORIZONTAL or VERTICAL.",
-                    "E038",
+                    "E024",
                 )
             )
     return errors
@@ -1114,10 +1198,10 @@ def _check_radio_fields(model_admin):
 
 def _check_form_option_conflicts(model_admin):
     conflicts = [
-        ("autocomplete_fields", "raw_id_fields", "E039"),
-        ("autocomplete_fields", "radio_fields", "E040"),
-        ("raw_id_fields", "radio_fields", "E041"),
-        ("filter_horizontal", "filter_vertical", "E042"),
+        ("autocomplete_fields", "raw_id_fields", PACKAGE_OPTION_CODES["autocomplete_raw_id_conflict"]),
+        ("autocomplete_fields", "radio_fields", PACKAGE_OPTION_CODES["autocomplete_radio_conflict"]),
+        ("raw_id_fields", "radio_fields", PACKAGE_OPTION_CODES["raw_id_radio_conflict"]),
+        ("filter_horizontal", "filter_vertical", PACKAGE_OPTION_CODES["filter_horizontal_vertical_conflict"]),
     ]
     errors = []
     for left, right, code in conflicts:
@@ -1152,7 +1236,13 @@ def _check_actions(model_admin):
     for item in model_admin.actions:
         action = model_admin.get_action(item) if callable(item) or isinstance(item, str) else None
         if action is None:
-            errors.append(_error(model_admin.__class__, f"The action '{item}' is not a registered action.", "E030"))
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The action '{item}' is not a registered action.",
+                    PACKAGE_OPTION_CODES["action_missing"],
+                )
+            )
             continue
         func = action[0]
         for permission in getattr(func, "allowed_permissions", ()):
@@ -1161,7 +1251,7 @@ def _check_actions(model_admin):
                     _error(
                         model_admin.__class__,
                         f"The action '{action[1]}' references unknown permission '{permission}'.",
-                        "E064",
+                        "E129",
                     )
                 )
     return errors

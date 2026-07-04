@@ -14,6 +14,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Aligned `save_as`, `save_on_top`, `list_per_page`, and
   `list_max_show_all` check IDs with Django admin's numbering, and moved
   package-specific prefetch/form-schema checks out of that native range.
+- Aligned relation-widget, prepopulated-field, radio-field, date-hierarchy,
+  and action-permission check IDs with Django admin's numbering while moving
+  package-only lookup/conflict checks into package-specific IDs.
 
 ## 0.1.44 - 2026-07-04
 

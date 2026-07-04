@@ -57,11 +57,11 @@ def test_admin_checks_report_invalid_model_admin_configuration(db, make_site):
         "django_ninja_admin.E004",
         "django_ninja_admin.E007",
         "django_ninja_admin.E019",
-        "django_ninja_admin.E021",
-        "django_ninja_admin.E025",
-        "django_ninja_admin.E029",
-        "django_ninja_admin.E030",
+        "django_ninja_admin.E038",
+        "django_ninja_admin.E128",
         "django_ninja_admin.E033",
+        "django_ninja_admin.E137",
+        "django_ninja_admin.E140",
         "django_ninja_admin.E043",
     } <= error_ids
 
@@ -398,8 +398,8 @@ def test_admin_checks_validate_action_permission_hooks(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E064" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E064"}
+    assert "django_ninja_admin.E129" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E129"}
 
 
 def test_admin_checks_reject_non_sequence_actions_option(db, make_site):
@@ -424,12 +424,13 @@ def test_admin_checks_report_form_widget_option_conflicts(db, make_site):
     error_ids = {error.id for error in errors}
 
     assert {
-        "django_ninja_admin.E037",
-        "django_ninja_admin.E038",
+        "django_ninja_admin.E023",
+        "django_ninja_admin.E024",
         "django_ninja_admin.E039",
-        "django_ninja_admin.E040",
-        "django_ninja_admin.E041",
-        "django_ninja_admin.E042",
+        "django_ninja_admin.E141",
+        "django_ninja_admin.E142",
+        "django_ninja_admin.E143",
+        "django_ninja_admin.E144",
     } <= error_ids
 
 
@@ -705,8 +706,8 @@ def test_admin_checks_allow_relation_path_date_hierarchy(db, make_site):
     error_ids = {error.id for error in admin_site.get_model_admin(ProductImage).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert error_ids.isdisjoint({"django_ninja_admin.E028", "django_ninja_admin.E029"})
-    assert bad_ids == {"django_ninja_admin.E096"}
+    assert error_ids.isdisjoint({"django_ninja_admin.E127", "django_ninja_admin.E128"})
+    assert bad_ids == {"django_ninja_admin.E139"}
 
 
 def test_admin_checks_allow_expression_ordering(db, make_site):
@@ -722,8 +723,8 @@ def test_admin_checks_allow_expression_ordering(db, make_site):
     expression_ids = {error.id for error in expression_site.get_model_admin(Product).check()}
     missing_ids = {error.id for error in missing_site.get_model_admin(Product).check()}
 
-    assert expression_ids.isdisjoint({"django_ninja_admin.E020", "django_ninja_admin.E021"})
-    assert missing_ids == {"django_ninja_admin.E021"}
+    assert expression_ids.isdisjoint({"django_ninja_admin.E033", "django_ninja_admin.E138"})
+    assert missing_ids == {"django_ninja_admin.E033"}
 
 
 def test_admin_checks_validate_field_based_list_filter_classes(db, make_site):
@@ -882,8 +883,8 @@ def test_admin_checks_reject_reverse_relation_widget_fields(db, make_site):
     autocomplete_errors = autocomplete_site.get_model_admin(Product).check()
     raw_id_errors = raw_id_site.get_model_admin(Product).check()
 
-    assert {error.id for error in autocomplete_errors} == {"django_ninja_admin.E025"}
-    assert {error.id for error in raw_id_errors} == {"django_ninja_admin.E025"}
+    assert {error.id for error in autocomplete_errors} == {"django_ninja_admin.E038"}
+    assert {error.id for error in raw_id_errors} == {"django_ninja_admin.E003"}
 
 
 def test_admin_checks_require_registered_searchable_autocomplete_targets(db, make_site):
@@ -908,9 +909,9 @@ def test_admin_checks_require_registered_searchable_autocomplete_targets(db, mak
     unsearchable_errors = unsearchable_site.get_model_admin(Product).check()
     valid_errors = valid_site.get_model_admin(Product).check()
 
-    assert {error.id for error in unregistered_errors} == {"django_ninja_admin.E026"}
-    assert {error.id for error in unsearchable_errors} == {"django_ninja_admin.E027"}
-    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E026", "django_ninja_admin.E027"})
+    assert {error.id for error in unregistered_errors} == {"django_ninja_admin.E039"}
+    assert {error.id for error in unsearchable_errors} == {"django_ninja_admin.E040"}
+    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E039", "django_ninja_admin.E040"})
 
 
 def test_admin_checks_validate_prepopulated_fields(db, make_site):
@@ -946,16 +947,16 @@ def test_admin_checks_validate_prepopulated_fields(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E050",
-            "django_ninja_admin.E051",
-            "django_ninja_admin.E052",
-            "django_ninja_admin.E053",
-            "django_ninja_admin.E054",
+            "django_ninja_admin.E026",
+            "django_ninja_admin.E027",
+            "django_ninja_admin.E028",
+            "django_ninja_admin.E029",
+            "django_ninja_admin.E030",
         }
     )
-    assert bad_shape_ids == {"django_ninja_admin.E050"}
-    assert bad_target_ids == {"django_ninja_admin.E051", "django_ninja_admin.E052"}
-    assert bad_source_ids == {"django_ninja_admin.E053", "django_ninja_admin.E054"}
+    assert bad_shape_ids == {"django_ninja_admin.E026"}
+    assert bad_target_ids == {"django_ninja_admin.E027", "django_ninja_admin.E028"}
+    assert bad_source_ids == {"django_ninja_admin.E029", "django_ninja_admin.E030"}
 
 
 def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db, make_site):
@@ -1172,7 +1173,7 @@ def test_admin_checks_validate_radio_fields_shape(db, make_site):
 
     errors = _check_site(admin_site)
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E034"}
+    assert {error.id for error in errors} == {"django_ninja_admin.E021"}
 
 
 @isolate_apps("tests.testapp")
@@ -1209,8 +1210,8 @@ def test_admin_checks_reject_manual_through_many_to_many_widget_modes(db, make_s
     horizontal_errors = horizontal_site.get_model_admin(Article).check()
     vertical_errors = vertical_site.get_model_admin(Article).check()
 
-    assert {error.id for error in horizontal_errors} == {"django_ninja_admin.E047"}
-    assert {error.id for error in vertical_errors} == {"django_ninja_admin.E047"}
+    assert {error.id for error in horizontal_errors} == {"django_ninja_admin.E013"}
+    assert {error.id for error in vertical_errors} == {"django_ninja_admin.E013"}
 
 
 @isolate_apps("tests.testapp")
