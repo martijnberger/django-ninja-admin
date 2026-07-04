@@ -25,6 +25,8 @@ just check
 - `just sample-project-smoke` to install the built wheel into a temporary
   Django project, register a model, mount `site.urls`, open docs/OpenAPI, and
   exercise authenticated model discovery.
+- `just private-api-audit` to keep private Django API usage matched to
+  [`docs/private-django-api-audit.md`](private-django-api-audit.md).
 - Set `DJANGO_NINJA_ADMIN_SMOKE_DJANGO` to a concrete requirement such as
   `django>=5.2,<5.3` when the installed-project smoke should use the same
   Django lane as a compatibility matrix job.
@@ -93,6 +95,7 @@ behavior, or permission boundaries.
   change after Milestone 3.
 - Re-run the copyright/license audit after substantial Django-derived or
   upstream-derived ports.
+- Re-run `just private-api-audit` after every Django feature-version upgrade.
 
 ## Alpha Criteria
 

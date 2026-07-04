@@ -22,7 +22,7 @@ typecheck-package:
     UV_CACHE_DIR=.uv-cache uv run ty check django_ninja_admin
 
 typecheck-scripts:
-    UV_CACHE_DIR=.uv-cache uv run ty check scripts/dist_check.py scripts/generated_client_smoke.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/sample_project_smoke.py scripts/smoke_utils.py
+    UV_CACHE_DIR=.uv-cache uv run ty check scripts/dist_check.py scripts/generated_client_smoke.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/private_django_api_audit.py scripts/sample_project_smoke.py scripts/smoke_utils.py
 
 typecheck: typecheck-package typecheck-scripts
 
@@ -47,6 +47,9 @@ dist-check:
 parity-report *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/parity_report.py {{args}}
 
+private-api-audit *args:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/private_django_api_audit.py {{args}}
+
 openapi-diff *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_diff.py {{args}}
 
@@ -56,6 +59,6 @@ openapi-snapshot-check:
 openapi-snapshot-update:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_snapshot.py --update
 
-check: lint format-check typecheck coverage-test dist-check package-smoke sample-project-smoke openapi-snapshot-check generated-client-smoke
+check: lint format-check typecheck coverage-test dist-check package-smoke sample-project-smoke openapi-snapshot-check generated-client-smoke private-api-audit
 
 ci: check

@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added Django Ninja throttle hooks for history, autocomplete, model
   changelist routes, and custom admin routes, with typed 429 error responses.
+- Added a private Django API audit document and `just private-api-audit` gate to
+  keep private API usage explicit during Django upgrades.
 
 ### Changed
 
