@@ -161,6 +161,63 @@ def test_autodiscover_rolls_back_partial_admin_imports(monkeypatch):
     assert admin_site._api is None
 
 
+def test_autodiscover_ignores_missing_admin_module_and_clears_cache(monkeypatch):
+    from django_ninja_admin.utils import module_loading
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site._api = object()
+
+    class AppWithoutAdminConfig:
+        name = "app_without_admin"
+        module = object()
+
+    def import_missing_admin(module_name):
+        assert module_name == "app_without_admin.admin"
+        raise ModuleNotFoundError("No module named 'app_without_admin.admin'")
+
+    monkeypatch.setattr(module_loading.apps, "get_app_configs", lambda: [AppWithoutAdminConfig()])
+    monkeypatch.setattr(module_loading, "import_module", import_missing_admin)
+    monkeypatch.setattr(module_loading, "module_has_submodule", lambda module, module_name: False)
+
+    module_loading.autodiscover_modules("admin", register_to=admin_site)
+
+    assert admin_site._api is None
+
+
+def test_autodiscover_bubbles_unexpected_import_errors_without_submodule(monkeypatch):
+    from django_ninja_admin.utils import module_loading
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Category)
+    admin_site._api = object()
+
+    class BrokenImportConfig:
+        name = "broken_import"
+        module = object()
+
+    def broken_action(model_admin, request, queryset):
+        return {"count": queryset.count()}
+
+    def import_broken_admin(module_name):
+        assert module_name == "broken_import.admin"
+        admin_site.register(Product)
+        admin_site.add_action(broken_action)
+        raise RuntimeError("unexpected import failure")
+
+    monkeypatch.setattr(module_loading.apps, "get_app_configs", lambda: [BrokenImportConfig()])
+    monkeypatch.setattr(module_loading, "import_module", import_broken_admin)
+    monkeypatch.setattr(module_loading, "module_has_submodule", lambda module, module_name: False)
+
+    with pytest.raises(RuntimeError, match="unexpected import failure"):
+        module_loading.autodiscover_modules("admin", register_to=admin_site)
+
+    assert admin_site.is_registered(Category) is True
+    assert admin_site.is_registered(Product) is False
+    assert "broken_action" not in dict(admin_site.actions)
+    assert "broken_action" not in admin_site._global_actions
+    assert admin_site._api is None
+
+
 @override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin_client, staff_client, sample):
     site_response = admin_client.get("/custom-admin/status")

@@ -31,9 +31,12 @@ def autodiscover_modules(*args, **kwargs):
             before_import_state = _site_state(register_to)
             try:
                 import_module(f"{app_config.name}.{module_to_search}")
-            except Exception:
+            except ModuleNotFoundError:
                 if module_has_submodule(app_config.module, module_to_search):
                     _restore_site_state(register_to, before_import_state)
                     raise
                 if register_to is not None:
                     register_to.clear_cache()
+            except Exception:
+                _restore_site_state(register_to, before_import_state)
+                raise
