@@ -509,6 +509,56 @@ def test_list_filters_reject_invalid_isnull_values(admin_client, sample, monkeyp
     assert all_values_response.status_code == 400
     assert all_values_response.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
 
+    hidden_invalid = admin_client.get("/admin-api/testapp/product?condition__isnull=maybe&condition__isnull=1")
+    assert hidden_invalid.status_code == 400
+    assert hidden_invalid.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
+
+
+def test_field_list_filters_or_repeated_values_and_validate_each(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    beta = Product.objects.get(name="Beta")
+    Product.objects.filter(pk=sample.pk).update(condition="new")
+    Product.objects.filter(pk=beta.pk).update(condition="used")
+
+    monkeypatch.setattr(product_admin, "list_filter", ("condition",))
+    repeated_choices = admin_client.get("/admin-api/testapp/product?condition__exact=new&condition__exact=used")
+
+    assert repeated_choices.status_code == 200
+    assert repeated_choices.json()["config"]["result_count"] == 2
+    assert {row["cells"]["name"] for row in repeated_choices.json()["rows"]} == {"Alpha", "Beta"}
+    condition_filter = next(
+        item for item in repeated_choices.json()["config"]["filters"] if item["parameter_name"] == "condition__exact"
+    )
+    choices = {choice["display"]: choice for choice in condition_filter["choices"]}
+    assert choices["New"]["selected"] is True
+    assert choices["Used"]["selected"] is True
+
+    accessories = Category.objects.create(name="Accessories")
+    Product.objects.create(name="Tripod", category=accessories, price="6.00")
+
+    monkeypatch.setattr(product_admin, "list_filter", ("category",))
+    repeated_related = admin_client.get(
+        f"/admin-api/testapp/product?category__id__exact={sample.category_id}&category__id__exact={accessories.pk}"
+    )
+
+    assert repeated_related.status_code == 200
+    assert repeated_related.json()["config"]["result_count"] == 3
+    assert {row["cells"]["name"] for row in repeated_related.json()["rows"]} == {"Alpha", "Beta", "Tripod"}
+    category_filter = next(
+        item for item in repeated_related.json()["config"]["filters"] if item["parameter_name"] == "category__id__exact"
+    )
+    category_choices = {choice["display"]: choice for choice in category_filter["choices"]}
+    assert category_choices["Cameras"]["selected"] is True
+    assert category_choices["Accessories"]["selected"] is True
+
+    hidden_invalid_related = admin_client.get(
+        f"/admin-api/testapp/product?category__id__exact=not-an-id&category__id__exact={sample.category_id}"
+    )
+    assert hidden_invalid_related.status_code == 400
+    assert hidden_invalid_related.json()["errors"] == [
+        {"message": "Invalid lookup value.", "param": "category__id__exact"}
+    ]
+
 
 def test_changelist_direct_lookup_params_prepare_in_and_isnull_values(admin_client, sample):
     beta = Product.objects.get(name="Beta")

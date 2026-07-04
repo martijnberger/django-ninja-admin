@@ -9,6 +9,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Fixed
 
+- Matched Django field-list-filter semantics for repeated values by OR-filtering
+  repeated choices/related values, preserving multi-selected choice metadata,
+  and validating every supplied filter value.
 - Matched Django changelist semantics for repeated direct lookup parameters by
   OR-filtering repeated values, validating every supplied value, and preserving
   empty-string direct lookups instead of silently ignoring them.

@@ -28,9 +28,30 @@ def _bool_value(value):
     lowered = str(value).lower()
     if lowered in {"1", "true", "t", "yes", "y", "on"}:
         return True
-    if lowered in {"0", "false", "f", "no", "n", "off"}:
+    if lowered in {"", "0", "false", "f", "no", "n", "off"}:
         return False
     raise ValueError("Invalid boolean lookup value.")
+
+
+def _parameter_values(params, key):
+    if hasattr(params, "getlist"):
+        return list(params.getlist(key))
+    if key not in params:
+        return []
+    value = params.get(key)
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return [value]
+
+
+def _values(value):
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    return [value]
+
+
+def _string_values(value):
+    return {str(item) for item in _values(value)}
 
 
 def _display(value):
@@ -151,35 +172,43 @@ class FieldListFilter(ListFilter):
     def _used_parameters(self, params):
         used = {}
         if self.lookup_kwarg in params:
-            used[self.lookup_kwarg] = params.get(self.lookup_kwarg)
+            used[self.lookup_kwarg] = _parameter_values(params, self.lookup_kwarg)
         elif self.legacy_lookup_kwarg in params:
-            used[self.lookup_kwarg] = params.get(self.legacy_lookup_kwarg)
+            used[self.lookup_kwarg] = _parameter_values(params, self.legacy_lookup_kwarg)
         return used
 
     def queryset(self, request, queryset):
         if not self.used_parameters:
             return queryset
-        parameters = self._normalized_used_parameters()
-        return queryset.filter(**parameters)
+        return queryset.filter(self._query_object())
+
+    def _query_object(self):
+        q_object = Q()
+        for key, value in self._normalized_used_parameters().items():
+            value_q = Q()
+            for item in _values(value):
+                value_q |= Q(**{key: item})
+            q_object &= value_q
+        return q_object
 
     def _normalized_used_parameters(self):
         parameters = dict(self.used_parameters)
         for key, value in list(parameters.items()):
             if key.endswith("__isnull"):
-                parameters[key] = _bool_value(value)
+                parameters[key] = [_bool_value(item) for item in _values(value)]
         return parameters
 
     def choices(self, changelist):
-        current_value = self.used_parameters.get(self.lookup_kwarg)
+        current_values = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         yield {
-            "selected": current_value is None,
+            "selected": not current_values,
             "query_string": changelist.get_query_string(remove=self.expected_parameters()),
             "display": _display(_("All")),
         }
         for value, label in self.field_choices(changelist):
             value = _lookup_value(value)
             yield {
-                "selected": str(current_value) == str(value),
+                "selected": str(value) in current_values,
                 "query_string": changelist.get_query_string(
                     {self.lookup_kwarg: value},
                     remove=[self.legacy_lookup_kwarg],
@@ -196,7 +225,7 @@ class ChoicesFieldListFilter(FieldListFilter):
         super().__init__(field, request, params, model, model_admin, field_path)
         self.lookup_kwarg_isnull = f"{field_path}__isnull"
         if self.lookup_kwarg_isnull in params:
-            self.used_parameters = {self.lookup_kwarg_isnull: params.get(self.lookup_kwarg_isnull)}
+            self.used_parameters[self.lookup_kwarg_isnull] = _parameter_values(params, self.lookup_kwarg_isnull)
 
     def expected_parameters(self):
         return [self.lookup_kwarg, self.legacy_lookup_kwarg, self.lookup_kwarg_isnull]
@@ -205,7 +234,7 @@ class ChoicesFieldListFilter(FieldListFilter):
         return list(self.field.flatchoices)
 
     def choices(self, changelist):
-        current_value = self.used_parameters.get(self.lookup_kwarg)
+        current_values = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         selected_isnull = self.selected_isnull()
         yield {
             "selected": not self.used_parameters,
@@ -219,7 +248,7 @@ class ChoicesFieldListFilter(FieldListFilter):
                 continue
             value = _lookup_value(value)
             yield {
-                "selected": str(current_value) == str(value),
+                "selected": str(value) in current_values,
                 "query_string": changelist.get_query_string(
                     {self.lookup_kwarg: value},
                     remove=[self.lookup_kwarg_isnull, self.legacy_lookup_kwarg],
@@ -238,7 +267,8 @@ class ChoicesFieldListFilter(FieldListFilter):
 
     def selected_isnull(self):
         value = self.used_parameters.get(self.lookup_kwarg_isnull)
-        return _bool_value(value) if value is not None else None
+        values = _values(value) if value is not None else ()
+        return True if any(_bool_value(item) for item in values) else None
 
 
 class BooleanFieldListFilter(FieldListFilter):
@@ -246,13 +276,13 @@ class BooleanFieldListFilter(FieldListFilter):
         super().__init__(field, request, params, model, model_admin, field_path)
         self.lookup_kwarg_isnull = f"{field_path}__isnull"
         if self.lookup_kwarg_isnull in params:
-            self.used_parameters = {self.lookup_kwarg_isnull: params.get(self.lookup_kwarg_isnull)}
+            self.used_parameters[self.lookup_kwarg_isnull] = _parameter_values(params, self.lookup_kwarg_isnull)
 
     def expected_parameters(self):
         return [self.lookup_kwarg, self.legacy_lookup_kwarg, self.lookup_kwarg_isnull]
 
     def choices(self, changelist):
-        selected_exact = self.used_parameters.get(self.lookup_kwarg)
+        selected_exact = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         selected_isnull = self.selected_isnull()
         yield {
             "selected": not self.used_parameters,
@@ -261,7 +291,7 @@ class BooleanFieldListFilter(FieldListFilter):
         }
         for value, label in (("1", _("Yes")), ("0", _("No"))):
             yield {
-                "selected": str(selected_exact) == value,
+                "selected": value in selected_exact,
                 "query_string": changelist.get_query_string(
                     {self.lookup_kwarg: value},
                     remove=[self.lookup_kwarg_isnull, self.legacy_lookup_kwarg],
@@ -280,7 +310,8 @@ class BooleanFieldListFilter(FieldListFilter):
 
     def selected_isnull(self):
         value = self.used_parameters.get(self.lookup_kwarg_isnull)
-        return _bool_value(value) if value is not None else None
+        values = _values(value) if value is not None else ()
+        return True if any(_bool_value(item) for item in values) else None
 
 
 class RelatedFieldListFilter(FieldListFilter):
@@ -293,7 +324,7 @@ class RelatedFieldListFilter(FieldListFilter):
         self.lookup_kwarg_isnull = f"{field_path}__isnull"
         self.used_parameters = self._used_parameters(params)
         if self.lookup_kwarg_isnull in params:
-            self.used_parameters = {self.lookup_kwarg_isnull: params.get(self.lookup_kwarg_isnull)}
+            self.used_parameters[self.lookup_kwarg_isnull] = _parameter_values(params, self.lookup_kwarg_isnull)
 
     def expected_parameters(self):
         return [self.lookup_kwarg, self.legacy_lookup_kwarg, self.lookup_kwarg_isnull]
@@ -330,7 +361,8 @@ class RelatedFieldListFilter(FieldListFilter):
         yield from super().choices(changelist)
         if self.include_empty_choice:
             value = self.used_parameters.get(self.lookup_kwarg_isnull)
-            selected = value is not None and _bool_value(value) is True
+            values = _values(value) if value is not None else ()
+            selected = any(_bool_value(item) for item in values)
             yield {
                 "selected": selected,
                 "query_string": changelist.get_query_string(
@@ -358,7 +390,7 @@ class AllValuesFieldListFilter(FieldListFilter):
         super().__init__(field, request, params, model, model_admin, field_path)
         self.lookup_kwarg_isnull = f"{field_path}__isnull"
         if self.lookup_kwarg_isnull in params:
-            self.used_parameters = {self.lookup_kwarg_isnull: params.get(self.lookup_kwarg_isnull)}
+            self.used_parameters[self.lookup_kwarg_isnull] = _parameter_values(params, self.lookup_kwarg_isnull)
 
     def expected_parameters(self):
         return [*super().expected_parameters(), self.lookup_kwarg_isnull]
@@ -372,7 +404,7 @@ class AllValuesFieldListFilter(FieldListFilter):
         return self.model_admin.get_empty_value_display() if value in (None, "") else value
 
     def choices(self, changelist):
-        current_value = self.used_parameters.get(self.lookup_kwarg)
+        current_values = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         selected_isnull = self.selected_isnull()
         yield {
             "selected": not self.used_parameters,
@@ -386,7 +418,7 @@ class AllValuesFieldListFilter(FieldListFilter):
                 continue
             value = _lookup_value(value)
             yield {
-                "selected": str(current_value) == str(value),
+                "selected": str(value) in current_values,
                 "query_string": changelist.get_query_string(
                     {self.lookup_kwarg: value},
                     remove=[self.lookup_kwarg_isnull, self.legacy_lookup_kwarg],
@@ -405,7 +437,8 @@ class AllValuesFieldListFilter(FieldListFilter):
 
     def selected_isnull(self):
         value = self.used_parameters.get(self.lookup_kwarg_isnull)
-        return _bool_value(value) if value is not None else None
+        values = _values(value) if value is not None else ()
+        return True if any(_bool_value(item) for item in values) else None
 
 
 class EmptyFieldListFilter(FieldListFilter):
