@@ -544,6 +544,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert field_attrs_example["ordering_field"] == "name"
     assert field_attrs_example["admin_widget"] == "autocomplete"
     assert field_attrs_example["autocomplete"]["related_model"] == "shop.category"
+    assert field_attrs_example["input_schema_override"] == {"schema": {"type": "boolean"}}
     assert "html_name" not in field_attrs_example
     assert "rendered_attrs" not in field_attrs_example
     assert "rendered_subwidgets" not in field_attrs_example
@@ -635,6 +636,17 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert field_attrs_props["filtered_select"]["anyOf"][0] == {"$ref": "#/components/schemas/FilteredSelectMetadata"}
     assert field_attrs_props["radio"]["anyOf"][0] == {"$ref": "#/components/schemas/RadioMetadata"}
     assert field_attrs_props["prepopulated"]["anyOf"][0] == {"$ref": "#/components/schemas/PrepopulatedMetadata"}
+    assert field_attrs_props["input_schema_override"]["anyOf"][0] == {
+        "$ref": "#/components/schemas/InputSchemaOverrideMetadata"
+    }
+    assert components["InputSchemaOverrideMetadata"]["additionalProperties"] is False
+    assert components["InputSchemaOverrideMetadata"]["required"] == ["schema"]
+    assert components["InputSchemaOverrideMetadata"]["properties"]["schema"] == {
+        "$ref": "#/components/schemas/JsonSchemaValue"
+    }
+    assert {"type": "object", "additionalProperties": {"$ref": "#/components/schemas/JsonSchemaValue"}} in components[
+        "JsonSchemaValue"
+    ]["anyOf"]
     assert components["RelationWidgetMetadata"]["additionalProperties"] is False
     assert components["RelationWidgetMetadata"]["properties"]["query"]["anyOf"][:2] == [
         {"$ref": "#/components/schemas/SourceFieldIdentity"},

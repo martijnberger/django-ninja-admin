@@ -297,6 +297,7 @@ FIELD_DESCRIPTION_ATTRS_EXAMPLE = {
         "related_model": "shop.category",
         "multiple": False,
     },
+    "input_schema_override": {"schema": {"type": "boolean"}},
 }
 
 
@@ -316,6 +317,7 @@ class SelectedOption(Schema):
 
 
 type FieldMetadataValue = dict[str, FieldMetadataValue] | list[FieldMetadataValue] | str | int | float | bool | None
+type JsonSchemaValue = dict[str, JsonSchemaValue] | list[JsonSchemaValue] | str | int | float | bool | None
 type ObjectIdentifier = str | int | float
 type ChoicePair = tuple[str | None, str]
 
@@ -483,6 +485,19 @@ class SelectDateMetadata(Schema):
     selected: SelectDateSelected | None = None
 
 
+def _schema_field_json_schema(schema: dict[str, Any]) -> None:
+    properties = schema.get("properties", {})
+    if "schema_" in properties:
+        properties["schema"] = properties.pop("schema_")
+    schema["required"] = ["schema" if item == "schema_" else item for item in schema.get("required", [])]
+
+
+class InputSchemaOverrideMetadata(Schema):
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, json_schema_extra=_schema_field_json_schema)
+
+    schema_: JsonSchemaValue = Field(alias="schema", serialization_alias="schema")
+
+
 class FieldAttributes(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -588,6 +603,7 @@ class FieldAttributes(Schema):
     radio: RadioMetadata | None = None
     prepopulated_from: list[str] | None = None
     prepopulated: PrepopulatedMetadata | None = None
+    input_schema_override: InputSchemaOverrideMetadata | None = None
 
 
 class ComboFieldMetadata(Schema):

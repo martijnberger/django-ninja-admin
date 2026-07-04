@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Advertised form input-schema override metadata with typed OpenAPI
+  components, including recursive JSON-schema values.
+
 ## 0.1.39 - 2026-07-04
 
 ### Changed

@@ -2125,6 +2125,16 @@
             ],
             "title": "Input Formats"
           },
+          "input_schema_override": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InputSchemaOverrideMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "input_text": {
             "anyOf": [
               {
@@ -2790,6 +2800,11 @@
                 ],
                 "help_text": "Public display name.",
                 "initial": "Tripod",
+                "input_schema_override": {
+                  "schema": {
+                    "type": "boolean"
+                  }
+                },
                 "label": "Name",
                 "max_length": 80,
                 "ordering_field": "name",
@@ -4149,6 +4164,50 @@
         ],
         "title": "InlineFormsetRowMetadata",
         "type": "object"
+      },
+      "InputSchemaOverrideMetadata": {
+        "additionalProperties": false,
+        "properties": {
+          "schema": {
+            "$ref": "#/components/schemas/JsonSchemaValue"
+          }
+        },
+        "required": [
+          "schema"
+        ],
+        "title": "InputSchemaOverrideMetadata",
+        "type": "object"
+      },
+      "JsonSchemaValue": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonSchemaValue"
+            },
+            "type": "object"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonSchemaValue"
+            },
+            "type": "array"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
       "ListEditingRow": {
         "properties": {
