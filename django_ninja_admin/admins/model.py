@@ -25,6 +25,7 @@ from django_ninja_admin.schemas import (
     ActionResponse,
     AdminInlinePayloadSchema,
     FieldMetadataValue,
+    JsonObjectResponse,
     ObjectIdentifier,
 )
 from django_ninja_admin.utils.deletion import get_deleted_objects
@@ -120,7 +121,7 @@ class ModelAdmin(BaseAdmin):
         view_func=None,
         *,
         methods=("GET",),
-        response=dict[str, Any],
+        response=JsonObjectResponse,
         operation_id=None,
         summary=None,
         description=None,

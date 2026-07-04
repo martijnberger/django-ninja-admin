@@ -50,6 +50,9 @@ class CustomProductAdmin(ModelAdmin):
     def auto_stats(self, request):
         return {"count": Product.objects.count()}
 
+    def default_stats(self, request):
+        return {"count": Product.objects.count(), "metadata": {"source": "default-response"}}
+
     def get_urls(self):
         @self.route(
             "/decorated-stats",
@@ -82,6 +85,12 @@ class CustomProductAdmin(ModelAdmin):
                 self.admin_view(self.auto_stats),
                 methods=("GET", "POST"),
                 response=ProductStatsResponse,
+                tags=["custom.product"],
+            ),
+            self.route(
+                "/default-stats",
+                self.admin_view(self.default_stats),
+                operation_id="custom_product_default_stats",
                 tags=["custom.product"],
             ),
             decorated_stats,
@@ -127,6 +136,9 @@ class CustomAdminSite(NinjaAdminSite):
 
     def public_status(self, request):
         return {"public": "ok"}
+
+    def default_status(self, request):
+        return {"site": "default", "metadata": {"source": "default-response"}}
 
     def hidden_status(self, request):
         return {"hidden": "ok"}
@@ -195,6 +207,12 @@ class CustomAdminSite(NinjaAdminSite):
                 operation_id="custom_public_status",
                 tags=["custom.public"],
                 auth=None,
+            ),
+            self.route(
+                "/default-status",
+                self.admin_view(self.default_status),
+                operation_id="custom_default_status",
+                tags=["custom.site"],
             ),
             self.route(
                 "/hidden-status",

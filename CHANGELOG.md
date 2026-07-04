@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Advertised form input-schema override metadata with typed OpenAPI
   components, including recursive JSON-schema values.
+- Replaced the default custom-route `dict[str, Any]` response with a named
+  JSON-object response schema for site and model admin routes.
 
 ## 0.1.39 - 2026-07-04
 

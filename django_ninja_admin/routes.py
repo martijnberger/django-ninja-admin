@@ -6,13 +6,15 @@ from typing import Any
 
 from ninja.constants import NOT_SET
 
+from django_ninja_admin.schemas import JsonObjectResponse
+
 
 @dataclass(frozen=True)
 class AdminRoute:
     path: str
     view_func: Callable[..., Any]
     methods: tuple[str, ...] = ("GET",)
-    response: Any = dict[str, Any]
+    response: Any = JsonObjectResponse
     operation_id: str | None = None
     summary: str | None = None
     description: str | None = None

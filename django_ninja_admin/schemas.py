@@ -3,7 +3,7 @@ from typing import Any, Literal
 
 from django.utils.functional import Promise
 from ninja import Schema
-from pydantic import ConfigDict, Field, field_serializer, field_validator
+from pydantic import ConfigDict, Field, RootModel, field_serializer, field_validator
 
 
 class AdminWriteSchema(Schema):
@@ -318,8 +318,22 @@ class SelectedOption(Schema):
 
 type FieldMetadataValue = dict[str, FieldMetadataValue] | list[FieldMetadataValue] | str | int | float | bool | None
 type JsonSchemaValue = dict[str, JsonSchemaValue] | list[JsonSchemaValue] | str | int | float | bool | None
+type JsonObject = dict[str, JsonSchemaValue]
 type ObjectIdentifier = str | int | float
 type ChoicePair = tuple[str | None, str]
+
+
+class JsonObjectResponse(RootModel[JsonObject]):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "detail": "ok",
+                    "metadata": {"count": 1},
+                }
+            ]
+        }
+    )
 
 
 class ChoiceOption(Schema):

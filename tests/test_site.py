@@ -203,6 +203,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert public_response.status_code == 200
     assert public_response.json() == {"public": "ok"}
 
+    default_site_response = admin_client.get("/custom-admin/default-status")
+    assert default_site_response.status_code == 200
+    assert default_site_response.json() == {"site": "default", "metadata": {"source": "default-response"}}
+
     hidden_response = admin_client.get("/custom-admin/hidden-status")
     assert hidden_response.status_code == 200
     assert hidden_response.json() == {"hidden": "ok"}
@@ -218,6 +222,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     auto_stats = admin_client.get("/custom-admin/testapp/product/auto-stats")
     assert auto_stats.status_code == 200
     assert auto_stats.json() == {"count": 2}
+
+    default_stats = admin_client.get("/custom-admin/testapp/product/default-stats")
+    assert default_stats.status_code == 200
+    assert default_stats.json() == {"count": 2, "metadata": {"source": "default-response"}}
 
     auto_multi_get = admin_client.get("/custom-admin/testapp/product/auto-multi-stats")
     auto_multi_post = admin_client.post("/custom-admin/testapp/product/auto-multi-stats")
@@ -242,11 +250,14 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     decorated_auto_status_operation = schema["paths"]["/custom-admin/decorated-auto-status"]["get"]
     token_operation = schema["paths"]["/custom-admin/token-status"]["get"]
     public_operation = schema["paths"]["/custom-admin/public-status"]["get"]
+    default_status_operation = schema["paths"]["/custom-admin/default-status"]["get"]
     stats_operation = schema["paths"]["/custom-admin/testapp/product/stats"]["get"]
     decorated_stats_operation = schema["paths"]["/custom-admin/testapp/product/decorated-stats"]["get"]
     auto_stats_operation = schema["paths"]["/custom-admin/testapp/product/auto-stats"]["get"]
+    default_stats_operation = schema["paths"]["/custom-admin/testapp/product/default-stats"]["get"]
     auto_multi_get_operation = schema["paths"]["/custom-admin/testapp/product/auto-multi-stats"]["get"]
     auto_multi_post_operation = schema["paths"]["/custom-admin/testapp/product/auto-multi-stats"]["post"]
+    components = schema["components"]["schemas"]
 
     def assert_custom_route_error_responses(operation, *, include_401=True):
         expected_statuses = {"400", "403", "404", "422"}
@@ -305,6 +316,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert _response_schema_ref(public_operation, "200") == "#/components/schemas/PublicStatusResponse"
     assert "401" not in public_operation["responses"]
     assert_custom_route_error_responses(public_operation, include_401=False)
+    assert default_status_operation["operationId"] == "custom_default_status"
+    assert default_status_operation["tags"] == ["custom.site"]
+    assert _response_schema_ref(default_status_operation, "200") == "#/components/schemas/JsonObjectResponse"
+    assert_custom_route_error_responses(default_status_operation)
     assert stats_operation["operationId"] == "custom_product_stats"
     assert stats_operation["tags"] == ["custom.product"]
     assert stats_operation["summary"] == "Product stats"
@@ -319,6 +334,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert auto_stats_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(auto_stats_operation, "200") == "#/components/schemas/ProductStatsResponse"
     assert_custom_route_error_responses(auto_stats_operation)
+    assert default_stats_operation["operationId"] == "custom_product_default_stats"
+    assert default_stats_operation["tags"] == ["custom.product"]
+    assert _response_schema_ref(default_stats_operation, "200") == "#/components/schemas/JsonObjectResponse"
+    assert_custom_route_error_responses(default_stats_operation)
     assert auto_multi_get_operation["operationId"] == "custom_get_testapp_product_auto_multi_stats"
     assert auto_multi_get_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(auto_multi_get_operation, "200") == "#/components/schemas/ProductStatsResponse"
@@ -327,6 +346,8 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert auto_multi_post_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(auto_multi_post_operation, "200") == "#/components/schemas/ProductStatsResponse"
     assert_custom_route_error_responses(auto_multi_post_operation)
+    assert components["JsonObjectResponse"]["$ref"] == "#/components/schemas/JsonObject"
+    assert components["JsonObject"]["additionalProperties"] == {"$ref": "#/components/schemas/JsonSchemaValue"}
     assert "/custom-admin/hidden-status" not in schema["paths"]
 
 
