@@ -108,6 +108,9 @@ def write_sample_project(project_dir: Path) -> None:
             def __str__(self):
                 return self.name
 
+            def get_absolute_url(self):
+                return f"/products/{self.pk}/"
+
 
         class ProductImage(models.Model):
             product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -154,6 +157,7 @@ def write_sample_project(project_dir: Path) -> None:
             list_display = ("name", "category", "price", "stock_status")
             list_editable = ("stock_status",)
             search_fields = ("name",)
+            autocomplete_fields = ("category",)
             actions = ["set_stock_status"]
             inlines = [ProductImageInline]
 
@@ -177,6 +181,7 @@ def write_sample_project(project_dir: Path) -> None:
         """
         SECRET_KEY = "generated-client-smoke"
         DEBUG = True
+        ALLOWED_HOSTS = ["testserver"]
         ROOT_URLCONF = "sample_project.urls"
         USE_TZ = True
         DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -245,6 +250,8 @@ def write_sample_project(project_dir: Path) -> None:
         from django.test import Client
 
         django.setup()
+
+        from django.contrib.contenttypes.models import ContentType
 
         from sample_app.models import Category, Product, ProductImage
 
@@ -410,6 +417,13 @@ def write_sample_project(project_dir: Path) -> None:
         anonymous_consumer = OpenAPIConsumer(Client(), schema_response.json())
 
         expected_operations = {
+            "admin_context",
+            "admin_permissions",
+            "admin_list_apps",
+            "admin_get_app",
+            "admin_history",
+            "admin_autocomplete",
+            "admin_view_on_site",
             "sample_app_product_list",
             "sample_app_product_create",
             "sample_app_product_detail",
@@ -421,6 +435,14 @@ def write_sample_project(project_dir: Path) -> None:
             "sample_app_product_change_form",
         }
         assert expected_operations <= set(consumer.operations)
+        assert consumer.path_parameters["admin_get_app"] == {"app_label"}
+        assert {"app_label", "model", "object_id", "action_flag", "o", "page", "per_page"} <= consumer.query_parameters[
+            "admin_history"
+        ]
+        assert {"app_label", "model_name", "field_name", "term", "page"} <= consumer.query_parameters[
+            "admin_autocomplete"
+        ]
+        assert consumer.path_parameters["admin_view_on_site"] == {"content_type_id", "object_id"}
         assert {"q", "o", "p", "page", "pp", "all", "_facets", "_to_field"} <= consumer.query_parameters[
             "sample_app_product_list"
         ]
@@ -430,6 +452,40 @@ def write_sample_project(project_dir: Path) -> None:
         unauthorized_response = anonymous_consumer.request("sample_app_product_list")
         assert unauthorized_response.status_code == 401, unauthorized_response.content
         anonymous_consumer.assert_response_matches_schema("sample_app_product_list", unauthorized_response)
+
+        context_response = consumer.request("admin_context")
+        assert context_response.status_code == 200, context_response.content
+        consumer.assert_response_matches_schema("admin_context", context_response)
+        assert context_response.json()["has_permission"] is True
+
+        permissions_response = consumer.request("admin_permissions")
+        assert permissions_response.status_code == 200, permissions_response.content
+        consumer.assert_response_matches_schema("admin_permissions", permissions_response)
+        assert permissions_response.json()["has_permission"] is True
+
+        apps_response = consumer.request("admin_list_apps")
+        assert apps_response.status_code == 200, apps_response.content
+        consumer.assert_response_matches_schema("admin_list_apps", apps_response)
+        assert any(app["app_label"] == "sample_app" for app in apps_response.json())
+
+        app_response = consumer.request("admin_get_app", path_params={"app_label": "sample_app"})
+        assert app_response.status_code == 200, app_response.content
+        consumer.assert_response_matches_schema("admin_get_app", app_response)
+        assert app_response.json()["app_label"] == "sample_app"
+
+        autocomplete_response = consumer.request(
+            "admin_autocomplete",
+            query={
+                "app_label": "sample_app",
+                "model_name": "product",
+                "field_name": "category",
+                "term": "Cam",
+                "page": 1,
+            },
+        )
+        assert autocomplete_response.status_code == 200, autocomplete_response.content
+        consumer.assert_response_matches_schema("admin_autocomplete", autocomplete_response)
+        assert autocomplete_response.json()["results"] == [{"id": str(category.pk), "text": "Cameras"}]
 
         list_response = consumer.request("sample_app_product_list", query={"q": "Existing", "pp": 1, "_facets": 1})
         assert list_response.status_code == 200, list_response.content
@@ -538,6 +594,24 @@ def write_sample_project(project_dir: Path) -> None:
         assert form_response.status_code == 200, form_response.content
         consumer.assert_response_matches_schema("sample_app_product_change_form", form_response)
         assert form_response.json()["form"]["model"] == "sample_app.product"
+
+        history_response = consumer.request(
+            "admin_history",
+            query={"app_label": "sample_app", "model": "product", "object_id": product_id, "per_page": 5},
+        )
+        assert history_response.status_code == 200, history_response.content
+        consumer.assert_response_matches_schema("admin_history", history_response)
+        assert history_response.json()["pagination"]["count"] >= 1
+        assert all(item["model"] == "sample_app.product" for item in history_response.json()["results"])
+
+        product_content_type = ContentType.objects.get_for_model(Product)
+        view_on_site_response = consumer.request(
+            "admin_view_on_site",
+            path_params={"content_type_id": product_content_type.pk, "object_id": product_id},
+        )
+        assert view_on_site_response.status_code == 200, view_on_site_response.content
+        consumer.assert_response_matches_schema("admin_view_on_site", view_on_site_response)
+        assert view_on_site_response.json()["url"].endswith(f"/products/{product_id}/")
 
         delete_response = consumer.request("sample_app_product_delete", path_params={"object_id": product_id})
         assert delete_response.status_code == 204, delete_response.content

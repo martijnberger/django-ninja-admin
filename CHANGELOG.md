@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   components, including recursive JSON-schema values.
 - Replaced the default custom-route `dict[str, Any]` response with a named
   JSON-object response schema for site and model admin routes.
+- Expanded the installed-wheel generated-client smoke to cover site context,
+  permissions, app-list, history, autocomplete, and view-on-site routes.
 
 ## 0.1.39 - 2026-07-04
 
