@@ -23,6 +23,21 @@ from django_ninja_admin.utils.lookup import (
 
 ERROR_PREFIX = "django_ninja_admin"
 
+DJANGO_SEQUENCE_OPTION_CODES = {
+    "raw_id_fields": "E001",
+    "filter_vertical": "E017",
+    "filter_horizontal": "E018",
+    "ordering": "E031",
+    "readonly_fields": "E034",
+    "autocomplete_fields": "E036",
+    "list_display": "E107",
+    "list_display_links": "E110",
+    "list_filter": "E112",
+    "list_select_related": "E117",
+    "list_editable": "E120",
+    "search_fields": "E126",
+}
+
 
 def _error(obj, message, code, *, hint=None):
     return checks.Error(message, hint=hint, obj=obj, id=f"{ERROR_PREFIX}.{code}")
@@ -84,7 +99,8 @@ def _check_sequence_option(model_admin, option, *, allow_none=True):
     if value is None and allow_none:
         return []
     if not isinstance(value, (list, tuple)):
-        return [_error(model_admin.__class__, f"The value of '{option}' must be a list or tuple.", "E001")]
+        code = DJANGO_SEQUENCE_OPTION_CODES.get(option, "E001")
+        return [_error(model_admin.__class__, f"The value of '{option}' must be a list or tuple.", code)]
     return []
 
 
@@ -763,7 +779,7 @@ def _check_list_select_related(model_admin):
             _error(
                 model_admin.__class__,
                 "The value of 'list_select_related' must be a boolean, list, or tuple.",
-                "E045",
+                DJANGO_SEQUENCE_OPTION_CODES["list_select_related"],
             )
         ]
 

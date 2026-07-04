@@ -66,6 +66,31 @@ def test_admin_checks_report_invalid_model_admin_configuration(db, make_site):
     } <= error_ids
 
 
+@pytest.mark.parametrize(
+    ("option", "django_code"),
+    [
+        ("raw_id_fields", "E001"),
+        ("filter_vertical", "E017"),
+        ("filter_horizontal", "E018"),
+        ("ordering", "E031"),
+        ("readonly_fields", "E034"),
+        ("autocomplete_fields", "E036"),
+        ("list_display", "E107"),
+        ("list_display_links", "E110"),
+        ("list_filter", "E112"),
+        ("list_select_related", "E117"),
+        ("list_editable", "E120"),
+        ("search_fields", "E126"),
+    ],
+)
+def test_admin_checks_use_django_aligned_sequence_option_ids(db, make_site, option, django_code):
+    admin_site = make_site(Product, **{option: "not-a-sequence"})
+
+    error_ids = {error.id for error in admin_site.get_model_admin(Product).check()}
+
+    assert f"django_ninja_admin.{django_code}" in error_ids
+
+
 def test_admin_checks_reject_empty_list_display(db, make_site):
     admin_site = make_site(Product, list_display=())
 
@@ -426,8 +451,8 @@ def test_admin_checks_validate_list_select_related(db, make_site):
     bad_type_errors = _check_site(bad_type_site)
     bad_path_errors = _check_site(bad_path_site)
 
-    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E045", "django_ninja_admin.E046"})
-    assert {error.id for error in bad_type_errors} == {"django_ninja_admin.E045"}
+    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E117", "django_ninja_admin.E046"})
+    assert {error.id for error in bad_type_errors} == {"django_ninja_admin.E117"}
     assert {error.id for error in bad_path_errors} == {"django_ninja_admin.E046"}
     assert len(bad_path_errors) == 3
 

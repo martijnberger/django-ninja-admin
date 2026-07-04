@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Aligned common `ModelAdmin` sequence-option check IDs with Django admin's
+  numbering while keeping the `django_ninja_admin` check namespace.
+
 ## 0.1.44 - 2026-07-04
 
 ### Changed
