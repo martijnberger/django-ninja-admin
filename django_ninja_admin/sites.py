@@ -551,6 +551,8 @@ class NinjaAdminSite:
         hook_name,
         explicit_status,
     ):
+        if status_code == 204:
+            return None
         custom_responses = self._custom_hook_responses(hook_schema, (200, 202))
         if status_code == default_status and not (explicit_status and status_code in custom_responses):
             return default_schema

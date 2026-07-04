@@ -147,6 +147,32 @@ invalid_response_hook_site.register(Category, ModelAdmin)
 invalid_response_hook_site.register(Product, InvalidResponseHookProductAdmin)
 
 
+class NoContentHookProductAdmin(ModelAdmin):
+    def response_add(self, request, obj, form, inline_results):
+        return Status(204, None)
+
+    def response_change(self, request, obj, form, inline_results):
+        return Status(204, None)
+
+    def response_delete(self, request, obj_display, obj_id):
+        return Status(204, None)
+
+
+no_content_hook_site = NinjaAdminSite(name="no_content_hook_admin", include_auth=False)
+no_content_hook_site.register(Category, ModelAdmin)
+no_content_hook_site.register(Product, NoContentHookProductAdmin)
+
+
+class InvalidNoContentHookProductAdmin(ModelAdmin):
+    def response_add(self, request, obj, form, inline_results):
+        return Status(204, {"detail": "not allowed"})
+
+
+invalid_no_content_hook_site = NinjaAdminSite(name="invalid_no_content_hook_admin", include_auth=False)
+invalid_no_content_hook_site.register(Category, ModelAdmin)
+invalid_no_content_hook_site.register(Product, InvalidNoContentHookProductAdmin)
+
+
 class FormfieldHookProductAdmin(ModelAdmin):
     formfield_overrides = {
         models.TextField: {
@@ -428,6 +454,8 @@ urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
     path("status-hook-admin/", status_hook_site.urls),
     path("invalid-response-hook-admin/", invalid_response_hook_site.urls),
+    path("no-content-hook-admin/", no_content_hook_site.urls),
+    path("invalid-no-content-hook-admin/", invalid_no_content_hook_site.urls),
     path("custom-formfield-admin/", custom_formfield_site.urls),
     path("split-datetime-admin/", split_datetime_site.urls),
     path("multi-value-admin/", multi_value_site.urls),

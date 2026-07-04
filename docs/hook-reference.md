@@ -84,6 +84,9 @@ Response hook return values are part of the generated-client contract:
   statuses are advertised with the standard mutation schema, so custom
   add/change bodies should return `Status(200, body)` or `Status(202, body)`
   and declare `response_add_schema` or `response_change_schema`.
+- Add/change/delete hooks may return `Status(204, None)` when the mutation
+  should commit without a response body. A `204` hook response with a body is
+  rejected before the surrounding transaction commits.
 - `response_delete()` may return `None` for the default `204` response, a plain
   dictionary for a typed `200` response, or `Status(...)` for an explicit
   status/body pair. Delete hooks that return a body must declare

@@ -18,6 +18,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Validated explicit `Status(200, ...)` `response_change()` hook bodies against
   their declared hook response schema instead of the default mutation schema,
   matching the advertised OpenAPI response map.
+- Allowed explicit `Status(204, None)` add/change/delete response hooks to
+  match the advertised no-content mutation response map while still rejecting
+  204 responses with bodies.
 
 ## 0.1.57 - 2026-07-04
 

@@ -252,6 +252,66 @@ def test_invalid_response_hooks_are_validated_inside_mutation_transaction(admin_
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_response_hooks_can_return_no_content_status(admin_client, sample):
+    schema = admin_client.get("/no-content-hook-admin/openapi.json").json()
+    paths = schema["paths"]
+    assert "content" not in paths["/no-content-hook-admin/testapp/product"]["post"]["responses"]["204"]
+    assert "content" not in paths["/no-content-hook-admin/testapp/product/{object_id}"]["patch"]["responses"]["204"]
+    assert "content" not in paths["/no-content-hook-admin/testapp/product/{object_id}"]["delete"]["responses"]["204"]
+
+    created = admin_client.post(
+        "/no-content-hook-admin/testapp/product",
+        data={
+            "data": {
+                "name": "No Content Hook",
+                "category": sample.category_id,
+                "price": "8.00",
+                "stock_status": "in_stock",
+            }
+        },
+        content_type="application/json",
+    )
+
+    assert created.status_code == 204
+    product = Product.objects.get(name="No Content Hook")
+
+    changed = admin_client.patch(
+        f"/no-content-hook-admin/testapp/product/{product.pk}",
+        data={"data": {"description": "No content change"}},
+        content_type="application/json",
+    )
+
+    assert changed.status_code == 204
+    product.refresh_from_db()
+    assert product.description == "No content change"
+
+    deleted = admin_client.delete(f"/no-content-hook-admin/testapp/product/{product.pk}")
+
+    assert deleted.status_code == 204
+    assert not Product.objects.filter(pk=product.pk).exists()
+
+
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_response_hooks_reject_no_content_bodies_inside_transaction(admin_client, sample):
+    created = admin_client.post(
+        "/invalid-no-content-hook-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Invalid No Content Hook",
+                "category": sample.category_id,
+                "price": "8.00",
+                "stock_status": "in_stock",
+            }
+        },
+        content_type="application/json",
+    )
+
+    assert created.status_code == 400
+    assert created.json()["errors"] == [{"message": "Response status does not allow a body.", "param": "response_add"}]
+    assert not Product.objects.filter(name="Invalid No Content Hook").exists()
+
+
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_split_datetime_payload_uses_pydantic_and_multivalue_form_normalization(admin_client, sample):
     schema = admin_client.get("/split-datetime-admin/openapi.json").json()
     description_schema = schema["components"]["schemas"]["ProductAdminCreateData"]["properties"]["description"][
