@@ -18,6 +18,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added Django-aligned duplicate action-name system checks using
   `django_ninja_admin.E130`.
 - Moved package-owned `sortable_by` system checks into package-specific IDs.
+- Moved package-owned `schema_field_overrides` system checks into
+  package-specific IDs.
 
 ## 0.1.45 - 2026-07-04
 

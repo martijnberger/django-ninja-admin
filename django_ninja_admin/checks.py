@@ -85,6 +85,9 @@ PACKAGE_OPTION_CODES = {
     "sortable_by_type": "E171",
     "sortable_by_item": "E172",
     "sortable_by_missing": "E173",
+    "schema_field_overrides_type": "E174",
+    "schema_field_overrides_key": "E175",
+    "schema_field_overrides_value": "E176",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -582,7 +585,13 @@ def _check_formfield_overrides(model_admin):
 def _check_schema_field_overrides(model_admin):
     value = getattr(model_admin, "schema_field_overrides", {}) or {}
     if not isinstance(value, Mapping):
-        return [_error(model_admin.__class__, "The value of 'schema_field_overrides' must be a mapping.", "E098")]
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'schema_field_overrides' must be a mapping.",
+                PACKAGE_OPTION_CODES["schema_field_overrides_type"],
+            )
+        ]
 
     errors = []
     for field_name, override in value.items():
@@ -591,7 +600,7 @@ def _check_schema_field_overrides(model_admin):
                 _error(
                     model_admin.__class__,
                     "Keys in 'schema_field_overrides' must be field names.",
-                    "E099",
+                    PACKAGE_OPTION_CODES["schema_field_overrides_key"],
                 )
             )
         if isinstance(override, tuple) and len(override) not in {1, 2}:
@@ -599,7 +608,7 @@ def _check_schema_field_overrides(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The override for '{field_name}' must be a type annotation or a one/two-item tuple.",
-                    "E100",
+                    PACKAGE_OPTION_CODES["schema_field_overrides_value"],
                 )
             )
     return errors

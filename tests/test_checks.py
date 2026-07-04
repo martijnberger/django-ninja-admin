@@ -1384,10 +1384,10 @@ def test_admin_checks_validate_schema_field_overrides(db, make_site):
     bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
     bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E098", "django_ninja_admin.E099", "django_ninja_admin.E100"})
-    assert bad_mapping_ids == {"django_ninja_admin.E098"}
-    assert bad_key_ids == {"django_ninja_admin.E099"}
-    assert bad_tuple_ids == {"django_ninja_admin.E100"}
+    assert valid_ids.isdisjoint({"django_ninja_admin.E174", "django_ninja_admin.E175", "django_ninja_admin.E176"})
+    assert bad_mapping_ids == {"django_ninja_admin.E174"}
+    assert bad_key_ids == {"django_ninja_admin.E175"}
+    assert bad_tuple_ids == {"django_ninja_admin.E176"}
 
 
 def test_admin_checks_validate_form_schema_field_overrides(db, make_site):
