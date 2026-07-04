@@ -535,9 +535,9 @@ def test_admin_checks_validate_sortable_by(db, make_site):
     bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
     bad_items_ids = {error.id for error in bad_items_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E055", "django_ninja_admin.E056", "django_ninja_admin.E057"})
-    assert bad_shape_ids == {"django_ninja_admin.E055"}
-    assert bad_items_ids == {"django_ninja_admin.E056", "django_ninja_admin.E057"}
+    assert valid_ids.isdisjoint({"django_ninja_admin.E171", "django_ninja_admin.E172", "django_ninja_admin.E173"})
+    assert bad_shape_ids == {"django_ninja_admin.E171"}
+    assert bad_items_ids == {"django_ninja_admin.E172", "django_ninja_admin.E173"}
 
 
 def test_admin_checks_validate_pagination_options(db, make_site):

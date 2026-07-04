@@ -82,6 +82,9 @@ PACKAGE_OPTION_CODES = {
     "list_editable_duplicate": "E168",
     "list_filter_tuple_shape": "E169",
     "simple_list_filter_parameter": "E170",
+    "sortable_by_type": "E171",
+    "sortable_by_item": "E172",
+    "sortable_by_missing": "E173",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -388,20 +391,32 @@ def _check_sortable_by(model_admin):
     if value is None:
         return []
     if not isinstance(value, (list, tuple)):
-        return [_error(model_admin.__class__, "The value of 'sortable_by' must be a list or tuple.", "E055")]
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'sortable_by' must be a list or tuple.",
+                PACKAGE_OPTION_CODES["sortable_by_type"],
+            )
+        ]
 
     errors = []
     list_display = tuple(model_admin.get_list_display(None))
     for item in value:
         if not isinstance(item, str) and not callable(item):
-            errors.append(_error(model_admin.__class__, "Items in 'sortable_by' must be strings or callables.", "E056"))
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    "Items in 'sortable_by' must be strings or callables.",
+                    PACKAGE_OPTION_CODES["sortable_by_item"],
+                )
+            )
             continue
         if not _display_item_in(item, list_display):
             errors.append(
                 _error(
                     model_admin.__class__,
                     f"The value of 'sortable_by' refers to '{item}', which is not in 'list_display'.",
-                    "E057",
+                    PACKAGE_OPTION_CODES["sortable_by_missing"],
                 )
             )
     return errors
