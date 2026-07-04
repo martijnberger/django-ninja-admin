@@ -11,12 +11,14 @@ from django_ninja_admin.utils.schema_examples import (
     coerce_choice_example,
     form_data_example,
     iter_choice_values,
+    model_choice_target_field,
     pydantic_choice_values,
     pydantic_model_example,
     pydantic_type_for_choices,
     schema_example,
     schema_type_example,
 )
+from tests.testapp.models import Category
 
 
 def _field_example(name, _field, override):
@@ -70,6 +72,18 @@ def test_form_data_example_honors_selected_disabled_and_file_fields():
         selected_fields=("document", "disabled", "summary"),
         exclude_file_fields=True,
     ) == {"summary": "summary-example"}
+
+
+def test_model_choice_target_field_uses_to_field_name(db):
+    field = forms.ModelChoiceField(queryset=Category.objects.all(), to_field_name="slug")
+
+    assert model_choice_target_field(field) is Category._meta.get_field("slug")
+
+
+def test_model_choice_target_field_falls_back_to_pk_for_missing_to_field(db):
+    field = forms.ModelChoiceField(queryset=Category.objects.all(), to_field_name="missing")
+
+    assert model_choice_target_field(field) is Category._meta.pk
 
 
 def test_schema_type_example_satisfies_annotated_constraints():

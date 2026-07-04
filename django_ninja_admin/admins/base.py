@@ -78,6 +78,7 @@ from django_ninja_admin.utils.schema_examples import (
     coerce_choice_example,
     form_data_example,
     iter_choice_values,
+    model_choice_target_field,
     pydantic_choice_values,
     pydantic_literal_for_choices,
     pydantic_type_for_choices,
@@ -710,13 +711,7 @@ class BaseAdmin:
         return pydantic_type_for_choices(choices, as_literal=as_literal)
 
     def get_model_choice_target_field(self, field):
-        model = field.queryset.model
-        if field.to_field_name:
-            try:
-                return model._meta.get_field(field.to_field_name)
-            except FieldDoesNotExist:
-                pass
-        return model._meta.pk
+        return model_choice_target_field(field)
 
     def _relation_form_field_example_value(self, field):
         return self._model_field_example_value(self.get_model_choice_target_field(field))

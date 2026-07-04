@@ -92,6 +92,7 @@ from django_ninja_admin.utils.schema_examples import (
     choice_example_value,
     form_data_example,
     json_example_value,
+    model_choice_target_field,
     pydantic_model_example,
 )
 
@@ -1960,7 +1961,7 @@ class NinjaAdminSite:
         return "example"
 
     def _relation_form_field_example_value(self, field):
-        target_field = self._model_choice_target_field(field)
+        target_field = model_choice_target_field(field)
         if isinstance(
             target_field,
             models.AutoField
@@ -1976,15 +1977,6 @@ class NinjaAdminSite:
         if isinstance(target_field, models.UUIDField):
             return "550e8400-e29b-41d4-a716-446655440000"
         return "example"
-
-    def _model_choice_target_field(self, field):
-        model = field.queryset.model
-        if field.to_field_name:
-            try:
-                return model._meta.get_field(field.to_field_name)
-            except FieldDoesNotExist:
-                pass
-        return model._meta.pk
 
     def _choice_example_value(self, choices):
         return choice_example_value(choices, json_safe=True)

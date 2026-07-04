@@ -9,8 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
-- Extracted shared form-data example selection logic so admin and site OpenAPI
-  request examples use one tested helper.
+- Extracted shared form-data example selection and relation-target lookup logic
+  so admin and site OpenAPI request examples use tested helpers.
 
 ## 0.1.42 - 2026-07-04
 

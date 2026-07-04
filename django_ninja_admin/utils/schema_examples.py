@@ -7,6 +7,7 @@ from typing import Annotated, Any, Literal, Union, get_args, get_origin
 from uuid import UUID
 
 from django import forms
+from django.core.exceptions import FieldDoesNotExist
 from pydantic import AnyUrl, IPvAnyAddress, TypeAdapter
 from pydantic_core import ValidationError as PydanticCoreValidationError
 
@@ -44,6 +45,16 @@ def form_data_example(
         name, field = candidates[0]
         data[name] = field_example(name, field, overrides.get(name))
     return data
+
+
+def model_choice_target_field(field):
+    model = field.queryset.model
+    if field.to_field_name:
+        try:
+            return model._meta.get_field(field.to_field_name)
+        except FieldDoesNotExist:
+            pass
+    return model._meta.pk
 
 
 def _form_example_candidates(
