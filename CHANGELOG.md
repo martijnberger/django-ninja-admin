@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+No changes yet.
+
+## 0.1.47 - 2026-07-04
+
 ### Changed
 
 - Aligned invalid `form_class` inheritance checks with Django admin's `E016`
@@ -20,6 +24,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   non-sequence `actions` checks into package-specific IDs.
 - Aligned inline model checks with Django admin's distinction between missing
   inline models (`E105`) and invalid non-model values (`E106`).
+- Added history and autocomplete query-count guards for large result sets to
+  verify page-bounded behavior.
 
 ## 0.1.46 - 2026-07-04
 

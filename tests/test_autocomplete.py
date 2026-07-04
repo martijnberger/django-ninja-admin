@@ -1,7 +1,8 @@
 import pytest
 from django.core.paginator import Paginator
-from django.db import models
+from django.db import connection, models
 from django.test import override_settings
+from django.test.utils import CaptureQueriesContext
 
 from django_ninja_admin import site
 from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product, Tag
@@ -87,6 +88,28 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
         },
     )
     assert bad_page.status_code == 404
+
+
+def test_autocomplete_query_count_is_bounded_by_requested_page(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "autocomplete_fields", ("tags",))
+    Tag.objects.bulk_create(Tag(name=f"Bounded Tag {index:02d}") for index in range(80))
+
+    with CaptureQueriesContext(connection) as queries:
+        response = admin_client.get(
+            "/admin-api/autocomplete",
+            {
+                "app_label": "testapp",
+                "model_name": "product",
+                "field_name": "tags",
+                "term": "Bounded",
+            },
+        )
+
+    assert response.status_code == 200
+    assert len(response.json()["results"]) == 20
+    assert response.json()["pagination"]["count"] == 80
+    assert len(queries) <= 8
 
 
 def test_autocomplete_uses_remote_model_admin_paginator_hook(admin_client, sample, monkeypatch):

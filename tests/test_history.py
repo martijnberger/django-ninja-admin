@@ -4,6 +4,8 @@ from datetime import timedelta
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
 from django_ninja_admin import site
@@ -137,6 +139,30 @@ def test_history_uses_queryset_pagination_for_global_permissions(admin_client, s
         "more": True,
     }
     assert len(response.json()["results"]) == 1
+
+
+def test_history_query_count_is_bounded_by_requested_page(admin_client, sample):
+    actor = get_user_model().objects.create_user("history-count-actor", password="pw", is_staff=True)
+    product_ct = ContentType.objects.get_for_model(Product, for_concrete_model=False)
+    now = timezone.now()
+    for index in range(80):
+        LogEntry.objects.create(
+            user=actor,
+            content_type=product_ct,
+            object_id=str(sample.pk),
+            object_repr=f"{sample}:{index}",
+            action_flag=CHANGE,
+            action_time=now + timedelta(seconds=index),
+            change_message=json.dumps([{"changed": {"fields": ["Name"]}}]),
+        )
+
+    with CaptureQueriesContext(connection) as queries:
+        response = admin_client.get("/admin-api/history", {"app_label": "testapp", "model": "product", "per_page": 2})
+
+    assert response.status_code == 200
+    assert len(response.json()["results"]) == 2
+    assert response.json()["pagination"]["count"] == 80
+    assert len(queries) <= 8
 
 
 def test_history_filters_object_level_permissions(admin_client, sample, monkeypatch):
