@@ -845,13 +845,15 @@ class NinjaAdminSite:
         )
         def history(
             request,
-            app_label: str | None = None,
-            model: str | None = None,
-            object_id: str | None = None,
-            action_flag: int | None = None,
-            o: str = "-action_time",
-            page: int = 1,
-            per_page: int = 20,
+            app_label: str | None = NinjaQuery(None, description="Optional app label to restrict history entries."),
+            model: str | None = NinjaQuery(None, description="Optional model name to restrict history entries."),
+            object_id: str | None = NinjaQuery(
+                None, description="Optional object identifier to restrict history entries."
+            ),
+            action_flag: int | None = NinjaQuery(None, description="Optional Django admin log action flag."),
+            o: str = NinjaQuery("-action_time", description="Ordering: `action_time` or `-action_time`."),
+            page: int = NinjaQuery(1, description="1-based page number."),
+            per_page: int = NinjaQuery(20, description=f"Page size from 1 to {site.history_max_per_page}."),
         ):
             from django_ninja_admin.models import ACTION_FLAG_CHOICES, LogEntry
 
@@ -964,11 +966,11 @@ class NinjaAdminSite:
         )
         def autocomplete(
             request,
-            app_label: str,
-            model_name: str,
-            field_name: str,
-            term: str = "",
-            page: int = 1,
+            app_label: str = NinjaQuery(..., description="Source model app label."),
+            model_name: str = NinjaQuery(..., description="Source model name."),
+            field_name: str = NinjaQuery(..., description="Source relation field configured for autocomplete."),
+            term: str = NinjaQuery("", description="Search term matched against the remote admin search fields."),
+            page: int = NinjaQuery(1, description="1-based page number."),
         ):
             try:
                 source_model = apps.get_model(app_label, model_name)

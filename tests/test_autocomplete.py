@@ -317,6 +317,39 @@ def test_autocomplete_applies_source_field_limit_choices_to(admin_client):
     assert response.json()["results"] == [{"id": str(public.pk), "text": "Public Cameras"}]
 
 
+@pytest.mark.parametrize(
+    "limit_choices_to",
+    [
+        lambda: {"slug__startswith": "public"},
+        models.Q(slug__startswith="public"),
+    ],
+    ids=["callable", "q-object"],
+)
+def test_autocomplete_applies_dynamic_source_field_limit_choices_to(
+    admin_client, sample, monkeypatch, limit_choices_to
+):
+    public = sample.category
+    public.name = "Public Cameras"
+    public.slug = "public-cameras"
+    public.save(update_fields=["name", "slug"])
+    Category.objects.create(name="Private Cameras", slug="private-cameras")
+    category_field = Product._meta.get_field("category")
+    monkeypatch.setattr(category_field.remote_field, "limit_choices_to", limit_choices_to)
+
+    response = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "category",
+            "term": "Cameras",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"] == [{"id": str(public.pk), "text": "Public Cameras"}]
+
+
 def test_autocomplete_filters_object_level_view_permissions(admin_client, sample, monkeypatch):
     category_admin = site.get_model_admin(Category)
     hidden = Category.objects.create(name="Hidden")

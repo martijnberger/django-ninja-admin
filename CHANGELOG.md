@@ -7,6 +7,16 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added mounted autocomplete coverage for dynamic `limit_choices_to` values,
+  including callable and `Q` object relation constraints.
+
+### Changed
+
+- Added OpenAPI descriptions for `/history` and `/autocomplete` query
+  parameters while preserving existing runtime validation behavior.
+
 ## 0.1.51 - 2026-07-04
 
 ### Fixed

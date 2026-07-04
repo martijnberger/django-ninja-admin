@@ -473,6 +473,18 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["HistoryItem"]["properties"]["model"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert components["HistoryItem"]["properties"]["detail_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert components["HistoryResponse"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
+    history_parameters = {
+        parameter["name"]: parameter for parameter in paths["/admin-api/history"]["get"]["parameters"]
+    }
+    assert history_parameters["app_label"]["description"] == "Optional app label to restrict history entries."
+    assert history_parameters["model"]["description"] == "Optional model name to restrict history entries."
+    assert history_parameters["object_id"]["description"] == "Optional object identifier to restrict history entries."
+    assert history_parameters["action_flag"]["description"] == "Optional Django admin log action flag."
+    assert history_parameters["o"]["description"] == "Ordering: `action_time` or `-action_time`."
+    assert history_parameters["page"]["description"] == "1-based page number."
+    assert history_parameters["per_page"]["description"] == "Page size from 1 to 100."
+    assert non_null_parameter_type(history_parameters["page"]) == ["integer"]
+    assert non_null_parameter_type(history_parameters["per_page"]) == ["integer"]
     history_example = components["HistoryResponse"]["examples"][0]
     assert history_example["pagination"]["per_page"] == 20
     assert history_example["pagination"]["more"] is False
@@ -482,6 +494,20 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "#/components/schemas/AutocompleteResponse"
     )
     assert components["AutocompleteResponse"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
+    autocomplete_parameters = {
+        parameter["name"]: parameter for parameter in paths["/admin-api/autocomplete"]["get"]["parameters"]
+    }
+    assert autocomplete_parameters["app_label"]["description"] == "Source model app label."
+    assert autocomplete_parameters["model_name"]["description"] == "Source model name."
+    assert autocomplete_parameters["field_name"]["description"] == "Source relation field configured for autocomplete."
+    assert (
+        autocomplete_parameters["term"]["description"] == "Search term matched against the remote admin search fields."
+    )
+    assert autocomplete_parameters["page"]["description"] == "1-based page number."
+    assert autocomplete_parameters["app_label"]["required"] is True
+    assert autocomplete_parameters["model_name"]["required"] is True
+    assert autocomplete_parameters["field_name"]["required"] is True
+    assert non_null_parameter_type(autocomplete_parameters["page"]) == ["integer"]
     autocomplete_example = components["AutocompleteResponse"]["examples"][0]
     assert autocomplete_example["results"] == [{"id": "1", "text": "Cameras"}]
     assert autocomplete_example["pagination"]["more"] is False

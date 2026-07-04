@@ -10400,48 +10400,58 @@
         "operationId": "admin_autocomplete",
         "parameters": [
           {
+            "description": "Source model app label.",
             "in": "query",
             "name": "app_label",
             "required": true,
             "schema": {
+              "description": "Source model app label.",
               "title": "App Label",
               "type": "string"
             }
           },
           {
+            "description": "Source model name.",
             "in": "query",
             "name": "model_name",
             "required": true,
             "schema": {
+              "description": "Source model name.",
               "title": "Model Name",
               "type": "string"
             }
           },
           {
+            "description": "Source relation field configured for autocomplete.",
             "in": "query",
             "name": "field_name",
             "required": true,
             "schema": {
+              "description": "Source relation field configured for autocomplete.",
               "title": "Field Name",
               "type": "string"
             }
           },
           {
+            "description": "Search term matched against the remote admin search fields.",
             "in": "query",
             "name": "term",
             "required": false,
             "schema": {
               "default": "",
+              "description": "Search term matched against the remote admin search fields.",
               "title": "Term",
               "type": "string"
             }
           },
           {
+            "description": "1-based page number.",
             "in": "query",
             "name": "page",
             "required": false,
             "schema": {
               "default": 1,
+              "description": "1-based page number.",
               "title": "Page",
               "type": "integer"
             }
@@ -10594,6 +10604,7 @@
         "operationId": "admin_history",
         "parameters": [
           {
+            "description": "Optional app label to restrict history entries.",
             "in": "query",
             "name": "app_label",
             "required": false,
@@ -10606,10 +10617,12 @@
                   "type": "null"
                 }
               ],
+              "description": "Optional app label to restrict history entries.",
               "title": "App Label"
             }
           },
           {
+            "description": "Optional model name to restrict history entries.",
             "in": "query",
             "name": "model",
             "required": false,
@@ -10622,10 +10635,12 @@
                   "type": "null"
                 }
               ],
+              "description": "Optional model name to restrict history entries.",
               "title": "Model"
             }
           },
           {
+            "description": "Optional object identifier to restrict history entries.",
             "in": "query",
             "name": "object_id",
             "required": false,
@@ -10638,10 +10653,12 @@
                   "type": "null"
                 }
               ],
+              "description": "Optional object identifier to restrict history entries.",
               "title": "Object Id"
             }
           },
           {
+            "description": "Optional Django admin log action flag.",
             "in": "query",
             "name": "action_flag",
             "required": false,
@@ -10654,35 +10671,42 @@
                   "type": "null"
                 }
               ],
+              "description": "Optional Django admin log action flag.",
               "title": "Action Flag"
             }
           },
           {
+            "description": "Ordering: `action_time` or `-action_time`.",
             "in": "query",
             "name": "o",
             "required": false,
             "schema": {
               "default": "-action_time",
+              "description": "Ordering: `action_time` or `-action_time`.",
               "title": "O",
               "type": "string"
             }
           },
           {
+            "description": "1-based page number.",
             "in": "query",
             "name": "page",
             "required": false,
             "schema": {
               "default": 1,
+              "description": "1-based page number.",
               "title": "Page",
               "type": "integer"
             }
           },
           {
+            "description": "Page size from 1 to 100.",
             "in": "query",
             "name": "per_page",
             "required": false,
             "schema": {
               "default": 20,
+              "description": "Page size from 1 to 100.",
               "title": "Per Page",
               "type": "integer"
             }
