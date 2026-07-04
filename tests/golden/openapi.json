@@ -9077,7 +9077,26 @@
     "/admin-api/auth/group/actions": {
       "post": {
         "operationId": "auth_group_action",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -10180,7 +10199,26 @@
     "/admin-api/auth/user/actions": {
       "post": {
         "operationId": "auth_user_action",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -11860,7 +11898,26 @@
     "/admin-api/testapp/category/actions": {
       "post": {
         "operationId": "testapp_category_action",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -12974,7 +13031,26 @@
     "/admin-api/testapp/product/actions": {
       "post": {
         "operationId": "testapp_product_action",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -14514,7 +14590,26 @@
     "/admin-api/testapp/tag/actions": {
       "post": {
         "operationId": "testapp_tag_action",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Use an allowed alternate object id field.",
+            "in": "query",
+            "name": "_to_field",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Use an allowed alternate object id field.",
+              "title": "To Field"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {

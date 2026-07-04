@@ -39,6 +39,39 @@ def test_bulk_update_supports_changelist_to_field_row_identity(admin_client):
     assert category.name == "Updated Cameras"
 
 
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_actions_support_changelist_to_field_selected_ids(admin_client):
+    category = Category.objects.create(name="Cameras", slug="cameras")
+
+    changelist = admin_client.get("/slug-editable-admin/testapp/category?_to_field=slug&o=2")
+
+    assert changelist.status_code == 200
+    assert changelist.json()["rows"][0]["id"] == "cameras"
+    assert "mark_reviewed" in {choice["action"] for choice in changelist.json()["config"]["action_choices"]}
+
+    response = admin_client.post(
+        "/slug-editable-admin/testapp/category/actions?_to_field=slug",
+        data={"action": "mark_reviewed", "selected_ids": ["cameras"]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"detail": "Action completed.", "deleted": None}
+    category.refresh_from_db()
+    assert category.name == "Reviewed"
+
+    invalid_to_field = admin_client.post(
+        "/slug-editable-admin/testapp/category/actions?_to_field=name",
+        data={"action": "mark_reviewed", "selected_ids": ["Reviewed"]},
+        content_type="application/json",
+    )
+
+    assert invalid_to_field.status_code == 400
+    assert invalid_to_field.json()["errors"] == [
+        {"message": "The field 'name' cannot be referenced.", "param": "_to_field"}
+    ]
+
+
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_bulk_update_uses_changelist_form_hook(admin_client, sample):
     changelist = admin_client.get("/bulk-form-admin/testapp/product")

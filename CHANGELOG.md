@@ -16,6 +16,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   count/page-count fields and positive page/page-size fields, and routed
   changelist pagination payloads through the same helper as history and
   autocomplete.
+- Allowed model actions to accept `selected_ids` using the changelist
+  `_to_field` identity, with the action route documenting the same alternate
+  object-id query parameter as list/detail/update/delete routes.
 
 ## 0.1.62 - 2026-07-04
 

@@ -3,7 +3,7 @@ from ninja import Schema
 from ninja.security import APIKeyHeader
 from ninja.throttling import BaseThrottle
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite
+from django_ninja_admin import ModelAdmin, NinjaAdminSite, action
 from django_ninja_admin.schemas import ErrorResponse
 from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product
 
@@ -160,6 +160,11 @@ class EditableSlugCategoryAdmin(SearchableCategoryAdmin):
     list_display_links = ("slug",)
     list_editable = ("name",)
     ordering = ("slug",)
+    actions = ("mark_reviewed",)
+
+    @action(description="Mark selected categories reviewed", permissions=["change"])
+    def mark_reviewed(self, request, queryset):
+        queryset.update(name="Reviewed")
 
 
 class CategorySlugLinkAdmin(ModelAdmin):

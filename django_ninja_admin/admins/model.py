@@ -687,7 +687,7 @@ class ModelAdmin(BaseAdmin):
     def get_response_delete_schema(self, request=None):
         return self.response_delete_schema
 
-    def response_action(self, request, queryset, payload):
+    def response_action(self, request, queryset, payload, *, to_field=None):
         payload = self._action_payload_value(payload)
         action = payload.action
         if action not in self.get_actions(request):
@@ -697,7 +697,14 @@ class ModelAdmin(BaseAdmin):
                 [{"message": _("Items must be selected in order to perform actions on them."), "param": "selected_ids"}]
             )
         if payload.selected_ids and not payload.select_across:
-            queryset = queryset.filter(pk__in=self._clean_action_selected_ids(payload.selected_ids))
+            object_id_field = self._action_object_id_field(request, to_field)
+            queryset = queryset.filter(
+                **{
+                    f"{object_id_field.name}__in": self._clean_action_selected_ids(
+                        payload.selected_ids, object_id_field
+                    )
+                }
+            )
         func = self.get_actions(request)[action][0]
         self._check_action_object_permissions(request, queryset, func, action)
         action_data = self._action_data(func, payload)
@@ -733,18 +740,43 @@ class ModelAdmin(BaseAdmin):
         except KeyError:
             return False
 
-    def _clean_action_selected_ids(self, selected_ids):
+    def _action_object_id_field(self, request, to_field=None):
+        if not to_field:
+            return self.model._meta.pk
+        if not self.to_field_allowed(request, to_field):
+            raise AdminValidationError(
+                [
+                    {
+                        "message": _("The field '%(field)s' cannot be referenced.") % {"field": to_field},
+                        "param": "_to_field",
+                    }
+                ]
+            )
         try:
-            return [self._clean_action_selected_id(value) for value in selected_ids]
+            return self.model._meta.get_field(to_field)
+        except FieldDoesNotExist as exc:
+            raise AdminValidationError(
+                [
+                    {
+                        "message": _("The field '%(field)s' cannot be referenced.") % {"field": to_field},
+                        "param": "_to_field",
+                    }
+                ]
+            ) from exc
+
+    def _clean_action_selected_ids(self, selected_ids, field=None):
+        field = field or self.model._meta.pk
+        try:
+            return [self._clean_action_selected_id(value, field) for value in selected_ids]
         except (TypeError, ValueError, ValidationError) as exc:
             raise AdminValidationError(
                 [{"message": _("Invalid selected object id."), "param": "selected_ids"}]
             ) from exc
 
-    def _clean_action_selected_id(self, value):
+    def _clean_action_selected_id(self, value, field=None):
         if value in (None, ""):
             raise ValueError
-        return self.model._meta.pk.to_python(value)
+        return (field or self.model._meta.pk).to_python(value)
 
     def _action_input_schema(self, func):
         return getattr(func, "action_input_schema", None)

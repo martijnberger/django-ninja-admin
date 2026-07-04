@@ -1310,12 +1310,16 @@ class NinjaAdminSite:
                     action=site._action_payload_example(model_admin),
                 ),
             )
-            def actions_view(request, payload: action_payload_schema):
+            def actions_view(
+                request,
+                payload: action_payload_schema,
+                to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
+            ):
                 if not model_admin.has_view_or_change_permission(request):
                     raise PermissionDenied
                 cl_queryset = site._filtered_queryset(request, model_admin)
                 with transaction.atomic(using=router_db_for_write(model_admin.model)):
-                    response = model_admin.response_action(request, cl_queryset, payload)
+                    response = model_admin.response_action(request, cl_queryset, payload, to_field=to_field)
                     return site._validated_action_response(
                         response,
                         response_schema=model_admin.get_action_response_schema(request),

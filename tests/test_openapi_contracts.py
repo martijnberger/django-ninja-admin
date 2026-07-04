@@ -443,6 +443,11 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         object_route_parameters = {parameter["name"]: parameter for parameter in paths[path][method]["parameters"]}
         assert object_route_parameters["_to_field"]["description"] == "Use an allowed alternate object id field."
         assert non_null_parameter_type(object_route_parameters["_to_field"]) == ["string"]
+    action_parameters = {
+        parameter["name"]: parameter for parameter in paths["/admin-api/testapp/product/actions"]["post"]["parameters"]
+    }
+    assert action_parameters["_to_field"]["description"] == "Use an allowed alternate object id field."
+    assert non_null_parameter_type(action_parameters["_to_field"]) == ["string"]
 
     assert _request_schema_ref(paths["/admin-api/testapp/product"]["post"]) == (
         "#/components/schemas/ProductAdminCreatePayload"
