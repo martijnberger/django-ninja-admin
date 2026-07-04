@@ -9,6 +9,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Fixed
 
+- Matched repeated-value handling for date-range and empty-field list filters,
+  including hidden invalid-value validation and multi-selected empty/not-empty
+  metadata.
 - Matched Django field-list-filter semantics for repeated values by OR-filtering
   repeated choices/related values, preserving multi-selected choice metadata,
   and validating every supplied filter value.

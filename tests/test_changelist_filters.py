@@ -293,6 +293,31 @@ def test_date_field_list_filter_uses_bounded_ranges(admin_client, sample, monkey
     assert filtered.json()["config"]["result_count"] == 2
     assert [row["cells"]["name"] for row in filtered.json()["rows"]] == ["Alpha", "Beta"]
 
+    repeated_since = admin_client.get(
+        "/admin-api/testapp/product",
+        {
+            "created_at__gte": [
+                "2024-02-01 00:00:00+00:00",
+                "2025-01-01 00:00:00+00:00",
+            ],
+        },
+    )
+    assert repeated_since.status_code == 200
+    assert repeated_since.json()["config"]["result_count"] == 1
+    assert repeated_since.json()["rows"][0]["cells"]["name"] == "Future"
+
+    hidden_invalid_since = admin_client.get(
+        "/admin-api/testapp/product",
+        {
+            "created_at__gte": [
+                "not-a-date",
+                "2024-01-01 00:00:00+00:00",
+            ],
+        },
+    )
+    assert hidden_invalid_since.status_code == 400
+    assert hidden_invalid_since.json()["errors"] == [{"message": "Invalid lookup value.", "param": "created_at__gte"}]
+
     stale_response = admin_client.get(
         "/admin-api/testapp/product",
         {
@@ -645,9 +670,23 @@ def test_empty_field_list_filter_validates_values(admin_client, sample, monkeypa
     assert not_empty.json()["config"]["result_count"] == 1
     assert not_empty.json()["rows"][0]["cells"]["name"] == "Alpha"
 
+    repeated = admin_client.get("/admin-api/testapp/product?description__isempty=1&description__isempty=0")
+    assert repeated.status_code == 200
+    assert repeated.json()["config"]["result_count"] == 2
+    description_filter = next(
+        item for item in repeated.json()["config"]["filters"] if item["parameter_name"] == "description__isempty"
+    )
+    repeated_choices = {choice["display"]: choice for choice in description_filter["choices"]}
+    assert repeated_choices["Empty"]["selected"] is True
+    assert repeated_choices["Not empty"]["selected"] is True
+
     invalid = admin_client.get("/admin-api/testapp/product?description__isempty=maybe")
     assert invalid.status_code == 400
     assert invalid.json()["errors"] == [{"message": "Invalid lookup value.", "param": "description__isempty"}]
+
+    hidden_invalid = admin_client.get("/admin-api/testapp/product?description__isempty=maybe&description__isempty=1")
+    assert hidden_invalid.status_code == 400
+    assert hidden_invalid.json()["errors"] == [{"message": "Invalid lookup value.", "param": "description__isempty"}]
 
 
 def test_simple_list_filter_without_lookups_is_hidden(admin_client, sample, monkeypatch):

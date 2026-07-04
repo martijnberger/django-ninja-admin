@@ -452,7 +452,7 @@ class EmptyFieldListFilter(FieldListFilter):
         self.parameter_name = self.lookup_kwarg
         self.used_parameters = {}
         if self.lookup_kwarg in params:
-            self.used_parameters[self.lookup_kwarg] = params.get(self.lookup_kwarg)
+            self.used_parameters[self.lookup_kwarg] = _parameter_values(params, self.lookup_kwarg)
 
     def expected_parameters(self):
         return [self.lookup_kwarg]
@@ -461,25 +461,26 @@ class EmptyFieldListFilter(FieldListFilter):
         value = self.used_parameters.get(self.lookup_kwarg)
         if value is None:
             return queryset
-        if value not in {"0", "1"}:
-            raise ValueError("Invalid empty filter value.")
         empty_q = Q(**{f"{self.field_path}__isnull": True})
         if _field_is_empty_lookup_supported(self.field):
             empty_q |= Q(**{self.field_path: ""})
-        if _bool_value(value):
-            return queryset.filter(empty_q)
-        return queryset.exclude(empty_q)
+        filter_q = Q()
+        for item in _values(value):
+            if item not in {"0", "1"}:
+                raise ValueError("Invalid empty filter value.")
+            filter_q |= empty_q if _bool_value(item) else ~empty_q
+        return queryset.filter(filter_q)
 
     def choices(self, changelist):
-        current_value = self.used_parameters.get(self.lookup_kwarg)
+        current_values = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         yield {
-            "selected": current_value is None,
+            "selected": not current_values,
             "query_string": changelist.get_query_string(remove=self.expected_parameters()),
             "display": _display(_("All")),
         }
         for value, label in (("1", _("Empty")), ("0", _("Not empty"))):
             yield {
-                "selected": str(current_value) == value,
+                "selected": value in current_values,
                 "query_string": changelist.get_query_string({self.lookup_kwarg: value}),
                 "display": _display(label),
             }
@@ -493,9 +494,7 @@ class DateFieldListFilter(FieldListFilter):
         self.lookup_kwarg_until = f"{field_path}__lt"
         self.lookup_kwarg_isnull = f"{field_path}__isnull"
         self.used_parameters = {
-            key: params.get(key)
-            for key in self.expected_parameters()
-            if key in params and params.get(key) not in ("", None)
+            key: _parameter_values(params, key) for key in self.expected_parameters() if key in params
         }
         self.links = self.get_links()
 
@@ -551,11 +550,10 @@ class DateFieldListFilter(FieldListFilter):
         return links
 
     def choices(self, changelist):
-        current_params = {key: str(value) for key, value in self.used_parameters.items()}
+        current_params = {key: str(_values(value)[-1]) for key, value in self.used_parameters.items() if _values(value)}
         if self.lookup_kwarg_isnull in self.used_parameters:
-            current_params = {
-                self.lookup_kwarg_isnull: str(_bool_value(self.used_parameters[self.lookup_kwarg_isnull]))
-            }
+            values = _values(self.used_parameters[self.lookup_kwarg_isnull])
+            current_params = {self.lookup_kwarg_isnull: str(_bool_value(values[-1])) if values else str(False)}
         for label, params in self.links:
             params = {key: str(value) for key, value in params.items()}
             if params:
