@@ -596,8 +596,8 @@ def test_admin_checks_validate_paginator_class(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E090" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E090"}
+    assert "django_ninja_admin.E182" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E182"}
 
 
 def test_admin_checks_validate_boolean_options(db, make_site):
@@ -631,23 +631,23 @@ def test_admin_checks_validate_boolean_options(db, make_site):
         {
             "django_ninja_admin.E101",
             "django_ninja_admin.E102",
-            "django_ninja_admin.E071",
-            "django_ninja_admin.E083",
-            "django_ninja_admin.E084",
-            "django_ninja_admin.E085",
-            "django_ninja_admin.E086",
-            "django_ninja_admin.E087",
+            "django_ninja_admin.E025",
+            "django_ninja_admin.E183",
+            "django_ninja_admin.E184",
+            "django_ninja_admin.E185",
+            "django_ninja_admin.E186",
+            "django_ninja_admin.E187",
         }
     )
     assert bad_ids == {
         "django_ninja_admin.E101",
         "django_ninja_admin.E102",
-        "django_ninja_admin.E071",
-        "django_ninja_admin.E083",
-        "django_ninja_admin.E084",
-        "django_ninja_admin.E085",
-        "django_ninja_admin.E086",
-        "django_ninja_admin.E087",
+        "django_ninja_admin.E025",
+        "django_ninja_admin.E183",
+        "django_ninja_admin.E184",
+        "django_ninja_admin.E185",
+        "django_ninja_admin.E186",
+        "django_ninja_admin.E187",
     }
 
 
@@ -682,8 +682,8 @@ def test_admin_checks_validate_show_facets_option(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E088" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E088"}
+    assert "django_ninja_admin.E188" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E188"}
 
 
 def test_admin_checks_validate_search_help_text_option(db, make_site):
@@ -699,8 +699,8 @@ def test_admin_checks_validate_search_help_text_option(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E089" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E089"}
+    assert "django_ninja_admin.E189" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E189"}
 
 
 def test_admin_checks_validate_empty_value_display_option(db, make_site):
@@ -716,8 +716,8 @@ def test_admin_checks_validate_empty_value_display_option(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E097" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E097"}
+    assert "django_ninja_admin.E190" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E190"}
 
 
 def test_admin_checks_allow_relation_path_date_hierarchy(db, make_site):

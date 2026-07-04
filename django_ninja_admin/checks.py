@@ -93,6 +93,15 @@ PACKAGE_OPTION_CODES = {
     "formfield_overrides_key": "E179",
     "formfield_overrides_value": "E180",
     "formfield_overrides_nested_key": "E181",
+    "paginator_type": "E182",
+    "save_as_continue_type": "E183",
+    "actions_on_top_type": "E184",
+    "actions_on_bottom_type": "E185",
+    "actions_selection_counter_type": "E186",
+    "show_full_result_count_type": "E187",
+    "show_facets_type": "E188",
+    "search_help_text_type": "E189",
+    "empty_value_display_type": "E190",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -468,7 +477,13 @@ def _is_integer_option(value):
 def _check_paginator(model_admin):
     paginator = getattr(model_admin, "paginator", None)
     if not isinstance(paginator, type) or not issubclass(paginator, Paginator):
-        return [_error(model_admin.__class__, "The value of 'paginator' must inherit from Paginator.", "E090")]
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'paginator' must inherit from Paginator.",
+                PACKAGE_OPTION_CODES["paginator_type"],
+            )
+        ]
     return []
 
 
@@ -477,26 +492,54 @@ def _check_boolean_options(model_admin):
     if not isinstance(getattr(model_admin, "save_as", False), bool):
         errors.append(_error(model_admin.__class__, "The value of 'save_as' must be a boolean.", "E101"))
     if not isinstance(getattr(model_admin, "save_as_continue", True), bool):
-        errors.append(_error(model_admin.__class__, "The value of 'save_as_continue' must be a boolean.", "E083"))
+        errors.append(
+            _error(
+                model_admin.__class__,
+                "The value of 'save_as_continue' must be a boolean.",
+                PACKAGE_OPTION_CODES["save_as_continue_type"],
+            )
+        )
     if not isinstance(getattr(model_admin, "save_on_top", False), bool):
         errors.append(_error(model_admin.__class__, "The value of 'save_on_top' must be a boolean.", "E102"))
     if not isinstance(getattr(model_admin, "actions_on_top", True), bool):
-        errors.append(_error(model_admin.__class__, "The value of 'actions_on_top' must be a boolean.", "E084"))
+        errors.append(
+            _error(
+                model_admin.__class__,
+                "The value of 'actions_on_top' must be a boolean.",
+                PACKAGE_OPTION_CODES["actions_on_top_type"],
+            )
+        )
     if not isinstance(getattr(model_admin, "actions_on_bottom", False), bool):
-        errors.append(_error(model_admin.__class__, "The value of 'actions_on_bottom' must be a boolean.", "E085"))
+        errors.append(
+            _error(
+                model_admin.__class__,
+                "The value of 'actions_on_bottom' must be a boolean.",
+                PACKAGE_OPTION_CODES["actions_on_bottom_type"],
+            )
+        )
     if not isinstance(getattr(model_admin, "actions_selection_counter", True), bool):
         errors.append(
-            _error(model_admin.__class__, "The value of 'actions_selection_counter' must be a boolean.", "E086")
+            _error(
+                model_admin.__class__,
+                "The value of 'actions_selection_counter' must be a boolean.",
+                PACKAGE_OPTION_CODES["actions_selection_counter_type"],
+            )
         )
     if not isinstance(getattr(model_admin, "show_full_result_count", True), bool):
-        errors.append(_error(model_admin.__class__, "The value of 'show_full_result_count' must be a boolean.", "E087"))
+        errors.append(
+            _error(
+                model_admin.__class__,
+                "The value of 'show_full_result_count' must be a boolean.",
+                PACKAGE_OPTION_CODES["show_full_result_count_type"],
+            )
+        )
     view_on_site = getattr(model_admin, "view_on_site", True)
     if not callable(view_on_site) and not isinstance(view_on_site, bool):
         errors.append(
             _error(
                 model_admin.__class__,
                 "The value of 'view_on_site' must be a callable or a boolean.",
-                "E071",
+                "E025",
             )
         )
     return errors
@@ -506,7 +549,13 @@ def _check_show_facets(model_admin):
     from django_ninja_admin.constants import ShowFacets
 
     if not isinstance(getattr(model_admin, "show_facets", ShowFacets.ALLOW), ShowFacets):
-        return [_error(model_admin.__class__, "The value of 'show_facets' must be a ShowFacets value.", "E088")]
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'show_facets' must be a ShowFacets value.",
+                PACKAGE_OPTION_CODES["show_facets_type"],
+            )
+        ]
     return []
 
 
@@ -515,12 +564,20 @@ def _check_text_options(model_admin):
     search_help_text = getattr(model_admin, "search_help_text", None)
     if search_help_text is not None and not isinstance(search_help_text, str):
         errors.append(
-            _error(model_admin.__class__, "The value of 'search_help_text' must be a string or None.", "E089")
+            _error(
+                model_admin.__class__,
+                "The value of 'search_help_text' must be a string or None.",
+                PACKAGE_OPTION_CODES["search_help_text_type"],
+            )
         )
     empty_value_display = getattr(model_admin, "empty_value_display", None)
     if empty_value_display is not None and not isinstance(empty_value_display, str):
         errors.append(
-            _error(model_admin.__class__, "The value of 'empty_value_display' must be a string or None.", "E097")
+            _error(
+                model_admin.__class__,
+                "The value of 'empty_value_display' must be a string or None.",
+                PACKAGE_OPTION_CODES["empty_value_display_type"],
+            )
         )
     return errors
 

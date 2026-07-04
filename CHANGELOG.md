@@ -12,6 +12,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Aligned invalid `form_class` inheritance checks with Django admin's `E016`
   numbering and moved package-owned `form_class` model-mismatch plus
   `formfield_overrides` checks into package-specific IDs.
+- Aligned invalid `view_on_site` checks with Django admin's `E025` numbering
+  and moved package-owned paginator, action display, facet, search help, and
+  empty-value display checks into package-specific IDs.
 
 ## 0.1.46 - 2026-07-04
 
