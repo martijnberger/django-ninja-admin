@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.42 - 2026-07-04
+
 ### Added
 
 - Added Django Ninja throttle hooks for history, autocomplete, model
