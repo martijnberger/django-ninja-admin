@@ -35,8 +35,10 @@ routes use the site auth unless the site is explicitly created with
 
 API error bodies use Django's active translation for package-owned messages
 such as authentication failures, permission denials, changelist validation,
-inline validation, and bulk-update errors. The response shape remains the
-typed `ErrorResponse` contract:
+inline validation, and bulk-update errors. Package-owned default site labels
+such as `site_title` and `site_header` are translated too; custom project labels
+are returned as provided, including any lazy translations supplied by the
+application. The response shape remains the typed `ErrorResponse` contract:
 
 ```json
 {

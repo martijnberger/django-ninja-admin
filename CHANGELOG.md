@@ -16,6 +16,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Routed core site, changelist, inline, and bulk API error messages through
   Django gettext while preserving the existing typed error response shapes.
+- Routed default site labels through Django gettext while preserving custom
+  project-provided labels unchanged.
 
 ## 0.1.41 - 2026-07-04
 

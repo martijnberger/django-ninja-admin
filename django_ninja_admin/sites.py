@@ -93,6 +93,9 @@ from django_ninja_admin.utils.schema_examples import choice_example_value, json_
 all_sites = WeakSet()
 DEFAULT_AUTH = object()
 DEFAULT_THROTTLE = object()
+DEFAULT_SITE_TITLE = "Django Ninja site admin"
+DEFAULT_SITE_HEADER = "Django Ninja administration"
+DEFAULT_INDEX_TITLE = "Site administration"
 CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
 _UNSET = object()
 NinjaQuery = cast(Any, Query)
@@ -101,9 +104,9 @@ NinjaQuery = cast(Any, Query)
 class NinjaAdminSite:
     admin_class = ModelAdmin
     paginator = Paginator
-    site_title = "Django Ninja site admin"
-    site_header = "Django Ninja administration"
-    index_title = "Site administration"
+    site_title = DEFAULT_SITE_TITLE
+    site_header = DEFAULT_SITE_HEADER
+    index_title = DEFAULT_INDEX_TITLE
     site_url = "/"
     enable_nav_sidebar = True
     empty_value_display = "-"
@@ -311,13 +314,19 @@ class NinjaAdminSite:
         script_name = request.META.get("SCRIPT_NAME", "")
         site_url = script_name if self.site_url == "/" and script_name else self.site_url
         return {
-            "site_title": str(self.site_title),
-            "site_header": str(self.site_header),
+            "site_title": self._site_label("site_title", DEFAULT_SITE_TITLE),
+            "site_header": self._site_label("site_header", DEFAULT_SITE_HEADER),
             "site_url": site_url,
             "has_permission": self.has_permission(request),
             "available_apps": self.get_app_list(request),
             "is_nav_sidebar_enabled": self.enable_nav_sidebar,
         }
+
+    def _site_label(self, attr, default):
+        value = getattr(self, attr)
+        if value == default:
+            return _(default)
+        return str(value)
 
     def paginate_queryset(self, request, paginator, page_kwarg="page"):
         page_value = request.GET.get(page_kwarg) or 1
@@ -364,7 +373,7 @@ class NinjaAdminSite:
 
     def _build_api(self):
         api = NinjaAPI(
-            title=str(self.site_header),
+            title=self._site_label("site_header", DEFAULT_SITE_HEADER),
             version="2.0.0",
             urls_namespace=self.name,
             auth=self.auth,
