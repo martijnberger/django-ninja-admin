@@ -455,7 +455,7 @@ def test_autocomplete_object_level_permissions_are_page_scoped(admin_client, sam
     }
 
 
-def test_autocomplete_requires_source_model_access_and_declared_field(admin_client, staff_client, sample):
+def test_autocomplete_requires_source_model_access_and_declared_field(admin_client, staff_client, sample, monkeypatch):
     source_denied = staff_client("view_category").get(
         "/admin-api/autocomplete",
         {
@@ -477,3 +477,27 @@ def test_autocomplete_requires_source_model_access_and_declared_field(admin_clie
         },
     )
     assert undeclared_field.status_code == 404
+
+    missing_field = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "missing",
+            "term": "in",
+        },
+    )
+    assert missing_field.status_code == 404
+
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "autocomplete_fields", ("name",))
+    non_relation_field = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "name",
+            "term": "Cam",
+        },
+    )
+    assert non_relation_field.status_code == 404

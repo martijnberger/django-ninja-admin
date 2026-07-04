@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Fixed
+
+- Returned deliberate 404 responses for missing or non-relational autocomplete
+  source fields instead of relying on broad attribute-error handling.
+
 ## 0.1.60 - 2026-07-04
 
 ### Fixed

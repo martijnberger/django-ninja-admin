@@ -1036,9 +1036,12 @@ class NinjaAdminSite:
                 source_model = apps.get_model(app_label, model_name)
                 source_admin = site.get_model_admin(source_model)
                 source_field = source_model._meta.get_field(field_name)
-                remote_model = source_field.remote_field.model
+                remote_field = source_field.remote_field
+                if remote_field is None:
+                    raise Http404
+                remote_model = remote_field.model
                 model_admin = site.get_model_admin(remote_model)
-            except (AttributeError, LookupError, NotRegistered) as exc:
+            except (FieldDoesNotExist, LookupError, NotRegistered) as exc:
                 raise Http404 from exc
             if field_name not in source_admin.get_autocomplete_fields(request):
                 raise Http404
@@ -1046,8 +1049,8 @@ class NinjaAdminSite:
                 raise PermissionDenied
             if not model_admin.get_search_fields(request):
                 raise MissingSearchFields
-            if hasattr(source_field.remote_field, "get_related_field"):
-                to_field_name = source_field.remote_field.get_related_field().attname
+            if hasattr(remote_field, "get_related_field"):
+                to_field_name = remote_field.get_related_field().attname
             else:
                 to_field_name = remote_model._meta.pk.attname
             to_field_name = remote_model._meta.get_field(to_field_name).attname
