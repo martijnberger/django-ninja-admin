@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added per-cell `link_url` changelist metadata for display-link cells, so
+  generated clients can render linked table cells without inferring from
+  row-level URLs.
+
 ## 0.1.57 - 2026-07-04
 
 ### Changed

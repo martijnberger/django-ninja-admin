@@ -812,6 +812,17 @@
             "title": "Header Name",
             "type": "string"
           },
+          "link_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link Url"
+          },
           "ordering_field": {
             "anyOf": [
               {

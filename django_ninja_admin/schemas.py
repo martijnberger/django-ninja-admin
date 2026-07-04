@@ -852,6 +852,7 @@ class CellMetadata(AdminSchema):
     empty: bool = False
     boolean: bool = False
     display_link: bool = False
+    link_url: str | None = None
     sortable: bool = False
     ordering_field: str | None = None
     editable: bool = False

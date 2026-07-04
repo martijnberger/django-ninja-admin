@@ -264,6 +264,7 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
         "empty": False,
         "boolean": False,
         "display_link": True,
+        "link_url": f"/admin-api/testapp/product/{sample.pk}",
         "sortable": True,
         "ordering_field": "name",
         "editable": False,
@@ -277,6 +278,7 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     beta_stock_cell = rows_by_name["Beta"]["cell_metadata"]["stock_status"]
     assert beta_stock_cell["editable"] is True
     assert beta_stock_cell["display_link"] is False
+    assert beta_stock_cell["link_url"] is None
     assert rows_by_name["Alpha"]["cells"]["price"] == "12.50"
     assert rows_by_name["Alpha"]["cell_metadata"]["price"]["value"] == "12.50"
     assert rows_by_name["Alpha"]["cell_metadata"]["price"]["display_value"] == "12.50"

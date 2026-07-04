@@ -1547,6 +1547,8 @@ class NinjaAdminSite:
         empty_value = model_admin.get_empty_value_display()
         result_start_index = changelist.page.start_index()
         for index, obj in enumerate(changelist.result_list):
+            object_id = _jsonish_value(changelist.object_id_for(obj))
+            row_metadata = self._changelist_row_metadata(request, model_admin, obj, object_id, changelist.to_field)
             cells = {}
             cell_metadata = {}
             for field in list_display:
@@ -1571,12 +1573,12 @@ class NinjaAdminSite:
                     "empty": is_empty,
                     "boolean": column["boolean"],
                     "display_link": column["display_link"],
+                    "link_url": row_metadata["detail_url"] if column["display_link"] else None,
                     "sortable": column["sortable"],
                     "ordering_field": column["ordering_field"],
                     "editable": field_key in model_admin.list_editable,
                     "empty_value_display": field_empty_value,
                 }
-            object_id = _jsonish_value(changelist.object_id_for(obj))
             rows.append(
                 {
                     "id": object_id,
@@ -1584,7 +1586,7 @@ class NinjaAdminSite:
                     "result_index": result_start_index + index,
                     "cells": cells,
                     "cell_metadata": cell_metadata,
-                    **self._changelist_row_metadata(request, model_admin, obj, object_id, changelist.to_field),
+                    **row_metadata,
                 }
             )
         action_form = [

@@ -584,6 +584,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert cell_metadata_props["display_value"]["allOf"] == [{"$ref": "#/components/schemas/FieldMetadataValue"}]
     assert cell_metadata_props["empty"]["type"] == "boolean"
     assert cell_metadata_props["editable"]["type"] == "boolean"
+    assert cell_metadata_props["link_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     changelist_response_props = components["ChangelistResponse"]["properties"]
     assert changelist_response_props["action_form"]["items"] == {"$ref": "#/components/schemas/ActionFormField"}
     assert components["ActionFormField"]["anyOf"] == [

@@ -52,6 +52,8 @@ and mount-aware endpoint/query data without exposing rendered Django widget
 internals.
 
 Changelist responses expose typed row/cell metadata and typed action controls.
+Cells marked as display links include a `link_url` pointing at the same
+permission-filtered detail route advertised by the row metadata.
 The `action_form` response keeps Django-admin field semantics, but its OpenAPI
 items are narrowed to the supported action, selected-id, and select-across
 controls so generated clients do not need to treat them as arbitrary form
