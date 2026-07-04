@@ -39,6 +39,9 @@ def test_error_response_runtime_shapes_are_consistent(admin_client, staff_client
     )
     assert invalid_body["errors"][0]["param"] == "action"
 
+    invalid_query_body = assert_error_body(admin_client.get("/admin-api/testapp/product?pp=not-an-int"), 422)
+    assert invalid_query_body["errors"][0]["param"] == "query.pp"
+
     form_body = assert_error_body(
         admin_client.post(
             "/admin-api/testapp/product",

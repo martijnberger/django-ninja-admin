@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Typed changelist `pp`, `all`, and `_facets` query parameters as integer and
+  boolean OpenAPI parameters, with documented 422 validation errors.
+
 ## 0.1.40 - 2026-07-04
 
 ### Changed

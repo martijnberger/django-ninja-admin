@@ -264,6 +264,7 @@ def write_sample_project(project_dir: Path) -> None:
                 self.operations = {}
                 self.path_parameters = {}
                 self.query_parameters = {}
+                self.parameter_schemas = {}
                 for path, path_item in schema["paths"].items():
                     for method, operation in path_item.items():
                         if method.lower() not in {"delete", "get", "patch", "post", "put"}:
@@ -277,6 +278,9 @@ def write_sample_project(project_dir: Path) -> None:
                             }
                             self.query_parameters[operation_id] = {
                                 parameter["name"] for parameter in parameters if parameter.get("in") == "query"
+                            }
+                            self.parameter_schemas[operation_id] = {
+                                parameter["name"]: parameter["schema"] for parameter in parameters
                             }
 
             def request(self, operation_id, *, path_params=None, payload=None, query=None, headers=None):
@@ -405,6 +409,11 @@ def write_sample_project(project_dir: Path) -> None:
                 _method, _path, operation = self.operations[operation_id]
                 return operation["requestBody"]["content"]["application/json"]["examples"][name]["value"].copy()
 
+            def parameter_type(self, operation_id, name):
+                schema = self.parameter_schemas[operation_id][name]
+                variants = schema.get("anyOf", [schema])
+                return [variant["type"] for variant in variants if variant.get("type") != "null"]
+
 
         call_command("migrate", interactive=False, run_syncdb=True, verbosity=0)
         category = Category.objects.create(name="Cameras")
@@ -452,6 +461,9 @@ def write_sample_project(project_dir: Path) -> None:
         assert {"q", "o", "p", "page", "pp", "all", "_facets", "_to_field"} <= consumer.query_parameters[
             "sample_app_product_list"
         ]
+        assert consumer.parameter_type("sample_app_product_list", "pp") == ["integer"]
+        assert consumer.parameter_type("sample_app_product_list", "all") == ["boolean"]
+        assert consumer.parameter_type("sample_app_product_list", "_facets") == ["boolean"]
         assert consumer.path_parameters["sample_app_product_detail"] == {"object_id"}
         assert "_to_field" in consumer.query_parameters["sample_app_product_detail"]
 

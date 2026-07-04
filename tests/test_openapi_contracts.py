@@ -310,6 +310,12 @@ def assert_no_rendered_field_attrs(attrs):
     assert RENDERED_FIELD_ATTR_KEYS.isdisjoint(attrs)
 
 
+def non_null_parameter_type(parameter):
+    schema = parameter["schema"]
+    variants = schema.get("anyOf", [schema])
+    return [variant["type"] for variant in variants if variant.get("type") != "null"]
+
+
 def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):
     schema = admin_client.get("/admin-api/openapi.json").json()
     paths = schema["paths"]
@@ -370,6 +376,15 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "_facets": "query",
         "_to_field": "query",
     }
+    list_parameters = {parameter["name"]: parameter for parameter in list_operation["parameters"]}
+    assert non_null_parameter_type(list_parameters["q"]) == ["string"]
+    assert non_null_parameter_type(list_parameters["o"]) == ["string"]
+    assert non_null_parameter_type(list_parameters["p"]) == ["string"]
+    assert non_null_parameter_type(list_parameters["page"]) == ["string"]
+    assert non_null_parameter_type(list_parameters["pp"]) == ["integer"]
+    assert non_null_parameter_type(list_parameters["all"]) == ["boolean"]
+    assert non_null_parameter_type(list_parameters["_facets"]) == ["boolean"]
+    assert non_null_parameter_type(list_parameters["_to_field"]) == ["string"]
 
     assert _request_schema_ref(paths["/admin-api/testapp/product"]["post"]) == (
         "#/components/schemas/ProductAdminCreatePayload"
