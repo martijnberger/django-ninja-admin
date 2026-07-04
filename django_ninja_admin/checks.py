@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Mapping
 from contextlib import suppress
 from typing import cast
@@ -1345,6 +1346,7 @@ def _check_actions(model_admin):
         return errors
     if not isinstance(model_admin.actions, (list, tuple)):
         return [_error(model_admin.__class__, "The value of 'actions' must be a list, tuple, or None.", "E082")]
+    resolved_actions = []
     for item in model_admin.actions:
         action = model_admin.get_action(item) if callable(item) or isinstance(item, str) else None
         if action is None:
@@ -1356,6 +1358,7 @@ def _check_actions(model_admin):
                 )
             )
             continue
+        resolved_actions.append(action)
         func = action[0]
         for permission in getattr(func, "allowed_permissions", ()):
             if not isinstance(permission, str) or not hasattr(model_admin, f"has_{permission}_permission"):
@@ -1366,6 +1369,16 @@ def _check_actions(model_admin):
                         "E129",
                     )
                 )
+    action_name_counts = Counter(action[1] for action in resolved_actions)
+    for name, count in action_name_counts.items():
+        if count > 1:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"Action names must be unique. Name {name!r} is not unique.",
+                    "E130",
+                )
+            )
     return errors
 
 

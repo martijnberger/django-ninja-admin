@@ -412,6 +412,31 @@ def test_admin_checks_reject_non_sequence_actions_option(db, make_site):
     assert {error.id for error in errors} == {"django_ninja_admin.E082"}
 
 
+def test_admin_checks_reject_duplicate_action_names(db, make_site):
+    def duplicate_action(model_admin, request, queryset):
+        return {"count": queryset.count()}
+
+    def duplicate_action_alias(model_admin, request, queryset):
+        return {"count": queryset.count()}
+
+    duplicate_action_alias.__name__ = duplicate_action.__name__
+
+    class DuplicateCallableActionProductAdmin(ModelAdmin):
+        actions = [duplicate_action, duplicate_action_alias]
+
+    class DuplicateRegisteredActionProductAdmin(ModelAdmin):
+        actions = ["delete_selected", "delete_selected"]
+
+    callable_site = make_site(Product, DuplicateCallableActionProductAdmin)
+    registered_site = make_site(Product, DuplicateRegisteredActionProductAdmin)
+
+    callable_errors = callable_site.get_model_admin(Product).check()
+    registered_errors = registered_site.get_model_admin(Product).check()
+
+    assert {error.id for error in callable_errors} == {"django_ninja_admin.E130"}
+    assert {error.id for error in registered_errors} == {"django_ninja_admin.E130"}
+
+
 def test_admin_checks_report_form_widget_option_conflicts(db, make_site):
     class ConflictProductAdmin(ModelAdmin):
         autocomplete_fields = ("category",)

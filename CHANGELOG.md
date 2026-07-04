@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Aligned `list_filter` class and field-path check IDs with Django admin's
   numbering, moved package-only tuple-shape and missing-parameter checks into
   package-specific IDs, and allowed direct `ListFilter` subclasses at runtime.
+- Added Django-aligned duplicate action-name system checks using
+  `django_ninja_admin.E130`.
 
 ## 0.1.45 - 2026-07-04
 
