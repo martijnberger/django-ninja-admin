@@ -91,7 +91,11 @@ def test_direct_delete_denies_object_level_permission(admin_client, sample, monk
     response = admin_client.delete(f"/admin-api/testapp/product/{sample.pk}")
 
     assert response.status_code == 403
-    assert response.json() == {"errors": [{"message": "Permission denied.", "param": "non_field_errors"}]}
+    body = response.json()
+    assert body["errors"] == [{"message": "Permission denied.", "param": "object_id"}]
+    assert_sample_deleted_objects_tree(body)
+    assert body["perms_needed"] == ["product"]
+    assert body["model_count"]["testapp.product"] == 1
     assert Product.objects.filter(pk=sample.pk).exists()
 
 

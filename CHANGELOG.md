@@ -13,6 +13,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
   plan, keeping the parity matrix as advisory evidence instead of the release
   bar.
 
+### Fixed
+
+- Returned typed deleted-object, permission, protected-object, and model-count
+  details when direct delete is denied by an object-level delete hook while the
+  user still has global delete access.
+
 ## 0.1.58 - 2026-07-04
 
 ### Added

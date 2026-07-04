@@ -1490,6 +1490,20 @@ class NinjaAdminSite:
         ):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
             if not model_admin.has_delete_permission(request, obj):
+                if model_admin.has_delete_permission(request):
+                    deleted_objects, model_count, perms_needed, protected = model_admin.get_deleted_objects(
+                        [obj], request
+                    )
+                    return Status(
+                        403,
+                        deletion_error_payload(
+                            _("Permission denied."),
+                            deleted_objects=deleted_objects,
+                            perms_needed=perms_needed,
+                            protected=protected,
+                            model_count=model_count,
+                        ),
+                    )
                 raise PermissionDenied
             deleted_objects, model_count, perms_needed, protected = model_admin.get_deleted_objects([obj], request)
             if protected:
