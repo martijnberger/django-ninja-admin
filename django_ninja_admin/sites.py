@@ -1139,9 +1139,17 @@ class NinjaAdminSite:
                 None,
                 description="Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
             ),
-            p: str | None = NinjaQuery(None, description="1-based page number, or `last`."),
-            page: str | None = NinjaQuery(None, description="Legacy alias for `p`; generated links use `p`."),
-            pp: int | None = NinjaQuery(None, description="Page size override."),
+            p: str | None = NinjaQuery(
+                None,
+                pattern=r"^(last|[1-9][0-9]*)$",
+                description="1-based page number, or `last`.",
+            ),
+            page: str | None = NinjaQuery(
+                None,
+                pattern=r"^(last|[1-9][0-9]*)$",
+                description="Legacy alias for `p`; generated links use `p`.",
+            ),
+            pp: int | None = NinjaQuery(None, ge=1, description="Page size override."),
             all_: bool | None = NinjaQuery(
                 None,
                 alias="all",

@@ -8268,6 +8268,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -8286,6 +8287,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -8304,6 +8306,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "minimum": 1,
                   "type": "integer"
                 },
                 {
@@ -9355,6 +9358,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -9373,6 +9377,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -9391,6 +9396,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "minimum": 1,
                   "type": "integer"
                 },
                 {
@@ -11004,6 +11010,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -11022,6 +11029,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -11040,6 +11048,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "minimum": 1,
                   "type": "integer"
                 },
                 {
@@ -12091,6 +12100,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -12109,6 +12119,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -12127,6 +12138,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "minimum": 1,
                   "type": "integer"
                 },
                 {
@@ -13621,6 +13633,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -13639,6 +13652,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "pattern": "^(last|[1-9][0-9]*)$",
                   "type": "string"
                 },
                 {
@@ -13657,6 +13671,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "minimum": 1,
                   "type": "integer"
                 },
                 {

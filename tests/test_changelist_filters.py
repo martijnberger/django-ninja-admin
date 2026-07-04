@@ -364,7 +364,22 @@ def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):
     assert bad_direct_value.json()["errors"] == [{"message": "Invalid lookup value.", "param": "price"}]
 
     bad_page = admin_client.get("/admin-api/testapp/product?page=0")
-    assert bad_page.status_code == 404
+    assert bad_page.status_code == 422
+    assert bad_page.json()["errors"] == [
+        {"message": "String should match pattern '^(last|[1-9][0-9]*)$'", "param": "query.page"}
+    ]
+
+    bad_short_page = admin_client.get("/admin-api/testapp/product?p=0")
+    assert bad_short_page.status_code == 422
+    assert bad_short_page.json()["errors"] == [
+        {"message": "String should match pattern '^(last|[1-9][0-9]*)$'", "param": "query.p"}
+    ]
+
+    bad_page_size = admin_client.get("/admin-api/testapp/product?pp=0")
+    assert bad_page_size.status_code == 422
+    assert bad_page_size.json()["errors"] == [
+        {"message": "Input should be greater than or equal to 1", "param": "query.pp"}
+    ]
 
     bad_ordering = admin_client.get("/admin-api/testapp/product?o=999")
     assert bad_ordering.status_code == 400

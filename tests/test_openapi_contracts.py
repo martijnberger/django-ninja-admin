@@ -320,6 +320,12 @@ def non_null_parameter_type(parameter):
     return [variant["type"] for variant in variants if variant.get("type") != "null"]
 
 
+def non_null_parameter_schema(parameter):
+    schema = parameter["schema"]
+    variants = schema.get("anyOf", [schema])
+    return next(variant for variant in variants if variant.get("type") != "null")
+
+
 def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sample):
     schema = admin_client.get("/admin-api/openapi.json").json()
     paths = schema["paths"]
@@ -389,6 +395,9 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert non_null_parameter_type(list_parameters["all"]) == ["boolean"]
     assert non_null_parameter_type(list_parameters["_facets"]) == ["boolean"]
     assert non_null_parameter_type(list_parameters["_to_field"]) == ["string"]
+    assert non_null_parameter_schema(list_parameters["p"])["pattern"] == r"^(last|[1-9][0-9]*)$"
+    assert non_null_parameter_schema(list_parameters["page"])["pattern"] == r"^(last|[1-9][0-9]*)$"
+    assert non_null_parameter_schema(list_parameters["pp"])["minimum"] == 1
 
     assert _request_schema_ref(paths["/admin-api/testapp/product"]["post"]) == (
         "#/components/schemas/ProductAdminCreatePayload"

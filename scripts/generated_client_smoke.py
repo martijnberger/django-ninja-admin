@@ -414,6 +414,11 @@ def write_sample_project(project_dir: Path) -> None:
                 variants = schema.get("anyOf", [schema])
                 return [variant["type"] for variant in variants if variant.get("type") != "null"]
 
+            def non_null_parameter_schema(self, operation_id, name):
+                schema = self.parameter_schemas[operation_id][name]
+                variants = schema.get("anyOf", [schema])
+                return next(variant for variant in variants if variant.get("type") != "null")
+
 
         call_command("migrate", interactive=False, run_syncdb=True, verbosity=0)
         category = Category.objects.create(name="Cameras")
@@ -464,6 +469,13 @@ def write_sample_project(project_dir: Path) -> None:
         assert consumer.parameter_type("sample_app_product_list", "pp") == ["integer"]
         assert consumer.parameter_type("sample_app_product_list", "all") == ["boolean"]
         assert consumer.parameter_type("sample_app_product_list", "_facets") == ["boolean"]
+        assert consumer.non_null_parameter_schema("sample_app_product_list", "p")["pattern"] == (
+            r"^(last|[1-9][0-9]*)$"
+        )
+        assert consumer.non_null_parameter_schema("sample_app_product_list", "page")["pattern"] == (
+            r"^(last|[1-9][0-9]*)$"
+        )
+        assert consumer.non_null_parameter_schema("sample_app_product_list", "pp")["minimum"] == 1
         assert consumer.parameter_schemas["admin_history"]["page"]["minimum"] == 1
         assert consumer.parameter_schemas["admin_history"]["per_page"]["minimum"] == 1
         assert consumer.parameter_schemas["admin_history"]["per_page"]["maximum"] == 100

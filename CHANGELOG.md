@@ -17,6 +17,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added OpenAPI descriptions and numeric bounds for `/history` and
   `/autocomplete` query parameters; invalid page and history page-size values
   now use the shared typed 422 validation contract.
+- Added OpenAPI pattern/minimum constraints for changelist `p`/`page`/`pp`
+  query parameters, with invalid changelist page and page-size values using
+  the shared typed 422 validation contract.
 
 ## 0.1.51 - 2026-07-04
 
