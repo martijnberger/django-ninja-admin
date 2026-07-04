@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.51 - 2026-07-04
+
 ### Fixed
 
 - Aligned malformed `fieldsets` item system-check IDs with Django admin:
