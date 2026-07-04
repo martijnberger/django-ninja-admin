@@ -98,7 +98,7 @@ def test_admin_checks_reject_empty_list_display(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E091"}
+    assert {error.id for error in errors} == {"django_ninja_admin.E191"}
     assert "list_display" in errors[0].msg
 
 
@@ -409,7 +409,7 @@ def test_admin_checks_reject_non_sequence_actions_option(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E082"}
+    assert {error.id for error in errors} == {"django_ninja_admin.E195"}
 
 
 def test_admin_checks_reject_duplicate_action_names(db, make_site):
@@ -468,20 +468,26 @@ def test_admin_checks_validate_list_select_related(db, make_site):
     class BadTypeProductAdmin(ModelAdmin):
         list_select_related = "category"
 
+    class BadItemProductAdmin(ModelAdmin):
+        list_select_related = (123,)
+
     class BadPathProductAdmin(ModelAdmin):
         list_select_related = ("tags", "price", "missing")
 
     valid_site = make_site(Product, ValidProductAdmin)
     bad_type_site = make_site(Product, BadTypeProductAdmin)
+    bad_item_site = make_site(Product, BadItemProductAdmin)
     bad_path_site = make_site(Product, BadPathProductAdmin)
 
     valid_errors = _check_site(valid_site)
     bad_type_errors = _check_site(bad_type_site)
+    bad_item_errors = _check_site(bad_item_site)
     bad_path_errors = _check_site(bad_path_site)
 
-    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E117", "django_ninja_admin.E046"})
+    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E117", "django_ninja_admin.E193"})
     assert {error.id for error in bad_type_errors} == {"django_ninja_admin.E117"}
-    assert {error.id for error in bad_path_errors} == {"django_ninja_admin.E046"}
+    assert {error.id for error in bad_item_errors} == {"django_ninja_admin.E192"}
+    assert {error.id for error in bad_path_errors} == {"django_ninja_admin.E193"}
     assert len(bad_path_errors) == 3
 
 
@@ -664,8 +670,8 @@ def test_admin_checks_reject_mixed_random_ordering(db, make_site):
     random_ids = {error.id for error in random_site.get_model_admin(Product).check()}
     mixed_errors = mixed_site.get_model_admin(Product).check()
 
-    assert "django_ninja_admin.E072" not in random_ids
-    assert {error.id for error in mixed_errors} == {"django_ninja_admin.E072"}
+    assert "django_ninja_admin.E194" not in random_ids
+    assert {error.id for error in mixed_errors} == {"django_ninja_admin.E194"}
     assert mixed_errors[0].hint == 'Either remove the "?", or remove the other fields.'
 
 

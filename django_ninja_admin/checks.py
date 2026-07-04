@@ -102,6 +102,11 @@ PACKAGE_OPTION_CODES = {
     "show_facets_type": "E188",
     "search_help_text_type": "E189",
     "empty_value_display_type": "E190",
+    "list_display_empty": "E191",
+    "list_select_related_item": "E192",
+    "list_select_related_path": "E193",
+    "ordering_random_with_fields": "E194",
+    "actions_type": "E195",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -251,7 +256,13 @@ def _check_display_options(model_admin):
     errors = []
     list_display = tuple(model_admin.get_list_display(None))
     if not list_display:
-        errors.append(_error(model_admin.__class__, "The value of 'list_display' must not be empty.", "E091"))
+        errors.append(
+            _error(
+                model_admin.__class__,
+                "The value of 'list_display' must not be empty.",
+                PACKAGE_OPTION_CODES["list_display_empty"],
+            )
+        )
     editable_form_fields = _editable_form_field_names(model_admin)
     excluded_form_fields = set(model_admin.get_exclude(None) or ())
     for item in list_display:
@@ -1054,7 +1065,13 @@ def _check_list_select_related(model_admin):
     errors = []
     for item in value:
         if not isinstance(item, str):
-            errors.append(_error(model_admin.__class__, "Items in 'list_select_related' must be strings.", "E045"))
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    "Items in 'list_select_related' must be strings.",
+                    PACKAGE_OPTION_CODES["list_select_related_item"],
+                )
+            )
             continue
         errors.extend(_check_select_related_path(model_admin, item))
     return errors
@@ -1070,7 +1087,7 @@ def _check_select_related_path(model_admin, field_path):
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_select_related' refers to unknown field '{field_path}'.",
-                    "E046",
+                    PACKAGE_OPTION_CODES["list_select_related_path"],
                 )
             ]
         if not getattr(field, "is_relation", False) or getattr(field, "many_to_many", False):
@@ -1079,7 +1096,7 @@ def _check_select_related_path(model_admin, field_path):
                     model_admin.__class__,
                     f"The value of 'list_select_related' refers to '{field_path}', "
                     "which is not a select_related relation.",
-                    "E046",
+                    PACKAGE_OPTION_CODES["list_select_related_path"],
                 )
             ]
         related_model = getattr(field, "related_model", None)
@@ -1088,7 +1105,7 @@ def _check_select_related_path(model_admin, field_path):
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_select_related' refers to unknown relation '{field_path}'.",
-                    "E046",
+                    PACKAGE_OPTION_CODES["list_select_related_path"],
                 )
             ]
         opts = related_model._meta
@@ -1184,7 +1201,7 @@ def _check_lookup_fields(
             _error(
                 model_admin.__class__,
                 "The value of 'ordering' has the random ordering marker '?' but contains other fields.",
-                "E072",
+                PACKAGE_OPTION_CODES["ordering_random_with_fields"],
                 hint='Either remove the "?", or remove the other fields.',
             )
         )
@@ -1437,7 +1454,13 @@ def _check_actions(model_admin):
     if model_admin.actions is None:
         return errors
     if not isinstance(model_admin.actions, (list, tuple)):
-        return [_error(model_admin.__class__, "The value of 'actions' must be a list, tuple, or None.", "E082")]
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'actions' must be a list, tuple, or None.",
+                PACKAGE_OPTION_CODES["actions_type"],
+            )
+        ]
     resolved_actions = []
     for item in model_admin.actions:
         action = model_admin.get_action(item) if callable(item) or isinstance(item, str) else None
