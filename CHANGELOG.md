@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Aligned the release checklist with the rewritten milestone-based release
+  plan, keeping the parity matrix as advisory evidence instead of the release
+  bar.
+
 ## 0.1.58 - 2026-07-04
 
 ### Added

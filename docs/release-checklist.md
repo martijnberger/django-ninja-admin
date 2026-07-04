@@ -1,7 +1,10 @@
 # Release Checklist
 
-This package stays alpha until the parity matrix is complete or each remaining
-gap is explicitly documented as a v2 contract difference.
+This package stays alpha until Milestones 1-3 in `PLAN.md` are complete and
+the generated OpenAPI contract has been reviewed from an installed wheel.
+`docs/parity-matrix.md` is an advisory admin-behavior checklist, not the
+release bar; use it to find stale evidence and untested Django-admin edge
+cases while keeping release readiness tied to the milestone criteria below.
 
 ## Local Gates
 
@@ -107,20 +110,29 @@ behavior, or permission boundaries.
 - `django_ninja_admin` imports without importing DRF or drf-spectacular.
 - A clean Django project can add `django_ninja_admin` to `INSTALLED_APPS`,
   register a model, mount `site.urls`, and open Ninja docs.
-- Known parity gaps are tracked in `docs/parity-matrix.md`.
+- Milestone 1 security and contract defects are either complete or explicitly
+  blocking the next release.
+- Known admin-behavior gaps are tracked in `docs/parity-matrix.md` as advisory
+  follow-up evidence, not as release blockers by themselves.
 
 ## Beta Criteria
 
+- Milestones 1-3 in `PLAN.md` are complete.
 - Upstream fixture behavior has Ninja-native tests where the v2 contract keeps
   the same semantics.
 - Changelist, filter, action, inline, delete, history, and form behavior cover
   common Django-admin edge cases.
 - The Django 5.0+ and database compatibility matrix is exercised in CI.
-- OpenAPI changes are guarded by semantic or snapshot tests.
+- OpenAPI changes are guarded by semantic or snapshot tests and reviewed from
+  an installed wheel.
 
 ## Stable Criteria
 
-- All parity gaps are implemented or documented as intentional v2 differences.
+- Milestone 4 backlog items required for production support are complete or
+  explicitly deferred with documented v2 rationale.
+- Advisory parity-matrix gaps have been reviewed, with implemented rows backed
+  by concrete evidence and remaining rows documented as backlog or intentional
+  v2 differences.
 - Release notes describe API contract impact from the previous package version.
 - Copyright notices for Django-derived and upstream-derived code have been
   reviewed and recorded in `docs/copyright-audit.md`.
