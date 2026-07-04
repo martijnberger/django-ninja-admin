@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, site
-from django_ninja_admin.schemas import ChangelistResponse, FormResponse
+from django_ninja_admin.schemas import ChangelistResponse, FormResponse, Pagination
 from tests.testapp.models import Product
 
 
@@ -948,6 +948,46 @@ def test_generated_admin_contract_schemas_reject_top_level_extra_fields(db):
 
     assert exc_info.value.errors()[0]["type"] == "extra_forbidden"
     assert exc_info.value.errors()[0]["loc"] == ("mark_out_of_stock", "unexpected")
+
+
+def test_pagination_schema_is_shared_and_constrained(admin_client, sample):
+    schema = admin_client.get("/admin-api/openapi.json").json()
+    components = schema["components"]["schemas"]
+
+    assert components["Pagination"]["properties"]["count"]["minimum"] == 0
+    assert components["Pagination"]["properties"]["num_pages"]["minimum"] == 0
+    assert components["Pagination"]["properties"]["page"]["minimum"] == 1
+    assert components["Pagination"]["properties"]["per_page"]["minimum"] == 1
+    assert components["ChangelistConfig"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
+    assert components["HistoryResponse"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
+    assert components["AutocompleteResponse"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
+
+    changelist = admin_client.get("/admin-api/testapp/product")
+    history = admin_client.get("/admin-api/history")
+    autocomplete = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "category",
+            "term": "Cam",
+        },
+    )
+    assert changelist.status_code == 200
+    assert history.status_code == 200
+    assert autocomplete.status_code == 200
+    assert (
+        set(changelist.json()["config"]["pagination"])
+        == set(history.json()["pagination"])
+        == set(autocomplete.json()["pagination"])
+    )
+
+    Pagination.model_validate({"count": 0, "num_pages": 0})
+    with pytest.raises(ValidationError) as exc_info:
+        Pagination.model_validate({"count": -1, "num_pages": 0})
+
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("count",)
 
 
 def test_disabled_action_payload_schema_rejects_arbitrary_data(db):

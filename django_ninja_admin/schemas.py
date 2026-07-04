@@ -920,10 +920,10 @@ class PageChoice(AdminSchema):
 
 
 class Pagination(AdminSchema):
-    count: int
-    num_pages: int
-    page: int = 1
-    per_page: int = 20
+    count: int = Field(ge=0)
+    num_pages: int = Field(ge=0)
+    page: int = Field(default=1, ge=1)
+    per_page: int = Field(default=20, ge=1)
     has_next: bool = False
     has_previous: bool = False
     more: bool = False

@@ -12,6 +12,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Honored `ModelAdmin.actions = None` in action contracts by omitting the
   model `/actions` operation, clearing changelist action-form metadata, and
   constraining the disabled-action fallback payload `data` field to null.
+- Constrained the shared `Pagination` OpenAPI component with non-negative
+  count/page-count fields and positive page/page-size fields, and routed
+  changelist pagination payloads through the same helper as history and
+  autocomplete.
 
 ## 0.1.62 - 2026-07-04
 

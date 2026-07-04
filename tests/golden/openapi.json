@@ -4815,6 +4815,7 @@
         "additionalProperties": false,
         "properties": {
           "count": {
+            "minimum": 0,
             "title": "Count",
             "type": "integer"
           },
@@ -4834,16 +4835,19 @@
             "type": "boolean"
           },
           "num_pages": {
+            "minimum": 0,
             "title": "Num Pages",
             "type": "integer"
           },
           "page": {
             "default": 1,
+            "minimum": 1,
             "title": "Page",
             "type": "integer"
           },
           "per_page": {
             "default": 20,
+            "minimum": 1,
             "title": "Per Page",
             "type": "integer"
           }
