@@ -27,6 +27,10 @@ just check
   exercise authenticated model discovery.
 - `just private-api-audit` to keep private Django API usage matched to
   [`docs/private-django-api-audit.md`](private-django-api-audit.md).
+- `just docs-check` to validate the MkDocs navigation and local documentation
+  links.
+- `just docs-build` to run a strict MkDocs build into a temporary output
+  directory.
 - Set `DJANGO_NINJA_ADMIN_SMOKE_DJANGO` to a concrete requirement such as
   `django>=5.2,<5.3` when the installed-project smoke should use the same
   Django lane as a compatibility matrix job.

@@ -53,5 +53,8 @@ accept pytest selectors. `just ci` is an alias for the full local gate.
 See [API And Authentication](docs/api-and-auth.md) for Ninja-native
 customization hooks (`form_class`, `output_schema`, and
 `schema_field_overrides`) plus examples for default, custom, and disabled auth.
+The MkDocs documentation site is configured by `mkdocs.yml`; run
+`just docs-check` to validate the docs navigation and local links, and
+`just docs-build` to run a strict local site build.
 See [API Versioning And Deprecation](docs/versioning.md) for the OpenAPI
 contract review and release compatibility policy.

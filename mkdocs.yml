@@ -1,0 +1,26 @@
+site_name: Django Ninja Admin
+site_description: A Ninja-native API implementation of Django admin for custom frontends.
+repo_url: https://github.com/martijnberger/django-ninja-admin
+docs_dir: docs
+strict: true
+
+theme:
+  name: readthedocs
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Setup: setup.md
+  - API And Authentication: api-and-auth.md
+  - Frontend Integration: frontend-integration.md
+  - Hook Reference: hook-reference.md
+  - Contract Reference: contract-reference.md
+  - API Versioning: versioning.md
+  - Release Checklist: release-checklist.md
+  - Parity Matrix: parity-matrix.md
+  - Private Django API Audit: private-django-api-audit.md
+  - Copyright Audit: copyright-audit.md

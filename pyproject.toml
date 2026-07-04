@@ -31,11 +31,13 @@ Repository = "https://github.com/martijnberger/django-ninja-admin"
 
 [dependency-groups]
 dev = [
+    "mkdocs>=1.6",
     "pillow>=10.0",
     "pre-commit>=4.0",
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "pytest-django>=4.8",
+    "pyyaml>=6.0",
     "ruff>=0.6",
     "twine>=5.0",
     "ty>=0.0.56",

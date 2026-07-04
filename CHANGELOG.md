@@ -13,6 +13,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   admin and site OpenAPI examples.
 - Removed internal schema/example shim methods now covered by shared schema
   example helpers.
+- Added a MkDocs documentation site scaffold with setup, auth/API, hook,
+  frontend integration, and contract reference guides plus docs navigation and
+  strict-build checks.
 
 ## 0.1.43 - 2026-07-04
 
