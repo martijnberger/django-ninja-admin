@@ -690,6 +690,65 @@ type ActionFormField = (
 )
 
 
+class ManagementFormFieldAttributes(AdminSchema):
+    required: bool
+    label: str
+    help_text: str = ""
+    read_only: Literal[False] = False
+    disabled: Literal[False] = False
+    localize: Literal[False] = False
+    validators: list[str] = Field(default_factory=list)
+    error_messages: dict[str, FieldMetadataValue] = Field(default_factory=dict)
+    widget: Literal["HiddenInput"] = "HiddenInput"
+    widget_attrs: dict[str, FieldMetadataValue] = Field(default_factory=dict)
+    is_hidden: Literal[True] = True
+    is_localized: Literal[False] = False
+    multiple: Literal[False] = False
+    input_type: Literal["hidden"] = "hidden"
+    needs_multipart_form: Literal[False] = False
+    value: int
+
+
+class RequiredManagementFormFieldAttributes(ManagementFormFieldAttributes):
+    required: Literal[True] = True
+
+
+class OptionalManagementFormFieldAttributes(ManagementFormFieldAttributes):
+    required: Literal[False] = False
+
+
+class TotalFormsFieldDescription(FieldDescription):
+    name: Literal["TOTAL_FORMS"]
+    type: Literal["IntegerField"]
+    attrs: RequiredManagementFormFieldAttributes
+
+
+class InitialFormsFieldDescription(FieldDescription):
+    name: Literal["INITIAL_FORMS"]
+    type: Literal["IntegerField"]
+    attrs: RequiredManagementFormFieldAttributes
+
+
+class MinNumFormsFieldDescription(FieldDescription):
+    name: Literal["MIN_NUM_FORMS"]
+    type: Literal["IntegerField"]
+    attrs: OptionalManagementFormFieldAttributes
+
+
+class MaxNumFormsFieldDescription(FieldDescription):
+    name: Literal["MAX_NUM_FORMS"]
+    type: Literal["IntegerField"]
+    attrs: OptionalManagementFormFieldAttributes
+
+
+type ManagementFormField = (
+    TotalFormsFieldDescription
+    | InitialFormsFieldDescription
+    | MinNumFormsFieldDescription
+    | MaxNumFormsFieldDescription
+)
+
+
 class FormMediaDescription(AdminSchema):
     css: dict[str, list[str]] = Field(default_factory=dict)
     js: list[str] = Field(default_factory=list)
@@ -746,7 +805,7 @@ class InlineDescription(AdminSchema):
     media: FormMediaDescription = Field(default_factory=FormMediaDescription)
     permissions: PermissionMap
     formset_prefix: str | None = None
-    management_form: list[FieldDescription] = Field(default_factory=list)
+    management_form: list[ManagementFormField] = Field(default_factory=list)
     total_form_count: int | None = None
     initial_form_count: int | None = None
     empty_form_prefix: str | None = None
@@ -936,7 +995,7 @@ class ChangelistResponse(AdminSchema):
     config: ChangelistConfig
     action_form: list[ActionFormField] = Field(default_factory=list)
     list_editing_formset_prefix: str | None = None
-    list_editing_management_form: list[FieldDescription] = Field(default_factory=list)
+    list_editing_management_form: list[ManagementFormField] = Field(default_factory=list)
     list_editing_total_form_count: int | None = None
     list_editing_initial_form_count: int | None = None
     list_editing_formset: list[list[FieldDescription]] = Field(default_factory=list)

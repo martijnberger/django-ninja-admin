@@ -52,6 +52,11 @@ items are narrowed to the supported action, selected-id, and select-across
 controls so generated clients do not need to treat them as arbitrary form
 fields.
 
+Inline and list-editable formset management metadata uses the same response
+shape as Django form descriptions, but the OpenAPI items are narrowed to the
+four supported hidden integer controls: `TOTAL_FORMS`, `INITIAL_FORMS`,
+`MIN_NUM_FORMS`, and `MAX_NUM_FORMS`.
+
 Changelist, history, and autocomplete responses share the `Pagination`
 component. History and autocomplete page-size parameters are bounded in
 OpenAPI; changelist keeps Django-admin-style `pp` and `all` controls.

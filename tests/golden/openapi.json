@@ -1262,7 +1262,7 @@
           },
           "list_editing_management_form": {
             "items": {
-              "$ref": "#/components/schemas/FieldDescription"
+              "$ref": "#/components/schemas/ManagementFormField"
             },
             "title": "List Editing Management Form",
             "type": "array"
@@ -4188,6 +4188,31 @@
         "title": "IndexedInputFormats",
         "type": "object"
       },
+      "InitialFormsFieldDescription": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "$ref": "#/components/schemas/RequiredManagementFormFieldAttributes"
+          },
+          "name": {
+            "const": "INITIAL_FORMS",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "IntegerField",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attrs",
+          "name",
+          "type"
+        ],
+        "title": "InitialFormsFieldDescription",
+        "type": "object"
+      },
       "InlineDescription": {
         "additionalProperties": false,
         "properties": {
@@ -4271,7 +4296,7 @@
           },
           "management_form": {
             "items": {
-              "$ref": "#/components/schemas/FieldDescription"
+              "$ref": "#/components/schemas/ManagementFormField"
             },
             "title": "Management Form",
             "type": "array"
@@ -4491,6 +4516,72 @@
         "title": "ListEditingRow",
         "type": "object"
       },
+      "ManagementFormField": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/TotalFormsFieldDescription"
+          },
+          {
+            "$ref": "#/components/schemas/InitialFormsFieldDescription"
+          },
+          {
+            "$ref": "#/components/schemas/MinNumFormsFieldDescription"
+          },
+          {
+            "$ref": "#/components/schemas/MaxNumFormsFieldDescription"
+          }
+        ]
+      },
+      "MaxNumFormsFieldDescription": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "$ref": "#/components/schemas/OptionalManagementFormFieldAttributes"
+          },
+          "name": {
+            "const": "MAX_NUM_FORMS",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "IntegerField",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attrs",
+          "name",
+          "type"
+        ],
+        "title": "MaxNumFormsFieldDescription",
+        "type": "object"
+      },
+      "MinNumFormsFieldDescription": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "$ref": "#/components/schemas/OptionalManagementFormFieldAttributes"
+          },
+          "name": {
+            "const": "MIN_NUM_FORMS",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "IntegerField",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attrs",
+          "name",
+          "type"
+        ],
+        "title": "MinNumFormsFieldDescription",
+        "type": "object"
+      },
       "ModelSummary": {
         "additionalProperties": false,
         "examples": [
@@ -4550,6 +4641,111 @@
             "type": "number"
           }
         ]
+      },
+      "OptionalManagementFormFieldAttributes": {
+        "additionalProperties": false,
+        "properties": {
+          "disabled": {
+            "const": false,
+            "default": false,
+            "title": "Disabled",
+            "type": "boolean"
+          },
+          "error_messages": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldMetadataValue"
+            },
+            "title": "Error Messages",
+            "type": "object"
+          },
+          "help_text": {
+            "default": "",
+            "title": "Help Text",
+            "type": "string"
+          },
+          "input_type": {
+            "const": "hidden",
+            "default": "hidden",
+            "title": "Input Type",
+            "type": "string"
+          },
+          "is_hidden": {
+            "const": true,
+            "default": true,
+            "title": "Is Hidden",
+            "type": "boolean"
+          },
+          "is_localized": {
+            "const": false,
+            "default": false,
+            "title": "Is Localized",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "localize": {
+            "const": false,
+            "default": false,
+            "title": "Localize",
+            "type": "boolean"
+          },
+          "multiple": {
+            "const": false,
+            "default": false,
+            "title": "Multiple",
+            "type": "boolean"
+          },
+          "needs_multipart_form": {
+            "const": false,
+            "default": false,
+            "title": "Needs Multipart Form",
+            "type": "boolean"
+          },
+          "read_only": {
+            "const": false,
+            "default": false,
+            "title": "Read Only",
+            "type": "boolean"
+          },
+          "required": {
+            "const": false,
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "validators": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Validators",
+            "type": "array"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          },
+          "widget": {
+            "const": "HiddenInput",
+            "default": "HiddenInput",
+            "title": "Widget",
+            "type": "string"
+          },
+          "widget_attrs": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldMetadataValue"
+            },
+            "title": "Widget Attrs",
+            "type": "object"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "OptionalManagementFormFieldAttributes",
+        "type": "object"
       },
       "PageChoice": {
         "additionalProperties": false,
@@ -6472,6 +6668,111 @@
         "title": "ReportNamesActionResult",
         "type": "object"
       },
+      "RequiredManagementFormFieldAttributes": {
+        "additionalProperties": false,
+        "properties": {
+          "disabled": {
+            "const": false,
+            "default": false,
+            "title": "Disabled",
+            "type": "boolean"
+          },
+          "error_messages": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldMetadataValue"
+            },
+            "title": "Error Messages",
+            "type": "object"
+          },
+          "help_text": {
+            "default": "",
+            "title": "Help Text",
+            "type": "string"
+          },
+          "input_type": {
+            "const": "hidden",
+            "default": "hidden",
+            "title": "Input Type",
+            "type": "string"
+          },
+          "is_hidden": {
+            "const": true,
+            "default": true,
+            "title": "Is Hidden",
+            "type": "boolean"
+          },
+          "is_localized": {
+            "const": false,
+            "default": false,
+            "title": "Is Localized",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "localize": {
+            "const": false,
+            "default": false,
+            "title": "Localize",
+            "type": "boolean"
+          },
+          "multiple": {
+            "const": false,
+            "default": false,
+            "title": "Multiple",
+            "type": "boolean"
+          },
+          "needs_multipart_form": {
+            "const": false,
+            "default": false,
+            "title": "Needs Multipart Form",
+            "type": "boolean"
+          },
+          "read_only": {
+            "const": false,
+            "default": false,
+            "title": "Read Only",
+            "type": "boolean"
+          },
+          "required": {
+            "const": true,
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "validators": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Validators",
+            "type": "array"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          },
+          "widget": {
+            "const": "HiddenInput",
+            "default": "HiddenInput",
+            "title": "Widget",
+            "type": "string"
+          },
+          "widget_attrs": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldMetadataValue"
+            },
+            "title": "Widget Attrs",
+            "type": "object"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "RequiredManagementFormFieldAttributes",
+        "type": "object"
+      },
       "Row": {
         "additionalProperties": false,
         "properties": {
@@ -7461,6 +7762,31 @@
           "_to_field"
         ],
         "title": "ToFieldQuery",
+        "type": "object"
+      },
+      "TotalFormsFieldDescription": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "$ref": "#/components/schemas/RequiredManagementFormFieldAttributes"
+          },
+          "name": {
+            "const": "TOTAL_FORMS",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "IntegerField",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attrs",
+          "name",
+          "type"
+        ],
+        "title": "TotalFormsFieldDescription",
         "type": "object"
       },
       "UserAdminActionPayload": {

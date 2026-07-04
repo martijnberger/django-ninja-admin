@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Narrowed inline and list-editable formset management metadata to dedicated
+  typed OpenAPI components while preserving the existing response shape.
+
 ## 0.1.56 - 2026-07-04
 
 ### Changed

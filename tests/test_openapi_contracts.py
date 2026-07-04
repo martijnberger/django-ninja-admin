@@ -2,7 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from django_ninja_admin import site
-from django_ninja_admin.schemas import ChangelistResponse
+from django_ninja_admin.schemas import ChangelistResponse, FormResponse
 from tests.testapp.models import Product
 
 
@@ -611,8 +611,45 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         {"type": "null"},
     ]
     assert changelist_response_props["list_editing_management_form"]["items"] == {
-        "$ref": "#/components/schemas/FieldDescription"
+        "$ref": "#/components/schemas/ManagementFormField"
     }
+    assert components["ManagementFormField"]["anyOf"] == [
+        {"$ref": "#/components/schemas/TotalFormsFieldDescription"},
+        {"$ref": "#/components/schemas/InitialFormsFieldDescription"},
+        {"$ref": "#/components/schemas/MinNumFormsFieldDescription"},
+        {"$ref": "#/components/schemas/MaxNumFormsFieldDescription"},
+    ]
+    assert components["TotalFormsFieldDescription"]["additionalProperties"] is False
+    assert components["TotalFormsFieldDescription"]["properties"]["name"]["const"] == "TOTAL_FORMS"
+    assert components["TotalFormsFieldDescription"]["properties"]["type"]["const"] == "IntegerField"
+    assert components["TotalFormsFieldDescription"]["properties"]["attrs"] == {
+        "$ref": "#/components/schemas/RequiredManagementFormFieldAttributes"
+    }
+    assert components["InitialFormsFieldDescription"]["additionalProperties"] is False
+    assert components["InitialFormsFieldDescription"]["properties"]["name"]["const"] == "INITIAL_FORMS"
+    assert components["InitialFormsFieldDescription"]["properties"]["attrs"] == {
+        "$ref": "#/components/schemas/RequiredManagementFormFieldAttributes"
+    }
+    assert components["MinNumFormsFieldDescription"]["additionalProperties"] is False
+    assert components["MinNumFormsFieldDescription"]["properties"]["name"]["const"] == "MIN_NUM_FORMS"
+    assert components["MinNumFormsFieldDescription"]["properties"]["attrs"] == {
+        "$ref": "#/components/schemas/OptionalManagementFormFieldAttributes"
+    }
+    assert components["MaxNumFormsFieldDescription"]["additionalProperties"] is False
+    assert components["MaxNumFormsFieldDescription"]["properties"]["name"]["const"] == "MAX_NUM_FORMS"
+    assert components["MaxNumFormsFieldDescription"]["properties"]["attrs"] == {
+        "$ref": "#/components/schemas/OptionalManagementFormFieldAttributes"
+    }
+    required_management_attrs = components["RequiredManagementFormFieldAttributes"]
+    assert required_management_attrs["additionalProperties"] is False
+    assert required_management_attrs["properties"]["required"]["const"] is True
+    assert required_management_attrs["properties"]["widget"]["const"] == "HiddenInput"
+    assert required_management_attrs["properties"]["is_hidden"]["const"] is True
+    assert required_management_attrs["properties"]["input_type"]["const"] == "hidden"
+    assert required_management_attrs["properties"]["value"]["type"] == "integer"
+    optional_management_attrs = components["OptionalManagementFormFieldAttributes"]
+    assert optional_management_attrs["additionalProperties"] is False
+    assert optional_management_attrs["properties"]["required"]["const"] is False
     assert changelist_response_props["list_editing_total_form_count"]["anyOf"] == [
         {"type": "integer"},
         {"type": "null"},
@@ -649,7 +686,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert "fieldsets" not in inline_response_props
     assert inline_response_props["fieldset_layout"]["items"] == {"$ref": "#/components/schemas/FieldsetDescription"}
     assert inline_response_props["prepopulated"] == {"$ref": "#/components/schemas/PrepopulatedFieldMap"}
-    assert inline_response_props["management_form"]["items"] == {"$ref": "#/components/schemas/FieldDescription"}
+    assert inline_response_props["management_form"]["items"] == {"$ref": "#/components/schemas/ManagementFormField"}
     assert inline_response_props["empty_form"]["items"] == {"$ref": "#/components/schemas/FieldDescription"}
     assert inline_response_props["formset_row_metadata"]["items"] == {
         "$ref": "#/components/schemas/InlineFormsetRowMetadata"
@@ -907,6 +944,82 @@ def test_changelist_action_form_schema_is_typed_and_closed(admin_client, sample)
     assert error["type"] == "extra_forbidden"
     assert error["loc"][:2] == ("action_form", 0)
     assert error["loc"][-2:] == ("attrs", "unexpected")
+
+
+def test_formset_management_form_schemas_are_typed_and_closed(admin_client, sample):
+    changelist_body = admin_client.get("/admin-api/testapp/product").json()
+    form_body = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form").json()
+
+    ChangelistResponse.model_validate(changelist_body)
+    FormResponse.model_validate(form_body)
+    assert {field["name"] for field in changelist_body["list_editing_management_form"]} == {
+        "TOTAL_FORMS",
+        "INITIAL_FORMS",
+        "MIN_NUM_FORMS",
+        "MAX_NUM_FORMS",
+    }
+    inline = next(item for item in form_body["inlines"] if item["model"] == "testapp.productimage")
+    assert {field["name"] for field in inline["management_form"]} == {
+        "TOTAL_FORMS",
+        "INITIAL_FORMS",
+        "MIN_NUM_FORMS",
+        "MAX_NUM_FORMS",
+    }
+
+    invalid_changelist_body = dict(changelist_body)
+    invalid_changelist_body["list_editing_management_form"] = [
+        {
+            "name": "TOTAL_FORMS",
+            "type": "IntegerField",
+            "attrs": {
+                "required": True,
+                "label": "Total Forms",
+                "widget": "HiddenInput",
+                "is_hidden": True,
+                "is_localized": False,
+                "multiple": False,
+                "input_type": "hidden",
+                "needs_multipart_form": False,
+                "value": 2,
+                "unexpected": True,
+            },
+        }
+    ]
+    with pytest.raises(ValidationError) as exc_info:
+        ChangelistResponse.model_validate(invalid_changelist_body)
+
+    error = exc_info.value.errors()[0]
+    assert error["type"] == "extra_forbidden"
+    assert error["loc"][:2] == ("list_editing_management_form", 0)
+    assert error["loc"][-2:] == ("attrs", "unexpected")
+
+    invalid_form_body = dict(form_body)
+    invalid_inline = dict(inline)
+    invalid_inline["management_form"] = [
+        {
+            "name": "UNKNOWN_FORMS",
+            "type": "IntegerField",
+            "attrs": {
+                "required": True,
+                "label": "Unknown Forms",
+                "widget": "HiddenInput",
+                "is_hidden": True,
+                "is_localized": False,
+                "multiple": False,
+                "input_type": "hidden",
+                "needs_multipart_form": False,
+                "value": 1,
+            },
+        }
+    ]
+    invalid_form_body["inlines"] = [invalid_inline]
+    with pytest.raises(ValidationError) as exc_info:
+        FormResponse.model_validate(invalid_form_body)
+
+    error = exc_info.value.errors()[0]
+    assert error["type"] == "literal_error"
+    assert error["loc"][:4] == ("inlines", 0, "management_form", 0)
+    assert error["loc"][-1] == "name"
 
 
 def _request_schema_ref(operation):
