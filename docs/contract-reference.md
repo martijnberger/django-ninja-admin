@@ -22,7 +22,9 @@ Mutation requests use `{data: ...}` plus optional `inlines`. Bulk updates use
 actions, a discriminated `data` payload variant selected by action name.
 
 Unknown fields are rejected by Pydantic before Django `ModelForm` or formset
-validation runs.
+validation runs. Generated admin payload wrappers, action payload variants,
+model output components, and mutation/bulk response wrappers are closed with
+`additionalProperties: false` in OpenAPI.
 
 ## Response Shapes
 

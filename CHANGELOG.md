@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Closed generated admin payload, action payload, output, bulk, and mutation
+  response wrapper schemas with `additionalProperties: false` so Pydantic and
+  OpenAPI reject undocumented top-level contract fields consistently.
+
 ## 0.1.52 - 2026-07-04
 
 ### Added

@@ -86,16 +86,6 @@ class CustomFormProductAdmin(ModelAdmin):
         tag, _created = Tag.objects.get_or_create(name="Hooked")
         form.instance.tags.add(tag)
 
-    def response_add(self, request, obj, form, inline_results):
-        response = super().response_add(request, obj, form, inline_results)
-        response["data"]["response_hook"] = "add"
-        return response
-
-    def response_change(self, request, obj, form, inline_results):
-        response = super().response_change(request, obj, form, inline_results)
-        response["data"]["response_hook"] = "change"
-        return response
-
     def delete_model(self, request, obj):
         Tag.objects.get_or_create(name=f"delete_model:{obj.pk}:{obj.name}")
         super().delete_model(request, obj)

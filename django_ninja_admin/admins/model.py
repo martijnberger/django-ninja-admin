@@ -14,7 +14,6 @@ from django.db.models.functions import Cast
 from django.forms.models import model_to_dict
 from django.utils.text import capfirst, smart_split, unescape_string_literal
 from django.utils.translation import gettext_lazy as _
-from ninja import Schema
 from ninja.constants import NOT_SET
 from ninja.utils import is_async_callable
 from pydantic import BaseModel, ConfigDict, Field, RootModel, TypeAdapter, create_model
@@ -28,6 +27,8 @@ from django_ninja_admin.routes import AdminRoute
 from django_ninja_admin.schemas import (
     ActionResponse,
     AdminInlinePayloadSchema,
+    AdminSchema,
+    AdminWriteSchema,
     FieldMetadataValue,
     JsonObjectResponse,
     ObjectIdentifier,
@@ -222,7 +223,7 @@ class ModelAdmin(BaseAdmin):
             inline_example = self._inline_payload_example_for_mutation(inline_payload_schema, change=change)
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}Admin{operation}Payload",
-                __base__=Schema,
+                __base__=AdminWriteSchema,
                 __config__=ConfigDict(
                     json_schema_extra={
                         "examples": [
@@ -275,7 +276,7 @@ class ModelAdmin(BaseAdmin):
             else:
                 cache[cache_key] = PydanticCreateModel(
                     f"{self.model.__name__}AdminInlineResponse",
-                    __base__=Schema,
+                    __base__=AdminSchema,
                     __config__=ConfigDict(
                         extra="forbid",
                         json_schema_extra={"examples": examples},
@@ -296,7 +297,7 @@ class ModelAdmin(BaseAdmin):
             )
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminMutationResponse",
-                __base__=Schema,
+                __base__=AdminSchema,
                 __config__=ConfigDict(
                     json_schema_extra={
                         "examples": [
@@ -500,7 +501,7 @@ class ModelAdmin(BaseAdmin):
         if not variants:
             return PydanticCreateModel(
                 f"{self.model.__name__}AdminActionPayload",
-                __base__=Schema,
+                __base__=AdminWriteSchema,
                 action=(str, ...),
                 selected_ids=(list[ObjectIdentifier], Field(default_factory=list)),
                 select_across=(bool, False),
@@ -528,7 +529,7 @@ class ModelAdmin(BaseAdmin):
             fields["data"] = (input_schema, ...)
         return PydanticCreateModel(
             f"{self.model.__name__}Admin{self._schema_name_part(name)}ActionPayload",
-            __base__=Schema,
+            __base__=AdminWriteSchema,
             **fields,
         )
 

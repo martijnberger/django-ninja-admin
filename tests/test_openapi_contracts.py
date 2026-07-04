@@ -1,3 +1,10 @@
+import pytest
+from pydantic import ValidationError
+
+from django_ninja_admin import site
+from tests.testapp.models import Product
+
+
 def test_apps_context_docs_and_schema(admin_client, sample):
     assert admin_client.get("/admin-api/apps").status_code == 200
     assert admin_client.get("/admin-api/apps/testapp").json()["app_label"] == "testapp"
@@ -128,6 +135,22 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         },
         "inlines": {"testapp.productimage": {"add": [{"title": "example"}]}},
     }
+    for component_name in [
+        "ProductAdminCreatePayload",
+        "ProductAdminPartialUpdatePayload",
+        "ProductAdminUpdatePayload",
+        "ProductAdminBulkPayload",
+        "ProductAdminBulkResponse",
+        "ProductAdminMutationResponse",
+    ]:
+        assert components[component_name]["additionalProperties"] is False
+    for component_name in [
+        "ProductAdminDeleteSelectedActionPayload",
+        "ProductAdminMarkOutOfStockActionPayload",
+        "ProductAdminReportNamesActionPayload",
+        "ProductAdminSetStockStatusActionPayload",
+    ]:
+        assert components[component_name]["additionalProperties"] is False
     partial_payload_example = components["ProductAdminPartialUpdatePayload"]["examples"][0]
     assert partial_payload_example["data"] == {"name": "example"}
     assert partial_payload_example["inlines"]["testapp.productimage"]["change"] == [{"pk": 1, "title": "example"}]
@@ -154,7 +177,8 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         components["ProductAdminMutationData"]["properties"]["name"]
         == components["ProductAdminOut"]["properties"]["name"]
     )
-    assert "additionalProperties" not in components["ProductAdminMutationData"]
+    assert components["ProductAdminOut"]["additionalProperties"] is False
+    assert components["ProductAdminMutationData"]["additionalProperties"] is False
     mutation_response_example = components["ProductAdminMutationResponse"]["examples"][0]
     assert mutation_response_example["data"]["name"] == "example"
     assert mutation_response_example["data"]["photo"]["height"] == 480
@@ -775,6 +799,47 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert "200" not in delete_responses
     assert "202" not in delete_responses
     assert "content" not in delete_responses["204"]
+
+
+def test_generated_admin_contract_schemas_reject_top_level_extra_fields(db):
+    model_admin = site.get_model_admin(Product)
+    create_payload_schema = model_admin.get_mutation_payload_schema(None, change=False, partial=False)
+    partial_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=True)
+    update_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=False)
+    bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
+    mutation_response_schema = model_admin.get_mutation_response_schema(None)
+    action_payload_schema = model_admin.get_action_payload_schema(None)
+
+    for schema in [
+        create_payload_schema,
+        partial_payload_schema,
+        update_payload_schema,
+        bulk_payload_schema,
+        mutation_response_schema,
+    ]:
+        payload = dict(schema.model_json_schema()["examples"][0])
+        schema.model_validate(payload)
+        payload["unexpected"] = True
+
+        with pytest.raises(ValidationError) as exc_info:
+            schema.model_validate(payload)
+
+        assert exc_info.value.errors()[0]["type"] == "extra_forbidden"
+        assert exc_info.value.errors()[0]["loc"] == ("unexpected",)
+
+    action_payload_schema.model_validate({"action": "mark_out_of_stock", "selected_ids": [1], "select_across": False})
+    with pytest.raises(ValidationError) as exc_info:
+        action_payload_schema.model_validate(
+            {
+                "action": "mark_out_of_stock",
+                "selected_ids": [1],
+                "select_across": False,
+                "unexpected": True,
+            }
+        )
+
+    assert exc_info.value.errors()[0]["type"] == "extra_forbidden"
+    assert exc_info.value.errors()[0]["loc"] == ("mark_out_of_stock", "unexpected")
 
 
 def _request_schema_ref(operation):

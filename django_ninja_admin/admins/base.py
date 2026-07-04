@@ -17,7 +17,6 @@ from django.forms.models import BaseModelFormSet, ModelChoiceField, ModelMultipl
 from django.urls import reverse
 from django.utils.dateparse import parse_duration
 from django.utils.safestring import mark_safe
-from ninja import Schema
 from pydantic import (
     AfterValidator,
     AnyUrl,
@@ -31,6 +30,7 @@ from pydantic import (
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.schemas import (
     AdminBulkRowSchema,
+    AdminSchema,
     AdminWriteSchema,
     FieldMetadataValue,
     FileFieldValue,
@@ -346,7 +346,7 @@ class BaseAdmin:
             operation = "PartialUpdate" if partial else "Update" if change else "Create"
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}Admin{operation}Payload",
-                __base__=Schema,
+                __base__=AdminWriteSchema,
                 __config__=ConfigDict(json_schema_extra={"examples": [{"data": schema_example(data_schema)}]}),
                 data=(data_schema, ...),
                 inlines=(FieldMetadataValue | None, None),
@@ -365,7 +365,7 @@ class BaseAdmin:
             )
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminMutationResponse",
-                __base__=Schema,
+                __base__=AdminSchema,
                 __config__=ConfigDict(
                     json_schema_extra={
                         "examples": [
@@ -411,7 +411,7 @@ class BaseAdmin:
             )
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminBulkPayload",
-                __base__=Schema,
+                __base__=AdminWriteSchema,
                 __config__=ConfigDict(json_schema_extra={"examples": [{"data": [schema_example(row_schema)]}]}),
                 data=(list[row_schema], ...),
             )
@@ -425,7 +425,7 @@ class BaseAdmin:
         if cache_key not in cache:
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminBulkResponse",
-                __base__=Schema,
+                __base__=AdminSchema,
                 __config__=ConfigDict(json_schema_extra={"examples": [{"data": {"1": schema_example(output_schema)}}]}),
                 data=(dict[str, output_schema], ...),
             )
@@ -712,7 +712,7 @@ class BaseAdmin:
             fields = list(fields_key)
             base_class = type(
                 f"{self.model.__name__}AdminOutBase",
-                (Schema,),
+                (AdminSchema,),
                 {
                     "__module__": self.__class__.__module__,
                     "model_config": ConfigDict(
