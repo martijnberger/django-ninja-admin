@@ -15,9 +15,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Aligned invalid `view_on_site` checks with Django admin's `E025` numbering
   and moved package-owned paginator, action display, facet, search help, and
   empty-value display checks into package-specific IDs.
-- Moved package-owned empty `list_display`, `list_select_related`, mixed
-  random ordering, and non-sequence `actions` checks into package-specific
-  IDs.
+- Aligned mixed random ordering checks with Django admin's `E032` numbering
+  and moved package-owned empty `list_display`, `list_select_related`, and
+  non-sequence `actions` checks into package-specific IDs.
+- Aligned inline model checks with Django admin's distinction between missing
+  inline models (`E105`) and invalid non-model values (`E106`).
 
 ## 0.1.46 - 2026-07-04
 

@@ -105,7 +105,6 @@ PACKAGE_OPTION_CODES = {
     "list_display_empty": "E191",
     "list_select_related_item": "E192",
     "list_select_related_path": "E193",
-    "ordering_random_with_fields": "E194",
     "actions_type": "E195",
 }
 
@@ -1201,7 +1200,7 @@ def _check_lookup_fields(
             _error(
                 model_admin.__class__,
                 "The value of 'ordering' has the random ordering marker '?' but contains other fields.",
-                PACKAGE_OPTION_CODES["ordering_random_with_fields"],
+                "E032",
                 hint='Either remove the "?", or remove the other fields.',
             )
         )
@@ -1510,8 +1509,11 @@ def _check_inlines(model_admin):
             errors.append(_error(model_admin.__class__, "Items in 'inlines' must subclass InlineModelAdmin.", "E104"))
             continue
         inline_model = getattr(inline_class, "model", None)
-        if not isinstance(inline_model, ModelBase):
+        if inline_model is None:
             errors.append(_error(inline_class, "Inline classes must define a concrete model.", "E105"))
+            continue
+        if not isinstance(inline_model, ModelBase):
+            errors.append(_error(inline_class, "The value of 'model' must be a Django model.", "E106"))
             continue
         try:
             fk = _get_foreign_key(model_admin.model, inline_model, fk_name=getattr(inline_class, "fk_name", None))

@@ -170,6 +170,23 @@ def test_admin_checks_reject_non_sequence_inlines_option(db, make_site):
     assert {error.id for error in errors} == {"django_ninja_admin.E103"}
 
 
+def test_admin_checks_distinguish_missing_and_invalid_inline_models(db, make_site):
+    class MissingModelInline(TabularInline):
+        pass
+
+    class InvalidModelInline(TabularInline):
+        model = "testapp.ProductImage"
+
+    missing_site = make_site(Product, inlines=[MissingModelInline])
+    invalid_site = make_site(Product, inlines=[InvalidModelInline])
+
+    missing_errors = missing_site.get_model_admin(Product).check()
+    invalid_errors = invalid_site.get_model_admin(Product).check()
+
+    assert {error.id for error in missing_errors} == {"django_ninja_admin.E105"}
+    assert {error.id for error in invalid_errors} == {"django_ninja_admin.E106"}
+
+
 def test_admin_checks_validate_inline_boolean_options(db, make_site):
     class ValidInline(TabularInline):
         model = ProductImage
@@ -670,8 +687,8 @@ def test_admin_checks_reject_mixed_random_ordering(db, make_site):
     random_ids = {error.id for error in random_site.get_model_admin(Product).check()}
     mixed_errors = mixed_site.get_model_admin(Product).check()
 
-    assert "django_ninja_admin.E194" not in random_ids
-    assert {error.id for error in mixed_errors} == {"django_ninja_admin.E194"}
+    assert "django_ninja_admin.E032" not in random_ids
+    assert {error.id for error in mixed_errors} == {"django_ninja_admin.E032"}
     assert mixed_errors[0].hint == 'Either remove the "?", or remove the other fields.'
 
 
