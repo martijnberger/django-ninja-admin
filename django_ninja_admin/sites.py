@@ -1433,7 +1433,9 @@ class NinjaAdminSite:
                 model_admin.delete_model(request, obj)
             response = model_admin.response_delete(request, obj_display, obj_id)
             if response is not None:
-                return response
+                if isinstance(response, Status):
+                    return response
+                return Status(200, response)
             return Status(204, None)
 
     def _get_object_or_404(self, request, model_admin, object_id, to_field=None):

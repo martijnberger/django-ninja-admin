@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Aligned custom `response_change_schema` OpenAPI status maps with runtime
   update responses by advertising declared change-hook schemas on `200`/`202`
   and wrapping plain `response_change()` bodies in `Status(200, ...)`.
+- Normalized plain custom `response_delete()` hook bodies to explicit `200`
+  responses while preserving `None` as the default `204`.
 
 ## 0.1.49 - 2026-07-04
 

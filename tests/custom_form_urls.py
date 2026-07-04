@@ -105,7 +105,7 @@ class CustomFormProductAdmin(ModelAdmin):
         super().delete_queryset(request, queryset)
 
     def response_delete(self, request, obj_display, obj_id):
-        return Status(200, {"deleted_id": obj_id, "deleted_display": obj_display, "response_hook": "delete"})
+        return {"deleted_id": obj_id, "deleted_display": obj_display, "response_hook": "delete"}
 
 
 custom_form_site = NinjaAdminSite(name="custom_form_admin", include_auth=False)
