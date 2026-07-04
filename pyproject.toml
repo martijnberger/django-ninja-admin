@@ -1,6 +1,6 @@
 [project]
 name = "django-ninja-admin"
-version = "0.1.53"
+version = "0.1.54"
 description = "A Ninja-native API implementation of Django admin for custom frontends."
 readme = "README.md"
 requires-python = ">=3.12"

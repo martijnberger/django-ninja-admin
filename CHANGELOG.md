@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+No notable unreleased changes yet.
+
+## 0.1.54 - 2026-07-04
+
 ### Changed
 
 - Added a bounded `per_page` query parameter to `/autocomplete`, mirroring the
