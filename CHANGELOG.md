@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.62 - 2026-07-04
+
 ### Changed
 
 - Narrowed changelist row IDs, list-editable row PKs, and history log-entry
