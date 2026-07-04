@@ -654,6 +654,42 @@ class FieldDescription(AdminSchema):
         return attrs.model_dump(mode="json", exclude_unset=True, by_alias=True)
 
 
+class ActionChoiceFieldAttributes(AdminSchema):
+    required: Literal[True] = True
+    choices: list[ChoicePair]
+
+
+class ActionSelectedIdsFieldAttributes(AdminSchema):
+    required: Literal[False] = False
+
+
+class ActionSelectAcrossFieldAttributes(AdminSchema):
+    required: Literal[False] = False
+
+
+class ActionChoiceFieldDescription(FieldDescription):
+    name: Literal["action"]
+    type: Literal["ChoiceField"]
+    attrs: ActionChoiceFieldAttributes
+
+
+class ActionSelectedIdsFieldDescription(FieldDescription):
+    name: Literal["selected_ids"]
+    type: Literal["MultipleChoiceField"]
+    attrs: ActionSelectedIdsFieldAttributes
+
+
+class ActionSelectAcrossFieldDescription(FieldDescription):
+    name: Literal["select_across"]
+    type: Literal["BooleanField"]
+    attrs: ActionSelectAcrossFieldAttributes
+
+
+type ActionFormField = (
+    ActionChoiceFieldDescription | ActionSelectedIdsFieldDescription | ActionSelectAcrossFieldDescription
+)
+
+
 class FormMediaDescription(AdminSchema):
     css: dict[str, list[str]] = Field(default_factory=dict)
     js: list[str] = Field(default_factory=list)
@@ -898,7 +934,7 @@ class ChangelistResponse(AdminSchema):
     columns: list[Column]
     rows: list[Row]
     config: ChangelistConfig
-    action_form: list[FieldDescription] = Field(default_factory=list)
+    action_form: list[ActionFormField] = Field(default_factory=list)
     list_editing_formset_prefix: str | None = None
     list_editing_management_form: list[FieldDescription] = Field(default_factory=list)
     list_editing_total_form_count: int | None = None

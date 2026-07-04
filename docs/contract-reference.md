@@ -46,6 +46,12 @@ controls. These hints describe source fields, related models, target fields,
 and mount-aware endpoint/query data without exposing rendered Django widget
 internals.
 
+Changelist responses expose typed row/cell metadata and typed action controls.
+The `action_form` response keeps Django-admin field semantics, but its OpenAPI
+items are narrowed to the supported action, selected-id, and select-across
+controls so generated clients do not need to treat them as arbitrary form
+fields.
+
 Changelist, history, and autocomplete responses share the `Pagination`
 component. History and autocomplete page-size parameters are bounded in
 OpenAPI; changelist keeps Django-admin-style `pp` and `all` controls.

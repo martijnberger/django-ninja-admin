@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from django_ninja_admin import site
+from django_ninja_admin.schemas import ChangelistResponse
 from tests.testapp.models import Product
 
 
@@ -571,6 +572,40 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert cell_metadata_props["empty"]["type"] == "boolean"
     assert cell_metadata_props["editable"]["type"] == "boolean"
     changelist_response_props = components["ChangelistResponse"]["properties"]
+    assert changelist_response_props["action_form"]["items"] == {"$ref": "#/components/schemas/ActionFormField"}
+    assert components["ActionFormField"]["anyOf"] == [
+        {"$ref": "#/components/schemas/ActionChoiceFieldDescription"},
+        {"$ref": "#/components/schemas/ActionSelectedIdsFieldDescription"},
+        {"$ref": "#/components/schemas/ActionSelectAcrossFieldDescription"},
+    ]
+    assert components["ActionChoiceFieldDescription"]["additionalProperties"] is False
+    assert components["ActionChoiceFieldDescription"]["properties"]["name"]["const"] == "action"
+    assert components["ActionChoiceFieldDescription"]["properties"]["type"]["const"] == "ChoiceField"
+    assert components["ActionChoiceFieldDescription"]["properties"]["attrs"] == {
+        "$ref": "#/components/schemas/ActionChoiceFieldAttributes"
+    }
+    assert components["ActionChoiceFieldAttributes"]["additionalProperties"] is False
+    assert components["ActionChoiceFieldAttributes"]["required"] == ["choices"]
+    assert components["ActionChoiceFieldAttributes"]["properties"]["required"]["const"] is True
+    assert components["ActionChoiceFieldAttributes"]["properties"]["choices"]["items"] == {
+        "$ref": "#/components/schemas/ChoicePair"
+    }
+    assert components["ActionSelectedIdsFieldDescription"]["additionalProperties"] is False
+    assert components["ActionSelectedIdsFieldDescription"]["properties"]["name"]["const"] == "selected_ids"
+    assert components["ActionSelectedIdsFieldDescription"]["properties"]["type"]["const"] == "MultipleChoiceField"
+    assert components["ActionSelectedIdsFieldDescription"]["properties"]["attrs"] == {
+        "$ref": "#/components/schemas/ActionSelectedIdsFieldAttributes"
+    }
+    assert components["ActionSelectedIdsFieldAttributes"]["additionalProperties"] is False
+    assert components["ActionSelectedIdsFieldAttributes"]["properties"]["required"]["const"] is False
+    assert components["ActionSelectAcrossFieldDescription"]["additionalProperties"] is False
+    assert components["ActionSelectAcrossFieldDescription"]["properties"]["name"]["const"] == "select_across"
+    assert components["ActionSelectAcrossFieldDescription"]["properties"]["type"]["const"] == "BooleanField"
+    assert components["ActionSelectAcrossFieldDescription"]["properties"]["attrs"] == {
+        "$ref": "#/components/schemas/ActionSelectAcrossFieldAttributes"
+    }
+    assert components["ActionSelectAcrossFieldAttributes"]["additionalProperties"] is False
+    assert components["ActionSelectAcrossFieldAttributes"]["properties"]["required"]["const"] is False
     assert changelist_response_props["list_editing_formset_prefix"]["anyOf"] == [
         {"type": "string"},
         {"type": "null"},
@@ -845,6 +880,33 @@ def test_generated_admin_contract_schemas_reject_top_level_extra_fields(db):
 
     assert exc_info.value.errors()[0]["type"] == "extra_forbidden"
     assert exc_info.value.errors()[0]["loc"] == ("mark_out_of_stock", "unexpected")
+
+
+def test_changelist_action_form_schema_is_typed_and_closed(admin_client, sample):
+    body = admin_client.get("/admin-api/testapp/product").json()
+
+    ChangelistResponse.model_validate(body)
+    assert {field["name"] for field in body["action_form"]} == {"action", "selected_ids", "select_across"}
+
+    invalid_body = dict(body)
+    invalid_body["action_form"] = [
+        {
+            "name": "action",
+            "type": "ChoiceField",
+            "attrs": {
+                "required": True,
+                "choices": [["delete_selected", "Delete selected products"]],
+                "unexpected": True,
+            },
+        }
+    ]
+    with pytest.raises(ValidationError) as exc_info:
+        ChangelistResponse.model_validate(invalid_body)
+
+    error = exc_info.value.errors()[0]
+    assert error["type"] == "extra_forbidden"
+    assert error["loc"][:2] == ("action_form", 0)
+    assert error["loc"][-2:] == ("attrs", "unexpected")
 
 
 def _request_schema_ref(operation):

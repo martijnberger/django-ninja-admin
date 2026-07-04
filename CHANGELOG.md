@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Narrowed the changelist `action_form` OpenAPI contract to dedicated typed
+  action-control components while preserving the existing response shape.
+
 ## 0.1.55 - 2026-07-04
 
 ### Changed

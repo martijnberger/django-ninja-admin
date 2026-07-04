@@ -27,6 +27,67 @@
         "title": "ActionChoice",
         "type": "object"
       },
+      "ActionChoiceFieldAttributes": {
+        "additionalProperties": false,
+        "properties": {
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/ChoicePair"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "required": {
+            "const": true,
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "choices"
+        ],
+        "title": "ActionChoiceFieldAttributes",
+        "type": "object"
+      },
+      "ActionChoiceFieldDescription": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "$ref": "#/components/schemas/ActionChoiceFieldAttributes"
+          },
+          "name": {
+            "const": "action",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "ChoiceField",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attrs",
+          "name",
+          "type"
+        ],
+        "title": "ActionChoiceFieldDescription",
+        "type": "object"
+      },
+      "ActionFormField": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ActionChoiceFieldDescription"
+          },
+          {
+            "$ref": "#/components/schemas/ActionSelectedIdsFieldDescription"
+          },
+          {
+            "$ref": "#/components/schemas/ActionSelectAcrossFieldDescription"
+          }
+        ]
+      },
       "ActionResponse": {
         "additionalProperties": false,
         "examples": [
@@ -64,6 +125,82 @@
           "detail"
         ],
         "title": "ActionResponse",
+        "type": "object"
+      },
+      "ActionSelectAcrossFieldAttributes": {
+        "additionalProperties": false,
+        "properties": {
+          "required": {
+            "const": false,
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "title": "ActionSelectAcrossFieldAttributes",
+        "type": "object"
+      },
+      "ActionSelectAcrossFieldDescription": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "$ref": "#/components/schemas/ActionSelectAcrossFieldAttributes"
+          },
+          "name": {
+            "const": "select_across",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "BooleanField",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attrs",
+          "name",
+          "type"
+        ],
+        "title": "ActionSelectAcrossFieldDescription",
+        "type": "object"
+      },
+      "ActionSelectedIdsFieldAttributes": {
+        "additionalProperties": false,
+        "properties": {
+          "required": {
+            "const": false,
+            "default": false,
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "title": "ActionSelectedIdsFieldAttributes",
+        "type": "object"
+      },
+      "ActionSelectedIdsFieldDescription": {
+        "additionalProperties": false,
+        "properties": {
+          "attrs": {
+            "$ref": "#/components/schemas/ActionSelectedIdsFieldAttributes"
+          },
+          "name": {
+            "const": "selected_ids",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "MultipleChoiceField",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attrs",
+          "name",
+          "type"
+        ],
+        "title": "ActionSelectedIdsFieldDescription",
         "type": "object"
       },
       "AppSummary": {
@@ -1076,7 +1213,7 @@
         "properties": {
           "action_form": {
             "items": {
-              "$ref": "#/components/schemas/FieldDescription"
+              "$ref": "#/components/schemas/ActionFormField"
             },
             "title": "Action Form",
             "type": "array"
