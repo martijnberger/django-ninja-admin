@@ -88,6 +88,11 @@ PACKAGE_OPTION_CODES = {
     "schema_field_overrides_type": "E174",
     "schema_field_overrides_key": "E175",
     "schema_field_overrides_value": "E176",
+    "form_class_model_mismatch": "E177",
+    "formfield_overrides_type": "E178",
+    "formfield_overrides_key": "E179",
+    "formfield_overrides_value": "E180",
+    "formfield_overrides_nested_key": "E181",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -530,7 +535,7 @@ def _check_form_class(model_admin):
     if form_class is None:
         return []
     if not isinstance(form_class, type) or not issubclass(form_class, BaseModelForm):
-        return [_error(model_admin.__class__, "The value of 'form_class' must inherit from ModelForm.", "E058")]
+        return [_error(model_admin.__class__, "The value of 'form_class' must inherit from ModelForm.", "E016")]
 
     form_model = getattr(getattr(form_class, "_meta", None), "model", None)
     if form_model is not None and form_model is not model_admin.model:
@@ -539,7 +544,7 @@ def _check_form_class(model_admin):
                 model_admin.__class__,
                 f"The value of 'form_class' declares model '{form_model._meta.label}', "
                 f"but this admin is registered for '{model_admin.model._meta.label}'.",
-                "E059",
+                PACKAGE_OPTION_CODES["form_class_model_mismatch"],
             )
         ]
     return []
@@ -548,7 +553,13 @@ def _check_form_class(model_admin):
 def _check_formfield_overrides(model_admin):
     value = getattr(model_admin, "formfield_overrides", {}) or {}
     if not isinstance(value, Mapping):
-        return [_error(model_admin.__class__, "The value of 'formfield_overrides' must be a mapping.", "E060")]
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'formfield_overrides' must be a mapping.",
+                PACKAGE_OPTION_CODES["formfield_overrides_type"],
+            )
+        ]
 
     errors = []
     for field_class, overrides in value.items():
@@ -557,7 +568,7 @@ def _check_formfield_overrides(model_admin):
                 _error(
                     model_admin.__class__,
                     "Keys in 'formfield_overrides' must be Django model field classes.",
-                    "E061",
+                    PACKAGE_OPTION_CODES["formfield_overrides_key"],
                 )
             )
             continue
@@ -566,7 +577,7 @@ def _check_formfield_overrides(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The override for '{field_class.__name__}' must be a mapping of formfield keyword arguments.",
-                    "E062",
+                    PACKAGE_OPTION_CODES["formfield_overrides_value"],
                 )
             )
             continue
@@ -576,7 +587,7 @@ def _check_formfield_overrides(model_admin):
                     _error(
                         model_admin.__class__,
                         f"Keys in the override for '{field_class.__name__}' must be strings.",
-                        "E063",
+                        PACKAGE_OPTION_CODES["formfield_overrides_nested_key"],
                     )
                 )
     return errors
@@ -1511,7 +1522,7 @@ def _check_inlines(model_admin):
         form_class = getattr(inline_class, "form_class", None)
         if form_class is not None:
             if not isinstance(form_class, type) or not issubclass(form_class, BaseModelForm):
-                errors.append(_error(inline_class, "The value of 'form_class' must inherit from ModelForm.", "E058"))
+                errors.append(_error(inline_class, "The value of 'form_class' must inherit from ModelForm.", "E016"))
             else:
                 form_model = getattr(getattr(form_class, "_meta", None), "model", None)
                 if form_model is not None and form_model is not inline_model:
@@ -1520,7 +1531,7 @@ def _check_inlines(model_admin):
                             inline_class,
                             f"The value of 'form_class' declares model '{form_model._meta.label}', "
                             f"but this admin is registered for '{inline_model._meta.label}'.",
-                            "E059",
+                            PACKAGE_OPTION_CODES["form_class_model_mismatch"],
                         )
                     )
     return errors

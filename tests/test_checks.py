@@ -898,12 +898,12 @@ def test_admin_checks_validate_form_class(db, make_site):
     plain_inline_ids = {error.id for error in plain_inline_site.get_model_admin(Product).check()}
     wrong_model_inline_ids = {error.id for error in wrong_model_inline_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E058", "django_ninja_admin.E059"})
-    assert plain_ids == {"django_ninja_admin.E058"}
-    assert wrong_model_ids == {"django_ninja_admin.E059"}
-    assert valid_inline_ids.isdisjoint({"django_ninja_admin.E058", "django_ninja_admin.E059"})
-    assert plain_inline_ids == {"django_ninja_admin.E058"}
-    assert wrong_model_inline_ids == {"django_ninja_admin.E059"}
+    assert valid_ids.isdisjoint({"django_ninja_admin.E016", "django_ninja_admin.E177"})
+    assert plain_ids == {"django_ninja_admin.E016"}
+    assert wrong_model_ids == {"django_ninja_admin.E177"}
+    assert valid_inline_ids.isdisjoint({"django_ninja_admin.E016", "django_ninja_admin.E177"})
+    assert plain_inline_ids == {"django_ninja_admin.E016"}
+    assert wrong_model_inline_ids == {"django_ninja_admin.E177"}
 
 
 def test_admin_checks_validate_formfield_overrides(db, make_site):
@@ -936,16 +936,16 @@ def test_admin_checks_validate_formfield_overrides(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E060",
-            "django_ninja_admin.E061",
-            "django_ninja_admin.E062",
-            "django_ninja_admin.E063",
+            "django_ninja_admin.E178",
+            "django_ninja_admin.E179",
+            "django_ninja_admin.E180",
+            "django_ninja_admin.E181",
         }
     )
-    assert bad_shape_ids == {"django_ninja_admin.E060"}
-    assert bad_field_key_ids == {"django_ninja_admin.E061"}
-    assert bad_override_value_ids == {"django_ninja_admin.E062"}
-    assert bad_override_key_ids == {"django_ninja_admin.E063"}
+    assert bad_shape_ids == {"django_ninja_admin.E178"}
+    assert bad_field_key_ids == {"django_ninja_admin.E179"}
+    assert bad_override_value_ids == {"django_ninja_admin.E180"}
+    assert bad_override_key_ids == {"django_ninja_admin.E181"}
 
 
 def test_admin_checks_reject_reverse_relation_widget_fields(db, make_site):
