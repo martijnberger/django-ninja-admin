@@ -159,6 +159,9 @@ class CustomAdminSite(NinjaAdminSite):
     def explicit_multi_status(self, request):
         return {"site": "explicit-multi"}
 
+    def string_method_status(self, request):
+        return {"site": "string-method"}
+
     def token_status(self, request):
         return {"auth": request.auth}
 
@@ -225,6 +228,14 @@ class CustomAdminSite(NinjaAdminSite):
                 methods=("GET", "POST"),
                 response=SiteStatusResponse,
                 operation_id="custom_explicit_multi_status",
+                tags=["custom.site"],
+            ),
+            self.route(
+                "/string-method-status",
+                self.admin_view(self.string_method_status),
+                methods="post",
+                response=SiteStatusResponse,
+                operation_id="custom_string_method_status",
                 tags=["custom.site"],
             ),
             self.route(

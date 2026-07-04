@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Fixed
 
+- Validated custom route HTTP methods at declaration time and treated
+  `methods="post"` as a single `POST` route instead of iterating characters.
 - Rejected duplicate multipart file parts for a single `FileField` with the
   shared typed 422 error body instead of silently selecting one uploaded file.
 

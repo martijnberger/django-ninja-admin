@@ -79,6 +79,30 @@ def test_site_registration_contracts_and_decorator(db):
     assert isinstance(admin_site.get_model_admin(Tag), RegisteredTagAdmin)
 
 
+def test_custom_route_methods_are_validated(db):
+    admin_site = NinjaAdminSite(include_auth=False)
+
+    def view(request):
+        return {"ok": True}
+
+    assert admin_site.route("/post", view, methods="post").methods == ("POST",)
+
+    with pytest.raises(ImproperlyConfigured, match="at least one HTTP method"):
+        admin_site.route("/empty", view, methods=())
+    with pytest.raises(ImproperlyConfigured, match="Unsupported custom admin route HTTP method"):
+        admin_site.route("/invalid", view, methods=("GET", "BREW"))
+    with pytest.raises(ImproperlyConfigured, match="non-empty strings"):
+        admin_site.route("/blank", view, methods=(" ",))
+    with pytest.raises(ImproperlyConfigured, match="string or iterable of strings"):
+        admin_site.route("/not-iterable", view, methods=object())
+
+    admin_site.register(Product, ModelAdmin)
+    model_admin = admin_site.get_model_admin(Product)
+    assert model_admin.route("/post", view, methods="post").methods == ("POST",)
+    with pytest.raises(ImproperlyConfigured, match="at least one HTTP method"):
+        model_admin.route("/empty", view, methods=())
+
+
 @isolate_apps("tests.testapp")
 @override_settings(TESTAPP_SWAPPED_MODEL="testapp.ReplacementThing")
 def test_site_registration_skips_swapped_models(db):
@@ -316,6 +340,7 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     mapped_status_operation = schema["paths"]["/custom-admin/mapped-status"]["get"]
     explicit_multi_get_operation = schema["paths"]["/custom-admin/explicit-multi-status"]["get"]
     explicit_multi_post_operation = schema["paths"]["/custom-admin/explicit-multi-status"]["post"]
+    string_method_path = schema["paths"]["/custom-admin/string-method-status"]
     decorated_auto_status_operation = schema["paths"]["/custom-admin/decorated-auto-status"]["get"]
     token_operation = schema["paths"]["/custom-admin/token-status"]["get"]
     public_operation = schema["paths"]["/custom-admin/public-status"]["get"]
@@ -374,6 +399,11 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert explicit_multi_post_operation["tags"] == ["custom.site"]
     assert _response_schema_ref(explicit_multi_post_operation, "200") == "#/components/schemas/SiteStatusResponse"
     assert_custom_route_error_responses(explicit_multi_post_operation)
+    assert set(string_method_path) == {"post"}
+    assert string_method_path["post"]["operationId"] == "custom_string_method_status"
+    assert string_method_path["post"]["tags"] == ["custom.site"]
+    assert _response_schema_ref(string_method_path["post"], "200") == "#/components/schemas/SiteStatusResponse"
+    assert_custom_route_error_responses(string_method_path["post"])
     assert decorated_auto_status_operation["operationId"] == "custom_get_decorated_auto_status"
     assert decorated_auto_status_operation["tags"] == ["custom.site"]
     assert _response_schema_ref(decorated_auto_status_operation, "200") == "#/components/schemas/SiteStatusResponse"

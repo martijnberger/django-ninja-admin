@@ -23,7 +23,7 @@ from django_ninja_admin.admins.base import BaseAdmin
 from django_ninja_admin.constants import ShowFacets
 from django_ninja_admin.exceptions import AdminPermissionError, AdminValidationError
 from django_ninja_admin.models import ADDITION, CHANGE, DELETION, LogEntry
-from django_ninja_admin.routes import AdminRoute
+from django_ninja_admin.routes import AdminRoute, normalize_route_methods
 from django_ninja_admin.schemas import (
     ActionResponse,
     AdminInlinePayloadSchema,
@@ -153,7 +153,7 @@ class ModelAdmin(BaseAdmin):
             return AdminRoute(
                 path=path,
                 view_func=func,
-                methods=tuple(method.upper() for method in methods),
+                methods=normalize_route_methods(methods),
                 response=response,
                 operation_id=operation_id,
                 summary=summary,
