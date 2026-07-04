@@ -7,7 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
-No notable unreleased changes yet.
+### Fixed
+
+- Rejected duplicate multipart file parts for a single `FileField` with the
+  shared typed 422 error body instead of silently selecting one uploaded file.
 
 ## 0.1.54 - 2026-07-04
 

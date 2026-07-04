@@ -2064,9 +2064,26 @@ class NinjaAdminSite:
             return data
         data = dict(data)
         for field_name in file_fields:
-            if field_name not in data and field_name in files:
-                data[field_name] = files[field_name].name
+            file_part = self._multipart_file_part(files, field_name)
+            if field_name not in data and file_part is not None:
+                data[field_name] = file_part.name
         return data
+
+    def _multipart_file_part(self, files, field_name):
+        file_parts = files.getlist(field_name) if hasattr(files, "getlist") else []
+        if len(file_parts) > 1:
+            raise NinjaValidationError(
+                [
+                    {
+                        "loc": ("body", "payload", field_name),
+                        "msg": "Input should contain at most one file",
+                        "type": "too_many_files",
+                    }
+                ]
+            )
+        if file_parts:
+            return file_parts[0]
+        return files.get(field_name)
 
     def _json_form_part(self, request, name, *, default):
         form_data, _files = self._multipart_request_parts(request)
@@ -2121,11 +2138,13 @@ class NinjaAdminSite:
 
     def _multipart_form_files(self, request, form_class):
         _form_data, files = self._multipart_request_parts(request)
-        return {
-            name: files[name]
-            for name, field in form_class.base_fields.items()
-            if isinstance(field, forms.FileField) and name in files
-        }
+        form_files = {}
+        for name, field in form_class.base_fields.items():
+            if isinstance(field, forms.FileField):
+                file_part = self._multipart_file_part(files, name)
+                if file_part is not None:
+                    form_files[name] = file_part
+        return form_files
 
     def _update_object(self, request, model_admin, object_id, payload, *, partial, files=None, obj=None, to_field=None):
         obj = obj or self._get_object_or_404(request, model_admin, object_id, to_field)

@@ -201,6 +201,38 @@ def test_file_field_can_be_uploaded_with_multipart_payload(admin_client, sample,
         assert set(changed_fields) == {"Description", "Manual"}
 
 
+def test_multipart_file_fields_reject_duplicate_file_parts(admin_client, sample, tmp_path):
+    with override_settings(MEDIA_ROOT=tmp_path):
+        response = admin_client.post(
+            "/admin-api/testapp/product/multipart",
+            data={
+                "data": json.dumps(
+                    {
+                        "name": "Duplicate upload",
+                        "category": sample.category_id,
+                        "tags": list(sample.tags.values_list("pk", flat=True)),
+                        "price": "7.00",
+                        "stock_status": "in_stock",
+                    }
+                ),
+                "manual": [
+                    SimpleUploadedFile("first.txt", b"first", content_type="text/plain"),
+                    SimpleUploadedFile("second.txt", b"second", content_type="text/plain"),
+                ],
+            },
+        )
+
+        assert response.status_code == 422
+        body = response.json()
+        ErrorResponse.model_validate(body)
+        assert body["errors"][0] == {
+            "message": "Input should contain at most one file",
+            "param": "manual",
+        }
+        assert not Product.objects.filter(name="Duplicate upload").exists()
+        assert not any(tmp_path.rglob("*.txt"))
+
+
 def test_image_field_validates_and_uploads_with_multipart_payload(admin_client, sample, tmp_path):
     with override_settings(MEDIA_ROOT=tmp_path):
         invalid = admin_client.patch(
