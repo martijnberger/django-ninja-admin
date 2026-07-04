@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.60 - 2026-07-04
+
 ### Fixed
 
 - Accepted Django-admin-style dot-separated multi-column ordering tokens such
