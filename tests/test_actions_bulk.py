@@ -103,6 +103,25 @@ def test_custom_actions_check_object_level_permissions(admin_client, sample, mon
     assert sample.stock_status == "in_stock"
 
 
+def test_custom_actions_select_across_check_filtered_object_level_permissions(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    beta = Product.objects.get(name="Beta")
+
+    def has_view_permission(request, obj=None):
+        return obj is None or obj.pk != beta.pk
+
+    monkeypatch.setattr(product_admin, "has_view_permission", has_view_permission)
+
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions?stock_status__exact=out_of_stock",
+        data={"action": "report_names", "selected_ids": [sample.pk], "select_across": True},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 403
+    assert response.json()["errors"] == [{"message": "Permission denied.", "param": "selected_ids"}]
+
+
 def test_actions_support_custom_return_values_empty_selection_and_select_across(admin_client, sample):
     empty_selection = admin_client.post(
         "/admin-api/testapp/product/actions",

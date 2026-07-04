@@ -12,6 +12,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Closed public admin response schema components with `additionalProperties:
   false` so generated clients do not accept undocumented metadata fields.
 
+### Added
+
+- Added mounted coverage for custom action object-permission enforcement when
+  `select_across=True` uses the filtered changelist queryset.
+
 ### Fixed
 
 - Aligned custom `response_change_schema` OpenAPI status maps with runtime
