@@ -8,12 +8,17 @@ from uuid import UUID
 
 from django import forms
 from django.core.exceptions import FieldDoesNotExist
+from django.db import models
 from pydantic import AnyUrl, IPvAnyAddress, TypeAdapter
 from pydantic_core import ValidationError as PydanticCoreValidationError
 
 from django_ninja_admin.schemas import FileFieldValue, ImageFieldValue
 
+RelationField = forms.ModelChoiceField | forms.ModelMultipleChoiceField
 FormFieldExample = Callable[[str, forms.Field, Any], Any]
+OverrideExample = Callable[[Any], Any]
+RelationExample = Callable[[RelationField], Any]
+ModelFieldExample = Callable[[models.Field], Any]
 
 
 def schema_example(schema):
@@ -64,6 +69,111 @@ def form_data_example(
         name, field = candidates[0]
         data[name] = field_example(name, field, overrides.get(name))
     return data
+
+
+def form_field_example_value(
+    field: forms.Field,
+    *,
+    override: Any = None,
+    override_example: OverrideExample | None = None,
+    relation_example: RelationExample | None = None,
+    scalar_examples: Mapping[str, Any] | None = None,
+    choices_json_safe: bool = False,
+    coerce_typed_choice: bool = True,
+    null_boolean_example: Any = ...,
+) -> Any:
+    examples = {
+        "decimal": "9.99",
+        "integer": 1,
+        "float": 1.5,
+        "json": {"key": "value"},
+        "uuid": "550e8400-e29b-41d4-a716-446655440000",
+        "ip": "192.0.2.1",
+        "email": "admin@example.com",
+        "url": "https://example.com/",
+        "split_datetime": ["2026-07-02", "09:30:00"],
+        "datetime": "2026-07-02T09:30:00Z",
+        "date": "2026-07-02",
+        "time": "09:30:00",
+        "duration": "1 00:00:00",
+    }
+    examples.update(scalar_examples or {})
+    if override is not None and override_example is not None:
+        return override_example(override)
+    if relation_example is not None:
+        if isinstance(field, forms.ModelMultipleChoiceField):
+            return [relation_example(field)]
+        if isinstance(field, forms.ModelChoiceField):
+            return relation_example(field)
+    if isinstance(field, forms.TypedMultipleChoiceField | forms.MultipleChoiceField):
+        return [choice_example_value(field.choices, json_safe=choices_json_safe)]
+    if isinstance(field, forms.TypedChoiceField):
+        value = choice_example_value(field.choices, json_safe=choices_json_safe)
+        if coerce_typed_choice and not choices_json_safe:
+            return coerce_choice_example(getattr(field, "coerce", None), value)
+        return value
+    if isinstance(field, forms.ChoiceField):
+        return choice_example_value(field.choices, json_safe=choices_json_safe)
+    if null_boolean_example is not ... and isinstance(field, forms.NullBooleanField):
+        return null_boolean_example
+    if isinstance(field, forms.BooleanField):
+        return True
+    if isinstance(field, forms.DecimalField):
+        return examples["decimal"]
+    if isinstance(field, forms.IntegerField):
+        return examples["integer"]
+    if isinstance(field, forms.FloatField):
+        return examples["float"]
+    if isinstance(field, forms.JSONField):
+        return examples["json"]
+    if isinstance(field, forms.UUIDField):
+        return examples["uuid"]
+    if isinstance(field, forms.GenericIPAddressField):
+        return examples["ip"]
+    if isinstance(field, forms.EmailField):
+        return examples["email"]
+    if isinstance(field, forms.URLField):
+        return examples["url"]
+    if isinstance(field, forms.SplitDateTimeField):
+        return examples["split_datetime"]
+    if isinstance(field, forms.DateTimeField):
+        return examples["datetime"]
+    if isinstance(field, forms.DateField):
+        return examples["date"]
+    if isinstance(field, forms.TimeField):
+        return examples["time"]
+    if isinstance(field, forms.DurationField):
+        return examples["duration"]
+    return "example"
+
+
+def relation_form_field_example_value(
+    field: RelationField,
+    *,
+    target_field_example: ModelFieldExample | None = None,
+) -> Any:
+    target_field = model_choice_target_field(field)
+    if target_field_example is not None:
+        return target_field_example(target_field)
+    return model_identifier_example_value(target_field)
+
+
+def model_identifier_example_value(field: models.Field) -> Any:
+    if isinstance(
+        field,
+        models.AutoField
+        | models.BigAutoField
+        | models.SmallAutoField
+        | models.IntegerField
+        | models.BigIntegerField
+        | models.PositiveIntegerField
+        | models.PositiveSmallIntegerField
+        | models.SmallIntegerField,
+    ):
+        return 1
+    if isinstance(field, models.UUIDField):
+        return "550e8400-e29b-41d4-a716-446655440000"
+    return "example"
 
 
 def model_choice_target_field(field):

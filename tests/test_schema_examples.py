@@ -10,13 +10,16 @@ from django_ninja_admin.utils.schema_examples import (
     choice_example_value,
     coerce_choice_example,
     form_data_example,
+    form_field_example_value,
     iter_choice_values,
     json_request_examples_extra,
     model_choice_target_field,
+    model_identifier_example_value,
     normalize_schema_override,
     pydantic_choice_values,
     pydantic_model_example,
     pydantic_type_for_choices,
+    relation_form_field_example_value,
     schema_example,
     schema_override_cache_key,
     schema_override_metadata,
@@ -99,6 +102,50 @@ def test_form_data_example_honors_selected_disabled_and_file_fields():
     ) == {"summary": "summary-example"}
 
 
+def test_form_field_example_value_handles_overrides_and_admin_scalar_profile():
+    assert (
+        form_field_example_value(
+            forms.CharField(),
+            override=(int, 5),
+            override_example=lambda value: schema_type_example(*normalize_schema_override(value)),
+        )
+        == 5
+    )
+    assert (
+        form_field_example_value(
+            forms.UUIDField(),
+            scalar_examples={"uuid": "00000000-0000-4000-8000-000000000000"},
+        )
+        == "00000000-0000-4000-8000-000000000000"
+    )
+    assert form_field_example_value(
+        forms.JSONField(),
+        scalar_examples={"json": {"example": True}},
+    ) == {"example": True}
+
+
+def test_form_field_example_value_preserves_typed_choice_and_json_choice_modes():
+    field = forms.TypedChoiceField(choices=[("2", "Two")], coerce=int)
+
+    assert form_field_example_value(field) == 2
+    assert form_field_example_value(field, choices_json_safe=True, coerce_typed_choice=False) == "2"
+
+
+def test_form_field_example_value_handles_relations_and_null_booleans(db):
+    relation_field = forms.ModelChoiceField(queryset=Category.objects.all())
+    multiple_relation_field = forms.ModelMultipleChoiceField(queryset=Category.objects.all())
+
+    assert form_field_example_value(relation_field, relation_example=relation_form_field_example_value) == 1
+    assert form_field_example_value(
+        multiple_relation_field,
+        relation_example=lambda field: relation_form_field_example_value(
+            field,
+            target_field_example=lambda target_field: f"{target_field.name}-example",
+        ),
+    ) == ["id-example"]
+    assert form_field_example_value(forms.NullBooleanField(), null_boolean_example=None) is None
+
+
 def test_model_choice_target_field_uses_to_field_name(db):
     field = forms.ModelChoiceField(queryset=Category.objects.all(), to_field_name="slug")
 
@@ -109,6 +156,11 @@ def test_model_choice_target_field_falls_back_to_pk_for_missing_to_field(db):
     field = forms.ModelChoiceField(queryset=Category.objects.all(), to_field_name="missing")
 
     assert model_choice_target_field(field) is Category._meta.pk
+
+
+def test_model_identifier_example_value_uses_json_safe_identifiers():
+    assert model_identifier_example_value(Category._meta.pk) == 1
+    assert model_identifier_example_value(Category._meta.get_field("slug")) == "example"
 
 
 def test_schema_override_helpers_normalize_shortcuts_and_cache_keys():

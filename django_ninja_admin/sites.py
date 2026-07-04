@@ -23,7 +23,7 @@ from django.core.exceptions import (
     ValidationError,
 )
 from django.core.paginator import InvalidPage, Paginator
-from django.db import models, router, transaction
+from django.db import router, transaction
 from django.db.models.base import ModelBase
 from django.forms.models import _get_foreign_key, modelformset_factory
 from django.http import Http404
@@ -89,11 +89,11 @@ from django_ninja_admin.utils.lookup import (
 )
 from django_ninja_admin.utils.quote import quote, unquote
 from django_ninja_admin.utils.schema_examples import (
-    choice_example_value,
     form_data_example,
+    form_field_example_value,
     json_request_examples_extra,
-    model_choice_target_field,
     pydantic_model_example,
+    relation_form_field_example_value,
 )
 
 all_sites = WeakSet()
@@ -1888,77 +1888,27 @@ class NinjaAdminSite:
         return examples
 
     def _form_data_example(self, form_fields, *, partial, overrides=None, schema_owner=None):
+        override_example = None
+        if schema_owner is not None:
+
+            def override_example(value):
+                field_type, default = schema_owner._normalize_schema_override(value)
+                return schema_owner._schema_type_example(field_type, default)
+
         return form_data_example(
             form_fields,
             partial=partial,
             overrides=overrides,
             exclude_file_fields=True,
-            field_example=lambda _name, field, override: self._form_field_example_value(
+            field_example=lambda _name, field, override: form_field_example_value(
                 field,
-                override=override,
-                schema_owner=schema_owner,
+                override=override if schema_owner is not None else None,
+                override_example=override_example,
+                relation_example=relation_form_field_example_value,
+                choices_json_safe=True,
+                coerce_typed_choice=False,
             ),
         )
-
-    def _form_field_example_value(self, field, *, override=None, schema_owner=None):
-        if override is not None and schema_owner is not None:
-            field_type, default = schema_owner._normalize_schema_override(override)
-            return schema_owner._schema_type_example(field_type, default)
-        if isinstance(field, forms.ModelMultipleChoiceField):
-            return [self._relation_form_field_example_value(field)]
-        if isinstance(field, forms.ModelChoiceField):
-            return self._relation_form_field_example_value(field)
-        if isinstance(field, forms.TypedMultipleChoiceField | forms.MultipleChoiceField):
-            return [choice_example_value(field.choices, json_safe=True)]
-        if isinstance(field, forms.TypedChoiceField | forms.ChoiceField):
-            return choice_example_value(field.choices, json_safe=True)
-        if isinstance(field, forms.BooleanField):
-            return True
-        if isinstance(field, forms.DecimalField):
-            return "9.99"
-        if isinstance(field, forms.IntegerField):
-            return 1
-        if isinstance(field, forms.FloatField):
-            return 1.5
-        if isinstance(field, forms.JSONField):
-            return {"key": "value"}
-        if isinstance(field, forms.UUIDField):
-            return "550e8400-e29b-41d4-a716-446655440000"
-        if isinstance(field, forms.GenericIPAddressField):
-            return "192.0.2.1"
-        if isinstance(field, forms.EmailField):
-            return "admin@example.com"
-        if isinstance(field, forms.URLField):
-            return "https://example.com/"
-        if isinstance(field, forms.SplitDateTimeField):
-            return ["2026-07-02", "09:30:00"]
-        if isinstance(field, forms.DateTimeField):
-            return "2026-07-02T09:30:00Z"
-        if isinstance(field, forms.DateField):
-            return "2026-07-02"
-        if isinstance(field, forms.TimeField):
-            return "09:30:00"
-        if isinstance(field, forms.DurationField):
-            return "1 00:00:00"
-        return "example"
-
-    def _relation_form_field_example_value(self, field):
-        target_field = model_choice_target_field(field)
-        if isinstance(
-            target_field,
-            models.AutoField
-            | models.BigAutoField
-            | models.SmallAutoField
-            | models.IntegerField
-            | models.BigIntegerField
-            | models.PositiveIntegerField
-            | models.PositiveSmallIntegerField
-            | models.SmallIntegerField,
-        ):
-            return 1
-        if isinstance(target_field, models.UUIDField):
-            return "550e8400-e29b-41d4-a716-446655440000"
-        return "example"
 
     def _multipart_openapi_extra(self, payload_schema, file_fields, *, required_data, required_file_fields=()):
         properties = {

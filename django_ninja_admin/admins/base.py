@@ -74,14 +74,15 @@ from django_ninja_admin.utils.schema_constraints import (
 )
 from django_ninja_admin.utils.schema_examples import (
     choice_example_value,
-    coerce_choice_example,
     form_data_example,
+    form_field_example_value,
     iter_choice_values,
     model_choice_target_field,
     normalize_schema_override,
     pydantic_choice_values,
     pydantic_literal_for_choices,
     pydantic_type_for_choices,
+    relation_form_field_example_value,
     schema_example,
     schema_override_cache_key,
     schema_override_metadata,
@@ -427,12 +428,34 @@ class BaseAdmin:
         return schema_example(schema)
 
     def _form_data_example(self, form_fields, *, selected_fields=None, partial=False, overrides=None):
+        def override_example(value):
+            field_type, default = self._normalize_schema_override(value)
+            return self._schema_type_example(field_type, default)
+
         return form_data_example(
             form_fields,
             selected_fields=selected_fields,
             partial=partial,
             overrides=overrides,
-            field_example=lambda _name, field, override: self._form_field_example_value(field, override=override),
+            field_example=lambda _name, field, override: form_field_example_value(
+                field,
+                override=override,
+                override_example=override_example,
+                relation_example=lambda relation_field: relation_form_field_example_value(
+                    relation_field,
+                    target_field_example=self._model_field_example_value,
+                ),
+                scalar_examples={
+                    "json": {"example": True},
+                    "uuid": "00000000-0000-4000-8000-000000000000",
+                    "email": "user@example.com",
+                    "split_datetime": ["2026-07-02", "12:00:00"],
+                    "datetime": "2026-07-02T12:00:00+00:00",
+                    "time": "12:00:00",
+                    "duration": "01:00:00",
+                },
+                null_boolean_example=None,
+            ),
         )
 
     def _bulk_row_example(self, form_fields, *, overrides=None):
@@ -446,52 +469,6 @@ class BaseAdmin:
             )
         )
         return row
-
-    def _form_field_example_value(self, field, *, override=None):
-        if override is not None:
-            field_type, default = self._normalize_schema_override(override)
-            return self._schema_type_example(field_type, default)
-        if isinstance(field, ModelMultipleChoiceField):
-            return [self._relation_form_field_example_value(field)]
-        if isinstance(field, ModelChoiceField):
-            return self._relation_form_field_example_value(field)
-        if isinstance(field, forms.TypedMultipleChoiceField | forms.MultipleChoiceField):
-            return [choice_example_value(field.choices)]
-        if isinstance(field, forms.TypedChoiceField):
-            return coerce_choice_example(getattr(field, "coerce", None), choice_example_value(field.choices))
-        if isinstance(field, forms.ChoiceField):
-            return choice_example_value(field.choices)
-        if isinstance(field, forms.NullBooleanField):
-            return None
-        if isinstance(field, forms.BooleanField):
-            return True
-        if isinstance(field, forms.DecimalField):
-            return "9.99"
-        if isinstance(field, forms.IntegerField):
-            return 1
-        if isinstance(field, forms.FloatField):
-            return 1.5
-        if isinstance(field, forms.SplitDateTimeField):
-            return ["2026-07-02", "12:00:00"]
-        if isinstance(field, forms.DateTimeField):
-            return "2026-07-02T12:00:00+00:00"
-        if isinstance(field, forms.DateField):
-            return "2026-07-02"
-        if isinstance(field, forms.TimeField):
-            return "12:00:00"
-        if isinstance(field, forms.DurationField):
-            return "01:00:00"
-        if isinstance(field, forms.UUIDField):
-            return "00000000-0000-4000-8000-000000000000"
-        if isinstance(field, forms.EmailField):
-            return "user@example.com"
-        if isinstance(field, forms.URLField):
-            return "https://example.com/"
-        if isinstance(field, forms.GenericIPAddressField):
-            return "192.0.2.1"
-        if isinstance(field, forms.JSONField):
-            return {"example": True}
-        return "example"
 
     def get_form_schema_field_type(
         self,
@@ -708,9 +685,6 @@ class BaseAdmin:
 
     def get_model_choice_target_field(self, field):
         return model_choice_target_field(field)
-
-    def _relation_form_field_example_value(self, field):
-        return self._model_field_example_value(self.get_model_choice_target_field(field))
 
     def get_pydantic_literal_for_choices(self, choices):
         return pydantic_literal_for_choices(choices)

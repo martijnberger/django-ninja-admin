@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Extracted shared form-field and relation example generation helpers used by
+  admin and site OpenAPI examples.
+
 ## 0.1.43 - 2026-07-04
 
 ### Changed
