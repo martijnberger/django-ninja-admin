@@ -7,6 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+No changes yet.
+
+## 0.1.49 - 2026-07-04
+
 ### Added
 
 - Added related changelist `url` and `_to_field` query metadata to
