@@ -13,6 +13,7 @@ from django.forms.models import model_to_dict
 from django.utils.text import capfirst, smart_split, unescape_string_literal
 from django.utils.translation import gettext_lazy as _
 from ninja import Schema
+from ninja.constants import NOT_SET
 from pydantic import BaseModel, ConfigDict, Field, RootModel, TypeAdapter, create_model
 from pydantic import ValidationError as PydanticValidationError
 
@@ -61,6 +62,7 @@ class ModelAdmin(BaseAdmin):
     response_add_schema: ClassVar[Any] = None
     response_change_schema: ClassVar[Any] = None
     response_delete_schema: ClassVar[Any] = None
+    changelist_throttle: ClassVar[Any] = NOT_SET
 
     changelist_options: ClassVar[list[str]] = [
         "actions_on_top",
@@ -127,6 +129,7 @@ class ModelAdmin(BaseAdmin):
         description=None,
         tags=None,
         auth=DEFAULT_ROUTE_AUTH,
+        throttle=NOT_SET,
         include_in_schema=True,
     ):
         def build_route(func):
@@ -141,6 +144,7 @@ class ModelAdmin(BaseAdmin):
                 description=description,
                 tags=tags,
                 auth=route_auth,
+                throttle=throttle,
                 include_in_schema=include_in_schema,
             )
 
@@ -150,6 +154,9 @@ class ModelAdmin(BaseAdmin):
 
     def get_urls(self):
         return []
+
+    def get_changelist_throttle(self, request):
+        return self.changelist_throttle
 
     def get_inline_payload_schema(self, request=None, obj=None, *, change=False, partial=False):
         cache = getattr(self, "_inline_payload_schema_cache", {})

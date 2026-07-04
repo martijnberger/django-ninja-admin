@@ -442,3 +442,57 @@ When `response` is omitted, custom routes advertise the named
 `JsonObjectResponse` fallback: a JSON object whose values may be nested JSON
 scalars, arrays, or objects. Declare a concrete `Schema` for generated clients
 that need field-level response types.
+
+## Throttling
+
+Use Django Ninja throttle instances for high-volume admin routes. A throttled
+route returns the shared `ErrorResponse` body with HTTP 429 and, when Ninja
+provides a wait time, a `Retry-After` header.
+
+```python
+from ninja.throttling import AuthRateThrottle
+from django_ninja_admin import ModelAdmin, NinjaAdminSite
+
+
+class ProductAdmin(ModelAdmin):
+    search_fields = ("name",)
+    changelist_throttle = AuthRateThrottle("120/min")
+
+
+admin_site = NinjaAdminSite(
+    autocomplete_throttle=AuthRateThrottle("60/min"),
+    history_throttle=AuthRateThrottle("120/min"),
+)
+```
+
+Set `autocomplete_throttle` and `history_throttle` as constructor kwargs or
+site class attributes. Site-level `autocomplete_throttle` protects the shared
+autocomplete route, and `history_throttle` protects the global history route.
+`ModelAdmin.changelist_throttle` protects a model changelist, and
+`ModelAdmin.get_changelist_throttle(request)` can return a throttle instance
+or list of instances when the changelist limit should depend on the admin
+class. Throttle hooks are evaluated while routes are built, so they should not
+depend on per-request state.
+
+Custom site and model routes accept the same route-level `throttle` keyword:
+
+```python
+from ninja.throttling import AuthRateThrottle
+from django_ninja_admin import ModelAdmin
+
+
+class ProductAdmin(ModelAdmin):
+    def stats(self, request):
+        return {"count": self.model.objects.count()}
+
+    def get_urls(self):
+        return [
+            self.route(
+                "/stats",
+                self.admin_view(self.stats),
+                response=dict[str, int],
+                operation_id="product_stats",
+                throttle=AuthRateThrottle("30/min"),
+            )
+        ]
+```

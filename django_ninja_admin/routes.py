@@ -20,4 +20,5 @@ class AdminRoute:
     description: str | None = None
     tags: list[str] | None = None
     auth: Any = NOT_SET
+    throttle: Any = NOT_SET
     include_in_schema: bool = True

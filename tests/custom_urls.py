@@ -1,6 +1,7 @@
 from django.urls import path
 from ninja import Schema
 from ninja.security import APIKeyHeader
+from ninja.throttling import BaseThrottle
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite
 from django_ninja_admin.schemas import ErrorResponse
@@ -39,6 +40,20 @@ class SecondaryTokenAuth(APIKeyHeader):
         if key == "secondary":
             return "secondary"
         return None
+
+
+class OneRequestPerPathThrottle(BaseThrottle):
+    def __init__(self):
+        self.seen_paths = set()
+
+    def allow_request(self, request):
+        if request.path in self.seen_paths:
+            return False
+        self.seen_paths.add(request.path)
+        return True
+
+    def wait(self):
+        return 1
 
 
 class CustomProductAdmin(ModelAdmin):
@@ -286,6 +301,40 @@ public_permissions_site = NinjaAdminSite(name="public_permissions_admin", auth=N
 auth_models_site = NinjaAdminSite(name="auth_models_admin", auth=None, include_auth=True)
 
 
+class ThrottledProductAdmin(ModelAdmin):
+    list_display = ("name",)
+    autocomplete_fields = ("category",)
+    changelist_throttle = OneRequestPerPathThrottle()
+
+
+class ThrottledAdminSite(NinjaAdminSite):
+    def status(self, request):
+        return {"site": "limited"}
+
+    def get_urls(self):
+        return [
+            self.route(
+                "/limited-status",
+                self.status,
+                response=SiteStatusResponse,
+                operation_id="throttled_limited_status",
+                auth=None,
+                throttle=OneRequestPerPathThrottle(),
+            )
+        ]
+
+
+throttled_site = ThrottledAdminSite(
+    name="throttled_admin",
+    auth=None,
+    include_auth=False,
+    history_throttle=OneRequestPerPathThrottle(),
+    autocomplete_throttle=OneRequestPerPathThrottle(),
+)
+throttled_site.register(Category, SearchableCategoryAdmin)
+throttled_site.register(Product, ThrottledProductAdmin)
+
+
 urlpatterns = [
     path("custom-admin/", custom_site.urls),
     path("slug-autocomplete-admin/", slug_autocomplete_site.urls),
@@ -295,4 +344,5 @@ urlpatterns = [
     path("locked-context-admin/", locked_context_site.urls),
     path("public-permissions-admin/", public_permissions_site.urls),
     path("auth-models-admin/", auth_models_site.urls),
+    path("throttled-admin/", throttled_site.urls),
 ]

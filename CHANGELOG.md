@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added Django Ninja throttle hooks for history, autocomplete, model
+  changelist routes, and custom admin routes, with typed 429 error responses.
+
 ## 0.1.41 - 2026-07-04
 
 ### Changed

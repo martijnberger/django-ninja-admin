@@ -2,6 +2,7 @@ import json
 import re
 from collections.abc import Sequence
 from functools import wraps
+from math import ceil
 from typing import Any, cast
 from weakref import WeakSet
 
@@ -32,7 +33,8 @@ from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
 from django.utils.text import capfirst
 from ninja import NinjaAPI, Query, Router, Status
-from ninja.errors import AuthenticationError, AuthorizationError, HttpError
+from ninja.constants import NOT_SET
+from ninja.errors import AuthenticationError, AuthorizationError, HttpError, Throttled
 from ninja.errors import ValidationError as NinjaValidationError
 from ninja.security import SessionAuthIsStaff
 from ninja.utils import is_async_callable
@@ -89,6 +91,7 @@ from django_ninja_admin.utils.schema_examples import choice_example_value, json_
 
 all_sites = WeakSet()
 DEFAULT_AUTH = object()
+DEFAULT_THROTTLE = object()
 CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
 _UNSET = object()
 NinjaQuery = cast(Any, Query)
@@ -106,11 +109,27 @@ class NinjaAdminSite:
     include_auth = True
     history_max_per_page = 100
     autocomplete_per_page = 20
+    history_throttle: Any = NOT_SET
+    autocomplete_throttle: Any = NOT_SET
 
-    def __init__(self, *, name="ninja_admin", auth=DEFAULT_AUTH, include_auth=True):
+    def __init__(
+        self,
+        *,
+        name="ninja_admin",
+        auth=DEFAULT_AUTH,
+        include_auth=True,
+        history_throttle=DEFAULT_THROTTLE,
+        autocomplete_throttle=DEFAULT_THROTTLE,
+    ):
         self.name = name
         self.include_auth = include_auth
         self.auth: Any = SessionAuthIsStaff() if auth is DEFAULT_AUTH else auth
+        self.history_throttle = (
+            self.__class__.history_throttle if history_throttle is DEFAULT_THROTTLE else history_throttle
+        )
+        self.autocomplete_throttle = (
+            self.__class__.autocomplete_throttle if autocomplete_throttle is DEFAULT_THROTTLE else autocomplete_throttle
+        )
         self._registry = {}
         self._actions = {"delete_selected": actions.delete_selected}
         self._global_actions = self._actions.copy()
@@ -204,6 +223,7 @@ class NinjaAdminSite:
         description=None,
         tags=None,
         auth=DEFAULT_AUTH,
+        throttle=NOT_SET,
         include_in_schema=True,
     ):
         def build_route(func):
@@ -218,6 +238,7 @@ class NinjaAdminSite:
                 description=description,
                 tags=tags,
                 auth=route_auth,
+                throttle=throttle,
                 include_in_schema=include_in_schema,
             )
 
@@ -399,6 +420,7 @@ class NinjaAdminSite:
             view_func = self._custom_route_view_func(route.view_func)
             tags = route.tags or default_tags
             response = self._custom_route_response(route.response, auth=route.auth)
+            response.update(self._throttle_error_responses(route.throttle))
             multi_method = len(route.methods) > 1
             for method in route.methods:
                 router.add_api_operation(
@@ -406,6 +428,7 @@ class NinjaAdminSite:
                     [method],
                     view_func,
                     auth=route.auth,
+                    throttle=route.throttle,
                     response=response,
                     operation_id=self._custom_route_operation_id(
                         path,
@@ -456,6 +479,9 @@ class NinjaAdminSite:
             response_map[403] = ErrorResponse
         return response_map
 
+    def _throttle_error_responses(self, throttle):
+        return {429: ErrorResponse} if throttle is not NOT_SET else {}
+
     def _custom_route_view_func(self, view_func):
         if not (hasattr(view_func, "__self__") and hasattr(view_func, "__func__")):
             return view_func
@@ -501,6 +527,15 @@ class NinjaAdminSite:
             return error_response(request, "Authentication required.", 401)
 
         api.add_exception_handler(AuthenticationError, not_authenticated)
+
+        def throttled(request, exc):
+            response = error_response(request, str(exc), 429)
+            wait = getattr(exc, "wait", None)
+            if wait is not None:
+                response["Retry-After"] = str(ceil(wait))
+            return response
+
+        api.add_exception_handler(Throttled, throttled)
 
         def not_found(request, exc):
             return error_response(request, "Not found.", 404)
@@ -766,8 +801,10 @@ class NinjaAdminSite:
                 400: ErrorResponse,
                 403: ErrorResponse,
                 404: ErrorResponse,
+                **site._throttle_error_responses(site.history_throttle),
                 422: ErrorResponse,
             },
+            throttle=site.history_throttle,
             operation_id="admin_history",
         )
         def history(
@@ -882,8 +919,10 @@ class NinjaAdminSite:
                 403: ErrorResponse,
                 404: ErrorResponse,
                 409: ErrorResponse,
+                **site._throttle_error_responses(site.autocomplete_throttle),
                 422: ErrorResponse,
             },
+            throttle=site.autocomplete_throttle,
             operation_id="admin_autocomplete",
         )
         def autocomplete(
@@ -1000,6 +1039,7 @@ class NinjaAdminSite:
         bulk_response_schema = model_admin.get_bulk_response_schema(None)
         action_payload_schema = model_admin.get_action_payload_schema(None)
         action_response_schema = model_admin.get_action_response_schema(None)
+        changelist_throttle = model_admin.get_changelist_throttle(None)
         add_hook_responses = site._custom_hook_responses(model_admin.get_response_add_schema(None), (200, 202))
         change_hook_responses = site._custom_hook_responses(model_admin.get_response_change_schema(None), (201, 202))
         delete_hook_responses = site._custom_hook_responses(model_admin.get_response_delete_schema(None), (200, 202))
@@ -1044,8 +1084,10 @@ class NinjaAdminSite:
                 400: ErrorResponse,
                 403: ErrorResponse,
                 404: ErrorResponse,
+                **site._throttle_error_responses(changelist_throttle),
                 422: ErrorResponse,
             },
+            throttle=changelist_throttle,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_list",
             description=(
