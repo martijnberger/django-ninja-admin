@@ -197,6 +197,36 @@ def test_changelist_show_facets_modes(admin_client, sample, monkeypatch):
     assert {choice["display"]: choice["count"] for choice in stock_filter["choices"]}["Out of Stock"] == 1
 
 
+def test_changelist_facet_counts_cache_equivalent_query_strings(db, sample, monkeypatch):
+    request = RequestFactory().get("/admin-api/testapp/product?_facets=1")
+    request.user = get_user_model().objects.create_user(
+        "facet-cache-admin",
+        password="pw",
+        is_staff=True,
+        is_superuser=True,
+    )
+    changelist = ChangeList(request, site.get_model_admin(Product))
+    calls = 0
+
+    class CountingQuerySet:
+        def count(self):
+            return 7
+
+    def get_queryset(params, filter_specs, *, apply_date_hierarchy=True, apply_ordering=True):
+        nonlocal calls
+        calls += 1
+        return CountingQuerySet()
+
+    monkeypatch.setattr(changelist, "get_queryset", get_queryset)
+
+    first = changelist.count_for_query_string("?stock_status__exact=in_stock&price__gte=1&_facets=1&o=1&p=2")
+    second = changelist.count_for_query_string("?price__gte=1&stock_status__exact=in_stock")
+
+    assert first == 7
+    assert second == 7
+    assert calls == 1
+
+
 def test_changelist_date_hierarchy_supports_relation_paths(admin_client, sample):
     class RelatedDateHierarchyImageAdmin(ModelAdmin):
         date_hierarchy = "product__created_at"

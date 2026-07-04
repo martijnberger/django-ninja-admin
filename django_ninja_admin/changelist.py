@@ -45,6 +45,7 @@ class ChangeList:
         self.filter_specs = self.get_filters(self.params)
         self.has_filters = any(filter_spec.has_output() for filter_spec in self.filter_specs)
         self.ordering = []
+        self._facet_count_cache = {}
         self.queryset = self.get_queryset(self.params, self.filter_specs)
         self.show_full_result_count = bool(getattr(model_admin, "show_full_result_count", True))
         self.full_result_count = model_admin.get_queryset(request).count() if self.show_full_result_count else None
@@ -752,8 +753,21 @@ class ChangeList:
 
     def count_for_query_string(self, query_string):
         params = self.params_from_query_string(query_string)
+        cache_key = self.facet_count_cache_key(params)
+        if cache_key in self._facet_count_cache:
+            return self._facet_count_cache[cache_key]
         filter_specs = self.get_filters(params)
-        return self.get_queryset(params, filter_specs, apply_ordering=False).count()
+        count = self.get_queryset(params, filter_specs, apply_ordering=False).count()
+        self._facet_count_cache[cache_key] = count
+        return count
+
+    def facet_count_cache_key(self, params):
+        query = params.copy()
+        for parameter in ("p", "page", "all", "pp", "o", "_facets", "_to_field"):
+            query.pop(parameter, None)
+        if hasattr(query, "lists"):
+            return tuple(sorted((key, tuple(values)) for key, values in query.lists()))
+        return tuple(sorted((key, (value,)) for key, value in query.items()))
 
     def date_queryset(self):
         return self.get_queryset(self.params, self.filter_specs, apply_date_hierarchy=False, apply_ordering=False)
