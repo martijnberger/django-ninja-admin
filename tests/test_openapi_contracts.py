@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from django_ninja_admin import site
+from django_ninja_admin import ModelAdmin, NinjaAdminSite, site
 from django_ninja_admin.schemas import ChangelistResponse, FormResponse
 from tests.testapp.models import Product
 
@@ -948,6 +948,25 @@ def test_generated_admin_contract_schemas_reject_top_level_extra_fields(db):
 
     assert exc_info.value.errors()[0]["type"] == "extra_forbidden"
     assert exc_info.value.errors()[0]["loc"] == ("mark_out_of_stock", "unexpected")
+
+
+def test_disabled_action_payload_schema_rejects_arbitrary_data(db):
+    class NoActionsProductAdmin(ModelAdmin):
+        actions = None
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(Product, NoActionsProductAdmin)
+    action_payload_schema = admin_site.get_model_admin(Product).get_action_payload_schema(None)
+
+    action_payload_schema.model_validate({"action": "delete_selected", "selected_ids": [1]})
+
+    with pytest.raises(ValidationError) as exc_info:
+        action_payload_schema.model_validate(
+            {"action": "delete_selected", "selected_ids": [1], "data": {"unexpected": True}}
+        )
+
+    assert exc_info.value.errors()[0]["type"] == "none_required"
+    assert exc_info.value.errors()[0]["loc"] == ("data",)
 
 
 def test_changelist_action_form_schema_is_typed_and_closed(admin_client, sample):

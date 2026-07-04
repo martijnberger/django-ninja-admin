@@ -146,6 +146,11 @@ class CustomProductAdmin(ModelAdmin):
         ]
 
 
+class NoActionsProductAdmin(ModelAdmin):
+    list_display = ("name",)
+    actions = None
+
+
 class SearchableCategoryAdmin(ModelAdmin):
     list_display = ("name", "slug")
     search_fields = ("name", "slug")
@@ -400,6 +405,9 @@ throttled_site = ThrottledAdminSite(
 throttled_site.register(Category, SearchableCategoryAdmin)
 throttled_site.register(Product, ThrottledProductAdmin)
 
+no_actions_site = NinjaAdminSite(name="no_actions_admin", include_auth=False)
+no_actions_site.register(Product, NoActionsProductAdmin)
+
 
 urlpatterns = [
     path("custom-admin/", custom_site.urls),
@@ -411,4 +419,5 @@ urlpatterns = [
     path("public-permissions-admin/", public_permissions_site.urls),
     path("auth-models-admin/", auth_models_site.urls),
     path("throttled-admin/", throttled_site.urls),
+    path("no-actions-admin/", no_actions_site.urls),
 ]

@@ -98,6 +98,27 @@ def test_actions_use_filtered_changelist_queryset(admin_client, sample):
     assert sample.stock_status == "in_stock"
 
 
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_disabled_actions_are_removed_from_routes_and_changelist_contract(admin_client, sample):
+    changelist = admin_client.get("/no-actions-admin/testapp/product")
+
+    assert changelist.status_code == 200
+    body = changelist.json()
+    assert body["config"]["action_choices"] == []
+    assert body["config"]["show_admin_actions"] is False
+    assert body["action_form"] == []
+
+    schema = admin_client.get("/no-actions-admin/openapi.json").json()
+    assert "/no-actions-admin/testapp/product/actions" not in schema["paths"]
+
+    response = admin_client.post(
+        "/no-actions-admin/testapp/product/actions",
+        data={"action": "delete_selected", "selected_ids": [sample.pk]},
+        content_type="application/json",
+    )
+    assert response.status_code == 405
+
+
 def test_custom_actions_check_object_level_permissions(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)
 

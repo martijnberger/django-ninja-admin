@@ -29,7 +29,6 @@ from django_ninja_admin.schemas import (
     AdminInlinePayloadSchema,
     AdminSchema,
     AdminWriteSchema,
-    FieldMetadataValue,
     JsonObjectResponse,
     ObjectIdentifier,
 )
@@ -462,6 +461,14 @@ class ModelAdmin(BaseAdmin):
         actions = self._filter_actions_by_permissions(request, self._get_base_actions())
         return {name: (func, name, desc) for func, name, desc in actions}
 
+    def get_schema_actions(self):
+        if self.actions is None:
+            return ()
+        return tuple(self._get_base_actions())
+
+    def has_registered_actions(self):
+        return bool(self.get_schema_actions())
+
     def get_action_choices(self, request, default_choices=()):
         choices = [
             {
@@ -488,7 +495,7 @@ class ModelAdmin(BaseAdmin):
 
     def get_action_payload_schema(self, request=None):
         cache = getattr(self, "_action_payload_schema_cache", {})
-        actions = self._get_base_actions()
+        actions = self.get_schema_actions()
         action_signatures = tuple((name, getattr(func, "action_input_schema", None)) for func, name, _desc in actions)
         cache_key = ("action-payload", action_signatures)
         if cache_key not in cache:
@@ -505,7 +512,7 @@ class ModelAdmin(BaseAdmin):
                 action=(str, ...),
                 selected_ids=(list[ObjectIdentifier], Field(default_factory=list)),
                 select_across=(bool, False),
-                data=(FieldMetadataValue | None, None),
+                data=(None, None),
             )
         union_type = self._union_type(variants)
         discriminated_union = Annotated[union_type, Field(discriminator="action")]

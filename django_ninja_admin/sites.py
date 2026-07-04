@@ -1151,22 +1151,25 @@ class NinjaAdminSite:
         mutation_response_schema = model_admin.get_mutation_response_schema(None)
         bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
         bulk_response_schema = model_admin.get_bulk_response_schema(None)
-        action_payload_schema = model_admin.get_action_payload_schema(None)
-        action_response_schema = model_admin.get_action_response_schema(None)
+        has_registered_actions = model_admin.has_registered_actions()
+        action_payload_schema = model_admin.get_action_payload_schema(None) if has_registered_actions else None
+        action_response_schema = model_admin.get_action_response_schema(None) if has_registered_actions else None
         changelist_throttle = model_admin.get_changelist_throttle(None)
         add_hook_responses = site._custom_hook_responses(model_admin.get_response_add_schema(None), (200, 202))
         change_hook_responses = site._custom_hook_responses(model_admin.get_response_change_schema(None), (200, 202))
         delete_hook_responses = site._custom_hook_responses(model_admin.get_response_delete_schema(None), (200, 202))
-        action_response = {
-            200: action_response_schema,
-            202: action_response_schema,
-            204: None,
-            **auth_errors,
-            400: ErrorResponse,
-            403: ErrorResponse,
-            409: ErrorResponse,
-            422: ErrorResponse,
-        }
+        action_response = None
+        if has_registered_actions:
+            action_response = {
+                200: action_response_schema,
+                202: action_response_schema,
+                204: None,
+                **auth_errors,
+                400: ErrorResponse,
+                403: ErrorResponse,
+                409: ErrorResponse,
+                422: ErrorResponse,
+            }
         create_file_fields = site._file_form_field_names(model_admin, change=False)
         create_required_file_fields = site._required_file_form_field_names(model_admin, change=False)
         change_file_fields = site._file_form_field_names(model_admin, change=True)
@@ -1296,25 +1299,27 @@ class NinjaAdminSite:
                     files=site._multipart_form_files(request, form_class),
                 )
 
-        @router.post(
-            f"{prefix}/actions",
-            response=action_response,
-            tags=tags,
-            operation_id=f"{app_label}_{model_name}_action",
-            openapi_extra=json_request_examples_extra(
-                action=site._action_payload_example(model_admin),
-            ),
-        )
-        def actions_view(request, payload: action_payload_schema):
-            if not model_admin.has_view_or_change_permission(request):
-                raise PermissionDenied
-            cl_queryset = site._filtered_queryset(request, model_admin)
-            with transaction.atomic(using=router_db_for_write(model_admin.model)):
-                response = model_admin.response_action(request, cl_queryset, payload)
-                return site._validated_action_response(
-                    response,
-                    response_schema=model_admin.get_action_response_schema(request),
-                )
+        if has_registered_actions:
+
+            @router.post(
+                f"{prefix}/actions",
+                response=action_response,
+                tags=tags,
+                operation_id=f"{app_label}_{model_name}_action",
+                openapi_extra=json_request_examples_extra(
+                    action=site._action_payload_example(model_admin),
+                ),
+            )
+            def actions_view(request, payload: action_payload_schema):
+                if not model_admin.has_view_or_change_permission(request):
+                    raise PermissionDenied
+                cl_queryset = site._filtered_queryset(request, model_admin)
+                with transaction.atomic(using=router_db_for_write(model_admin.model)):
+                    response = model_admin.response_action(request, cl_queryset, payload)
+                    return site._validated_action_response(
+                        response,
+                        response_schema=model_admin.get_action_response_schema(request),
+                    )
 
         @router.put(
             f"{prefix}/bulk",
@@ -1642,20 +1647,21 @@ class NinjaAdminSite:
                     **row_metadata,
                 }
             )
-        action_form = [
-            {
-                "name": "action",
-                "type": "ChoiceField",
-                "attrs": {
-                    "required": True,
-                    "choices": [
-                        (item["action"], str(item["description"])) for item in model_admin.get_action_choices(request)
-                    ],
+        action_choices = model_admin.get_action_choices(request)
+        action_form = []
+        if action_choices:
+            action_form = [
+                {
+                    "name": "action",
+                    "type": "ChoiceField",
+                    "attrs": {
+                        "required": True,
+                        "choices": [(item["action"], str(item["description"])) for item in action_choices],
+                    },
                 },
-            },
-            {"name": "selected_ids", "type": "MultipleChoiceField", "attrs": {"required": False}},
-            {"name": "select_across", "type": "BooleanField", "attrs": {"required": False}},
-        ]
+                {"name": "selected_ids", "type": "MultipleChoiceField", "attrs": {"required": False}},
+                {"name": "select_across", "type": "BooleanField", "attrs": {"required": False}},
+            ]
         list_editing_formset = []
         list_editing_rows = []
         list_editing_formset_prefix = None
@@ -1736,8 +1742,8 @@ class NinjaAdminSite:
                 "actions_on_bottom": bool(model_admin.actions_on_bottom),
                 "actions_selection_counter": bool(model_admin.actions_selection_counter),
                 "show_full_result_count": changelist.show_full_result_count,
-                "show_admin_actions": changelist.show_admin_actions,
-                "action_choices": model_admin.get_action_choices(request),
+                "show_admin_actions": changelist.show_admin_actions and bool(action_choices),
+                "action_choices": action_choices,
                 "filters": changelist.filter_descriptions(),
                 "date_hierarchy": changelist.date_hierarchy_description(),
                 "list_display_fields": model_field_names,
