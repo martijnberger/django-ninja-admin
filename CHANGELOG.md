@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   boolean OpenAPI parameters, with documented 422 validation errors.
 - Constrained generated inline mutation response schemas to registered inline
   identifiers instead of advertising arbitrary inline response keys.
+- Closed the default action response schema so untyped action responses cannot
+  advertise arbitrary extra fields.
 
 ## 0.1.40 - 2026-07-04
 

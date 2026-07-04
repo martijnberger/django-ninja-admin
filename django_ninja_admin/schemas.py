@@ -98,12 +98,13 @@ class SessionResponse(Schema):
 
 class ActionResponse(Schema):
     model_config = ConfigDict(
+        extra="forbid",
         json_schema_extra={
             "examples": [
                 {"detail": "Action completed."},
                 {"detail": "Successfully deleted selected objects.", "deleted": {"products": 1}},
             ]
-        }
+        },
     )
 
     detail: str

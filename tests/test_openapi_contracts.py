@@ -258,6 +258,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert set(set_status_payload["required"]) == {"action", "data"}
     action_responses = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["responses"]
     action_response_schema = action_responses["200"]["content"]["application/json"]["schema"]
+    assert components["ActionResponse"]["additionalProperties"] is False
     assert {"$ref": "#/components/schemas/ActionResponse"} in action_response_schema["anyOf"]
     assert {"$ref": "#/components/schemas/ReportNamesActionResult"} in action_response_schema["anyOf"]
     assert {"$ref": "#/components/schemas/StockStatusActionResult"} in action_response_schema["anyOf"]

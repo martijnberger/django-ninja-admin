@@ -470,6 +470,7 @@ def write_sample_project(project_dir: Path) -> None:
         assert components["ProductAdminInlineResponse"]["additionalProperties"] == {
             "$ref": "#/components/schemas/ProductImageInlineOperationResults"
         }
+        assert components["ActionResponse"]["additionalProperties"] is False
         assert consumer.path_parameters["sample_app_product_detail"] == {"object_id"}
         assert "_to_field" in consumer.query_parameters["sample_app_product_detail"]
 

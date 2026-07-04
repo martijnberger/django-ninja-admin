@@ -27,6 +27,7 @@
         "type": "object"
       },
       "ActionResponse": {
+        "additionalProperties": false,
         "examples": [
           {
             "detail": "Action completed."
