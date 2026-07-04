@@ -236,12 +236,15 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
         "related_model": "testapp.tag",
         "related_app_label": "testapp",
         "related_model_name": "tag",
+        "related_object_name": "Tag",
         "related_verbose_name": "tag",
         "related_verbose_name_plural": "tags",
         "to_field_name": "id",
         "to_field_class": "BigAutoField",
         "to_field_internal_type": "BigAutoField",
         "to_field_attname": "id",
+        "url": "/admin-api/testapp/tag",
+        "query": {"_to_field": "id"},
     }
     assert {option["text"] for option in fields_by_name["tags"]["attrs"]["selected_options"]} == {
         "Featured",

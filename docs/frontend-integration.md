@@ -61,6 +61,11 @@ metadata, initial values, readonly state, disabled state, and widget intent.
 The API intentionally omits rendered Django widget internals such as generated
 HTML ids, template names, and rendered attributes.
 
+For relation widgets, prefer the semantic metadata over hard-coded endpoints.
+Autocomplete metadata points at `/autocomplete` with the source-field identity;
+raw-id and dual-select filtered metadata point at the related model changelist
+with an `_to_field` query hint for looking up selectable objects.
+
 ## Pagination
 
 Changelist, history, and autocomplete routes use one shared pagination shape.

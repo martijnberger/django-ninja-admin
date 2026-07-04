@@ -681,6 +681,10 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     ]
     assert components["ToFieldQuery"]["properties"]["_to_field"]["type"] == "string"
     assert components["FilteredSelectMetadata"]["properties"]["direction"]["enum"] == ["horizontal", "vertical"]
+    assert components["FilteredSelectMetadata"]["properties"]["query"]["anyOf"] == [
+        {"$ref": "#/components/schemas/ToFieldQuery"},
+        {"type": "null"},
+    ]
     assert components["FilteredSelectMetadata"]["required"] == ["field_name", "direction", "is_stacked"]
     assert components["RadioMetadata"]["properties"]["orientation"]["anyOf"] == [
         {"type": "string"},

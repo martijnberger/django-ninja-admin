@@ -399,12 +399,15 @@ class FilteredSelectMetadata(SourceFieldIdentity):
     related_model: str | None = None
     related_app_label: str | None = None
     related_model_name: str | None = None
+    related_object_name: str | None = None
     related_verbose_name: str | None = None
     related_verbose_name_plural: str | None = None
     to_field_name: str | None = None
     to_field_class: str | None = None
     to_field_internal_type: str | None = None
     to_field_attname: str | None = None
+    url: str | None = None
+    query: ToFieldQuery | None = None
 
 
 class RadioMetadata(SourceFieldIdentity):

@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added related changelist `url` and `_to_field` query metadata to
+  filtered-select form metadata for dual-select many-to-many controls.
+
 ## 0.1.48 - 2026-07-04
 
 ### Added

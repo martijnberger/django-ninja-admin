@@ -3063,6 +3063,16 @@
             ],
             "title": "Model Name"
           },
+          "query": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToFieldQuery"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "related_app_label": {
             "anyOf": [
               {
@@ -3095,6 +3105,17 @@
               }
             ],
             "title": "Related Model Name"
+          },
+          "related_object_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Related Object Name"
           },
           "related_verbose_name": {
             "anyOf": [
@@ -3172,6 +3193,17 @@
               }
             ],
             "title": "To Field Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
           },
           "verbose_name": {
             "anyOf": [

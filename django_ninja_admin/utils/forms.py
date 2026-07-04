@@ -727,6 +727,8 @@ def _apply_admin_field_metadata(
                 source_model,
                 name,
                 direction="horizontal",
+                request=request,
+                model_admin=model_admin,
                 form_field=form_field,
                 current_value=current_value,
             )
@@ -737,6 +739,8 @@ def _apply_admin_field_metadata(
                 source_model,
                 name,
                 direction="vertical",
+                request=request,
+                model_admin=model_admin,
                 form_field=form_field,
                 current_value=current_value,
             )
@@ -855,7 +859,16 @@ def _mount_path_model_candidates(source_model, model_admin):
         yield candidate_model
 
 
-def _filtered_select_metadata(source_model, field_name, *, direction, form_field=None, current_value=None):
+def _filtered_select_metadata(
+    source_model,
+    field_name,
+    *,
+    direction,
+    request=None,
+    model_admin=None,
+    form_field=None,
+    current_value=None,
+):
     metadata = {
         **_source_field_identity(source_model, field_name),
         "direction": direction,
@@ -865,6 +878,8 @@ def _filtered_select_metadata(source_model, field_name, *, direction, form_field
         metadata["selected_count"] = _model_multiple_choice_value_count(current_value)
         metadata["available_count"] = _model_multiple_choice_available_count(form_field)
     field = _model_field_for_name(source_model, field_name)
+    remote_model = None
+    to_field_name = None
     if field is not None:
         metadata["verbose_name"] = str(getattr(field, "verbose_name", field_name))
         remote_model = getattr(getattr(field, "remote_field", None), "model", None)
@@ -876,12 +891,18 @@ def _filtered_select_metadata(source_model, field_name, *, direction, form_field
                     "related_model": f"{remote_opts.app_label}.{remote_opts.model_name}",
                     "related_app_label": remote_opts.app_label,
                     "related_model_name": remote_opts.model_name,
+                    "related_object_name": remote_opts.object_name,
                     "related_verbose_name": str(remote_opts.verbose_name),
                     "related_verbose_name_plural": str(remote_opts.verbose_name_plural),
                     "to_field_name": to_field_name,
                     **_relation_target_field_metadata(remote_model, to_field_name),
                 }
             )
+    base_path = _admin_mount_path(request, source_model, model_admin=model_admin)
+    if base_path is not None and remote_model is not None:
+        metadata["url"] = f"{base_path}/{remote_model._meta.app_label}/{remote_model._meta.model_name}"
+        if to_field_name is not None:
+            metadata["query"] = {"_to_field": to_field_name}
     return metadata
 
 

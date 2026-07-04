@@ -534,6 +534,8 @@ def write_full_sample_project(project_dir: Path) -> None:
         fields_by_name = {field["name"]: field for field in add_form.json()["form"]["fields"]}
         assert fields_by_name["category"]["attrs"]["admin_widget"] == "autocomplete"
         assert fields_by_name["tags"]["attrs"]["admin_widget"] == "filter_horizontal"
+        assert fields_by_name["tags"]["attrs"]["filtered_select"]["url"] == "/admin-api/sample_app/tag"
+        assert fields_by_name["tags"]["attrs"]["filtered_select"]["query"] == {"_to_field": "id"}
         assert fields_by_name["manual"]["attrs"]["needs_multipart_form"] is True
         inline = next(item for item in add_form.json()["inlines"] if item["model"] == "sample_app.productimage")
         assert inline["formset_prefix"] == "images"

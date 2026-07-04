@@ -34,6 +34,12 @@ Custom site and model routes default to `JsonObjectResponse`, a named JSON
 object schema. Declare a concrete Ninja/Pydantic schema for generated clients
 that require field-level response typing.
 
+Form-description responses expose typed semantic widget metadata, including
+relation lookup hints for autocomplete, raw-id, and dual-select filtered
+controls. These hints describe source fields, related models, target fields,
+and mount-aware endpoint/query data without exposing rendered Django widget
+internals.
+
 ## Error Shapes
 
 Runtime errors use HTTP status codes and the shared `ErrorResponse` body.
