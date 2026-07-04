@@ -54,8 +54,8 @@ def test_admin_checks_report_invalid_model_admin_configuration(db, make_site):
     error_ids = {error.id for error in errors}
 
     assert {
-        "django_ninja_admin.E004",
-        "django_ninja_admin.E007",
+        "django_ninja_admin.E108",
+        "django_ninja_admin.E123",
         "django_ninja_admin.E019",
         "django_ninja_admin.E038",
         "django_ninja_admin.E128",
@@ -63,7 +63,7 @@ def test_admin_checks_report_invalid_model_admin_configuration(db, make_site):
         "django_ninja_admin.E137",
         "django_ninja_admin.E140",
         "django_ninja_admin.E202",
-        "django_ninja_admin.E043",
+        "django_ninja_admin.E109",
     } <= error_ids
 
 
@@ -359,7 +359,7 @@ def test_admin_checks_reject_reverse_relation_in_list_display(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E043"}
+    assert {error.id for error in errors} == {"django_ninja_admin.E109"}
     assert "many-to-many or reverse field" in errors[0].msg
 
 
@@ -368,7 +368,7 @@ def test_admin_checks_allow_single_valued_relation_path_in_list_display(db, make
 
     error_ids = {error.id for error in admin_site.get_model_admin(Product).check()}
 
-    assert error_ids.isdisjoint({"django_ninja_admin.E003", "django_ninja_admin.E004", "django_ninja_admin.E043"})
+    assert error_ids.isdisjoint({"django_ninja_admin.E003", "django_ninja_admin.E108", "django_ninja_admin.E109"})
 
 
 def test_admin_checks_validate_action_permission_hooks(db, make_site):
@@ -1008,8 +1008,8 @@ def test_admin_checks_reject_first_list_editable_without_explicit_display_link(d
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
 
-    assert bad_ids == {"django_ninja_admin.E066"}
-    assert valid_ids.isdisjoint({"django_ninja_admin.E007", "django_ninja_admin.E066"})
+    assert bad_ids == {"django_ninja_admin.E124"}
+    assert valid_ids.isdisjoint({"django_ninja_admin.E123", "django_ninja_admin.E124"})
 
 
 def test_admin_checks_reject_duplicate_list_editable_fields(db, make_site):
@@ -1022,7 +1022,7 @@ def test_admin_checks_reject_duplicate_list_editable_fields(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E093"}
+    assert {error.id for error in errors} == {"django_ninja_admin.E168"}
 
 
 def test_admin_checks_reject_non_string_list_editable_fields(db, make_site):
@@ -1035,7 +1035,7 @@ def test_admin_checks_reject_non_string_list_editable_fields(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E094"}
+    assert {error.id for error in errors} == {"django_ninja_admin.E167"}
 
 
 def test_admin_checks_reject_duplicate_list_display_links(db, make_site):
@@ -1047,7 +1047,7 @@ def test_admin_checks_reject_duplicate_list_display_links(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E079"}
+    assert {error.id for error in errors} == {"django_ninja_admin.E166"}
 
 
 def test_admin_checks_reject_non_string_list_display_links(db, make_site):
@@ -1059,7 +1059,34 @@ def test_admin_checks_reject_non_string_list_display_links(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E095"}
+    assert {error.id for error in errors} == {"django_ninja_admin.E165"}
+
+
+def test_admin_checks_align_list_editable_field_ids_with_django(db, make_site):
+    class MissingFieldProductAdmin(ModelAdmin):
+        list_display = ("name",)
+        list_display_links = ("name",)
+        list_editable = ("missing",)
+
+    class MissingFromDisplayProductAdmin(ModelAdmin):
+        list_display = ("name",)
+        list_display_links = ("name",)
+        list_editable = ("price",)
+
+    class PrimaryKeyProductAdmin(ModelAdmin):
+        list_display = ("id", "name")
+        list_display_links = ("name",)
+        list_editable = ("id",)
+
+    missing_field_site = make_site(Product, MissingFieldProductAdmin)
+    missing_from_display_site = make_site(Product, MissingFromDisplayProductAdmin)
+    primary_key_site = make_site(Product, PrimaryKeyProductAdmin)
+
+    assert {error.id for error in missing_field_site.get_model_admin(Product).check()} == {"django_ninja_admin.E121"}
+    assert {error.id for error in missing_from_display_site.get_model_admin(Product).check()} == {
+        "django_ninja_admin.E122"
+    }
+    assert {error.id for error in primary_key_site.get_model_admin(Product).check()} == {"django_ninja_admin.E125"}
 
 
 def test_admin_checks_validate_fields_and_exclude_items(db, make_site):

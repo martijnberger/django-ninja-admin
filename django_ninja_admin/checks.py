@@ -74,6 +74,11 @@ PACKAGE_OPTION_CODES = {
     "readonly_duplicate": "E161",
     "form_layout_non_editable": "E162",
     "list_editable_missing_from_form": "E163",
+    "list_display_item_type": "E164",
+    "list_display_links_item_type": "E165",
+    "list_display_links_duplicate": "E166",
+    "list_editable_item_type": "E167",
+    "list_editable_duplicate": "E168",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -97,6 +102,17 @@ DJANGO_RELATION_OPTION_CODES = {
         "not_many_to_many": "E020",
         "manual_through": "E013",
     },
+}
+
+DJANGO_DISPLAY_OPTION_CODES = {
+    "list_display_missing": "E108",
+    "list_display_many_to_many": "E109",
+    "list_display_links_missing": "E111",
+    "list_editable_missing": "E121",
+    "list_editable_not_in_list_display": "E122",
+    "list_editable_in_list_display_links": "E123",
+    "list_editable_first_without_display_link": "E124",
+    "list_editable_not_editable": "E125",
 }
 
 
@@ -213,7 +229,11 @@ def _check_display_options(model_admin):
             continue
         if not isinstance(item, str):
             errors.append(
-                _error(model_admin.__class__, "Items in 'list_display' must be strings or callables.", "E002")
+                _error(
+                    model_admin.__class__,
+                    "Items in 'list_display' must be strings or callables.",
+                    PACKAGE_OPTION_CODES["list_display_item_type"],
+                )
             )
             continue
         if item == "__str__":
@@ -230,7 +250,7 @@ def _check_display_options(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_display' refers to '{item}', which is not a field, method, or attribute.",
-                    "E004",
+                    DJANGO_DISPLAY_OPTION_CODES["list_display_missing"],
                 )
             )
             continue
@@ -239,7 +259,7 @@ def _check_display_options(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_display' refers to '{item}', which is a many-to-many or reverse field.",
-                    "E043",
+                    DJANGO_DISPLAY_OPTION_CODES["list_display_many_to_many"],
                 )
             )
 
@@ -253,7 +273,7 @@ def _check_display_options(model_admin):
                     _error(
                         model_admin.__class__,
                         "Items in 'list_display_links' must be strings or callables.",
-                        "E095",
+                        PACKAGE_OPTION_CODES["list_display_links_item_type"],
                     )
                 )
                 continue
@@ -263,7 +283,7 @@ def _check_display_options(model_admin):
                     _error(
                         model_admin.__class__,
                         f"The field '{item_key}' is duplicated in 'list_display_links'.",
-                        "E079",
+                        PACKAGE_OPTION_CODES["list_display_links_duplicate"],
                     )
                 )
             seen_display_links.add(item_key)
@@ -272,7 +292,7 @@ def _check_display_options(model_admin):
                     _error(
                         model_admin.__class__,
                         f"The value of 'list_display_links' refers to '{item}', which is not in 'list_display'.",
-                        "E005",
+                        DJANGO_DISPLAY_OPTION_CODES["list_display_links_missing"],
                     )
                 )
 
@@ -280,7 +300,13 @@ def _check_display_options(model_admin):
     seen_editable = set()
     for item in editable:
         if not isinstance(item, str):
-            errors.append(_error(model_admin.__class__, "Items in 'list_editable' must be strings.", "E094"))
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    "Items in 'list_editable' must be strings.",
+                    PACKAGE_OPTION_CODES["list_editable_item_type"],
+                )
+            )
             continue
         item_key = field_name_for_display(item)
         if item_key in seen_editable:
@@ -288,16 +314,26 @@ def _check_display_options(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The field '{item_key}' is duplicated in 'list_editable'.",
-                    "E093",
+                    PACKAGE_OPTION_CODES["list_editable_duplicate"],
                 )
             )
         seen_editable.add(item_key)
+        field = _model_field(model_admin, item)
+        if field is None:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of 'list_editable' refers to '{item}', which is not a model field.",
+                    DJANGO_DISPLAY_OPTION_CODES["list_editable_missing"],
+                )
+            )
+            continue
         if item not in list_display:
             errors.append(
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_editable' refers to '{item}', which is not in 'list_display'.",
-                    "E006",
+                    DJANGO_DISPLAY_OPTION_CODES["list_editable_not_in_list_display"],
                 )
             )
             continue
@@ -306,7 +342,7 @@ def _check_display_options(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_editable' refers to '{item}', which is also in 'list_display_links'.",
-                    "E007",
+                    DJANGO_DISPLAY_OPTION_CODES["list_editable_in_list_display_links"],
                 )
             )
         elif list_display and item == list_display[0] and configured_list_display_links == ():
@@ -315,23 +351,17 @@ def _check_display_options(model_admin):
                     model_admin.__class__,
                     f"The value of 'list_editable' refers to the first field in 'list_display' ('{item}'), "
                     "which cannot be used unless 'list_display_links' is set.",
-                    "E066",
+                    DJANGO_DISPLAY_OPTION_CODES["list_editable_first_without_display_link"],
                 )
             )
-        field = _model_field(model_admin, item)
-        if field is None:
+        if field.primary_key or not field.editable:
             errors.append(
                 _error(
                     model_admin.__class__,
-                    f"The value of 'list_editable' refers to '{item}', which is not a model field.",
-                    "E008",
+                    f"The field '{item}' is not editable through the admin.",
+                    DJANGO_DISPLAY_OPTION_CODES["list_editable_not_editable"],
                 )
             )
-            continue
-        if field.primary_key:
-            errors.append(_error(model_admin.__class__, f"The field '{item}' is a primary key.", "E009"))
-        if not field.editable:
-            errors.append(_error(model_admin.__class__, f"The field '{item}' is not editable.", "E010"))
         if item in excluded_form_fields or (editable_form_fields is not None and item not in editable_form_fields):
             errors.append(
                 _error(
