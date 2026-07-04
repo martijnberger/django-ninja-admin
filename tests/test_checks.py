@@ -478,6 +478,24 @@ def test_admin_checks_report_form_widget_option_conflicts(db, make_site):
     } <= error_ids
 
 
+def test_admin_checks_reject_raw_id_field_attname(db, make_site):
+    class ValidProductAdmin(ModelAdmin):
+        raw_id_fields = ("category",)
+
+    class BadProductAdmin(ModelAdmin):
+        raw_id_fields = ("category_id",)
+
+    valid_site = make_site(Product, ValidProductAdmin)
+    bad_site = make_site(Product, BadProductAdmin)
+
+    valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
+    bad_errors = bad_site.get_model_admin(Product).check()
+
+    assert "django_ninja_admin.E002" not in valid_ids
+    assert {error.id for error in bad_errors} == {"django_ninja_admin.E002"}
+    assert "category_id" in bad_errors[0].msg
+
+
 def test_admin_checks_validate_list_select_related(db, make_site):
     class ValidProductAdmin(ModelAdmin):
         list_select_related = ("category",)

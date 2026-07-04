@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Fixed
+
+- Aligned `raw_id_fields` system checks with Django admin by rejecting field
+  attnames such as `category_id`; relation widget options must name the model
+  field.
+
 ## 0.1.50 - 2026-07-04
 
 ### Changed

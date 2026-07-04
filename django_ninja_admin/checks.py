@@ -213,7 +213,14 @@ def check_model_admin(model_admin):
             require_registered_remote=True,
         )
     )
-    errors.extend(_check_relation_fields(model_admin, "raw_id_fields", relation_types=forward_relation_types))
+    errors.extend(
+        _check_relation_fields(
+            model_admin,
+            "raw_id_fields",
+            relation_types=forward_relation_types,
+            require_field_name=True,
+        )
+    )
     errors.extend(_check_relation_fields(model_admin, "filter_horizontal", many_to_many_only=True))
     errors.extend(_check_relation_fields(model_admin, "filter_vertical", many_to_many_only=True))
     errors.extend(_check_date_hierarchy(model_admin))
@@ -1272,6 +1279,7 @@ def _check_relation_fields(
     many_to_many_only=False,
     relation_types=None,
     require_registered_remote=False,
+    require_field_name=False,
 ):
     errors = []
     codes = DJANGO_RELATION_OPTION_CODES[option]
@@ -1281,6 +1289,15 @@ def _check_relation_fields(
             continue
         field = _model_field(model_admin, item)
         if field is None:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"The value of '{option}' refers to unknown field '{item}'.",
+                    codes["missing"],
+                )
+            )
+            continue
+        if require_field_name and field.name != item:
             errors.append(
                 _error(
                     model_admin.__class__,
