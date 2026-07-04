@@ -860,7 +860,7 @@ class CellMetadata(AdminSchema):
 
 
 class Row(AdminSchema):
-    id: FieldMetadataValue
+    id: ObjectIdentifier
     index: int = 0
     result_index: int = 0
     cells: dict[str, FieldMetadataValue]
@@ -983,7 +983,7 @@ class ChangelistConfig(AdminSchema):
 
 class ListEditingRow(AdminSchema):
     index: int
-    pk: FieldMetadataValue
+    pk: ObjectIdentifier
     pk_name: str
     form_prefix: str | None = None
     empty_permitted: bool = False
@@ -1004,10 +1004,10 @@ class ChangelistResponse(AdminSchema):
 
 
 class HistoryItem(AdminSchema):
-    id: FieldMetadataValue
+    id: ObjectIdentifier
     action_time: datetime
-    user_id: FieldMetadataValue
-    content_type_id: FieldMetadataValue = None
+    user_id: ObjectIdentifier
+    content_type_id: ObjectIdentifier | None = None
     model: str | None = None
     app_label: str | None = None
     model_name: str | None = None

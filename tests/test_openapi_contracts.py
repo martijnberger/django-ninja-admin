@@ -517,8 +517,12 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "$ref": "#/components/schemas/ModelSummary"
     }
     assert _response_schema_ref(paths["/admin-api/history"]["get"], "200") == "#/components/schemas/HistoryResponse"
-    assert components["HistoryItem"]["properties"]["id"] == {"$ref": "#/components/schemas/FieldMetadataValue"}
-    assert components["HistoryItem"]["properties"]["user_id"] == {"$ref": "#/components/schemas/FieldMetadataValue"}
+    assert components["HistoryItem"]["properties"]["id"] == {"$ref": "#/components/schemas/ObjectIdentifier"}
+    assert components["HistoryItem"]["properties"]["user_id"] == {"$ref": "#/components/schemas/ObjectIdentifier"}
+    assert components["HistoryItem"]["properties"]["content_type_id"]["anyOf"] == [
+        {"$ref": "#/components/schemas/ObjectIdentifier"},
+        {"type": "null"},
+    ]
     assert components["HistoryItem"]["properties"]["change_message"] == {
         "$ref": "#/components/schemas/FieldMetadataValue"
     }
@@ -588,7 +592,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["Row"]["properties"]["cell_metadata"]["additionalProperties"] == {
         "$ref": "#/components/schemas/CellMetadata"
     }
-    assert components["Row"]["properties"]["id"] == {"$ref": "#/components/schemas/FieldMetadataValue"}
+    assert components["Row"]["properties"]["id"] == {"$ref": "#/components/schemas/ObjectIdentifier"}
     assert components["Row"]["properties"]["cells"]["additionalProperties"] == {
         "$ref": "#/components/schemas/FieldMetadataValue"
     }
@@ -690,7 +694,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     }
     assert changelist_response_props["list_editing_rows"]["items"] == {"$ref": "#/components/schemas/ListEditingRow"}
     list_editing_row_props = components["ListEditingRow"]["properties"]
-    assert list_editing_row_props["pk"] == {"$ref": "#/components/schemas/FieldMetadataValue"}
+    assert list_editing_row_props["pk"] == {"$ref": "#/components/schemas/ObjectIdentifier"}
     assert list_editing_row_props["form_prefix"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert list_editing_row_props["empty_permitted"]["type"] == "boolean"
 

@@ -9,6 +9,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Narrowed changelist row IDs, list-editable row PKs, and history log-entry
+  identifiers from broad JSON metadata values to scalar `ObjectIdentifier`
+  OpenAPI components.
 - Enforced the site-level changelist page-size cap inside `ChangeList` itself,
   including overlarge admin defaults, direct `pp` construction, and `all=1`
   show-all decisions.
