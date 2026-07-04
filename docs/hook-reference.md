@@ -30,6 +30,18 @@ autodiscovery.
 Pydantic request schemas are derived from form fields where possible, while
 Django `ModelForm` validation remains authoritative for persistence.
 
+## Changelist And Bulk Editing Hooks
+
+- `get_changelist_form_class(request)`
+- `changelist_formset`
+- `get_changelist_formset(request, **kwargs)`
+- `get_changelist_form_fields_description(request, obj=None, *, form=None)`
+
+List-editable changelist metadata, bulk update request schemas/examples, and
+runtime bulk validation use the configured changelist formset. Override
+`get_changelist_formset()` when a custom `BaseModelFormSet` should control
+prefixes, cross-row validation, or other list-editable formset behavior.
+
 ## Query And Permission Hooks
 
 - `get_queryset(request)`

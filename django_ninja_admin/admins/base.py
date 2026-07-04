@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import models
 from django.forms import modelform_factory
-from django.forms.models import ModelChoiceField, ModelMultipleChoiceField
+from django.forms.models import BaseModelFormSet, ModelChoiceField, ModelMultipleChoiceField, modelformset_factory
 from django.urls import reverse
 from django.utils.dateparse import parse_duration
 from django.utils.safestring import mark_safe
@@ -158,6 +158,7 @@ class BaseAdmin:
     exclude = None
     fieldsets = None
     form_class = None
+    changelist_formset = BaseModelFormSet
     formfield_overrides: ClassVar[dict[Any, Any]] = {}
     form_schema_field_overrides: ClassVar[dict[str, Any]] = {}
     output_schema = None
@@ -234,6 +235,15 @@ class BaseAdmin:
             fields=tuple(getattr(self, "list_editable", ()) or ()),
             formfield_callback=lambda db_field, **kwargs: self.formfield_for_dbfield(db_field, request, **kwargs),
         )
+
+    def get_changelist_formset(self, request, **kwargs):
+        defaults = {
+            "form": self.get_changelist_form_class(request),
+            "formset": self.changelist_formset,
+            "extra": 0,
+        }
+        defaults.update(kwargs)
+        return modelformset_factory(self.model, **defaults)
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         if db_field.choices:
@@ -379,7 +389,7 @@ class BaseAdmin:
         if cache_key not in cache:
             form_fields = {}
             if self.list_editable:
-                form_class = self.get_changelist_form_class(request)
+                form_class = self.get_changelist_formset(request).form
                 form_fields = form_class.base_fields
             row_fields = {"pk": (ObjectIdentifier, ...)}
             for field_name in self.list_editable:

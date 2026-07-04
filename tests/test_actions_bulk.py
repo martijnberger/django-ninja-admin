@@ -44,7 +44,10 @@ def test_bulk_update_uses_changelist_form_hook(admin_client, sample):
     changelist = admin_client.get("/bulk-form-admin/testapp/product")
 
     assert changelist.status_code == 200
-    fields_by_name = {field["name"]: field for row in changelist.json()["list_editing_rows"] for field in row["fields"]}
+    changelist_body = changelist.json()
+    assert changelist_body["list_editing_formset_prefix"] == "bulk_status"
+    assert [row["form_prefix"] for row in changelist_body["list_editing_rows"]] == ["bulk_status-0", "bulk_status-1"]
+    fields_by_name = {field["name"]: field for row in changelist_body["list_editing_rows"] for field in row["fields"]}
     assert list(fields_by_name) == ["stock_status"]
     assert fields_by_name["stock_status"]["attrs"]["help_text"] == "Bulk-only status field."
     assert fields_by_name["stock_status"]["attrs"]["choices"] == [["out_of_stock", "Bulk unavailable"]]
@@ -60,6 +63,18 @@ def test_bulk_update_uses_changelist_form_hook(admin_client, sample):
     assert invalid.json()["errors"][0]["param"] == "data.0.stock_status"
     sample.refresh_from_db()
     assert sample.stock_status == "in_stock"
+
+    beta = Product.objects.get(name="Beta")
+    blocked = admin_client.put(
+        "/bulk-form-admin/testapp/product/bulk",
+        data={"data": [{"pk": beta.pk, "stock_status": "out_of_stock"}]},
+        content_type="application/json",
+    )
+
+    assert blocked.status_code == 400
+    blocked_error = blocked.json()["errors"][0]
+    assert blocked_error["param"] == "data"
+    assert "Beta cannot be bulk disabled" in str(blocked_error["message"])
 
     updated = admin_client.put(
         "/bulk-form-admin/testapp/product/bulk",

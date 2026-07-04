@@ -1,6 +1,7 @@
 from django import forms
 from django.core.validators import FileExtensionValidator
 from django.db import models
+from django.forms.models import BaseModelFormSet
 from django.urls import path
 from ninja import Schema, Status
 
@@ -342,8 +343,23 @@ class BulkStatusForm(forms.ModelForm):
         fields = ("stock_status",)
 
 
+class BulkStatusFormSet(BaseModelFormSet):
+    @classmethod
+    def get_default_prefix(cls):
+        return "bulk_status"
+
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        for form in self.forms:
+            if form.cleaned_data.get("stock_status") == "out_of_stock" and form.instance.name == "Beta":
+                raise forms.ValidationError("Beta cannot be bulk disabled.")
+
+
 class BulkFormProductAdmin(ModelAdmin):
     form_class = BlockingBulkProductForm
+    changelist_formset = BulkStatusFormSet
     list_display = ("name", "stock_status")
     list_display_links = ("name",)
     list_editable = ("stock_status",)

@@ -7,13 +7,20 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.50 - 2026-07-04
+
 ### Changed
 
+- Routed list-editable changelist metadata, bulk payload schemas/examples, and
+  runtime bulk validation through `get_changelist_formset()` so custom
+  formsets influence both OpenAPI and request handling.
 - Closed public admin response schema components with `additionalProperties:
   false` so generated clients do not accept undocumented metadata fields.
 
 ### Added
 
+- Added `ModelAdmin.get_changelist_formset()` and `changelist_formset` support
+  for list-editable formset customization.
 - Added mounted coverage for custom action object-permission enforcement when
   `select_across=True` uses the filtered changelist queryset.
 

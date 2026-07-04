@@ -25,7 +25,7 @@ from django.core.exceptions import (
 from django.core.paginator import InvalidPage, Paginator
 from django.db import router, transaction
 from django.db.models.base import ModelBase
-from django.forms.models import _get_foreign_key, modelformset_factory
+from django.forms.models import _get_foreign_key
 from django.http import Http404
 from django.http.multipartparser import MultiPartParserError
 from django.middleware.csrf import get_token
@@ -1535,8 +1535,8 @@ class NinjaAdminSite:
         list_editing_total_form_count = None
         list_editing_initial_form_count = None
         if model_admin.list_editable:
-            form_class = model_admin.get_changelist_form_class(request)
-            formset_class = modelformset_factory(model_admin.model, form=form_class, extra=0)
+            formset_class = model_admin.get_changelist_formset(request)
+            form_class = formset_class.form
             page_pks = [obj.pk for obj in changelist.result_list]
             formset_queryset = model_admin.model._default_manager.filter(pk__in=page_pks)
             formset = formset_class(queryset=formset_queryset)
@@ -1858,7 +1858,7 @@ class NinjaAdminSite:
         return payload
 
     def _bulk_payload_example(self, model_admin):
-        form_class = model_admin.get_changelist_form_class(None)
+        form_class = model_admin.get_changelist_formset(None).form
         overrides = model_admin.get_form_schema_field_overrides(None, change=True) or {}
         row = {"pk": 1}
         row.update(
@@ -2361,6 +2361,11 @@ class NinjaAdminSite:
         if not payload_data:
             raise AdminValidationError([{"message": _("Change data cannot be empty."), "param": "data"}])
         queryset = queryset if queryset is not None else model_admin.get_queryset(request)
+        formset_class = model_admin.get_changelist_formset(request)
+        form_class = formset_class.form
+        form_fields = form_class.base_fields
+        editable_fields = set(form_fields)
+        validatable_rows = []
         validated_rows = []
         row_errors = {}
         has_permission_errors = False
@@ -2393,16 +2398,29 @@ class NinjaAdminSite:
                 row_errors[idx] = [{"message": _("Permission denied."), "param": "pk"}]
                 has_permission_errors = True
                 continue
-            form_class = model_admin.get_changelist_form_class(request)
-            current = model_data_for_form(obj, list(form_class.base_fields.keys()))
+            current = model_data_for_form(obj, list(editable_fields))
             current.update({key: value for key, value in data.items() if key in allowed})
             current = self._normalize_form_data(form_class, current)
-            form = form_class(data=current, instance=obj)
-            if not form.is_valid():
-                row_errors[idx] = form_errors(form)
-                continue
-            validated_rows.append((idx, obj, form))
+            validatable_rows.append((idx, obj, current))
+        if validatable_rows:
+            formset_data = self._bulk_formset_data(formset_class, validatable_rows, form_fields)
+            formset_queryset = queryset.filter(pk__in=[obj.pk for _idx, obj, _row in validatable_rows])
+            formset = formset_class(data=formset_data, queryset=formset_queryset)
+            if formset.is_valid():
+                validated_rows = [
+                    (idx, form.instance, form)
+                    for (idx, _obj, _row), form in zip(validatable_rows, formset.forms, strict=True)
+                ]
+            else:
+                for (idx, _obj, _row), errors in zip(validatable_rows, formset.errors, strict=True):
+                    formatted_errors = format_error(errors)
+                    if formatted_errors:
+                        row_errors[idx] = formatted_errors
+                non_form_errors = format_error(formset.non_form_errors())
+                if non_form_errors:
+                    row_errors["data"] = non_form_errors
         if row_errors:
+            row_errors = self._ordered_bulk_errors(row_errors)
             if has_permission_errors:
                 raise AdminPermissionError(row_errors)
             raise AdminValidationError(row_errors)
@@ -2420,6 +2438,30 @@ class NinjaAdminSite:
                     obj = updated
                 results[str(idx)] = model_admin.serialize_object(obj, request)
         return {"data": results}
+
+    def _bulk_formset_data(self, formset_class, rows, form_fields):
+        prefix = formset_class.get_default_prefix()
+        total_forms = len(rows)
+        formset_data = {
+            f"{prefix}-TOTAL_FORMS": str(total_forms),
+            f"{prefix}-INITIAL_FORMS": str(total_forms),
+            f"{prefix}-MIN_NUM_FORMS": "0",
+            f"{prefix}-MAX_NUM_FORMS": "",
+        }
+        for form_index, (_payload_index, obj, row) in enumerate(rows):
+            self._copy_inline_form_row(formset_data, prefix, form_index, row, form_fields)
+            formset_data[f"{prefix}-{form_index}-{obj._meta.pk.name}"] = str(obj.pk)
+        return formset_data
+
+    def _ordered_bulk_errors(self, row_errors):
+        return {key: row_errors[key] for key in sorted(row_errors, key=self._bulk_error_sort_key)}
+
+    def _bulk_error_sort_key(self, key):
+        if isinstance(key, int):
+            return (0, key)
+        if isinstance(key, str) and key.isdigit():
+            return (0, int(key))
+        return (1, str(key))
 
     def _bulk_object_from_queryset(self, queryset, pk, *, object_id_field=None):
         field = queryset.model._meta.pk if object_id_field is None else queryset.model._meta.get_field(object_id_field)
