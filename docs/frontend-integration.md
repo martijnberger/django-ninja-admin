@@ -74,6 +74,13 @@ types instead of hand-building query strings. History and autocomplete expose
 bounded `per_page` parameters; changelist uses `pp` and preserves Django
 admin's `all`/show-all behavior.
 
+## Changelist Sorting
+
+Changelist column metadata includes sort state plus ready-to-use query strings.
+Clients should prefer those generated links. Incoming `o` parameters accept the
+comma-separated tokens emitted by the API and Django-admin-style dot-separated
+tokens such as `o=3.-1`.
+
 ## Errors
 
 Error responses use HTTP status codes plus the typed `ErrorResponse` body:

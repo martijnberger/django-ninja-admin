@@ -395,7 +395,7 @@ class ChangeList:
 
         ordering = []
         invalid_fields = []
-        for field in [item.strip() for item in ordering_param.split(",") if item.strip()]:
+        for field in self.ordering_tokens(ordering_param):
             descending = field.startswith("-")
             raw_field = field.removeprefix("-")
             display_field = self.ordering_field_from_column(raw_field) if raw_field.isdigit() else raw_field
@@ -575,13 +575,19 @@ class ChangeList:
 
     def active_ordering_tokens(self, ordering_param=None):
         if ordering_param:
-            return [item.strip() for item in ordering_param.split(",") if item.strip()]
+            return self.ordering_tokens(ordering_param)
         return [
             self.ordering_token(index, "desc" if field.startswith("-") else "asc")
             for field in self.ordering
             for index in [self.ordering_column_index(field.removeprefix("-"))]
             if index is not None
         ]
+
+    def ordering_tokens(self, ordering_param):
+        tokens = []
+        for comma_part in ordering_param.split(","):
+            tokens.extend(comma_part.split("."))
+        return [item.strip() for item in tokens if item.strip()]
 
     def ordering_column_index(self, raw_field):
         if raw_field.isdigit():

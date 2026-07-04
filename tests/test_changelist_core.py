@@ -618,13 +618,19 @@ def test_changelist_multi_column_ordering_metadata(admin_client, sample):
     Product.objects.create(name="Gamma", category=sample.category, price="3.00")
 
     response = admin_client.get("/admin-api/testapp/product?o=3,-1")
+    dot_response = admin_client.get("/admin-api/testapp/product?o=3.-1")
 
     assert response.status_code == 200
+    assert dot_response.status_code == 200
     body = response.json()
+    dot_body = dot_response.json()
     assert body["config"]["ordering"] == ["price", "-name", "-pk"]
+    assert dot_body["config"]["ordering"] == ["price", "-name", "-pk"]
     assert [row["cells"]["name"] for row in body["rows"]][:2] == ["Gamma", "Beta"]
+    assert [row["cells"]["name"] for row in dot_body["rows"]][:2] == ["Gamma", "Beta"]
 
     columns_by_field = {column["field"]: column for column in body["columns"]}
+    dot_columns_by_field = {column["field"]: column for column in dot_body["columns"]}
     price_column = columns_by_field["price"]
     name_column = columns_by_field["name"]
     stock_column = columns_by_field["stock_status"]
@@ -634,6 +640,8 @@ def test_changelist_multi_column_ordering_metadata(admin_client, sample):
     assert price_column["ascending_query_string"] == "?o=3,-1"
     assert price_column["descending_query_string"] == "?o=-3,-1"
     assert price_column["remove_sorting_query_string"] == "?o=-1"
+    assert dot_columns_by_field["price"]["ascending_query_string"] == "?o=3,-1"
+    assert dot_columns_by_field["price"]["remove_sorting_query_string"] == "?o=-1"
     assert name_column["sorted"] is True
     assert name_column["ascending"] is False
     assert name_column["sort_priority"] == 2

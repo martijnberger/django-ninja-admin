@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Fixed
 
+- Accepted Django-admin-style dot-separated multi-column ordering tokens such
+  as `o=3.-1` while continuing to emit comma-separated ordering query strings.
 - Matched repeated-value handling for date-range and empty-field list filters,
   including hidden invalid-value validation and multi-selected empty/not-empty
   metadata.
