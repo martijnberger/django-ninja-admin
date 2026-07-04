@@ -62,6 +62,9 @@ class CustomProductAdmin(ModelAdmin):
     def stats(self, request):
         return {"count": Product.objects.count()}
 
+    async def async_stats(self, request):
+        return {"count": await Product.objects.acount()}
+
     def auto_stats(self, request):
         return {"count": Product.objects.count()}
 
@@ -87,6 +90,13 @@ class CustomProductAdmin(ModelAdmin):
                 operation_id="custom_product_stats",
                 summary="Product stats",
                 description="Custom product statistics.",
+                tags=["custom.product"],
+            ),
+            self.route(
+                "/async-stats",
+                self.admin_view(self.async_stats),
+                response=ProductStatsResponse,
+                operation_id="custom_product_async_stats",
                 tags=["custom.product"],
             ),
             self.route(
@@ -137,6 +147,9 @@ class CustomAdminSite(NinjaAdminSite):
     def status(self, request):
         return {"site": "ok"}
 
+    async def async_status(self, request):
+        return {"site": "async"}
+
     def auto_status(self, request):
         return {"site": "auto"}
 
@@ -184,6 +197,13 @@ class CustomAdminSite(NinjaAdminSite):
                 self.admin_view(self.status),
                 response=SiteStatusResponse,
                 operation_id="custom_site_status",
+                tags=["custom.site"],
+            ),
+            self.route(
+                "/async-status",
+                self.admin_view(self.async_status),
+                response=SiteStatusResponse,
+                operation_id="custom_site_async_status",
                 tags=["custom.site"],
             ),
             self.route(

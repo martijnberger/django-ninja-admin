@@ -69,8 +69,8 @@ declare `response_add_schema`, `response_change_schema`, or
   response schemas.
 - `InlineModelAdmin`, `TabularInline`, and `StackedInline` use Django formsets
   for validation and typed Pydantic envelopes for add/change/delete rows.
-- `route()` and `get_urls()` add custom site or model routes with Ninja-native
-  response, auth, throttle, tags, descriptions, and operation ids.
+- `route()` and `get_urls()` add sync or async custom site or model routes with
+  Ninja-native response, auth, throttle, tags, descriptions, and operation ids.
 
 Use `admin_view()` around custom views that should enforce admin permissions in
 addition to route-level auth.

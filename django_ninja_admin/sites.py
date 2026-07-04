@@ -6,7 +6,7 @@ from math import ceil
 from typing import Any, cast
 from weakref import WeakSet
 
-from asgiref.sync import async_to_sync
+from asgiref.sync import async_to_sync, sync_to_async
 from django import forms
 from django.apps import apps
 from django.contrib.auth import authenticate, get_user_model
@@ -214,6 +214,17 @@ class NinjaAdminSite:
         return request.user.is_active and request.user.is_staff
 
     def admin_view(self, view_func):
+        if is_async_callable(view_func):
+
+            @wraps(view_func)
+            async def async_inner(request, *args, **kwargs):
+                has_permission = await sync_to_async(self.has_permission)(request)
+                if not has_permission:
+                    raise PermissionDenied
+                return await view_func(request, *args, **kwargs)
+
+            return async_inner
+
         @wraps(view_func)
         def inner(request, *args, **kwargs):
             if not self.has_permission(request):
@@ -502,6 +513,14 @@ class NinjaAdminSite:
     def _custom_route_view_func(self, view_func):
         if not (hasattr(view_func, "__self__") and hasattr(view_func, "__func__")):
             return view_func
+
+        if is_async_callable(view_func):
+
+            @wraps(view_func)
+            async def async_inner(request, *args, **kwargs):
+                return await view_func(request, *args, **kwargs)
+
+            return async_inner
 
         @wraps(view_func)
         def inner(request, *args, **kwargs):

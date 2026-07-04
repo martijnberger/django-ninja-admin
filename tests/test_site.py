@@ -224,6 +224,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert site_response.status_code == 200
     assert site_response.json() == {"site": "ok"}
 
+    async_site_response = admin_client.get("/custom-admin/async-status")
+    assert async_site_response.status_code == 200
+    assert async_site_response.json() == {"site": "async"}
+
     decorated_site_response = admin_client.get("/custom-admin/decorated-status")
     assert decorated_site_response.status_code == 200
     assert decorated_site_response.json() == {"site": "decorated"}
@@ -272,6 +276,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert stats.status_code == 200
     assert stats.json() == {"count": 2}
 
+    async_stats = admin_client.get("/custom-admin/testapp/product/async-stats")
+    assert async_stats.status_code == 200
+    assert async_stats.json() == {"count": 2}
+
     decorated_stats = admin_client.get("/custom-admin/testapp/product/decorated-stats")
     assert decorated_stats.status_code == 200
     assert decorated_stats.json() == {"count": 2}
@@ -294,11 +302,15 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     denied = staff_client().get("/custom-admin/testapp/product/stats")
     assert denied.status_code == 403
 
+    async_stats_denied = staff_client().get("/custom-admin/testapp/product/async-stats")
+    assert async_stats_denied.status_code == 403
+
     decorated_denied = staff_client().get("/custom-admin/testapp/product/decorated-stats")
     assert decorated_denied.status_code == 403
 
     schema = admin_client.get("/custom-admin/openapi.json").json()
     status_operation = schema["paths"]["/custom-admin/status"]["get"]
+    async_status_operation = schema["paths"]["/custom-admin/async-status"]["get"]
     decorated_status_operation = schema["paths"]["/custom-admin/decorated-status"]["get"]
     auto_status_operation = schema["paths"]["/custom-admin/auto-status"]["get"]
     mapped_status_operation = schema["paths"]["/custom-admin/mapped-status"]["get"]
@@ -309,6 +321,7 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     public_operation = schema["paths"]["/custom-admin/public-status"]["get"]
     default_status_operation = schema["paths"]["/custom-admin/default-status"]["get"]
     stats_operation = schema["paths"]["/custom-admin/testapp/product/stats"]["get"]
+    async_stats_operation = schema["paths"]["/custom-admin/testapp/product/async-stats"]["get"]
     decorated_stats_operation = schema["paths"]["/custom-admin/testapp/product/decorated-stats"]["get"]
     auto_stats_operation = schema["paths"]["/custom-admin/testapp/product/auto-stats"]["get"]
     default_stats_operation = schema["paths"]["/custom-admin/testapp/product/default-stats"]["get"]
@@ -336,6 +349,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert status_operation["security"] == [{"SessionAuthIsStaff": []}]
     assert _response_schema_ref(status_operation, "200") == "#/components/schemas/SiteStatusResponse"
     assert_custom_route_error_responses(status_operation)
+    assert async_status_operation["operationId"] == "custom_site_async_status"
+    assert async_status_operation["tags"] == ["custom.site"]
+    assert _response_schema_ref(async_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
+    assert_custom_route_error_responses(async_status_operation)
     assert decorated_status_operation["operationId"] == "custom_site_decorated_status"
     assert decorated_status_operation["tags"] == ["custom.site"]
     assert _response_schema_ref(decorated_status_operation, "200") == "#/components/schemas/SiteStatusResponse"
@@ -383,6 +400,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert stats_operation["description"] == "Custom product statistics."
     assert _response_schema_ref(stats_operation, "200") == "#/components/schemas/ProductStatsResponse"
     assert_custom_route_error_responses(stats_operation)
+    assert async_stats_operation["operationId"] == "custom_product_async_stats"
+    assert async_stats_operation["tags"] == ["custom.product"]
+    assert _response_schema_ref(async_stats_operation, "200") == "#/components/schemas/ProductStatsResponse"
+    assert_custom_route_error_responses(async_stats_operation)
     assert decorated_stats_operation["operationId"] == "custom_product_decorated_stats"
     assert decorated_stats_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(decorated_stats_operation, "200") == "#/components/schemas/ProductStatsResponse"

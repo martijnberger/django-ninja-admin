@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.44 - 2026-07-04
+
 ### Changed
 
 - Extracted shared form-field and relation example generation helpers used by
@@ -18,6 +20,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   strict-build checks.
 - Tightened autodiscovery rollback so missing admin modules are ignored, while
   unexpected import-time errors roll back partial registration and bubble.
+- Added async-aware wrapping for custom site and model admin routes registered
+  through `admin_view()`.
 
 ## 0.1.43 - 2026-07-04
 
