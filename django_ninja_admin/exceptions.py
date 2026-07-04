@@ -78,18 +78,6 @@ class NotRegistered(AdminError):
     status_code = 404
 
 
-class NotRelationField(AdminError):
-    pass
-
-
-class IncorrectLookupParameters(AdminError):
-    pass
-
-
-class FieldIsAForeignKeyColumnName(AdminError):
-    pass
-
-
 class DisallowedModelAdminLookup(SuspiciousOperation):
     pass
 
