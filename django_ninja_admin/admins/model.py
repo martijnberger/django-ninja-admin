@@ -5,6 +5,7 @@ from typing import Annotated, Any, ClassVar, Literal, cast
 
 from asgiref.sync import sync_to_async
 from django.apps import apps
+from django.contrib.admin.utils import lookup_spawns_duplicates
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import models
@@ -368,11 +369,14 @@ class ModelAdmin(BaseAdmin):
     def get_search_results(self, request, queryset, search_term):
         def construct_search(field_name):
             if field_name.startswith("^"):
-                return f"{field_name.removeprefix('^')}__istartswith", None, False
+                lookup = f"{field_name.removeprefix('^')}__istartswith"
+                return lookup, None, lookup_spawns_duplicates(self.opts, lookup)
             if field_name.startswith("="):
-                return f"{field_name.removeprefix('=')}__iexact", None, False
+                lookup = f"{field_name.removeprefix('=')}__iexact"
+                return lookup, None, lookup_spawns_duplicates(self.opts, lookup)
             if field_name.startswith("@"):
-                return f"{field_name.removeprefix('@')}__search", None, False
+                lookup = f"{field_name.removeprefix('@')}__search"
+                return lookup, None, lookup_spawns_duplicates(self.opts, lookup)
             opts = queryset.model._meta
             prev_field = None
             may_have_duplicates = False

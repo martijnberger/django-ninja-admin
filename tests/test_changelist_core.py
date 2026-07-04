@@ -552,6 +552,20 @@ def test_changelist_search_distincts_duplicate_many_to_many_matches(admin_client
     assert [row["cells"]["name"] for row in response.json()["rows"]] == ["Alpha"]
 
 
+def test_changelist_prefix_search_distincts_duplicate_many_to_many_matches(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+    match_one = Tag.objects.create(name="Search Prefix One")
+    match_two = Tag.objects.create(name="Search Prefix Two")
+    sample.tags.add(match_one, match_two)
+    monkeypatch.setattr(product_admin, "search_fields", ("^tags__name",))
+
+    response = admin_client.get("/admin-api/testapp/product?q=Search")
+
+    assert response.status_code == 200
+    assert response.json()["config"]["result_count"] == 1
+    assert [row["cells"]["name"] for row in response.json()["rows"]] == ["Alpha"]
+
+
 def test_changelist_multi_column_ordering_metadata(admin_client, sample):
     Product.objects.create(name="Gamma", category=sample.category, price="3.00")
 
