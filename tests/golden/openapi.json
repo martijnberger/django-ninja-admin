@@ -10452,6 +10452,7 @@
             "schema": {
               "default": 1,
               "description": "1-based page number.",
+              "minimum": 1,
               "title": "Page",
               "type": "integer"
             }
@@ -10695,6 +10696,7 @@
             "schema": {
               "default": 1,
               "description": "1-based page number.",
+              "minimum": 1,
               "title": "Page",
               "type": "integer"
             }
@@ -10707,6 +10709,8 @@
             "schema": {
               "default": 20,
               "description": "Page size from 1 to 100.",
+              "maximum": 100,
+              "minimum": 1,
               "title": "Per Page",
               "type": "integer"
             }

@@ -99,15 +99,22 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     ]
 
     bad_page = client.get("/admin-api/history", {"page": 0})
-    assert bad_page.status_code == 404
+    assert bad_page.status_code == 422
+    assert bad_page.json()["errors"] == [
+        {"message": "Input should be greater than or equal to 1", "param": "query.page"}
+    ]
 
     bad_page_size = client.get("/admin-api/history", {"per_page": 0})
-    assert bad_page_size.status_code == 400
-    assert bad_page_size.json()["errors"] == [{"message": "Invalid page size.", "param": "per_page"}]
+    assert bad_page_size.status_code == 422
+    assert bad_page_size.json()["errors"] == [
+        {"message": "Input should be greater than or equal to 1", "param": "query.per_page"}
+    ]
 
     excessive_page_size = client.get("/admin-api/history", {"per_page": 101})
-    assert excessive_page_size.status_code == 400
-    assert excessive_page_size.json()["errors"] == [{"message": "Page size cannot exceed 100.", "param": "per_page"}]
+    assert excessive_page_size.status_code == 422
+    assert excessive_page_size.json()["errors"] == [
+        {"message": "Input should be less than or equal to 100", "param": "query.per_page"}
+    ]
 
 
 def test_history_uses_queryset_pagination_for_global_permissions(admin_client, sample, monkeypatch):

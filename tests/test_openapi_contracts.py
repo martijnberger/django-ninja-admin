@@ -485,6 +485,9 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert history_parameters["per_page"]["description"] == "Page size from 1 to 100."
     assert non_null_parameter_type(history_parameters["page"]) == ["integer"]
     assert non_null_parameter_type(history_parameters["per_page"]) == ["integer"]
+    assert history_parameters["page"]["schema"]["minimum"] == 1
+    assert history_parameters["per_page"]["schema"]["minimum"] == 1
+    assert history_parameters["per_page"]["schema"]["maximum"] == 100
     history_example = components["HistoryResponse"]["examples"][0]
     assert history_example["pagination"]["per_page"] == 20
     assert history_example["pagination"]["more"] is False
@@ -508,6 +511,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert autocomplete_parameters["model_name"]["required"] is True
     assert autocomplete_parameters["field_name"]["required"] is True
     assert non_null_parameter_type(autocomplete_parameters["page"]) == ["integer"]
+    assert autocomplete_parameters["page"]["schema"]["minimum"] == 1
     autocomplete_example = components["AutocompleteResponse"]["examples"][0]
     assert autocomplete_example["results"] == [{"id": "1", "text": "Cameras"}]
     assert autocomplete_example["pagination"]["more"] is False

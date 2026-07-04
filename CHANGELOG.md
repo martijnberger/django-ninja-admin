@@ -14,8 +14,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
-- Added OpenAPI descriptions for `/history` and `/autocomplete` query
-  parameters while preserving existing runtime validation behavior.
+- Added OpenAPI descriptions and numeric bounds for `/history` and
+  `/autocomplete` query parameters; invalid page and history page-size values
+  now use the shared typed 422 validation contract.
 
 ## 0.1.51 - 2026-07-04
 

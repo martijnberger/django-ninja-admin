@@ -87,7 +87,10 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
             "page": 0,
         },
     )
-    assert bad_page.status_code == 404
+    assert bad_page.status_code == 422
+    assert bad_page.json()["errors"] == [
+        {"message": "Input should be greater than or equal to 1", "param": "query.page"}
+    ]
 
 
 def test_autocomplete_query_count_is_bounded_by_requested_page(admin_client, sample, monkeypatch):

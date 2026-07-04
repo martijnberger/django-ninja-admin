@@ -852,8 +852,13 @@ class NinjaAdminSite:
             ),
             action_flag: int | None = NinjaQuery(None, description="Optional Django admin log action flag."),
             o: str = NinjaQuery("-action_time", description="Ordering: `action_time` or `-action_time`."),
-            page: int = NinjaQuery(1, description="1-based page number."),
-            per_page: int = NinjaQuery(20, description=f"Page size from 1 to {site.history_max_per_page}."),
+            page: int = NinjaQuery(1, ge=1, description="1-based page number."),
+            per_page: int = NinjaQuery(
+                20,
+                ge=1,
+                le=site.history_max_per_page,
+                description=f"Page size from 1 to {site.history_max_per_page}.",
+            ),
         ):
             from django_ninja_admin.models import ACTION_FLAG_CHOICES, LogEntry
 
@@ -861,18 +866,6 @@ class NinjaAdminSite:
                 raise AdminValidationError([{"message": _("Invalid ordering provided."), "param": "o"}])
             if action_flag is not None and action_flag not in dict(ACTION_FLAG_CHOICES):
                 raise AdminValidationError([{"message": _("Invalid action flag provided."), "param": "action_flag"}])
-            if per_page < 1:
-                raise AdminValidationError([{"message": _("Invalid page size."), "param": "per_page"}])
-            if per_page > site.history_max_per_page:
-                raise AdminValidationError(
-                    [
-                        {
-                            "message": _("Page size cannot exceed %(max_page_size)s.")
-                            % {"max_page_size": site.history_max_per_page},
-                            "param": "per_page",
-                        }
-                    ]
-                )
             content_type_ids = site._history_content_type_ids(
                 request,
                 app_label=app_label,
@@ -970,7 +963,7 @@ class NinjaAdminSite:
             model_name: str = NinjaQuery(..., description="Source model name."),
             field_name: str = NinjaQuery(..., description="Source relation field configured for autocomplete."),
             term: str = NinjaQuery("", description="Search term matched against the remote admin search fields."),
-            page: int = NinjaQuery(1, description="1-based page number."),
+            page: int = NinjaQuery(1, ge=1, description="1-based page number."),
         ):
             try:
                 source_model = apps.get_model(app_label, model_name)
