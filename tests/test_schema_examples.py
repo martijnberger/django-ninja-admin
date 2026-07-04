@@ -13,10 +13,13 @@ from django_ninja_admin.utils.schema_examples import (
     iter_choice_values,
     json_request_examples_extra,
     model_choice_target_field,
+    normalize_schema_override,
     pydantic_choice_values,
     pydantic_model_example,
     pydantic_type_for_choices,
     schema_example,
+    schema_override_cache_key,
+    schema_override_metadata,
     schema_type_example,
 )
 from tests.testapp.models import Category
@@ -106,6 +109,23 @@ def test_model_choice_target_field_falls_back_to_pk_for_missing_to_field(db):
     field = forms.ModelChoiceField(queryset=Category.objects.all(), to_field_name="missing")
 
     assert model_choice_target_field(field) is Category._meta.pk
+
+
+def test_schema_override_helpers_normalize_shortcuts_and_cache_keys():
+    assert normalize_schema_override((str, ...)) == (str, ...)
+    assert normalize_schema_override((int,)) == (int, None)
+    assert normalize_schema_override(bool) == (bool, None)
+    assert schema_override_cache_key({"flag": bool, "count": (int, 1)}) == (
+        ("flag", "<class 'bool'>"),
+        ("count", "(<class 'int'>, 1)"),
+    )
+
+
+def test_schema_override_metadata_uses_normalized_type_schema():
+    assert schema_override_metadata((bool, False)) == {"schema": {"type": "boolean"}}
+    metadata = schema_override_metadata(dict[str, int])
+
+    assert metadata["schema"]["additionalProperties"]["type"] == "integer"
 
 
 def test_schema_type_example_satisfies_annotated_constraints():

@@ -25,7 +25,6 @@ from pydantic import (
     ConfigDict,
     Field,
     IPvAnyAddress,
-    TypeAdapter,
     create_model,
 )
 
@@ -79,10 +78,13 @@ from django_ninja_admin.utils.schema_examples import (
     form_data_example,
     iter_choice_values,
     model_choice_target_field,
+    normalize_schema_override,
     pydantic_choice_values,
     pydantic_literal_for_choices,
     pydantic_type_for_choices,
     schema_example,
+    schema_override_cache_key,
+    schema_override_metadata,
     schema_type_example,
 )
 
@@ -969,12 +971,7 @@ class BaseAdmin:
         return field.name, field_type, ...
 
     def _normalize_schema_override(self, value):
-        if isinstance(value, tuple):
-            if len(value) == 2:
-                return value
-            if len(value) == 1:
-                return value[0], None
-        return value, None
+        return normalize_schema_override(value)
 
     def get_pydantic_type_for_model_field(self, field):
         if isinstance(
@@ -1022,7 +1019,7 @@ class BaseAdmin:
         return TYPES.get(field.get_internal_type())
 
     def _schema_override_cache_key(self, overrides):
-        return tuple((name, repr(value)) for name, value in overrides.items())
+        return schema_override_cache_key(overrides)
 
     def get_form_fields_description(self, request, obj=None, *, initial=None, form=None):
         form_class = form.__class__ if form is not None else self.get_form_class(request, obj, change=obj is not None)
@@ -1079,8 +1076,7 @@ class BaseAdmin:
         return descriptions
 
     def form_schema_field_override_metadata(self, override):
-        field_type, _default = self._normalize_schema_override(override)
-        return {"schema": TypeAdapter(field_type).json_schema()}
+        return schema_override_metadata(override)
 
     def get_changeform_initial_data(self, request):
         initial = dict(getattr(request, "GET", {}).items())

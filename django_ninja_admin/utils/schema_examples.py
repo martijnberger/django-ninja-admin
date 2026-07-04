@@ -76,6 +76,24 @@ def model_choice_target_field(field):
     return model._meta.pk
 
 
+def normalize_schema_override(value):
+    if isinstance(value, tuple):
+        if len(value) == 2:
+            return value
+        if len(value) == 1:
+            return value[0], None
+    return value, None
+
+
+def schema_override_cache_key(overrides):
+    return tuple((name, repr(value)) for name, value in overrides.items())
+
+
+def schema_override_metadata(override):
+    field_type, _default = normalize_schema_override(override)
+    return {"schema": TypeAdapter(field_type).json_schema()}
+
+
 def _form_example_candidates(
     form_fields: Mapping[str, forms.Field],
     *,

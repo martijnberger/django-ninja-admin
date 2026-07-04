@@ -12,6 +12,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Extracted shared form-data example selection, relation-target lookup, and
   JSON request-example wrapping so admin and site OpenAPI examples use tested
   helpers.
+- Extracted schema override normalization, cache-key, and metadata helpers for
+  form/output schema generation.
 
 ## 0.1.42 - 2026-07-04
 
