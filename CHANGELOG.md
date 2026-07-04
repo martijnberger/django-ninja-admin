@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.48 - 2026-07-04
+
 ### Added
 
 - Added `selected_count` and `available_count` to filtered-select form metadata
