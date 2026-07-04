@@ -158,6 +158,11 @@ def test_response_hooks_can_return_custom_status(admin_client, sample):
         == "#/components/schemas/ProductChangeHookResponse"
     )
     assert (
+        _response_schema_ref(paths["/status-hook-admin/testapp/product/{object_id}"]["patch"], "200")
+        == "#/components/schemas/ProductChangeHookResponse"
+    )
+    assert "201" not in paths["/status-hook-admin/testapp/product/{object_id}"]["patch"]["responses"]
+    assert (
         _response_schema_ref(paths["/status-hook-admin/testapp/product/{object_id}"]["delete"], "202")
         == "#/components/schemas/ProductDeleteStatusHookResponse"
     )

@@ -7,7 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
-No changes yet.
+### Fixed
+
+- Aligned custom `response_change_schema` OpenAPI status maps with runtime
+  update responses by advertising declared change-hook schemas on `200`/`202`
+  and wrapping plain `response_change()` bodies in `Status(200, ...)`.
 
 ## 0.1.49 - 2026-07-04
 

@@ -1081,7 +1081,7 @@ class NinjaAdminSite:
         action_response_schema = model_admin.get_action_response_schema(None)
         changelist_throttle = model_admin.get_changelist_throttle(None)
         add_hook_responses = site._custom_hook_responses(model_admin.get_response_add_schema(None), (200, 202))
-        change_hook_responses = site._custom_hook_responses(model_admin.get_response_change_schema(None), (201, 202))
+        change_hook_responses = site._custom_hook_responses(model_admin.get_response_change_schema(None), (200, 202))
         delete_hook_responses = site._custom_hook_responses(model_admin.get_response_delete_schema(None), (200, 202))
         action_response = {
             200: action_response_schema,
@@ -2093,7 +2093,10 @@ class NinjaAdminSite:
             change_message = model_admin.construct_change_message(request, form, inline_results)
             if change_message:
                 model_admin.log_change(request, updated_object, change_message)
-            return model_admin.response_change(request, updated_object, form, inline_results)
+            response = model_admin.response_change(request, updated_object, form, inline_results)
+            if isinstance(response, Status):
+                return response
+            return Status(200, response)
 
     def _process_inlines(self, request, model_admin, obj, inline_payload, *, change):
         if not inline_payload:

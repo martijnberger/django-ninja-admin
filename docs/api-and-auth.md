@@ -336,7 +336,7 @@ class ProductAdmin(ModelAdmin):
 
 The same pattern is available as `response_add_schema` and
 `response_change_schema`. A schema value is advertised for the conventional
-custom hook statuses (`200`/`202` for add and delete, `201`/`202` for change).
+custom hook statuses (`200`/`202` for add, change, and delete).
 Use a status-to-schema mapping when a hook needs different schemas per status.
 Default inline mutation responses are also typed: each inline id maps to
 `add`/`change` arrays of serialized inline objects and a `delete` array of
