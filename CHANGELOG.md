@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.46 - 2026-07-04
+
 ### Changed
 
 - Aligned `list_display`, `list_display_links`, and `list_editable` item-level
