@@ -11,6 +11,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Aligned common `ModelAdmin` sequence-option check IDs with Django admin's
   numbering while keeping the `django_ninja_admin` check namespace.
+- Aligned `save_as`, `save_on_top`, `list_per_page`, and
+  `list_max_show_all` check IDs with Django admin's numbering, and moved
+  package-specific prefetch/form-schema checks out of that native range.
 
 ## 0.1.44 - 2026-07-04
 

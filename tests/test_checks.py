@@ -479,10 +479,10 @@ def test_admin_checks_validate_list_prefetch_related(db, make_site):
     bad_type_errors = _check_site(bad_type_site)
     bad_path_errors = _check_site(bad_path_site)
 
-    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E118", "django_ninja_admin.E119"})
-    assert {error.id for error in bad_type_errors} == {"django_ninja_admin.E118"}
+    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E131", "django_ninja_admin.E132"})
+    assert {error.id for error in bad_type_errors} == {"django_ninja_admin.E131"}
     assert len(bad_type_errors) == 1
-    assert {error.id for error in bad_path_errors} == {"django_ninja_admin.E119"}
+    assert {error.id for error in bad_path_errors} == {"django_ninja_admin.E132"}
     assert len(bad_path_errors) == 3
 
 
@@ -541,14 +541,14 @@ def test_admin_checks_validate_pagination_options(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E067",
-            "django_ninja_admin.E068",
+            "django_ninja_admin.E118",
+            "django_ninja_admin.E119",
             "django_ninja_admin.E104",
             "django_ninja_admin.E105",
         }
     )
-    assert bad_ids == {"django_ninja_admin.E067", "django_ninja_admin.E068"}
-    assert bad_boolean_ids == {"django_ninja_admin.E067", "django_ninja_admin.E068"}
+    assert bad_ids == {"django_ninja_admin.E118", "django_ninja_admin.E119"}
+    assert bad_boolean_ids == {"django_ninja_admin.E118", "django_ninja_admin.E119"}
     assert bad_range_ids == {"django_ninja_admin.E104", "django_ninja_admin.E105"}
 
 
@@ -601,8 +601,8 @@ def test_admin_checks_validate_boolean_options(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E069",
-            "django_ninja_admin.E070",
+            "django_ninja_admin.E101",
+            "django_ninja_admin.E102",
             "django_ninja_admin.E071",
             "django_ninja_admin.E083",
             "django_ninja_admin.E084",
@@ -612,8 +612,8 @@ def test_admin_checks_validate_boolean_options(db, make_site):
         }
     )
     assert bad_ids == {
-        "django_ninja_admin.E069",
-        "django_ninja_admin.E070",
+        "django_ninja_admin.E101",
+        "django_ninja_admin.E102",
         "django_ninja_admin.E071",
         "django_ninja_admin.E083",
         "django_ninja_admin.E084",
@@ -1303,7 +1303,7 @@ def test_admin_checks_validate_form_schema_field_overrides(db, make_site):
     bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
     bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E101", "django_ninja_admin.E102", "django_ninja_admin.E103"})
-    assert bad_mapping_ids == {"django_ninja_admin.E101"}
-    assert bad_key_ids == {"django_ninja_admin.E102"}
-    assert bad_tuple_ids == {"django_ninja_admin.E103"}
+    assert valid_ids.isdisjoint({"django_ninja_admin.E133", "django_ninja_admin.E134", "django_ninja_admin.E135"})
+    assert bad_mapping_ids == {"django_ninja_admin.E133"}
+    assert bad_key_ids == {"django_ninja_admin.E134"}
+    assert bad_tuple_ids == {"django_ninja_admin.E135"}

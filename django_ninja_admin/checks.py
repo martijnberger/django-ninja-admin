@@ -38,6 +38,14 @@ DJANGO_SEQUENCE_OPTION_CODES = {
     "search_fields": "E126",
 }
 
+PACKAGE_OPTION_CODES = {
+    "list_prefetch_related_type": "E131",
+    "list_prefetch_related_path": "E132",
+    "form_schema_field_overrides_type": "E133",
+    "form_schema_field_overrides_key": "E134",
+    "form_schema_field_overrides_value": "E135",
+}
+
 
 def _error(obj, message, code, *, hint=None):
     return checks.Error(message, hint=hint, obj=obj, id=f"{ERROR_PREFIX}.{code}")
@@ -294,7 +302,7 @@ def _check_pagination_options(model_admin):
     list_per_page = getattr(model_admin, "list_per_page", None)
     list_max_show_all = getattr(model_admin, "list_max_show_all", None)
     if not _is_integer_option(list_per_page):
-        errors.append(_error(model_admin.__class__, "The value of 'list_per_page' must be an integer.", "E067"))
+        errors.append(_error(model_admin.__class__, "The value of 'list_per_page' must be an integer.", "E118"))
     else:
         list_per_page_int = cast(int, list_per_page)
         if list_per_page_int < 1:
@@ -302,7 +310,7 @@ def _check_pagination_options(model_admin):
                 _error(model_admin.__class__, "The value of 'list_per_page' must be greater than zero.", "E104")
             )
     if not _is_integer_option(list_max_show_all):
-        errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must be an integer.", "E068"))
+        errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must be an integer.", "E119"))
     else:
         list_max_show_all_int = cast(int, list_max_show_all)
         if list_max_show_all_int < 0:
@@ -326,11 +334,11 @@ def _check_paginator(model_admin):
 def _check_boolean_options(model_admin):
     errors = []
     if not isinstance(getattr(model_admin, "save_as", False), bool):
-        errors.append(_error(model_admin.__class__, "The value of 'save_as' must be a boolean.", "E069"))
+        errors.append(_error(model_admin.__class__, "The value of 'save_as' must be a boolean.", "E101"))
     if not isinstance(getattr(model_admin, "save_as_continue", True), bool):
         errors.append(_error(model_admin.__class__, "The value of 'save_as_continue' must be a boolean.", "E083"))
     if not isinstance(getattr(model_admin, "save_on_top", False), bool):
-        errors.append(_error(model_admin.__class__, "The value of 'save_on_top' must be a boolean.", "E070"))
+        errors.append(_error(model_admin.__class__, "The value of 'save_on_top' must be a boolean.", "E102"))
     if not isinstance(getattr(model_admin, "actions_on_top", True), bool):
         errors.append(_error(model_admin.__class__, "The value of 'actions_on_top' must be a boolean.", "E084"))
     if not isinstance(getattr(model_admin, "actions_on_bottom", False), bool):
@@ -467,7 +475,13 @@ def _check_schema_field_overrides(model_admin):
 def _check_form_schema_field_overrides(model_admin):
     value = getattr(model_admin, "form_schema_field_overrides", {}) or {}
     if not isinstance(value, Mapping):
-        return [_error(model_admin.__class__, "The value of 'form_schema_field_overrides' must be a mapping.", "E101")]
+        return [
+            _error(
+                model_admin.__class__,
+                "The value of 'form_schema_field_overrides' must be a mapping.",
+                PACKAGE_OPTION_CODES["form_schema_field_overrides_type"],
+            )
+        ]
 
     errors = []
     for field_name, override in value.items():
@@ -476,7 +490,7 @@ def _check_form_schema_field_overrides(model_admin):
                 _error(
                     model_admin.__class__,
                     "Keys in 'form_schema_field_overrides' must be field names.",
-                    "E102",
+                    PACKAGE_OPTION_CODES["form_schema_field_overrides_key"],
                 )
             )
         if isinstance(override, tuple) and len(override) not in {1, 2}:
@@ -484,7 +498,7 @@ def _check_form_schema_field_overrides(model_admin):
                 _error(
                     model_admin.__class__,
                     f"The override for '{field_name}' must be a type annotation or a one/two-item tuple.",
-                    "E103",
+                    PACKAGE_OPTION_CODES["form_schema_field_overrides_value"],
                 )
             )
     return errors
@@ -836,7 +850,7 @@ def _check_list_prefetch_related(model_admin):
             _error(
                 model_admin.__class__,
                 "The value of 'list_prefetch_related' must be a list or tuple.",
-                "E118",
+                PACKAGE_OPTION_CODES["list_prefetch_related_type"],
             )
         ]
 
@@ -848,7 +862,7 @@ def _check_list_prefetch_related(model_admin):
                 _error(
                     model_admin.__class__,
                     "Items in 'list_prefetch_related' must be strings or Prefetch objects.",
-                    "E118",
+                    PACKAGE_OPTION_CODES["list_prefetch_related_type"],
                 )
             )
             continue
@@ -874,7 +888,7 @@ def _check_prefetch_related_path(model_admin, field_path):
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_prefetch_related' refers to unknown field '{field_path}'.",
-                    "E119",
+                    PACKAGE_OPTION_CODES["list_prefetch_related_path"],
                 )
             ]
         if not getattr(field, "is_relation", False):
@@ -883,7 +897,7 @@ def _check_prefetch_related_path(model_admin, field_path):
                     model_admin.__class__,
                     f"The value of 'list_prefetch_related' refers to '{field_path}', "
                     "which is not a prefetch_related relation.",
-                    "E119",
+                    PACKAGE_OPTION_CODES["list_prefetch_related_path"],
                 )
             ]
         related_model = getattr(field, "related_model", None)
@@ -892,7 +906,7 @@ def _check_prefetch_related_path(model_admin, field_path):
                 _error(
                     model_admin.__class__,
                     f"The value of 'list_prefetch_related' refers to unknown relation '{field_path}'.",
-                    "E119",
+                    PACKAGE_OPTION_CODES["list_prefetch_related_path"],
                 )
             ]
         opts = related_model._meta
