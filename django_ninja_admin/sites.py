@@ -88,7 +88,12 @@ from django_ninja_admin.utils.lookup import (
     lookup_field,
 )
 from django_ninja_admin.utils.quote import quote, unquote
-from django_ninja_admin.utils.schema_examples import choice_example_value, json_example_value, pydantic_model_example
+from django_ninja_admin.utils.schema_examples import (
+    choice_example_value,
+    form_data_example,
+    json_example_value,
+    pydantic_model_example,
+)
 
 all_sites = WeakSet()
 DEFAULT_AUTH = object()
@@ -1900,30 +1905,17 @@ class NinjaAdminSite:
         return examples
 
     def _form_data_example(self, form_fields, *, partial, overrides=None, schema_owner=None):
-        overrides = overrides or {}
-        data = {}
-        candidates = [
-            (name, field)
-            for name, field in form_fields.items()
-            if not getattr(field, "disabled", False) and not isinstance(field, forms.FileField)
-        ]
-        for name, field in candidates:
-            if partial and data:
-                break
-            if partial or field.required:
-                data[name] = self._form_field_example_value(
-                    field,
-                    override=overrides.get(name),
-                    schema_owner=schema_owner,
-                )
-        if not data and candidates:
-            name, field = candidates[0]
-            data[name] = self._form_field_example_value(
+        return form_data_example(
+            form_fields,
+            partial=partial,
+            overrides=overrides,
+            exclude_file_fields=True,
+            field_example=lambda _name, field, override: self._form_field_example_value(
                 field,
-                override=overrides.get(name),
+                override=override,
                 schema_owner=schema_owner,
-            )
-        return data
+            ),
+        )
 
     def _form_field_example_value(self, field, *, override=None, schema_owner=None):
         if override is not None and schema_owner is not None:

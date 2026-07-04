@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Extracted shared form-data example selection logic so admin and site OpenAPI
+  request examples use one tested helper.
+
 ## 0.1.42 - 2026-07-04
 
 ### Added

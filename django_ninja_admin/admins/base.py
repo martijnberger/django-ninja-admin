@@ -76,6 +76,7 @@ from django_ninja_admin.utils.schema_constraints import (
 from django_ninja_admin.utils.schema_examples import (
     choice_example_value,
     coerce_choice_example,
+    form_data_example,
     iter_choice_values,
     pydantic_choice_values,
     pydantic_literal_for_choices,
@@ -423,23 +424,13 @@ class BaseAdmin:
         return schema_example(schema)
 
     def _form_data_example(self, form_fields, *, selected_fields=None, partial=False, overrides=None):
-        data = {}
-        overrides = overrides or {}
-        field_names = tuple(selected_fields or form_fields.keys())
-        candidates = [
-            (name, form_fields.get(name))
-            for name in field_names
-            if form_fields.get(name) is not None and not getattr(form_fields.get(name), "disabled", False)
-        ]
-        for name, field in candidates:
-            if partial and data:
-                break
-            if partial or field.required:
-                data[name] = self._form_field_example_value(field, override=overrides.get(name))
-        if not data and candidates:
-            name, field = candidates[0]
-            data[name] = self._form_field_example_value(field, override=overrides.get(name))
-        return data
+        return form_data_example(
+            form_fields,
+            selected_fields=selected_fields,
+            partial=partial,
+            overrides=overrides,
+            field_example=lambda _name, field, override: self._form_field_example_value(field, override=override),
+        )
 
     def _bulk_row_example(self, form_fields, *, overrides=None):
         row = {"pk": 1}

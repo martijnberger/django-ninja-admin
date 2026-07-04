@@ -3,11 +3,13 @@ from decimal import Decimal
 from typing import Annotated, Literal
 from uuid import UUID
 
+from django import forms
 from pydantic import BaseModel, Field, TypeAdapter
 
 from django_ninja_admin.utils.schema_examples import (
     choice_example_value,
     coerce_choice_example,
+    form_data_example,
     iter_choice_values,
     pydantic_choice_values,
     pydantic_model_example,
@@ -17,6 +19,10 @@ from django_ninja_admin.utils.schema_examples import (
 )
 
 
+def _field_example(name, _field, override):
+    return override or f"{name}-example"
+
+
 def test_schema_example_returns_first_declared_example():
     class ExampleSchema(BaseModel):
         model_config = {"json_schema_extra": {"examples": [{"name": "declared"}]}}
@@ -24,6 +30,46 @@ def test_schema_example_returns_first_declared_example():
         name: str
 
     assert schema_example(ExampleSchema) == {"name": "declared"}
+
+
+def test_form_data_example_uses_required_fields_and_overrides():
+    form_fields = {
+        "name": forms.CharField(required=True),
+        "summary": forms.CharField(required=False),
+    }
+
+    assert form_data_example(
+        form_fields,
+        field_example=_field_example,
+        overrides={"name": "declared"},
+    ) == {"name": "declared"}
+
+
+def test_form_data_example_partial_uses_first_available_field():
+    form_fields = {
+        "name": forms.CharField(required=True),
+        "summary": forms.CharField(required=True),
+    }
+
+    assert form_data_example(form_fields, field_example=_field_example, partial=True) == {"name": "name-example"}
+
+
+def test_form_data_example_honors_selected_disabled_and_file_fields():
+    disabled = forms.CharField(required=True)
+    disabled.disabled = True
+    form_fields = {
+        "name": forms.CharField(required=True),
+        "document": forms.FileField(required=True),
+        "disabled": disabled,
+        "summary": forms.CharField(required=False),
+    }
+
+    assert form_data_example(
+        form_fields,
+        field_example=_field_example,
+        selected_fields=("document", "disabled", "summary"),
+        exclude_file_fields=True,
+    ) == {"summary": "summary-example"}
 
 
 def test_schema_type_example_satisfies_annotated_constraints():

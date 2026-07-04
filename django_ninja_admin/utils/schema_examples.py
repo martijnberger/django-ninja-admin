@@ -1,3 +1,4 @@
+from collections.abc import Callable, Mapping, Sequence
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from math import ceil, floor
@@ -5,14 +6,62 @@ from types import UnionType
 from typing import Annotated, Any, Literal, Union, get_args, get_origin
 from uuid import UUID
 
+from django import forms
 from pydantic import AnyUrl, IPvAnyAddress, TypeAdapter
 from pydantic_core import ValidationError as PydanticCoreValidationError
 
 from django_ninja_admin.schemas import FileFieldValue, ImageFieldValue
 
+FormFieldExample = Callable[[str, forms.Field, Any], Any]
+
 
 def schema_example(schema):
     return (schema.model_json_schema().get("examples") or [{}])[0]
+
+
+def form_data_example(
+    form_fields: Mapping[str, forms.Field],
+    *,
+    field_example: FormFieldExample,
+    selected_fields: Sequence[str] | None = None,
+    partial: bool = False,
+    overrides: Mapping[str, Any] | None = None,
+    exclude_file_fields: bool = False,
+) -> dict[str, Any]:
+    data: dict[str, Any] = {}
+    overrides = overrides or {}
+    candidates = _form_example_candidates(
+        form_fields,
+        selected_fields=selected_fields,
+        exclude_file_fields=exclude_file_fields,
+    )
+    for name, field in candidates:
+        if partial and data:
+            break
+        if partial or field.required:
+            data[name] = field_example(name, field, overrides.get(name))
+    if not data and candidates:
+        name, field = candidates[0]
+        data[name] = field_example(name, field, overrides.get(name))
+    return data
+
+
+def _form_example_candidates(
+    form_fields: Mapping[str, forms.Field],
+    *,
+    selected_fields: Sequence[str] | None,
+    exclude_file_fields: bool,
+) -> list[tuple[str, forms.Field]]:
+    candidates = []
+    field_names = tuple(selected_fields or form_fields.keys())
+    for name in field_names:
+        field = form_fields.get(name)
+        if field is None or getattr(field, "disabled", False):
+            continue
+        if exclude_file_fields and isinstance(field, forms.FileField):
+            continue
+        candidates.append((name, field))
+    return candidates
 
 
 def iter_choice_values(choices):
