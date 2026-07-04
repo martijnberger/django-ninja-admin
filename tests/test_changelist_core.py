@@ -371,6 +371,29 @@ def test_changelist_supports_relation_path_list_display(admin_client, sample, mo
     assert body["rows"][1]["cells"]["category__name"] == "Cameras"
 
 
+def test_changelist_preserves_explicit_blank_display_metadata(admin_client, sample, monkeypatch):
+    @display(description="", empty_value="")
+    def blank_summary(obj):
+        return None
+
+    product_admin = site.get_model_admin(Product)
+    monkeypatch.setattr(product_admin, "list_display", ("name", blank_summary))
+
+    response = admin_client.get("/admin-api/testapp/product")
+
+    assert response.status_code == 200
+    body = response.json()
+    blank_column = next(column for column in body["columns"] if column["field"] == "blank_summary")
+    assert blank_column["header_name"] == ""
+    assert blank_column["empty_value_display"] == ""
+    assert [row["cells"]["blank_summary"] for row in body["rows"]] == ["", ""]
+    assert all(
+        row["cell_metadata"]["blank_summary"]["display_value"] == ""
+        and row["cell_metadata"]["blank_summary"]["empty_value_display"] == ""
+        for row in body["rows"]
+    )
+
+
 def test_changelist_ordering_adds_deterministic_pk_fallback(admin_client, sample, monkeypatch):
     duplicate = Product.objects.create(name="Alpha", category=sample.category, price="6.00")
 

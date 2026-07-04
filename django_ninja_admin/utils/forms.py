@@ -649,7 +649,11 @@ def form_field_descriptions(
             }
             if instance is not None:
                 value = _readonly_value(readonly_field, instance, model_admin, model_field)
-                field_empty_value = display_metadata["empty_value_display"] or empty_value_display
+                field_empty_value = (
+                    display_metadata["empty_value_display"]
+                    if display_metadata["empty_value_display"] is not None
+                    else empty_value_display
+                )
                 readonly_attrs["value"] = field_empty_value if value in (None, "") else value
             description = {
                 "name": name,

@@ -14,6 +14,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added consistent OpenAPI descriptions for `_to_field` query parameters on
   object detail, form, update, multipart update, and delete routes.
 
+### Fixed
+
+- Preserved explicit blank `@display(description="")` labels and
+  `empty_value=""` values in changelist and readonly form metadata instead of
+  falling back to generated labels or the site empty-value marker.
+
 ## 0.1.56 - 2026-07-04
 
 ### Changed

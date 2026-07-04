@@ -100,11 +100,15 @@ def test_readonly_display_fields_include_values_and_display_metadata(admin_clien
     def callable_summary(obj):
         return f"{obj.name}:{obj.stock_status}"
 
+    @display(description="", empty_value="")
+    def blank_summary(obj):
+        return None
+
     callable_summary.short_description = "Callable summary"
     monkeypatch.setattr(
         product_admin,
         "readonly_fields",
-        ("upper_name", "has_description", "subtitle", callable_summary),
+        ("upper_name", "has_description", "subtitle", callable_summary, blank_summary),
     )
 
     response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
@@ -127,6 +131,10 @@ def test_readonly_display_fields_include_values_and_display_metadata(admin_clien
     assert fields_by_name["callable_summary"]["attrs"]["label"] == "Callable summary"
     assert fields_by_name["callable_summary"]["attrs"]["value"] == "Alpha:in_stock"
     assert fields_by_name["callable_summary"]["attrs"]["read_only"] is True
+    assert fields_by_name["blank_summary"]["attrs"]["label"] == ""
+    assert fields_by_name["blank_summary"]["attrs"]["empty_value_display"] == ""
+    assert fields_by_name["blank_summary"]["attrs"]["value"] == ""
+    assert fields_by_name["blank_summary"]["attrs"]["read_only"] is True
 
     empty_product = Product.objects.get(name="Beta")
     empty_response = admin_client.get(f"/admin-api/testapp/product/{empty_product.pk}/form")

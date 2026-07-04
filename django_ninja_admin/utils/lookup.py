@@ -52,9 +52,9 @@ def display_attr_for_field(name, model, model_admin=None):
 
 def label_for_field(name, model, model_admin=None):
     attr = display_attr_for_field(name, model, model_admin)
-    if attr is not None:
-        short_description = getattr(attr, "short_description", None)
-        if short_description:
+    if attr is not None and hasattr(attr, "short_description"):
+        short_description = attr.short_description
+        if short_description is not None:
             return short_description
     if isinstance(name, str):
         try:
@@ -63,7 +63,7 @@ def label_for_field(name, model, model_admin=None):
         except FieldDoesNotExist:
             pass
     name = field_name_for_display(name)
-    return getattr(attr, "short_description", None) or name.replace("_", " ").title()
+    return name.replace("_", " ").title()
 
 
 def display_metadata_for_field(name, model, model_admin=None):

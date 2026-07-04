@@ -1554,7 +1554,11 @@ class NinjaAdminSite:
                 raw_value = lookup_field(field, obj, model_admin)
                 value = _jsonish_value(raw_value)
                 display_metadata = display_metadata_for_field(field, model_admin.model, model_admin)
-                field_empty_value = display_metadata["empty_value_display"] or empty_value
+                field_empty_value = (
+                    display_metadata["empty_value_display"]
+                    if display_metadata["empty_value_display"] is not None
+                    else empty_value
+                )
                 is_empty = raw_value in (None, "")
                 display_value = field_empty_value if is_empty else value
                 cells[field_key] = display_value
