@@ -360,12 +360,11 @@
         "type": "object"
       },
       "CategoryAdminInlineResponse": {
-        "additionalProperties": {
-          "$ref": "#/components/schemas/FieldMetadataValue"
-        },
+        "additionalProperties": false,
         "examples": [
           {}
         ],
+        "properties": {},
         "title": "CategoryAdminInlineResponse",
         "type": "object"
       },
@@ -3492,12 +3491,11 @@
         "type": "object"
       },
       "GroupAdminInlineResponse": {
-        "additionalProperties": {
-          "$ref": "#/components/schemas/FieldMetadataValue"
-        },
+        "additionalProperties": false,
         "examples": [
           {}
         ],
+        "properties": {},
         "title": "GroupAdminInlineResponse",
         "type": "object"
       },
@@ -4966,6 +4964,9 @@
             }
           }
         ],
+        "propertyNames": {
+          "const": "testapp.productimage"
+        },
         "title": "ProductAdminInlineResponse",
         "type": "object"
       },
@@ -6981,12 +6982,11 @@
         "type": "object"
       },
       "TagAdminInlineResponse": {
-        "additionalProperties": {
-          "$ref": "#/components/schemas/FieldMetadataValue"
-        },
+        "additionalProperties": false,
         "examples": [
           {}
         ],
+        "properties": {},
         "title": "TagAdminInlineResponse",
         "type": "object"
       },
@@ -7451,12 +7451,11 @@
         "type": "object"
       },
       "UserAdminInlineResponse": {
-        "additionalProperties": {
-          "$ref": "#/components/schemas/FieldMetadataValue"
-        },
+        "additionalProperties": false,
         "examples": [
           {}
         ],
+        "properties": {},
         "title": "UserAdminInlineResponse",
         "type": "object"
       },

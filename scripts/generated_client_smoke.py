@@ -464,6 +464,12 @@ def write_sample_project(project_dir: Path) -> None:
         assert consumer.parameter_type("sample_app_product_list", "pp") == ["integer"]
         assert consumer.parameter_type("sample_app_product_list", "all") == ["boolean"]
         assert consumer.parameter_type("sample_app_product_list", "_facets") == ["boolean"]
+        components = consumer.schema["components"]["schemas"]
+        assert components["CategoryAdminInlineResponse"]["additionalProperties"] is False
+        assert components["ProductAdminInlineResponse"]["propertyNames"] == {"const": "sample_app.productimage"}
+        assert components["ProductAdminInlineResponse"]["additionalProperties"] == {
+            "$ref": "#/components/schemas/ProductImageInlineOperationResults"
+        }
         assert consumer.path_parameters["sample_app_product_detail"] == {"object_id"}
         assert "_to_field" in consumer.query_parameters["sample_app_product_detail"]
 

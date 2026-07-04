@@ -139,6 +139,9 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         {"$ref": "#/components/schemas/ProductAdminInlineResponse"},
         {"type": "null"},
     ]
+    assert components["CategoryAdminInlineResponse"]["additionalProperties"] is False
+    assert components["CategoryAdminInlineResponse"]["properties"] == {}
+    assert components["ProductAdminInlineResponse"]["propertyNames"] == {"const": "testapp.productimage"}
     assert components["ProductAdminInlineResponse"]["additionalProperties"] == {
         "$ref": "#/components/schemas/ProductImageInlineOperationResults"
     }

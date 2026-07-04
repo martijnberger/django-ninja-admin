@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Typed changelist `pp`, `all`, and `_facets` query parameters as integer and
   boolean OpenAPI parameters, with documented 422 validation errors.
+- Constrained generated inline mutation response schemas to registered inline
+  identifiers instead of advertising arbitrary inline response keys.
 
 ## 0.1.40 - 2026-07-04
 

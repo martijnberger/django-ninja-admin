@@ -239,25 +239,29 @@ class ModelAdmin(BaseAdmin):
         )
         cache_key = ("inline-response", inline_schemas)
         if cache_key not in cache:
-            value_schemas = tuple(inline_schema for _inline_id, inline_schema in inline_schemas)
-            value_schema = self._union_type(value_schemas) if value_schemas else FieldMetadataValue
-            cache[cache_key] = type(
-                f"{self.model.__name__}AdminInlineResponse",
-                (RootModel[dict[str, value_schema]],),
-                {
-                    "__module__": self.__class__.__module__,
-                    "model_config": ConfigDict(
-                        json_schema_extra={
-                            "examples": [
-                                {
-                                    inline_id: self._schema_example(inline_schema)
-                                    for inline_id, inline_schema in inline_schemas
-                                }
-                            ]
-                        }
+            examples = [{inline_id: self._schema_example(inline_schema) for inline_id, inline_schema in inline_schemas}]
+            if inline_schemas:
+                inline_ids = tuple(inline_id for inline_id, _inline_schema in inline_schemas)
+                value_schemas = tuple(inline_schema for _inline_id, inline_schema in inline_schemas)
+                key_schema = cast(Any, Literal).__getitem__(inline_ids)
+                value_schema = self._union_type(value_schemas)
+                cache[cache_key] = type(
+                    f"{self.model.__name__}AdminInlineResponse",
+                    (RootModel[dict[key_schema, value_schema]],),
+                    {
+                        "__module__": self.__class__.__module__,
+                        "model_config": ConfigDict(json_schema_extra={"examples": examples}),
+                    },
+                )
+            else:
+                cache[cache_key] = PydanticCreateModel(
+                    f"{self.model.__name__}AdminInlineResponse",
+                    __base__=Schema,
+                    __config__=ConfigDict(
+                        extra="forbid",
+                        json_schema_extra={"examples": examples},
                     ),
-                },
-            )
+                )
             self._inline_response_schema_cache = cache
         return cache[cache_key]
 
