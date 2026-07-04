@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.56 - 2026-07-04
+
 ### Changed
 
 - Narrowed the changelist `action_form` OpenAPI contract to dedicated typed
