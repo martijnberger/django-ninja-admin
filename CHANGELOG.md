@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.57 - 2026-07-04
+
 ### Changed
 
 - Narrowed inline and list-editable formset management metadata to dedicated
