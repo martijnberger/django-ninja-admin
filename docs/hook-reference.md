@@ -86,7 +86,8 @@ Response hook return values are part of the generated-client contract:
   and declare `response_add_schema` or `response_change_schema`.
 - `response_delete()` may return `None` for the default `204` response, a plain
   dictionary for a typed `200` response, or `Status(...)` for an explicit
-  status/body pair.
+  status/body pair. Delete hooks that return a body must declare
+  `response_delete_schema`.
 - Hooks returning custom bodies should declare a schema class, or a
   status-to-schema mapping when different statuses return different shapes.
   A schema class is advertised on `200` and `202` for add/change/delete hooks;
@@ -94,10 +95,10 @@ Response hook return values are part of the generated-client contract:
 - Hook bodies should be JSON-compatible Pydantic/Ninja response data. They
   should not return Django `HttpResponse` objects, rendered templates, or
   model instances directly.
-- Add/change hook bodies are validated against the advertised response schema
-  before the surrounding mutation transaction commits. If validation fails,
-  the database write is rolled back and the client receives the shared typed
-  error response.
+- Add/change/delete hook bodies are validated against the advertised response
+  schema before the surrounding mutation transaction commits. If validation
+  fails, the database write is rolled back and the client receives the shared
+  typed error response.
 
 ## Actions, Inlines, And Routes
 

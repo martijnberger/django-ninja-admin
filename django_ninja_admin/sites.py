@@ -508,9 +508,17 @@ class NinjaAdminSite:
         default_schema,
         hook_schema,
         hook_name,
+        plain_status=None,
     ):
-        status_code = response.status_code if isinstance(response, Status) else default_status
-        value = response.value if isinstance(response, Status) else response
+        if isinstance(response, Status):
+            status_code = response.status_code
+            value = response.value
+        elif plain_status is not None and response is not None:
+            status_code = plain_status
+            value = response
+        else:
+            status_code = default_status
+            value = response
         response_schema = self._mutation_hook_response_schema(
             status_code,
             default_status=default_status,
@@ -1470,12 +1478,15 @@ class NinjaAdminSite:
             with transaction.atomic(using=router_db_for_write(model_admin.model)):
                 model_admin.log_deletion(request, [obj])
                 model_admin.delete_model(request, obj)
-            response = model_admin.response_delete(request, obj_display, obj_id)
-            if response is not None:
-                if isinstance(response, Status):
-                    return response
-                return Status(200, response)
-            return Status(204, None)
+                response = model_admin.response_delete(request, obj_display, obj_id)
+                return site._validated_mutation_hook_response(
+                    response,
+                    default_status=204,
+                    default_schema=None,
+                    hook_schema=model_admin.get_response_delete_schema(request),
+                    hook_name="response_delete",
+                    plain_status=200,
+                )
 
     def _get_object_or_404(self, request, model_admin, object_id, to_field=None):
         if to_field and not model_admin.to_field_allowed(request, to_field):

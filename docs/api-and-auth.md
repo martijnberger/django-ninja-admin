@@ -294,10 +294,10 @@ a required top-level status field:
 
 `response_add()` and `response_change()` should return the standard typed
 mutation response shape unless they return a `ninja.Status` with a custom
-status/body. Plain `response_delete()` bodies are returned as `200`, while
-`None` keeps the default `204`. The standard add/change shape is serialized
-through the model admin output schema and does not advertise extra ad hoc
-fields:
+status/body. Plain `response_delete()` bodies are returned as `200` and must
+declare `response_delete_schema`, while `None` keeps the default `204`. The
+standard add/change shape is serialized through the model admin output schema
+and does not advertise extra ad hoc fields:
 
 ```json
 {

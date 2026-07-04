@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Fixed
+
+- Validated delete response-hook bodies against their advertised schemas before
+  the delete transaction commits, so invalid custom delete responses roll back
+  the object deletion.
+
 ## 0.1.53 - 2026-07-04
 
 ### Changed

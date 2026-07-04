@@ -126,6 +126,8 @@ status_hook_site.register(Product, StatusHookProductAdmin)
 
 
 class InvalidResponseHookProductAdmin(ModelAdmin):
+    response_delete_schema = ProductDeleteHookResponse
+
     def response_add(self, request, obj, form, inline_results):
         response = super().response_add(request, obj, form, inline_results)
         response["data"]["unexpected_response_field"] = "invalid"
@@ -135,6 +137,9 @@ class InvalidResponseHookProductAdmin(ModelAdmin):
         response = super().response_change(request, obj, form, inline_results)
         response["data"]["unexpected_response_field"] = "invalid"
         return response
+
+    def response_delete(self, request, obj_display, obj_id):
+        return {"deleted_id": obj_id, "deleted_display": obj_display}
 
 
 invalid_response_hook_site = NinjaAdminSite(name="invalid_response_hook_admin", include_auth=False)

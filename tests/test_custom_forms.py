@@ -238,6 +238,18 @@ def test_invalid_response_hooks_are_validated_inside_mutation_transaction(admin_
     sample.refresh_from_db()
     assert sample.description == original_description
 
+    delete_target = Product.objects.create(
+        name="Invalid Delete Hook",
+        category=sample.category,
+        price="8.00",
+        stock_status="in_stock",
+    )
+    deleted = admin_client.delete(f"/invalid-response-hook-admin/testapp/product/{delete_target.pk}")
+
+    assert deleted.status_code == 400
+    ErrorResponse.model_validate(deleted.json())
+    assert Product.objects.filter(pk=delete_target.pk).exists()
+
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_split_datetime_payload_uses_pydantic_and_multivalue_form_normalization(admin_client, sample):
