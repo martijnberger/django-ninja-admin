@@ -17,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Aligned relation-widget, prepopulated-field, radio-field, date-hierarchy,
   and action-permission check IDs with Django admin's numbering while moving
   package-only lookup/conflict checks into package-specific IDs.
+- Aligned core inline admin check IDs with Django admin's numbering and moved
+  package-only inline layout/range/boolean checks into package-specific IDs.
 
 ## 0.1.44 - 2026-07-04
 

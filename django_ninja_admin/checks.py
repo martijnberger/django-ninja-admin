@@ -53,6 +53,20 @@ PACKAGE_OPTION_CODES = {
     "autocomplete_radio_conflict": "E142",
     "raw_id_radio_conflict": "E143",
     "filter_horizontal_vertical_conflict": "E144",
+    "inline_can_delete_type": "E145",
+    "inline_show_change_link_type": "E146",
+    "inline_extra_negative": "E147",
+    "inline_min_num_negative": "E148",
+    "inline_max_num_negative": "E149",
+    "inline_min_exceeds_max": "E150",
+    "inline_layout_sequence_type": "E151",
+    "inline_layout_item_type": "E152",
+    "inline_layout_unknown": "E153",
+    "inline_layout_duplicate": "E154",
+    "inline_readonly_unknown": "E155",
+    "inline_fieldset_shape": "E156",
+    "list_per_page_range": "E157",
+    "list_max_show_all_range": "E158",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -356,7 +370,11 @@ def _check_pagination_options(model_admin):
         list_per_page_int = cast(int, list_per_page)
         if list_per_page_int < 1:
             errors.append(
-                _error(model_admin.__class__, "The value of 'list_per_page' must be greater than zero.", "E104")
+                _error(
+                    model_admin.__class__,
+                    "The value of 'list_per_page' must be greater than zero.",
+                    PACKAGE_OPTION_CODES["list_per_page_range"],
+                )
             )
     if not _is_integer_option(list_max_show_all):
         errors.append(_error(model_admin.__class__, "The value of 'list_max_show_all' must be an integer.", "E119"))
@@ -364,7 +382,11 @@ def _check_pagination_options(model_admin):
         list_max_show_all_int = cast(int, list_max_show_all)
         if list_max_show_all_int < 0:
             errors.append(
-                _error(model_admin.__class__, "The value of 'list_max_show_all' must not be negative.", "E105")
+                _error(
+                    model_admin.__class__,
+                    "The value of 'list_max_show_all' must not be negative.",
+                    PACKAGE_OPTION_CODES["list_max_show_all_range"],
+                )
             )
     return errors
 
@@ -1263,20 +1285,20 @@ def _check_inlines(model_admin):
     errors = []
     inlines = model_admin.inlines or ()
     if not isinstance(inlines, (list, tuple)):
-        return [_error(model_admin.__class__, "The value of 'inlines' must be a list or tuple.", "E081")]
+        return [_error(model_admin.__class__, "The value of 'inlines' must be a list or tuple.", "E103")]
 
     for inline_class in inlines:
         if not isinstance(inline_class, type) or not issubclass(inline_class, InlineModelAdmin):
-            errors.append(_error(model_admin.__class__, "Items in 'inlines' must subclass InlineModelAdmin.", "E031"))
+            errors.append(_error(model_admin.__class__, "Items in 'inlines' must subclass InlineModelAdmin.", "E104"))
             continue
         inline_model = getattr(inline_class, "model", None)
         if not isinstance(inline_model, ModelBase):
-            errors.append(_error(inline_class, "Inline classes must define a concrete model.", "E032"))
+            errors.append(_error(inline_class, "Inline classes must define a concrete model.", "E105"))
             continue
         try:
             fk = _get_foreign_key(model_admin.model, inline_model, fk_name=getattr(inline_class, "fk_name", None))
         except ValueError as exc:
-            errors.append(_error(inline_class, str(exc), "E033"))
+            errors.append(_error(inline_class, str(exc), "E202"))
             fk = None
         for option in ("fields", "exclude", "readonly_fields", "fieldsets"):
             errors.extend(_check_inline_sequence_option(inline_class, option))
@@ -1287,42 +1309,78 @@ def _check_inlines(model_admin):
                 _error(
                     inline_class,
                     f"Cannot exclude the parent foreign key field '{fk.name}' from inline forms.",
-                    "E077",
+                    "E201",
                 )
             )
         extra = getattr(inline_class, "extra", None)
         min_num = getattr(inline_class, "min_num", None)
         max_num = getattr(inline_class, "max_num", None)
         if not _is_integer_option(extra):
-            errors.append(_error(inline_class, "The value of 'extra' must be an integer.", "E073"))
+            errors.append(_error(inline_class, "The value of 'extra' must be an integer.", "E203"))
         else:
             extra_int = cast(int, extra)
             if extra_int < 0:
-                errors.append(_error(inline_class, "The value of 'extra' must not be negative.", "E106"))
+                errors.append(
+                    _error(
+                        inline_class,
+                        "The value of 'extra' must not be negative.",
+                        PACKAGE_OPTION_CODES["inline_extra_negative"],
+                    )
+                )
         if min_num is not None and not _is_integer_option(min_num):
-            errors.append(_error(inline_class, "The value of 'min_num' must be an integer or None.", "E074"))
+            errors.append(_error(inline_class, "The value of 'min_num' must be an integer or None.", "E205"))
         elif min_num is not None:
             min_num_int = cast(int, min_num)
             if min_num_int < 0:
-                errors.append(_error(inline_class, "The value of 'min_num' must not be negative.", "E107"))
+                errors.append(
+                    _error(
+                        inline_class,
+                        "The value of 'min_num' must not be negative.",
+                        PACKAGE_OPTION_CODES["inline_min_num_negative"],
+                    )
+                )
         if max_num is not None and not _is_integer_option(max_num):
-            errors.append(_error(inline_class, "The value of 'max_num' must be an integer or None.", "E075"))
+            errors.append(_error(inline_class, "The value of 'max_num' must be an integer or None.", "E204"))
         elif max_num is not None:
             max_num_int = cast(int, max_num)
             if max_num_int < 0:
-                errors.append(_error(inline_class, "The value of 'max_num' must not be negative.", "E108"))
+                errors.append(
+                    _error(
+                        inline_class,
+                        "The value of 'max_num' must not be negative.",
+                        PACKAGE_OPTION_CODES["inline_max_num_negative"],
+                    )
+                )
         if _is_integer_option(min_num) and _is_integer_option(max_num):
             min_num_int = cast(int, min_num)
             max_num_int = cast(int, max_num)
             if min_num_int >= 0 and max_num_int >= 0 and min_num_int > max_num_int:
-                errors.append(_error(inline_class, "The value of 'min_num' must not exceed 'max_num'.", "E109"))
+                errors.append(
+                    _error(
+                        inline_class,
+                        "The value of 'min_num' must not exceed 'max_num'.",
+                        PACKAGE_OPTION_CODES["inline_min_exceeds_max"],
+                    )
+                )
         if not isinstance(getattr(inline_class, "can_delete", True), bool):
-            errors.append(_error(inline_class, "The value of 'can_delete' must be a boolean.", "E110"))
+            errors.append(
+                _error(
+                    inline_class,
+                    "The value of 'can_delete' must be a boolean.",
+                    PACKAGE_OPTION_CODES["inline_can_delete_type"],
+                )
+            )
         if not isinstance(getattr(inline_class, "show_change_link", False), bool):
-            errors.append(_error(inline_class, "The value of 'show_change_link' must be a boolean.", "E111"))
+            errors.append(
+                _error(
+                    inline_class,
+                    "The value of 'show_change_link' must be a boolean.",
+                    PACKAGE_OPTION_CODES["inline_show_change_link_type"],
+                )
+            )
         formset = getattr(inline_class, "formset", None)
         if not isinstance(formset, type) or not issubclass(formset, BaseInlineFormSet):
-            errors.append(_error(inline_class, "The value of 'formset' must inherit from BaseInlineFormSet.", "E076"))
+            errors.append(_error(inline_class, "The value of 'formset' must inherit from BaseInlineFormSet.", "E206"))
         form_class = getattr(inline_class, "form_class", None)
         if form_class is not None:
             if not isinstance(form_class, type) or not issubclass(form_class, BaseModelForm):
@@ -1346,7 +1404,13 @@ def _check_inline_sequence_option(inline_class, option):
     if value is None:
         return []
     if not isinstance(value, (list, tuple)):
-        return [_error(inline_class, f"The value of '{option}' must be a list or tuple.", "E112")]
+        return [
+            _error(
+                inline_class,
+                f"The value of '{option}' must be a list or tuple.",
+                PACKAGE_OPTION_CODES["inline_layout_sequence_type"],
+            )
+        ]
     return []
 
 
@@ -1386,10 +1450,22 @@ def _check_inline_form_option_items(
     readonly_field_names = readonly_field_names or set()
     for item in items:
         if not isinstance(item, str):
-            errors.append(_error(inline_class, f"Items in inline '{option}' must be strings.", "E113"))
+            errors.append(
+                _error(
+                    inline_class,
+                    f"Items in inline '{option}' must be strings.",
+                    PACKAGE_OPTION_CODES["inline_layout_item_type"],
+                )
+            )
             continue
         if item in seen_fields:
-            errors.append(_error(inline_class, f"The field '{item}' is duplicated in inline '{option}'.", "E115"))
+            errors.append(
+                _error(
+                    inline_class,
+                    f"The field '{item}' is duplicated in inline '{option}'.",
+                    PACKAGE_OPTION_CODES["inline_layout_duplicate"],
+                )
+            )
         seen_fields.add(item)
         if item in readonly_field_names:
             continue
@@ -1401,13 +1477,13 @@ def _check_inline_form_option_items(
                 else f"The value of inline '{option}' refers to '{item}', "
                 "which is not an editable model field or readonly field."
             )
-            errors.append(_error(inline_class, message, "E114"))
+            errors.append(_error(inline_class, message, PACKAGE_OPTION_CODES["inline_layout_unknown"]))
         elif option == "fields" and not field.editable:
             errors.append(
                 _error(
                     inline_class,
                     f"The value of inline '{option}' includes non-editable field '{item}'.",
-                    "E114",
+                    PACKAGE_OPTION_CODES["inline_layout_unknown"],
                 )
             )
     return errors
@@ -1423,7 +1499,11 @@ def _check_inline_readonly_fields(inline_class):
         item_key = field_name_for_display(item)
         if item_key in seen_fields:
             errors.append(
-                _error(inline_class, f"The field '{item_key}' is duplicated in inline 'readonly_fields'.", "E115")
+                _error(
+                    inline_class,
+                    f"The field '{item_key}' is duplicated in inline 'readonly_fields'.",
+                    PACKAGE_OPTION_CODES["inline_layout_duplicate"],
+                )
             )
         seen_fields.add(item_key)
         if callable(item):
@@ -1434,7 +1514,7 @@ def _check_inline_readonly_fields(inline_class):
                     inline_class,
                     f"The value of inline 'readonly_fields' refers to '{item}', "
                     "which is not a field, method, or attribute.",
-                    "E116",
+                    PACKAGE_OPTION_CODES["inline_readonly_unknown"],
                 )
             )
     return errors
@@ -1450,13 +1530,21 @@ def _check_inline_fieldsets(inline_class, *, readonly_field_names=None):
     for index, fieldset in enumerate(fieldsets):
         if not isinstance(fieldset, (list, tuple)) or len(fieldset) != 2:
             errors.append(
-                _error(inline_class, f"The value of inline 'fieldsets[{index}]' must be a two-item tuple.", "E117")
+                _error(
+                    inline_class,
+                    f"The value of inline 'fieldsets[{index}]' must be a two-item tuple.",
+                    PACKAGE_OPTION_CODES["inline_fieldset_shape"],
+                )
             )
             continue
         _name, options = fieldset
         if not isinstance(options, Mapping):
             errors.append(
-                _error(inline_class, f"The value of inline 'fieldsets[{index}][1]' must be a dictionary.", "E117")
+                _error(
+                    inline_class,
+                    f"The value of inline 'fieldsets[{index}][1]' must be a dictionary.",
+                    PACKAGE_OPTION_CODES["inline_fieldset_shape"],
+                )
             )
             continue
         if "fields" not in options:
@@ -1464,7 +1552,7 @@ def _check_inline_fieldsets(inline_class, *, readonly_field_names=None):
                 _error(
                     inline_class,
                     f"The value of inline 'fieldsets[{index}][1]' must contain a 'fields' option.",
-                    "E117",
+                    PACKAGE_OPTION_CODES["inline_fieldset_shape"],
                 )
             )
             continue
@@ -1474,19 +1562,27 @@ def _check_inline_fieldsets(inline_class, *, readonly_field_names=None):
                 _error(
                     inline_class,
                     f"The value of inline 'fieldsets[{index}][1]['fields']' must be a list or tuple.",
-                    "E117",
+                    PACKAGE_OPTION_CODES["inline_fieldset_shape"],
                 )
             )
             continue
         for field_name in flatten(fields):
             if not isinstance(field_name, str):
                 errors.append(
-                    _error(inline_class, f"Items in inline 'fieldsets[{index}][1]['fields']' must be strings.", "E113")
+                    _error(
+                        inline_class,
+                        f"Items in inline 'fieldsets[{index}][1]['fields']' must be strings.",
+                        PACKAGE_OPTION_CODES["inline_layout_item_type"],
+                    )
                 )
                 continue
             if field_name in seen_fields:
                 errors.append(
-                    _error(inline_class, f"The field '{field_name}' is duplicated in inline 'fieldsets'.", "E115")
+                    _error(
+                        inline_class,
+                        f"The field '{field_name}' is duplicated in inline 'fieldsets'.",
+                        PACKAGE_OPTION_CODES["inline_layout_duplicate"],
+                    )
                 )
             seen_fields.add(field_name)
             if field_name in readonly_field_names:
@@ -1498,7 +1594,7 @@ def _check_inline_fieldsets(inline_class, *, readonly_field_names=None):
                         inline_class,
                         f"The value of inline 'fieldsets' refers to '{field_name}', "
                         "which is not an editable model field or readonly field.",
-                        "E114",
+                        PACKAGE_OPTION_CODES["inline_layout_unknown"],
                     )
                 )
     return errors

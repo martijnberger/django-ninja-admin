@@ -62,6 +62,7 @@ def test_admin_checks_report_invalid_model_admin_configuration(db, make_site):
         "django_ninja_admin.E033",
         "django_ninja_admin.E137",
         "django_ninja_admin.E140",
+        "django_ninja_admin.E202",
         "django_ninja_admin.E043",
     } <= error_ids
 
@@ -145,19 +146,19 @@ def test_admin_checks_validate_inline_count_options(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E073",
-            "django_ninja_admin.E074",
-            "django_ninja_admin.E075",
-            "django_ninja_admin.E106",
-            "django_ninja_admin.E107",
-            "django_ninja_admin.E108",
-            "django_ninja_admin.E109",
+            "django_ninja_admin.E203",
+            "django_ninja_admin.E204",
+            "django_ninja_admin.E205",
+            "django_ninja_admin.E147",
+            "django_ninja_admin.E148",
+            "django_ninja_admin.E149",
+            "django_ninja_admin.E150",
         }
     )
-    assert bad_ids == {"django_ninja_admin.E073", "django_ninja_admin.E074", "django_ninja_admin.E075"}
-    assert bad_boolean_ids == {"django_ninja_admin.E073", "django_ninja_admin.E074", "django_ninja_admin.E075"}
-    assert bad_range_ids == {"django_ninja_admin.E106", "django_ninja_admin.E107", "django_ninja_admin.E108"}
-    assert bad_min_max_ids == {"django_ninja_admin.E109"}
+    assert bad_ids == {"django_ninja_admin.E203", "django_ninja_admin.E204", "django_ninja_admin.E205"}
+    assert bad_boolean_ids == {"django_ninja_admin.E203", "django_ninja_admin.E204", "django_ninja_admin.E205"}
+    assert bad_range_ids == {"django_ninja_admin.E147", "django_ninja_admin.E148", "django_ninja_admin.E149"}
+    assert bad_min_max_ids == {"django_ninja_admin.E150"}
 
 
 def test_admin_checks_reject_non_sequence_inlines_option(db, make_site):
@@ -165,7 +166,7 @@ def test_admin_checks_reject_non_sequence_inlines_option(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E081"}
+    assert {error.id for error in errors} == {"django_ninja_admin.E103"}
 
 
 def test_admin_checks_validate_inline_boolean_options(db, make_site):
@@ -185,8 +186,8 @@ def test_admin_checks_validate_inline_boolean_options(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E110", "django_ninja_admin.E111"})
-    assert bad_ids == {"django_ninja_admin.E110", "django_ninja_admin.E111"}
+    assert valid_ids.isdisjoint({"django_ninja_admin.E145", "django_ninja_admin.E146"})
+    assert bad_ids == {"django_ninja_admin.E145", "django_ninja_admin.E146"}
 
 
 def test_admin_checks_validate_inline_form_layout_option_shapes(db, make_site):
@@ -210,8 +211,8 @@ def test_admin_checks_validate_inline_form_layout_option_shapes(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_errors = bad_site.get_model_admin(Product).check()
 
-    assert "django_ninja_admin.E112" not in valid_ids
-    assert [error.id for error in bad_errors] == ["django_ninja_admin.E112"] * 4
+    assert "django_ninja_admin.E151" not in valid_ids
+    assert [error.id for error in bad_errors] == ["django_ninja_admin.E151"] * 4
     assert {error.msg for error in bad_errors} == {
         "The value of 'fields' must be a list or tuple.",
         "The value of 'exclude' must be a list or tuple.",
@@ -257,15 +258,15 @@ def test_admin_checks_validate_inline_form_layout_option_items(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E113",
-            "django_ninja_admin.E114",
-            "django_ninja_admin.E115",
-            "django_ninja_admin.E116",
+            "django_ninja_admin.E152",
+            "django_ninja_admin.E153",
+            "django_ninja_admin.E154",
+            "django_ninja_admin.E155",
         }
     )
-    assert bad_item_ids == ["django_ninja_admin.E113", "django_ninja_admin.E113", "django_ninja_admin.E116"]
-    assert bad_unknown_ids == ["django_ninja_admin.E114", "django_ninja_admin.E114", "django_ninja_admin.E116"]
-    assert bad_duplicate_ids == ["django_ninja_admin.E115", "django_ninja_admin.E115", "django_ninja_admin.E115"]
+    assert bad_item_ids == ["django_ninja_admin.E152", "django_ninja_admin.E152", "django_ninja_admin.E155"]
+    assert bad_unknown_ids == ["django_ninja_admin.E153", "django_ninja_admin.E153", "django_ninja_admin.E155"]
+    assert bad_duplicate_ids == ["django_ninja_admin.E154", "django_ninja_admin.E154", "django_ninja_admin.E154"]
 
 
 def test_admin_checks_validate_inline_fieldsets_items(db, make_site):
@@ -292,19 +293,19 @@ def test_admin_checks_validate_inline_fieldsets_items(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E113",
-            "django_ninja_admin.E114",
-            "django_ninja_admin.E115",
-            "django_ninja_admin.E117",
+            "django_ninja_admin.E152",
+            "django_ninja_admin.E153",
+            "django_ninja_admin.E154",
+            "django_ninja_admin.E156",
         }
     )
     assert bad_ids == [
-        "django_ninja_admin.E117",
-        "django_ninja_admin.E117",
-        "django_ninja_admin.E117",
-        "django_ninja_admin.E113",
-        "django_ninja_admin.E114",
-        "django_ninja_admin.E115",
+        "django_ninja_admin.E156",
+        "django_ninja_admin.E156",
+        "django_ninja_admin.E156",
+        "django_ninja_admin.E152",
+        "django_ninja_admin.E153",
+        "django_ninja_admin.E154",
     ]
 
 
@@ -329,8 +330,8 @@ def test_inline_admin_supports_custom_formset_classes(db, make_site):
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
     assert issubclass(formset_class, CustomInlineFormSet)
-    assert "django_ninja_admin.E076" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E076"}
+    assert "django_ninja_admin.E206" not in valid_ids
+    assert bad_ids == {"django_ninja_admin.E206"}
 
 
 def test_admin_checks_reject_inline_excluding_parent_foreign_key(db, make_site):
@@ -348,8 +349,8 @@ def test_admin_checks_reject_inline_excluding_parent_foreign_key(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_errors = bad_site.get_model_admin(Product).check()
 
-    assert "django_ninja_admin.E077" not in valid_ids
-    assert {error.id for error in bad_errors} == {"django_ninja_admin.E077"}
+    assert "django_ninja_admin.E201" not in valid_ids
+    assert {error.id for error in bad_errors} == {"django_ninja_admin.E201"}
     assert "parent foreign key field 'product'" in bad_errors[0].msg
 
 
@@ -544,13 +545,13 @@ def test_admin_checks_validate_pagination_options(db, make_site):
         {
             "django_ninja_admin.E118",
             "django_ninja_admin.E119",
-            "django_ninja_admin.E104",
-            "django_ninja_admin.E105",
+            "django_ninja_admin.E157",
+            "django_ninja_admin.E158",
         }
     )
     assert bad_ids == {"django_ninja_admin.E118", "django_ninja_admin.E119"}
     assert bad_boolean_ids == {"django_ninja_admin.E118", "django_ninja_admin.E119"}
-    assert bad_range_ids == {"django_ninja_admin.E104", "django_ninja_admin.E105"}
+    assert bad_range_ids == {"django_ninja_admin.E157", "django_ninja_admin.E158"}
 
 
 def test_admin_checks_validate_paginator_class(db, make_site):
