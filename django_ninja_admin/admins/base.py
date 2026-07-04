@@ -456,11 +456,11 @@ class BaseAdmin:
         if isinstance(field, ModelChoiceField):
             return self._relation_form_field_example_value(field)
         if isinstance(field, forms.TypedMultipleChoiceField | forms.MultipleChoiceField):
-            return [self._choice_example_value(field.choices)]
+            return [choice_example_value(field.choices)]
         if isinstance(field, forms.TypedChoiceField):
-            return self._coerce_choice_example(field, self._choice_example_value(field.choices))
+            return coerce_choice_example(getattr(field, "coerce", None), choice_example_value(field.choices))
         if isinstance(field, forms.ChoiceField):
-            return self._choice_example_value(field.choices)
+            return choice_example_value(field.choices)
         if isinstance(field, forms.NullBooleanField):
             return None
         if isinstance(field, forms.BooleanField):
@@ -492,12 +492,6 @@ class BaseAdmin:
         if isinstance(field, forms.JSONField):
             return {"example": True}
         return "example"
-
-    def _choice_example_value(self, choices):
-        return choice_example_value(choices)
-
-    def _coerce_choice_example(self, field, value):
-        return coerce_choice_example(getattr(field, "coerce", None), value)
 
     def get_form_schema_field_type(
         self,
@@ -799,7 +793,7 @@ class BaseAdmin:
 
     def _model_field_example_value(self, field):
         if field.choices:
-            return self._choice_example_value(field.choices)
+            return choice_example_value(field.choices)
         if isinstance(
             field,
             models.AutoField

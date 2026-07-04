@@ -1910,9 +1910,9 @@ class NinjaAdminSite:
         if isinstance(field, forms.ModelChoiceField):
             return self._relation_form_field_example_value(field)
         if isinstance(field, forms.TypedMultipleChoiceField | forms.MultipleChoiceField):
-            return [self._choice_example_value(field.choices)]
+            return [choice_example_value(field.choices, json_safe=True)]
         if isinstance(field, forms.TypedChoiceField | forms.ChoiceField):
-            return self._choice_example_value(field.choices)
+            return choice_example_value(field.choices, json_safe=True)
         if isinstance(field, forms.BooleanField):
             return True
         if isinstance(field, forms.DecimalField):
@@ -1960,9 +1960,6 @@ class NinjaAdminSite:
         if isinstance(target_field, models.UUIDField):
             return "550e8400-e29b-41d4-a716-446655440000"
         return "example"
-
-    def _choice_example_value(self, choices):
-        return choice_example_value(choices, json_safe=True)
 
     def _pydantic_model_example(self, schema):
         return pydantic_model_example(schema)

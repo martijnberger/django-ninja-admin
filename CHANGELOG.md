@@ -14,6 +14,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   helpers.
 - Extracted schema override normalization, cache-key, and metadata helpers for
   form/output schema generation.
+- Removed local choice-example shim methods now covered by shared schema
+  example helpers.
 - Removed unused internal exception classes left over from earlier admin
   compatibility scaffolding.
 
