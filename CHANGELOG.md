@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.52 - 2026-07-04
+
 ### Added
 
 - Added mounted autocomplete coverage for dynamic `limit_choices_to` values,
