@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.40 - 2026-07-04
+
 ### Changed
 
 - Advertised form input-schema override metadata with typed OpenAPI
@@ -15,6 +17,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   JSON-object response schema for site and model admin routes.
 - Expanded the installed-wheel generated-client smoke to cover site context,
   permissions, app-list, history, autocomplete, and view-on-site routes.
+- Expanded the installed-wheel generated-client smoke to verify CSRF bootstrap,
+  session login, authenticated mutation, and logout with CSRF checks enabled.
 
 ## 0.1.39 - 2026-07-04
 

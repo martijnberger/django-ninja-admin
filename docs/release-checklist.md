@@ -65,9 +65,10 @@ behavior, or permission boundaries.
 - Run `just generated-client-smoke` to prove a clean installed project can use
   OpenAPI operation IDs, request examples, and schema-declared path/query
   parameters for core model workflows including inline add/change, full update,
-  delete, site context, permissions, app-list, history, autocomplete, and
-  view-on-site, and can parse documented success and error responses against
-  the advertised response schemas.
+  delete, CSRF bootstrap, session login, authenticated mutation, logout, site
+  context, permissions, app-list, history, autocomplete, and view-on-site, and
+  can parse documented success and error responses against the advertised
+  response schemas.
 - Run `just sample-project-full` to exercise the expanded installed-wheel
   sample project before beta/stable release candidates and after broad changes
   to forms, inlines, actions, filtering, file uploads, history, or custom

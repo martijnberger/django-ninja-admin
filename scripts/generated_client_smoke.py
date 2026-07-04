@@ -203,6 +203,7 @@ def write_sample_project(project_dir: Path) -> None:
         ]
         MIDDLEWARE = [
             "django.contrib.sessions.middleware.SessionMiddleware",
+            "django.middleware.csrf.CsrfViewMiddleware",
             "django.contrib.auth.middleware.AuthenticationMiddleware",
             "django.contrib.messages.middleware.MessageMiddleware",
         ]
@@ -278,9 +279,10 @@ def write_sample_project(project_dir: Path) -> None:
                                 parameter["name"] for parameter in parameters if parameter.get("in") == "query"
                             }
 
-            def request(self, operation_id, *, path_params=None, payload=None, query=None):
+            def request(self, operation_id, *, path_params=None, payload=None, query=None, headers=None):
                 method, path, _operation = self.operations[operation_id]
                 path_params = path_params or {}
+                headers = headers or {}
                 unknown_path_params = set(path_params) - self.path_parameters[operation_id]
                 if unknown_path_params:
                     raise AssertionError(f"Unknown path params for {operation_id}: {sorted(unknown_path_params)}")
@@ -297,12 +299,13 @@ def write_sample_project(project_dir: Path) -> None:
                         )
                     path = f"{path}?{urlencode(query, doseq=True)}"
                 if payload is None:
-                    return self.client.generic(method, path)
+                    return self.client.generic(method, path, **headers)
                 return self.client.generic(
                     method,
                     path,
                     data=json.dumps(payload),
                     content_type="application/json",
+                    **headers,
                 )
 
             def assert_response_matches_schema(self, operation_id, response):
@@ -418,6 +421,9 @@ def write_sample_project(project_dir: Path) -> None:
 
         expected_operations = {
             "admin_context",
+            "admin_csrf",
+            "admin_login",
+            "admin_logout",
             "admin_permissions",
             "admin_list_apps",
             "admin_get_app",
@@ -452,6 +458,60 @@ def write_sample_project(project_dir: Path) -> None:
         unauthorized_response = anonymous_consumer.request("sample_app_product_list")
         assert unauthorized_response.status_code == 401, unauthorized_response.content
         anonymous_consumer.assert_response_matches_schema("sample_app_product_list", unauthorized_response)
+
+        browser_client = Client(enforce_csrf_checks=True)
+        browser_consumer = OpenAPIConsumer(browser_client, schema_response.json())
+        csrf_response = browser_consumer.request("admin_csrf")
+        assert csrf_response.status_code == 200, csrf_response.content
+        browser_consumer.assert_response_matches_schema("admin_csrf", csrf_response)
+        csrf_token = csrf_response.json()["csrf_token"]
+        assert csrf_token
+
+        bad_login_response = browser_consumer.request(
+            "admin_login",
+            payload={"username": "admin", "password": "wrong"},
+            headers={"HTTP_X_CSRFTOKEN": csrf_token},
+        )
+        assert bad_login_response.status_code == 400, bad_login_response.content
+        browser_consumer.assert_response_matches_schema("admin_login", bad_login_response)
+
+        login_response = browser_consumer.request(
+            "admin_login",
+            payload={"username": "admin", "password": "pw"},
+            headers={"HTTP_X_CSRFTOKEN": csrf_token},
+        )
+        assert login_response.status_code == 200, login_response.content
+        browser_consumer.assert_response_matches_schema("admin_login", login_response)
+        login_body = login_response.json()
+        assert login_body["is_authenticated"] is True
+        assert login_body["has_permission"] is True
+
+        browser_create_payload = consumer.example("sample_app_product_create", "create")
+        browser_create_payload["data"].update(
+            {
+                "name": "Browser session product",
+                "category": category.pk,
+                "price": "29.95",
+                "stock_status": "in_stock",
+            }
+        )
+        browser_create_payload["inlines"] = {}
+        browser_create_response = browser_consumer.request(
+            "sample_app_product_create",
+            payload=browser_create_payload,
+            headers={"HTTP_X_CSRFTOKEN": login_body["csrf_token"]},
+        )
+        assert browser_create_response.status_code == 201, browser_create_response.content
+        browser_consumer.assert_response_matches_schema("sample_app_product_create", browser_create_response)
+        assert browser_create_response.json()["data"]["name"] == "Browser session product"
+
+        logout_response = browser_consumer.request(
+            "admin_logout",
+            headers={"HTTP_X_CSRFTOKEN": login_body["csrf_token"]},
+        )
+        assert logout_response.status_code == 200, logout_response.content
+        browser_consumer.assert_response_matches_schema("admin_logout", logout_response)
+        assert logout_response.json()["is_authenticated"] is False
 
         context_response = consumer.request("admin_context")
         assert context_response.status_code == 200, context_response.content
