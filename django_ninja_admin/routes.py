@@ -24,12 +24,16 @@ def normalize_route_methods(methods: Any) -> tuple[str, ...]:
         raise ImproperlyConfigured("Custom admin routes must declare at least one HTTP method.")
 
     normalized = []
+    seen = set()
     for method in route_methods:
         if not isinstance(method, str) or not method.strip():
             raise ImproperlyConfigured("Custom admin route methods must be non-empty strings.")
         normalized_method = method.strip().upper()
         if normalized_method not in ALLOWED_ROUTE_METHODS:
             raise ImproperlyConfigured(f"Unsupported custom admin route HTTP method: {normalized_method}.")
+        if normalized_method in seen:
+            continue
+        seen.add(normalized_method)
         normalized.append(normalized_method)
     return tuple(normalized)
 

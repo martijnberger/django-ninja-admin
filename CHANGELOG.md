@@ -7,16 +7,22 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.55 - 2026-07-04
+
 ### Changed
 
 - Closed multipart mutation envelopes in OpenAPI and runtime validation so
   unknown top-level multipart form or file parts return the shared typed 422
   error body.
+- Hardened custom site and model admin route contracts with mounted runtime and
+  OpenAPI coverage for typed Pydantic request bodies.
 
 ### Fixed
 
 - Validated custom route HTTP methods at declaration time and treated
   `methods="post"` as a single `POST` route instead of iterating characters.
+- Deduplicated equivalent custom route HTTP methods after normalization so
+  declarations such as `("GET", "get", " post ")` register each method once.
 - Rejected duplicate multipart file parts for a single `FileField` with the
   shared typed 422 error body instead of silently selecting one uploaded file.
 

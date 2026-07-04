@@ -12,8 +12,21 @@ class ProductStatsResponse(Schema):
     count: int
 
 
+class ProductThresholdPayload(Schema):
+    minimum_price: int
+
+
 class SiteStatusResponse(Schema):
     site: str
+
+
+class SiteEchoPayload(Schema):
+    message: str
+    repeat: int = 1
+
+
+class SiteEchoResponse(Schema):
+    echoed: list[str]
 
 
 class PublicStatusResponse(Schema):
@@ -71,6 +84,9 @@ class CustomProductAdmin(ModelAdmin):
     def default_stats(self, request):
         return {"count": Product.objects.count(), "metadata": {"source": "default-response"}}
 
+    def threshold_stats(self, request, payload: ProductThresholdPayload):
+        return {"count": Product.objects.filter(price__gte=payload.minimum_price).count()}
+
     def get_urls(self):
         @self.route(
             "/decorated-stats",
@@ -116,6 +132,14 @@ class CustomProductAdmin(ModelAdmin):
                 "/default-stats",
                 self.admin_view(self.default_stats),
                 operation_id="custom_product_default_stats",
+                tags=["custom.product"],
+            ),
+            self.route(
+                "/threshold-stats",
+                self.admin_view(self.threshold_stats),
+                methods="POST",
+                response=ProductStatsResponse,
+                operation_id="custom_product_threshold_stats",
                 tags=["custom.product"],
             ),
             decorated_stats,
@@ -170,6 +194,9 @@ class CustomAdminSite(NinjaAdminSite):
 
     def default_status(self, request):
         return {"site": "default", "metadata": {"source": "default-response"}}
+
+    def echo_status(self, request, payload: SiteEchoPayload):
+        return {"echoed": [payload.message] * payload.repeat}
 
     def hidden_status(self, request):
         return {"hidden": "ok"}
@@ -258,6 +285,14 @@ class CustomAdminSite(NinjaAdminSite):
                 "/default-status",
                 self.admin_view(self.default_status),
                 operation_id="custom_default_status",
+                tags=["custom.site"],
+            ),
+            self.route(
+                "/echo-status",
+                self.admin_view(self.echo_status),
+                methods="POST",
+                response=SiteEchoResponse,
+                operation_id="custom_echo_status",
                 tags=["custom.site"],
             ),
             self.route(
