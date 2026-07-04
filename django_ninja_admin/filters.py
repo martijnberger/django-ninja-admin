@@ -547,7 +547,11 @@ def get_fields_from_path(model, field_path):
 
 
 def build_filter_spec(filter_entry, request, params, model, model_admin):
-    if isinstance(filter_entry, type) and issubclass(filter_entry, SimpleListFilter):
+    if (
+        isinstance(filter_entry, type)
+        and issubclass(filter_entry, ListFilter)
+        and not issubclass(filter_entry, FieldListFilter)
+    ):
         return filter_entry(request, params, model, model_admin)
 
     if isinstance(filter_entry, (tuple, list)):

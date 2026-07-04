@@ -13,7 +13,7 @@ from django.db.models.expressions import Combinable
 from django.forms.models import BaseInlineFormSet, BaseModelForm, _get_foreign_key
 
 from django_ninja_admin.exceptions import NotRegistered
-from django_ninja_admin.filters import FieldListFilter, SimpleListFilter
+from django_ninja_admin.filters import FieldListFilter, ListFilter, SimpleListFilter
 from django_ninja_admin.utils.flatten import flatten
 from django_ninja_admin.utils.lookup import (
     field_name_for_display,
@@ -79,6 +79,8 @@ PACKAGE_OPTION_CODES = {
     "list_display_links_duplicate": "E166",
     "list_editable_item_type": "E167",
     "list_editable_duplicate": "E168",
+    "list_filter_tuple_shape": "E169",
+    "simple_list_filter_parameter": "E170",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -113,6 +115,13 @@ DJANGO_DISPLAY_OPTION_CODES = {
     "list_editable_in_list_display_links": "E123",
     "list_editable_first_without_display_link": "E124",
     "list_editable_not_editable": "E125",
+}
+
+DJANGO_LIST_FILTER_OPTION_CODES = {
+    "invalid_filter_class": "E113",
+    "field_filter_as_top_level": "E114",
+    "invalid_field_filter_class": "E115",
+    "invalid_field": "E116",
 }
 
 
@@ -872,10 +881,32 @@ def _check_prepopulated_fields(model_admin):
 def _check_list_filters(model_admin):
     errors = []
     for item in model_admin.get_list_filter(None):
-        if isinstance(item, type) and issubclass(item, SimpleListFilter):
-            if getattr(item, "parameter_name", None) is None:
+        if isinstance(item, type):
+            if issubclass(item, FieldListFilter):
                 errors.append(
-                    _error(model_admin.__class__, f"The list filter {item.__name__!r} has no parameter_name.", "E016")
+                    _error(
+                        model_admin.__class__,
+                        f"The list filter {item.__name__!r} must not be used as a top-level list filter.",
+                        DJANGO_LIST_FILTER_OPTION_CODES["field_filter_as_top_level"],
+                    )
+                )
+                continue
+            if not issubclass(item, ListFilter):
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The list filter {item.__name__!r} must inherit from ListFilter.",
+                        DJANGO_LIST_FILTER_OPTION_CODES["invalid_filter_class"],
+                    )
+                )
+                continue
+            if issubclass(item, SimpleListFilter) and getattr(item, "parameter_name", None) is None:
+                errors.append(
+                    _error(
+                        model_admin.__class__,
+                        f"The list filter {item.__name__!r} has no parameter_name.",
+                        PACKAGE_OPTION_CODES["simple_list_filter_parameter"],
+                    )
                 )
             continue
         if isinstance(item, (tuple, list)):
@@ -884,7 +915,7 @@ def _check_list_filters(model_admin):
                     _error(
                         model_admin.__class__,
                         "Field-based 'list_filter' entries must be two-item tuples.",
-                        "E017",
+                        PACKAGE_OPTION_CODES["list_filter_tuple_shape"],
                     )
                 )
                 continue
@@ -894,15 +925,23 @@ def _check_list_filters(model_admin):
                     _error(
                         model_admin.__class__,
                         f"The list filter for '{field_path}' must use a FieldListFilter subclass.",
-                        "E017",
+                        DJANGO_LIST_FILTER_OPTION_CODES["invalid_field_filter_class"],
                     )
                 )
         else:
             field_path = item
         if not isinstance(field_path, str):
-            errors.append(_error(model_admin.__class__, "Items in 'list_filter' must be strings or filters.", "E018"))
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    "Items in 'list_filter' must be strings or filters.",
+                    DJANGO_LIST_FILTER_OPTION_CODES["invalid_field"],
+                )
+            )
             continue
-        errors.extend(_check_field_path(model_admin, field_path, "list_filter", "E019"))
+        errors.extend(
+            _check_field_path(model_admin, field_path, "list_filter", DJANGO_LIST_FILTER_OPTION_CODES["invalid_field"])
+        )
     return errors
 
 

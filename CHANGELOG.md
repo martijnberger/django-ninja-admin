@@ -12,6 +12,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Aligned `list_display`, `list_display_links`, and `list_editable` item-level
   check IDs with Django admin's numbering while moving package-only duplicate
   and item-type checks into package-specific IDs.
+- Aligned `list_filter` class and field-path check IDs with Django admin's
+  numbering, moved package-only tuple-shape and missing-parameter checks into
+  package-specific IDs, and allowed direct `ListFilter` subclasses at runtime.
 
 ## 0.1.45 - 2026-07-04
 

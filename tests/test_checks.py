@@ -11,6 +11,7 @@ from django.test.utils import isolate_apps
 from django_ninja_admin import (
     VERTICAL,
     EmptyFieldListFilter,
+    ListFilter,
     ModelAdmin,
     ShowFacets,
     SimpleListFilter,
@@ -56,7 +57,7 @@ def test_admin_checks_report_invalid_model_admin_configuration(db, make_site):
     assert {
         "django_ninja_admin.E108",
         "django_ninja_admin.E123",
-        "django_ninja_admin.E019",
+        "django_ninja_admin.E116",
         "django_ninja_admin.E038",
         "django_ninja_admin.E128",
         "django_ninja_admin.E033",
@@ -753,14 +754,69 @@ def test_admin_checks_validate_field_based_list_filter_classes(db, make_site):
     bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
     bad_filter_ids = {error.id for error in bad_filter_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E017" not in valid_ids
-    assert bad_shape_ids == {"django_ninja_admin.E017"}
-    assert bad_filter_ids == {"django_ninja_admin.E017"}
+    assert valid_ids.isdisjoint({"django_ninja_admin.E115", "django_ninja_admin.E169"})
+    assert bad_shape_ids == {"django_ninja_admin.E169"}
+    assert bad_filter_ids == {"django_ninja_admin.E115"}
 
     model_admin = valid_site.get_model_admin(Product)
     request = RequestFactory().get("/")
     with pytest.raises(ImproperlyConfigured, match="must subclass FieldListFilter"):
         build_filter_spec(("description", TupleSimpleFilter), request, request.GET, Product, model_admin)
+
+
+def test_admin_checks_align_top_level_list_filter_ids_with_django(db, make_site):
+    class DirectListFilter(ListFilter):
+        title = "direct"
+
+    class MissingParameterFilter(SimpleListFilter):
+        title = "missing parameter"
+
+        def lookups(self, request, model_admin):
+            return (("yes", "Yes"),)
+
+    class InvalidFilter:
+        pass
+
+    class ValidDirectFilterProductAdmin(ModelAdmin):
+        list_filter = (DirectListFilter,)
+
+    class InvalidTopLevelFilterProductAdmin(ModelAdmin):
+        list_filter = (InvalidFilter,)
+
+    class InvalidTopLevelFieldFilterProductAdmin(ModelAdmin):
+        list_filter = (EmptyFieldListFilter,)
+
+    class MissingParameterFilterProductAdmin(ModelAdmin):
+        list_filter = (MissingParameterFilter,)
+
+    class NonStringFieldFilterProductAdmin(ModelAdmin):
+        list_filter = (123,)
+
+    class MissingFieldFilterProductAdmin(ModelAdmin):
+        list_filter = ("missing_filter",)
+
+    valid_site = make_site(Product, ValidDirectFilterProductAdmin)
+    invalid_filter_site = make_site(Product, InvalidTopLevelFilterProductAdmin)
+    field_filter_site = make_site(Product, InvalidTopLevelFieldFilterProductAdmin)
+    missing_parameter_site = make_site(Product, MissingParameterFilterProductAdmin)
+    non_string_site = make_site(Product, NonStringFieldFilterProductAdmin)
+    missing_field_site = make_site(Product, MissingFieldFilterProductAdmin)
+
+    valid_admin = valid_site.get_model_admin(Product)
+    request = RequestFactory().get("/")
+    filter_spec = build_filter_spec(DirectListFilter, request, request.GET, Product, valid_admin)
+
+    assert isinstance(filter_spec, DirectListFilter)
+    assert {error.id for error in valid_admin.check()}.isdisjoint(
+        {"django_ninja_admin.E113", "django_ninja_admin.E114", "django_ninja_admin.E170"}
+    )
+    assert {error.id for error in invalid_filter_site.get_model_admin(Product).check()} == {"django_ninja_admin.E113"}
+    assert {error.id for error in field_filter_site.get_model_admin(Product).check()} == {"django_ninja_admin.E114"}
+    assert {error.id for error in missing_parameter_site.get_model_admin(Product).check()} == {
+        "django_ninja_admin.E170"
+    }
+    assert {error.id for error in non_string_site.get_model_admin(Product).check()} == {"django_ninja_admin.E116"}
+    assert {error.id for error in missing_field_site.get_model_admin(Product).check()} == {"django_ninja_admin.E116"}
 
 
 def test_admin_checks_validate_form_class(db, make_site):
