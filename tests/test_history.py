@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from django_ninja_admin import site
 from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
+from django_ninja_admin.schemas import ErrorResponse
 from tests.testapp.models import Category, Product
 
 
@@ -115,6 +116,16 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     assert excessive_page_size.json()["errors"] == [
         {"message": "Input should be less than or equal to 100", "param": "query.per_page"}
     ]
+
+    invalid_ordering = client.get("/admin-api/history", {"o": "object_repr"})
+    assert invalid_ordering.status_code == 422
+    ErrorResponse.model_validate(invalid_ordering.json())
+    assert invalid_ordering.json()["errors"][0]["param"] == "query.o"
+
+    invalid_action_flag = client.get("/admin-api/history", {"action_flag": 99})
+    assert invalid_action_flag.status_code == 422
+    ErrorResponse.model_validate(invalid_action_flag.json())
+    assert invalid_action_flag.json()["errors"][0]["param"] == "query.action_flag"
 
 
 def test_history_uses_queryset_pagination_for_global_permissions(admin_client, sample, monkeypatch):

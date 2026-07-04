@@ -3931,6 +3931,15 @@
         "title": "GroupAdminUpdatePayload",
         "type": "object"
       },
+      "HistoryActionFlag": {
+        "enum": [
+          1,
+          2,
+          3
+        ],
+        "title": "HistoryActionFlag",
+        "type": "integer"
+      },
       "HistoryItem": {
         "additionalProperties": false,
         "properties": {
@@ -11229,14 +11238,13 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/HistoryActionFlag"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Optional Django admin log action flag.",
-              "title": "Action Flag"
+              "description": "Optional Django admin log action flag."
             }
           },
           {
@@ -11247,6 +11255,10 @@
             "schema": {
               "default": "-action_time",
               "description": "Ordering: `action_time` or `-action_time`.",
+              "enum": [
+                "-action_time",
+                "action_time"
+              ],
               "title": "O",
               "type": "string"
             }

@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Declared `/history` ordering and action-flag query parameters as finite
+  Ninja/Pydantic enums in OpenAPI, with invalid values rejected by the shared
+  typed 422 validation contract.
+
 ### Fixed
 
 - Returned deliberate 404 responses for missing or non-relational autocomplete

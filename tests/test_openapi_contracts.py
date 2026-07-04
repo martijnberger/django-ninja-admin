@@ -521,6 +521,11 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["HistoryItem"]["properties"]["model"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert components["HistoryItem"]["properties"]["detail_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert components["HistoryResponse"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
+    assert components["HistoryActionFlag"] == {
+        "enum": [1, 2, 3],
+        "title": "HistoryActionFlag",
+        "type": "integer",
+    }
     history_parameters = {
         parameter["name"]: parameter for parameter in paths["/admin-api/history"]["get"]["parameters"]
     }
@@ -531,6 +536,8 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert history_parameters["o"]["description"] == "Ordering: `action_time` or `-action_time`."
     assert history_parameters["page"]["description"] == "1-based page number."
     assert history_parameters["per_page"]["description"] == "Page size from 1 to 100."
+    assert history_parameters["action_flag"]["schema"]["anyOf"][0] == {"$ref": "#/components/schemas/HistoryActionFlag"}
+    assert set(history_parameters["o"]["schema"]["enum"]) == {"-action_time", "action_time"}
     assert non_null_parameter_type(history_parameters["page"]) == ["integer"]
     assert non_null_parameter_type(history_parameters["per_page"]) == ["integer"]
     assert history_parameters["page"]["schema"]["minimum"] == 1

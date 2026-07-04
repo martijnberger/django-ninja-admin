@@ -1,9 +1,10 @@
 import json
 import re
 from collections.abc import Sequence
+from enum import IntEnum
 from functools import wraps
 from math import ceil
-from typing import Any, cast
+from typing import Any, Literal, cast
 from weakref import WeakSet
 
 from asgiref.sync import async_to_sync, sync_to_async
@@ -106,7 +107,16 @@ DEFAULT_SITE_HEADER = "Django Ninja administration"
 DEFAULT_INDEX_TITLE = "Site administration"
 CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
 _UNSET = object()
+
+
+class HistoryActionFlag(IntEnum):
+    ADDITION = 1
+    CHANGE = 2
+    DELETION = 3
+
+
 NinjaQuery = cast(Any, Query)
+HISTORY_ACTION_FLAG_QUERY = NinjaQuery(None, description="Optional Django admin log action flag.")
 TO_FIELD_QUERY_DESCRIPTION = "Use an allowed alternate object id field."
 
 
@@ -911,8 +921,10 @@ class NinjaAdminSite:
             object_id: str | None = NinjaQuery(
                 None, description="Optional object identifier to restrict history entries."
             ),
-            action_flag: int | None = NinjaQuery(None, description="Optional Django admin log action flag."),
-            o: str = NinjaQuery("-action_time", description="Ordering: `action_time` or `-action_time`."),
+            action_flag: HistoryActionFlag | None = HISTORY_ACTION_FLAG_QUERY,
+            o: Literal["action_time", "-action_time"] = NinjaQuery(
+                "-action_time", description="Ordering: `action_time` or `-action_time`."
+            ),
             page: int = NinjaQuery(1, ge=1, description="1-based page number."),
             per_page: int = NinjaQuery(
                 20,
@@ -921,12 +933,8 @@ class NinjaAdminSite:
                 description=f"Page size from 1 to {site.history_max_per_page}.",
             ),
         ):
-            from django_ninja_admin.models import ACTION_FLAG_CHOICES, LogEntry
+            from django_ninja_admin.models import LogEntry
 
-            if o not in {"action_time", "-action_time"}:
-                raise AdminValidationError([{"message": _("Invalid ordering provided."), "param": "o"}])
-            if action_flag is not None and action_flag not in dict(ACTION_FLAG_CHOICES):
-                raise AdminValidationError([{"message": _("Invalid action flag provided."), "param": "action_flag"}])
             content_type_ids = site._history_content_type_ids(
                 request,
                 app_label=app_label,
@@ -942,7 +950,7 @@ class NinjaAdminSite:
             if object_id is not None:
                 qs = qs.filter(object_id=object_id)
             if action_flag is not None:
-                qs = qs.filter(action_flag=action_flag)
+                qs = qs.filter(action_flag=int(action_flag))
             use_visibility_filter = site._history_requires_object_visibility_filter(content_type_ids)
             paginator = site.paginator(qs, per_page)
             try:
