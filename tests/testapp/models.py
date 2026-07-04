@@ -44,6 +44,33 @@ class Tag(models.Model):
         return self.name
 
 
+class Label(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+class Article(models.Model):
+    title = models.CharField(max_length=100)
+    labels = models.ManyToManyField(Label, through="ArticleLabel", blank=True, related_name="articles")
+
+    def __str__(self):
+        return self.title
+
+
+class ArticleLabel(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="label_links")
+    label = models.ForeignKey(Label, on_delete=models.CASCADE, related_name="article_links")
+    note = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        unique_together = (("article", "label"),)
+
+    def __str__(self):
+        return f"{self.article} -> {self.label}"
+
+
 class Product(models.Model):
     name = models.CharField(max_length=100)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="products")

@@ -5,7 +5,7 @@ from django.urls import path
 from ninja import Schema, Status
 
 from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline
-from tests.testapp.models import Category, Product, ProductImage, Tag
+from tests.testapp.models import Article, ArticleLabel, Category, Label, Product, ProductImage, Tag
 
 
 class ProductNameWidget(forms.TextInput):
@@ -381,6 +381,21 @@ inline_multivalue_site.register(ProductImage, ModelAdmin)
 inline_multivalue_site.register(Product, InlineMultiValueProductAdmin)
 
 
+class ArticleLabelInline(TabularInline):
+    model = ArticleLabel
+    extra = 0
+
+
+class ThroughInlineArticleAdmin(ModelAdmin):
+    inlines = [ArticleLabelInline]
+
+
+through_inline_site = NinjaAdminSite(name="through_inline_admin", include_auth=False)
+through_inline_site.register(Label, ModelAdmin)
+through_inline_site.register(ArticleLabel, ModelAdmin)
+through_inline_site.register(Article, ThroughInlineArticleAdmin)
+
+
 urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
     path("status-hook-admin/", status_hook_site.urls),
@@ -393,4 +408,5 @@ urlpatterns = [
     path("required-file-admin/", required_file_site.urls),
     path("bulk-form-admin/", bulk_form_site.urls),
     path("inline-multivalue-admin/", inline_multivalue_site.urls),
+    path("through-inline-admin/", through_inline_site.urls),
 ]

@@ -5,7 +5,7 @@ from django.test import RequestFactory, override_settings
 
 from django_ninja_admin import NinjaAdminSite, TabularInline
 from django_ninja_admin.models import CHANGE, LogEntry
-from tests.testapp.models import Product, ProductImage
+from tests.testapp.models import Article, ArticleLabel, Label, Product, ProductImage
 
 RENDERED_FIELD_ATTR_KEYS = {
     "auto_id",
@@ -318,6 +318,55 @@ def test_inline_multivalue_payload_uses_pydantic_and_formset_normalization(admin
     image.refresh_from_db()
     assert image.title == "XYZ:9"
     assert changed.json()["inlines"]["testapp.productimage"]["change"][0]["title"] == "XYZ:9"
+
+
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_manual_through_many_to_many_can_be_edited_with_explicit_inline(admin_client):
+    primary = Label.objects.create(name="Primary")
+    secondary = Label.objects.create(name="Secondary")
+    archived = Label.objects.create(name="Archived")
+    article = Article.objects.create(title="Through API")
+    existing = ArticleLabel.objects.create(article=article, label=primary, note="Lead")
+    removed = ArticleLabel.objects.create(article=article, label=archived, note="Remove")
+
+    form_response = admin_client.get(f"/through-inline-admin/testapp/article/{article.pk}/form")
+
+    assert form_response.status_code == 200
+    body = form_response.json()
+    assert [field["name"] for field in body["form"]["fields"]] == ["title"]
+    inline = next(item for item in body["inlines"] if item["model"] == "testapp.articlelabel")
+    assert inline["formset_prefix"] == "label_links"
+    assert inline["total_form_count"] == 2
+    assert inline["fieldset_layout"][0]["fields"] == ["id", "article", "label", "note"]
+    first_row = {field["name"]: field for field in inline["formset"][0]}
+    assert first_row["label"]["attrs"]["value"] == primary.pk
+    assert first_row["label"]["attrs"]["selected_options"] == [{"id": str(primary.pk), "text": "Primary"}]
+    assert first_row["note"]["attrs"]["value"] == "Lead"
+
+    patch_response = admin_client.patch(
+        f"/through-inline-admin/testapp/article/{article.pk}",
+        data={
+            "data": {},
+            "inlines": {
+                "testapp.articlelabel": {
+                    "change": [{"pk": existing.pk, "label": primary.pk, "note": "Lead updated"}],
+                    "add": [{"label": secondary.pk, "note": "Second"}],
+                    "delete": [removed.pk],
+                }
+            },
+        },
+        content_type="application/json",
+    )
+
+    assert patch_response.status_code == 200, patch_response.json()
+    inline_response = patch_response.json()["inlines"]["testapp.articlelabel"]
+    assert inline_response["change"][0]["note"] == "Lead updated"
+    assert inline_response["add"][0]["note"] == "Second"
+    assert inline_response["delete"] == [removed.pk]
+    assert list(article.labels.order_by("name").values_list("name", flat=True)) == ["Primary", "Secondary"]
+    assert ArticleLabel.objects.get(pk=existing.pk).note == "Lead updated"
+    assert ArticleLabel.objects.filter(article=article, label=secondary, note="Second").exists()
+    assert not ArticleLabel.objects.filter(pk=removed.pk).exists()
 
 
 def test_inline_mutations_check_inline_permissions(staff_client, sample):

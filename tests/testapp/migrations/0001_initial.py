@@ -57,6 +57,56 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
+            name="Label",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=100)),
+            ],
+        ),
+        migrations.CreateModel(
+            name="Article",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("title", models.CharField(max_length=100)),
+            ],
+        ),
+        migrations.CreateModel(
+            name="ArticleLabel",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("note", models.CharField(blank=True, max_length=100)),
+                (
+                    "article",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="label_links",
+                        to="testapp.article",
+                    ),
+                ),
+                (
+                    "label",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="article_links",
+                        to="testapp.label",
+                    ),
+                ),
+            ],
+            options={
+                "unique_together": {("article", "label")},
+            },
+        ),
+        migrations.AddField(
+            model_name="article",
+            name="labels",
+            field=models.ManyToManyField(
+                blank=True,
+                related_name="articles",
+                through="testapp.ArticleLabel",
+                to="testapp.label",
+            ),
+        ),
+        migrations.CreateModel(
             name="Product",
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),

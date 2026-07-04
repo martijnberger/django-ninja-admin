@@ -7,10 +7,17 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added mounted coverage for editing manual-through many-to-many relationships
+  through explicit inline admins.
+
 ### Fixed
 
 - Filtered parent form fieldset metadata to fields actually emitted in the form
   contract, avoiding stale auto-field and manual-through many-to-many entries.
+- Added the missing state migration for `LogEntry` options and manager metadata
+  so `makemigrations --check` stays clean.
 
 ## 0.1.47 - 2026-07-04
 
