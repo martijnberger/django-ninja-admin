@@ -15,6 +15,7 @@ from django_ninja_admin.schemas import (
     ObjectIdentifier,
 )
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
+from django_ninja_admin.utils.schema_examples import schema_example
 
 PydanticCreateModel = cast(Any, create_model)
 
@@ -170,8 +171,8 @@ class InlineModelAdmin(BaseAdmin):
                     json_schema_extra={
                         "examples": [
                             {
-                                "add": [self._schema_example(add_schema)],
-                                "change": [self._schema_example(change_schema)],
+                                "add": [schema_example(add_schema)],
+                                "change": [schema_example(change_schema)],
                                 "delete": [2],
                             }
                         ]
@@ -197,8 +198,8 @@ class InlineModelAdmin(BaseAdmin):
                     json_schema_extra={
                         "examples": [
                             {
-                                "add": [self._schema_example(output_schema)],
-                                "change": [self._schema_example(output_schema)],
+                                "add": [schema_example(output_schema)],
+                                "change": [schema_example(output_schema)],
                                 "delete": [2],
                             }
                         ]

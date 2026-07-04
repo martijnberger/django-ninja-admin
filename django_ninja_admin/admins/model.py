@@ -30,6 +30,7 @@ from django_ninja_admin.schemas import (
     ObjectIdentifier,
 )
 from django_ninja_admin.utils.deletion import get_deleted_objects
+from django_ninja_admin.utils.schema_examples import schema_example
 
 HORIZONTAL, VERTICAL = 1, 2
 DEFAULT_ROUTE_AUTH = object()
@@ -188,10 +189,7 @@ class ModelAdmin(BaseAdmin):
                 __config__=ConfigDict(
                     json_schema_extra={
                         "examples": [
-                            {
-                                inline_id: self._schema_example(inline_schema)
-                                for inline_id, inline_schema in inline_schemas
-                            }
+                            {inline_id: schema_example(inline_schema) for inline_id, inline_schema in inline_schemas}
                         ]
                     }
                 ),
@@ -215,7 +213,7 @@ class ModelAdmin(BaseAdmin):
                     json_schema_extra={
                         "examples": [
                             {
-                                "data": self._schema_example(data_schema),
+                                "data": schema_example(data_schema),
                                 "inlines": inline_example,
                             }
                         ]
@@ -228,7 +226,7 @@ class ModelAdmin(BaseAdmin):
         return cache[cache_key]
 
     def _inline_payload_example_for_mutation(self, inline_payload_schema, *, change):
-        inline_example = self._schema_example(inline_payload_schema)
+        inline_example = schema_example(inline_payload_schema)
         if not inline_example:
             return None
         if change:
@@ -246,7 +244,7 @@ class ModelAdmin(BaseAdmin):
         )
         cache_key = ("inline-response", inline_schemas)
         if cache_key not in cache:
-            examples = [{inline_id: self._schema_example(inline_schema) for inline_id, inline_schema in inline_schemas}]
+            examples = [{inline_id: schema_example(inline_schema) for inline_id, inline_schema in inline_schemas}]
             if inline_schemas:
                 inline_ids = tuple(inline_id for inline_id, _inline_schema in inline_schemas)
                 value_schemas = tuple(inline_schema for _inline_id, inline_schema in inline_schemas)
@@ -289,7 +287,7 @@ class ModelAdmin(BaseAdmin):
                     json_schema_extra={
                         "examples": [
                             {
-                                "data": self._schema_example(output_schema),
+                                "data": schema_example(output_schema),
                                 "inlines": None,
                             }
                         ]

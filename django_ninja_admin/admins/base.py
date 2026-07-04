@@ -337,7 +337,7 @@ class BaseAdmin:
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}Admin{operation}Payload",
                 __base__=Schema,
-                __config__=ConfigDict(json_schema_extra={"examples": [{"data": self._schema_example(data_schema)}]}),
+                __config__=ConfigDict(json_schema_extra={"examples": [{"data": schema_example(data_schema)}]}),
                 data=(data_schema, ...),
                 inlines=(FieldMetadataValue | None, None),
             )
@@ -360,7 +360,7 @@ class BaseAdmin:
                     json_schema_extra={
                         "examples": [
                             {
-                                "data": self._schema_example(output_schema),
+                                "data": schema_example(output_schema),
                                 "inlines": None,
                             }
                         ]
@@ -402,7 +402,7 @@ class BaseAdmin:
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminBulkPayload",
                 __base__=Schema,
-                __config__=ConfigDict(json_schema_extra={"examples": [{"data": [self._schema_example(row_schema)]}]}),
+                __config__=ConfigDict(json_schema_extra={"examples": [{"data": [schema_example(row_schema)]}]}),
                 data=(list[row_schema], ...),
             )
             self._mutation_payload_schema_cache = cache
@@ -416,21 +416,16 @@ class BaseAdmin:
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminBulkResponse",
                 __base__=Schema,
-                __config__=ConfigDict(
-                    json_schema_extra={"examples": [{"data": {"1": self._schema_example(output_schema)}}]}
-                ),
+                __config__=ConfigDict(json_schema_extra={"examples": [{"data": {"1": schema_example(output_schema)}}]}),
                 data=(dict[str, output_schema], ...),
             )
             self._mutation_response_schema_cache = cache
         return cache[cache_key]
 
-    def _schema_example(self, schema):
-        return schema_example(schema)
-
     def _form_data_example(self, form_fields, *, selected_fields=None, partial=False, overrides=None):
         def override_example(value):
             field_type, default = self._normalize_schema_override(value)
-            return self._schema_type_example(field_type, default)
+            return schema_type_example(field_type, default)
 
         return form_data_example(
             form_fields,
@@ -762,7 +757,7 @@ class BaseAdmin:
                 continue
             data[field.name] = [self._model_field_example_value(field.target_field)]
         for name, field_type, default in custom_fields:
-            data.setdefault(name, self._schema_type_example(field_type, default))
+            data.setdefault(name, schema_type_example(field_type, default))
         return data
 
     def _model_field_example_value(self, field):
@@ -808,11 +803,8 @@ class BaseAdmin:
             return "ZXhhbXBsZQ=="
         registered_type = self.get_registered_pydantic_type_for_model_field(field)
         if registered_type is not None:
-            return self._schema_type_example(registered_type, None)
+            return schema_type_example(registered_type, None)
         return "example"
-
-    def _schema_type_example(self, field_type, default):
-        return schema_type_example(field_type, default)
 
     def get_output_schema(self, request=None):
         if self.output_schema is not None:

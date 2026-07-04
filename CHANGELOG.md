@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Extracted shared form-field and relation example generation helpers used by
   admin and site OpenAPI examples.
+- Removed internal schema/example shim methods now covered by shared schema
+  example helpers.
 
 ## 0.1.43 - 2026-07-04
 
