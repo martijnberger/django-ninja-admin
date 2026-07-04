@@ -107,6 +107,7 @@ DEFAULT_INDEX_TITLE = "Site administration"
 CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
 _UNSET = object()
 NinjaQuery = cast(Any, Query)
+TO_FIELD_QUERY_DESCRIPTION = "Use an allowed alternate object id field."
 
 
 class NinjaAdminSite:
@@ -1209,7 +1210,7 @@ class NinjaAdminSite:
             to_field: str | None = NinjaQuery(
                 None,
                 alias="_to_field",
-                description="Use an allowed alternate object id field.",
+                description=TO_FIELD_QUERY_DESCRIPTION,
             ),
         ):
             return site._changelist_response(request, model_admin)
@@ -1322,7 +1323,11 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_detail",
         )
-        def detail(request, object_id: str, to_field: str | None = NinjaQuery(None, alias="_to_field")):
+        def detail(
+            request,
+            object_id: str,
+            to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
+        ):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
             if not model_admin.has_view_or_change_permission(request, obj):
                 raise PermissionDenied
@@ -1340,7 +1345,11 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_change_form",
         )
-        def change_form(request, object_id: str, to_field: str | None = NinjaQuery(None, alias="_to_field")):
+        def change_form(
+            request,
+            object_id: str,
+            to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
+        ):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
             if not model_admin.has_view_or_change_permission(request, obj):
                 raise PermissionDenied
@@ -1359,7 +1368,7 @@ class NinjaAdminSite:
             request,
             object_id: str,
             payload: update_payload_schema,
-            to_field: str | None = NinjaQuery(None, alias="_to_field"),
+            to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
         ):
             return site._update_object(request, model_admin, object_id, payload, partial=True, to_field=to_field)
 
@@ -1376,7 +1385,7 @@ class NinjaAdminSite:
             request,
             object_id: str,
             payload: replace_payload_schema,
-            to_field: str | None = NinjaQuery(None, alias="_to_field"),
+            to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
         ):
             return site._update_object(request, model_admin, object_id, payload, partial=False, to_field=to_field)
 
@@ -1396,7 +1405,7 @@ class NinjaAdminSite:
             def update_multipart(
                 request,
                 object_id: str,
-                to_field: str | None = NinjaQuery(None, alias="_to_field"),
+                to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
             ):
                 obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
@@ -1425,7 +1434,7 @@ class NinjaAdminSite:
             def replace_multipart(
                 request,
                 object_id: str,
-                to_field: str | None = NinjaQuery(None, alias="_to_field"),
+                to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
             ):
                 obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
@@ -1454,7 +1463,11 @@ class NinjaAdminSite:
             tags=tags,
             operation_id=f"{app_label}_{model_name}_delete",
         )
-        def delete(request, object_id: str, to_field: str | None = NinjaQuery(None, alias="_to_field")):
+        def delete(
+            request,
+            object_id: str,
+            to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
+        ):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
             if not model_admin.has_delete_permission(request, obj):
                 raise PermissionDenied

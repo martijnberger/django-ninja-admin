@@ -421,9 +421,22 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert non_null_parameter_type(list_parameters["all"]) == ["boolean"]
     assert non_null_parameter_type(list_parameters["_facets"]) == ["boolean"]
     assert non_null_parameter_type(list_parameters["_to_field"]) == ["string"]
+    assert list_parameters["_to_field"]["description"] == "Use an allowed alternate object id field."
     assert non_null_parameter_schema(list_parameters["p"])["pattern"] == r"^(last|[1-9][0-9]*)$"
     assert non_null_parameter_schema(list_parameters["page"])["pattern"] == r"^(last|[1-9][0-9]*)$"
     assert non_null_parameter_schema(list_parameters["pp"])["minimum"] == 1
+    for path, method in [
+        ("/admin-api/testapp/product/{object_id}", "get"),
+        ("/admin-api/testapp/product/{object_id}", "patch"),
+        ("/admin-api/testapp/product/{object_id}", "put"),
+        ("/admin-api/testapp/product/{object_id}", "delete"),
+        ("/admin-api/testapp/product/{object_id}/form", "get"),
+        ("/admin-api/testapp/product/{object_id}/multipart", "patch"),
+        ("/admin-api/testapp/product/{object_id}/multipart", "put"),
+    ]:
+        object_route_parameters = {parameter["name"]: parameter for parameter in paths[path][method]["parameters"]}
+        assert object_route_parameters["_to_field"]["description"] == "Use an allowed alternate object id field."
+        assert non_null_parameter_type(object_route_parameters["_to_field"]) == ["string"]
 
     assert _request_schema_ref(paths["/admin-api/testapp/product"]["post"]) == (
         "#/components/schemas/ProductAdminCreatePayload"

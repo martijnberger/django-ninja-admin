@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Narrowed inline and list-editable formset management metadata to dedicated
   typed OpenAPI components while preserving the existing response shape.
+- Added consistent OpenAPI descriptions for `_to_field` query parameters on
+  object detail, form, update, multipart update, and delete routes.
 
 ## 0.1.56 - 2026-07-04
 

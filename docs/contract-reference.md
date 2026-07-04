@@ -26,6 +26,11 @@ validation runs. Generated admin payload wrappers, action payload variants,
 model output components, and mutation/bulk response wrappers are closed with
 `additionalProperties: false` in OpenAPI.
 
+Model routes document every declared query parameter in OpenAPI, including
+`_to_field` on changelist, detail, form, update, multipart update, and delete
+routes. `_to_field` only accepts fields allowed by the registered
+`ModelAdmin.to_field_allowed()` implementation.
+
 ## Response Shapes
 
 Standard mutation responses return typed `data` and optional typed `inlines`.
