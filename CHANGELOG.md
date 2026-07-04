@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.63 - 2026-07-04
+
 ### Changed
 
 - Honored `ModelAdmin.actions = None` in action contracts by omitting the
