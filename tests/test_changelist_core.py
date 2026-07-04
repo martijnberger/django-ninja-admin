@@ -1,3 +1,4 @@
+import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
@@ -9,6 +10,7 @@ from django.test.utils import CaptureQueriesContext
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, display, site
 from django_ninja_admin.changelist import ChangeList
+from django_ninja_admin.exceptions import AdminValidationError
 from tests.testapp.models import Category, Product, Tag
 
 RENDERED_FIELD_ATTR_KEYS = {
@@ -320,6 +322,46 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert empty.json()["config"]["page_result_count"] == 0
     assert empty.json()["config"]["result_start_index"] == 0
     assert empty.json()["config"]["result_end_index"] == 0
+
+
+def test_changelist_core_enforces_site_page_size_cap(db, sample):
+    class LargePageProductAdmin(ModelAdmin):
+        list_per_page = 1000
+        list_max_show_all = 1000
+        ordering = ("id",)
+
+    Product.objects.bulk_create(
+        [Product(name=f"Bounded {index}", category=sample.category, price="1.00") for index in range(12)]
+    )
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.changelist_max_per_page = 5
+    admin_site.register(Product, LargePageProductAdmin)
+    model_admin = admin_site.get_model_admin(Product)
+    user = get_user_model().objects.create_superuser("bounded-page-admin", password="pw")
+
+    request = RequestFactory().get("/admin-api/testapp/product")
+    request.user = user
+    changelist = ChangeList(request, model_admin)
+
+    assert changelist.max_per_page == 5
+    assert changelist.per_page == 5
+    assert len(changelist.result_list) == 5
+    assert changelist.can_show_all_results is False
+    assert changelist.show_all_query_strings()["show_all_query_string"] is None
+
+    show_all_request = RequestFactory().get("/admin-api/testapp/product?all=1")
+    show_all_request.user = user
+    show_all_changelist = ChangeList(show_all_request, model_admin)
+
+    assert show_all_changelist.show_all is False
+    assert show_all_changelist.per_page == 5
+    assert len(show_all_changelist.result_list) == 5
+
+    explicit_request = RequestFactory().get("/admin-api/testapp/product?pp=6")
+    explicit_request.user = user
+    with pytest.raises(AdminValidationError) as exc_info:
+        ChangeList(explicit_request, model_admin)
+    assert exc_info.value.errors == [{"message": "Page size must be at most 5.", "param": "pp"}]
 
 
 def test_changelist_supports_callable_list_display(admin_client, sample, monkeypatch):

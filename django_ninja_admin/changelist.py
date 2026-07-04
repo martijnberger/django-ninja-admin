@@ -51,9 +51,10 @@ class ChangeList:
         self.full_result_count = model_admin.get_queryset(request).count() if self.show_full_result_count else None
         self.result_count = self.queryset.count()
         self.show_admin_actions = not self.show_full_result_count or bool(self.full_result_count)
+        self.max_per_page = self.get_max_per_page()
         self.per_page = self.get_per_page()
+        self.can_show_all_results = self.result_count <= self.get_show_all_limit()
         self.show_all = self.can_show_all()
-        self.can_show_all_results = self.result_count <= self.model_admin.list_max_show_all
         self.multi_page = self.result_count > self.per_page
         self.pagination_required = self.multi_page and not self.show_all
         self.show_facets = self.should_show_facets()
@@ -605,6 +606,7 @@ class ChangeList:
         return f"-{index}" if direction == "desc" else str(index)
 
     def get_per_page(self):
+        explicit = "pp" in self.params
         value = self.params.get("pp") or self.model_admin.list_per_page
         try:
             per_page = int(value)
@@ -612,11 +614,28 @@ class ChangeList:
             raise AdminValidationError([{"message": _("Invalid page size."), "param": "pp"}]) from exc
         if per_page < 1:
             raise AdminValidationError([{"message": _("Invalid page size."), "param": "pp"}])
+        if per_page > self.max_per_page:
+            if explicit:
+                raise AdminValidationError(
+                    [
+                        {
+                            "message": _("Page size must be at most %(max)d.") % {"max": self.max_per_page},
+                            "param": "pp",
+                        }
+                    ]
+                )
+            return self.max_per_page
         return per_page
+
+    def get_max_per_page(self):
+        return int(getattr(self.model_admin.admin_site, "changelist_max_per_page", 200))
+
+    def get_show_all_limit(self):
+        return min(self.model_admin.list_max_show_all, self.max_per_page)
 
     def can_show_all(self):
         wants_all = "all" in self.params
-        return wants_all and self.result_count <= self.model_admin.list_max_show_all
+        return wants_all and self.can_show_all_results
 
     def should_show_facets(self):
         show_facets = getattr(self.model_admin, "show_facets", ShowFacets.ALLOW)

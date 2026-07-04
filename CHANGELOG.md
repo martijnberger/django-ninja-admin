@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Enforced the site-level changelist page-size cap inside `ChangeList` itself,
+  including overlarge admin defaults, direct `pp` construction, and `all=1`
+  show-all decisions.
+
 ## 0.1.61 - 2026-07-04
 
 ### Changed
