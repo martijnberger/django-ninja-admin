@@ -1097,6 +1097,8 @@ class BaseAdmin:
         form_class = self.get_form_class(request, obj, change=obj is not None)
         form = form_class(instance=obj, initial=initial)
         fieldsets = self.get_fieldsets(request, obj)
+        fields = self.get_form_fields_description(request, obj, initial=initial)
+        fieldset_layout = self._filtered_fieldset_layout(fieldsets, {field["name"] for field in fields})
         permissions = {
             "has_add_permission": self.has_add_permission(request),
             "has_change_permission": self.has_change_permission(request, obj),
@@ -1106,9 +1108,9 @@ class BaseAdmin:
         form_description = {
             "model": f"{self.model._meta.app_label}.{self.model._meta.model_name}",
             "readonly_fields": [field_name_for_display(field) for field in self.get_readonly_fields(request, obj)],
-            "fields": self.get_form_fields_description(request, obj, initial=initial),
+            "fields": fields,
             "media": form_media_description(form),
-            "fieldset_layout": fieldset_layout_description(fieldsets),
+            "fieldset_layout": fieldset_layout,
             "prepopulated": dict(self.get_prepopulated_fields(request, obj)),
             "permissions": permissions,
             "save_as": getattr(self, "save_as", False),
@@ -1123,6 +1125,20 @@ class BaseAdmin:
             **kwargs,
         }
         return {"form": form_description}
+
+    def _filtered_fieldset_layout(self, fieldsets, allowed_field_names):
+        layout = fieldset_layout_description(fieldsets)
+        filtered_layout = []
+        for fieldset in layout:
+            rows = []
+            for row in fieldset["rows"]:
+                row_fields = [field for field in row["fields"] if field in allowed_field_names]
+                if row_fields:
+                    rows.append({"fields": row_fields})
+            fields = [field for row in rows for field in row["fields"]]
+            if fields:
+                filtered_layout.append({**fieldset, "fields": fields, "rows": rows})
+        return filtered_layout
 
     def get_prepopulated_fields(self, request, obj=None):
         return self.prepopulated_fields

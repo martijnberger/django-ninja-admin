@@ -3,9 +3,10 @@ from decimal import Decimal
 import pytest
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import AnonymousUser, Permission
 from django.db import models
 from django.test import RequestFactory
+from django.test.utils import isolate_apps
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, display, site
 from tests.testapp.models import Product
@@ -243,6 +244,52 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
         "Featured",
         "Compact",
     }
+
+
+@isolate_apps("tests.testapp")
+def test_form_description_omits_non_form_manual_through_many_to_many_from_default_layout(db):
+    class Label(models.Model):
+        name = models.CharField(max_length=20)
+
+        class Meta:
+            app_label = "testapp"
+
+    class Article(models.Model):
+        title = models.CharField(max_length=20)
+        labels = models.ManyToManyField(Label, through="ArticleLabel", blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    class ArticleLabel(models.Model):
+        article = models.ForeignKey(Article, on_delete=models.CASCADE)
+        label = models.ForeignKey(Label, on_delete=models.CASCADE)
+        note = models.CharField(max_length=20, blank=True)
+
+        class Meta:
+            app_label = "testapp"
+
+    admin_site = NinjaAdminSite(auth=None, include_auth=False)
+    admin_site.register(Article)
+    model_admin = admin_site.get_model_admin(Article)
+    request = RequestFactory().get("/manual-through-admin/testapp/article/form")
+    request.user = AnonymousUser()
+
+    form = model_admin.get_form_description(request)["form"]
+    write_schema = model_admin.get_write_schema(request)
+
+    assert [field["name"] for field in form["fields"]] == ["title"]
+    assert form["fieldset_layout"] == [
+        {
+            "name": None,
+            "classes": [],
+            "description": None,
+            "fields": ["title"],
+            "rows": [{"fields": ["title"]}],
+        }
+    ]
+    assert list(write_schema.model_fields) == ["title"]
+    assert "labels" not in write_schema.model_json_schema()["properties"]
 
 
 def test_form_description_exposes_multiwidget_metadata(db):

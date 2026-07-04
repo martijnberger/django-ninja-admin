@@ -7,7 +7,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
-No changes yet.
+### Fixed
+
+- Filtered parent form fieldset metadata to fields actually emitted in the form
+  contract, avoiding stale auto-field and manual-through many-to-many entries.
 
 ## 0.1.47 - 2026-07-04
 
