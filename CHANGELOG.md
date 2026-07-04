@@ -13,6 +13,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
   generated clients can render linked table cells without inferring from
   row-level URLs.
 
+### Fixed
+
+- Validated explicit `Status(200, ...)` `response_change()` hook bodies against
+  their declared hook response schema instead of the default mutation schema,
+  matching the advertised OpenAPI response map.
+
 ## 0.1.57 - 2026-07-04
 
 ### Changed

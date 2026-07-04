@@ -114,7 +114,7 @@ class StatusHookProductAdmin(ModelAdmin):
         return Status(202, {"hook": "add", "id": obj.pk, "name": obj.name})
 
     def response_change(self, request, obj, form, inline_results):
-        return Status(202, {"hook": "change", "id": obj.pk, "description": obj.description})
+        return Status(200, {"hook": "change", "id": obj.pk, "description": obj.description})
 
     def response_delete(self, request, obj_display, obj_id):
         return Status(202, {"hook": "delete", "id": obj_id, "display": obj_display})

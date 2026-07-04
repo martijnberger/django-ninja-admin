@@ -515,18 +515,22 @@ class NinjaAdminSite:
         if isinstance(response, Status):
             status_code = response.status_code
             value = response.value
+            explicit_status = True
         elif plain_status is not None and response is not None:
             status_code = plain_status
             value = response
+            explicit_status = True
         else:
             status_code = default_status
             value = response
+            explicit_status = False
         response_schema = self._mutation_hook_response_schema(
             status_code,
             default_status=default_status,
             default_schema=default_schema,
             hook_schema=hook_schema,
             hook_name=hook_name,
+            explicit_status=explicit_status,
         )
         if response_schema is None:
             if value is not None:
@@ -537,10 +541,19 @@ class NinjaAdminSite:
             TypeAdapter(response_schema).validate_python(value)
         return Status(status_code, value)
 
-    def _mutation_hook_response_schema(self, status_code, *, default_status, default_schema, hook_schema, hook_name):
-        if status_code == default_status:
-            return default_schema
+    def _mutation_hook_response_schema(
+        self,
+        status_code,
+        *,
+        default_status,
+        default_schema,
+        hook_schema,
+        hook_name,
+        explicit_status,
+    ):
         custom_responses = self._custom_hook_responses(hook_schema, (200, 202))
+        if status_code == default_status and not (explicit_status and status_code in custom_responses):
+            return default_schema
         if status_code in custom_responses:
             return custom_responses[status_code]
         raise AdminValidationError([{"message": _("Unsupported response status."), "param": hook_name}])

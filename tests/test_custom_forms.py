@@ -192,7 +192,7 @@ def test_response_hooks_can_return_custom_status(admin_client, sample):
         content_type="application/json",
     )
 
-    assert changed.status_code == 202
+    assert changed.status_code == 200
     assert changed.json() == {
         "hook": "change",
         "id": created_id,
