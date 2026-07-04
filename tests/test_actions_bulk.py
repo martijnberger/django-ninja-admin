@@ -194,6 +194,58 @@ def test_actions_can_return_custom_status(admin_client, sample, monkeypatch):
     assert sample.stock_status == "out_of_stock"
 
 
+def test_actions_can_return_no_content_status(admin_client, sample, monkeypatch):
+    from tests.testapp.admin import ProductAdmin
+
+    @action(description="Mark out of stock", permissions=["change"])
+    def no_content_mark_out_of_stock(self, request, queryset):
+        queryset.update(stock_status="out_of_stock")
+        return Status(204, None)
+
+    monkeypatch.setattr(ProductAdmin, "mark_out_of_stock", no_content_mark_out_of_stock)
+
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "mark_out_of_stock", "selected_ids": [sample.pk]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 204
+    sample.refresh_from_db()
+    assert sample.stock_status == "out_of_stock"
+
+
+def test_actions_validate_responses_inside_transaction(admin_client, sample, monkeypatch):
+    from tests.testapp.admin import ProductAdmin, StockStatusActionData, StockStatusActionResult
+
+    @action(
+        description="Set stock status",
+        permissions=["change"],
+        input_schema=StockStatusActionData,
+        response_schema=StockStatusActionResult,
+    )
+    def invalid_status_set_stock_status(self, request, queryset, data):
+        queryset.update(stock_status=data.status)
+        return {"status": data.status}
+
+    monkeypatch.setattr(ProductAdmin, "set_stock_status", invalid_status_set_stock_status)
+
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={
+            "action": "set_stock_status",
+            "selected_ids": [sample.pk],
+            "data": {"status": "out_of_stock", "note": "invalid response"},
+        },
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    ErrorResponse.model_validate(response.json())
+    sample.refresh_from_db()
+    assert sample.stock_status == "in_stock"
+
+
 def test_actions_reject_invalid_selected_ids(admin_client, sample):
     response = admin_client.post(
         "/admin-api/testapp/product/actions",

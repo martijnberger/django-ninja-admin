@@ -1290,7 +1290,12 @@ class NinjaAdminSite:
             if not model_admin.has_view_or_change_permission(request):
                 raise PermissionDenied
             cl_queryset = site._filtered_queryset(request, model_admin)
-            return model_admin.response_action(request, cl_queryset, payload)
+            with transaction.atomic(using=router_db_for_write(model_admin.model)):
+                response = model_admin.response_action(request, cl_queryset, payload)
+                return site._validated_action_response(
+                    response,
+                    response_schema=model_admin.get_action_response_schema(request),
+                )
 
         @router.put(
             f"{prefix}/bulk",
@@ -1982,6 +1987,27 @@ class NinjaAdminSite:
         if input_schema is not None:
             payload["data"] = pydantic_model_example(input_schema)
         return payload
+
+    def _validated_action_response(self, response, *, response_schema):
+        if isinstance(response, Status):
+            status_code = response.status_code
+            value = response.value
+        else:
+            status_code = 200
+            value = response
+        if status_code == 204:
+            if value is not None:
+                raise AdminValidationError(
+                    [{"message": _("Response status does not allow a body."), "param": "action"}]
+                )
+            return Status(status_code, None)
+        if status_code in {200, 202}:
+            TypeAdapter(response_schema).validate_python(value)
+            return Status(status_code, value)
+        if status_code in {400, 403, 409}:
+            TypeAdapter(ErrorResponse).validate_python(value)
+            return Status(status_code, value)
+        raise AdminValidationError([{"message": _("Unsupported response status."), "param": "action"}])
 
     def _inline_payload_example(self, model_admin, *, change):
         examples = {}

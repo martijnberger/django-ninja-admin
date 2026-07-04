@@ -21,6 +21,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Allowed explicit `Status(204, None)` add/change/delete response hooks to
   match the advertised no-content mutation response map while still rejecting
   204 responses with bodies.
+- Validated action return bodies against their advertised success/error schemas
+  inside the action transaction, rolling back writes when an action returns an
+  invalid typed response.
 
 ## 0.1.57 - 2026-07-04
 

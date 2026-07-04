@@ -107,6 +107,9 @@ Response hook return values are part of the generated-client contract:
 
 - `@action(...)` supports permissions, Pydantic input schemas, and custom
   response schemas.
+- Action response bodies are validated against the advertised success or error
+  schema inside the action transaction. Invalid bodies roll back action writes;
+  `Status(204, None)` is allowed for no-content action responses.
 - `InlineModelAdmin`, `TabularInline`, and `StackedInline` use Django formsets
   for validation and typed Pydantic envelopes for add/change/delete rows.
 - `route()` and `get_urls()` add sync or async custom site or model routes with
