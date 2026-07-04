@@ -2,6 +2,7 @@
   "components": {
     "schemas": {
       "ActionChoice": {
+        "additionalProperties": false,
         "properties": {
           "action": {
             "title": "Action",
@@ -66,6 +67,7 @@
         "type": "object"
       },
       "AppSummary": {
+        "additionalProperties": false,
         "examples": [
           {
             "app_label": "shop",
@@ -118,6 +120,7 @@
         "type": "object"
       },
       "AutocompleteItem": {
+        "additionalProperties": false,
         "properties": {
           "id": {
             "title": "Id",
@@ -136,6 +139,7 @@
         "type": "object"
       },
       "AutocompleteResponse": {
+        "additionalProperties": false,
         "examples": [
           {
             "pagination": {
@@ -614,6 +618,7 @@
         "type": "object"
       },
       "CellMetadata": {
+        "additionalProperties": false,
         "properties": {
           "boolean": {
             "default": false,
@@ -693,6 +698,7 @@
         "type": "object"
       },
       "ChangelistConfig": {
+        "additionalProperties": false,
         "properties": {
           "action_choices": {
             "items": {
@@ -1057,6 +1063,7 @@
         "type": "object"
       },
       "ChangelistResponse": {
+        "additionalProperties": false,
         "properties": {
           "action_form": {
             "items": {
@@ -1236,6 +1243,7 @@
         "type": "array"
       },
       "Column": {
+        "additionalProperties": false,
         "properties": {
           "ascending": {
             "default": false,
@@ -1379,6 +1387,7 @@
         "type": "object"
       },
       "CsrfTokenResponse": {
+        "additionalProperties": false,
         "properties": {
           "csrf_token": {
             "title": "Csrf Token",
@@ -1392,6 +1401,7 @@
         "type": "object"
       },
       "DateHierarchyChoice": {
+        "additionalProperties": false,
         "properties": {
           "count": {
             "anyOf": [
@@ -1436,6 +1446,7 @@
         "type": "object"
       },
       "DateHierarchyDescription": {
+        "additionalProperties": false,
         "properties": {
           "back_query_string": {
             "anyOf": [
@@ -1520,6 +1531,7 @@
         ]
       },
       "ErrorItem": {
+        "additionalProperties": false,
         "properties": {
           "message": {
             "$ref": "#/components/schemas/ErrorMessage"
@@ -1550,6 +1562,7 @@
         ]
       },
       "ErrorResponse": {
+        "additionalProperties": false,
         "examples": [
           {
             "errors": [
@@ -2773,6 +2786,7 @@
         "type": "object"
       },
       "FieldDescription": {
+        "additionalProperties": false,
         "properties": {
           "attrs": {
             "$ref": "#/components/schemas/FieldAttributes",
@@ -2863,6 +2877,7 @@
         ]
       },
       "FieldsetDescription": {
+        "additionalProperties": false,
         "properties": {
           "classes": {
             "items": {
@@ -2912,6 +2927,7 @@
         "type": "object"
       },
       "FieldsetRow": {
+        "additionalProperties": false,
         "properties": {
           "fields": {
             "items": {
@@ -2928,6 +2944,7 @@
         "type": "object"
       },
       "FileFieldValue": {
+        "additionalProperties": false,
         "properties": {
           "name": {
             "title": "Name",
@@ -2952,6 +2969,7 @@
         "type": "object"
       },
       "FilterChoice": {
+        "additionalProperties": false,
         "properties": {
           "count": {
             "anyOf": [
@@ -2986,6 +3004,7 @@
         "type": "object"
       },
       "FilterDescription": {
+        "additionalProperties": false,
         "properties": {
           "choices": {
             "items": {
@@ -3226,6 +3245,7 @@
         "type": "object"
       },
       "FormDescription": {
+        "additionalProperties": false,
         "properties": {
           "autocomplete_fields": {
             "items": {
@@ -3332,6 +3352,7 @@
         "type": "object"
       },
       "FormMediaDescription": {
+        "additionalProperties": false,
         "properties": {
           "css": {
             "additionalProperties": {
@@ -3355,6 +3376,7 @@
         "type": "object"
       },
       "FormResponse": {
+        "additionalProperties": false,
         "properties": {
           "form": {
             "$ref": "#/components/schemas/FormDescription"
@@ -3744,6 +3766,7 @@
         "type": "object"
       },
       "HistoryItem": {
+        "additionalProperties": false,
         "properties": {
           "action_flag": {
             "title": "Action Flag",
@@ -3880,6 +3903,7 @@
         "type": "object"
       },
       "HistoryResponse": {
+        "additionalProperties": false,
         "examples": [
           {
             "pagination": {
@@ -3941,6 +3965,7 @@
         "type": "object"
       },
       "ImageFieldValue": {
+        "additionalProperties": false,
         "properties": {
           "height": {
             "anyOf": [
@@ -4009,6 +4034,7 @@
         "type": "object"
       },
       "InlineDescription": {
+        "additionalProperties": false,
         "properties": {
           "admin_style": {
             "title": "Admin Style",
@@ -4180,6 +4206,7 @@
         "type": "object"
       },
       "InlineFormsetRowMetadata": {
+        "additionalProperties": false,
         "properties": {
           "empty_permitted": {
             "title": "Empty Permitted",
@@ -4263,6 +4290,7 @@
         ]
       },
       "ListEditingRow": {
+        "additionalProperties": false,
         "properties": {
           "empty_permitted": {
             "default": false,
@@ -4309,6 +4337,7 @@
         "type": "object"
       },
       "ModelSummary": {
+        "additionalProperties": false,
         "examples": [
           {
             "app_label": "shop",
@@ -4368,6 +4397,7 @@
         ]
       },
       "PageChoice": {
+        "additionalProperties": false,
         "properties": {
           "display": {
             "title": "Display",
@@ -4408,6 +4438,7 @@
         "type": "object"
       },
       "Pagination": {
+        "additionalProperties": false,
         "properties": {
           "count": {
             "title": "Count",
@@ -4451,6 +4482,7 @@
         "type": "object"
       },
       "PermissionMap": {
+        "additionalProperties": false,
         "examples": [
           {
             "has_add_permission": true,
@@ -4485,6 +4517,7 @@
         "type": "object"
       },
       "PermissionsResponse": {
+        "additionalProperties": false,
         "examples": [
           {
             "has_permission": true,
@@ -6272,6 +6305,7 @@
         "type": "object"
       },
       "Row": {
+        "additionalProperties": false,
         "properties": {
           "cell_metadata": {
             "additionalProperties": {
@@ -6493,6 +6527,7 @@
         "type": "object"
       },
       "SelectedOption": {
+        "additionalProperties": false,
         "properties": {
           "id": {
             "title": "Id",
@@ -6511,6 +6546,7 @@
         "type": "object"
       },
       "SessionLoginPayload": {
+        "additionalProperties": false,
         "properties": {
           "password": {
             "title": "Password",
@@ -6529,6 +6565,7 @@
         "type": "object"
       },
       "SessionResponse": {
+        "additionalProperties": false,
         "properties": {
           "csrf_token": {
             "title": "Csrf Token",
@@ -6567,6 +6604,7 @@
         "type": "object"
       },
       "SiteContext": {
+        "additionalProperties": false,
         "examples": [
           {
             "available_apps": [
@@ -8029,6 +8067,7 @@
         "type": "object"
       },
       "ViewOnSiteResponse": {
+        "additionalProperties": false,
         "examples": [
           {
             "url": "https://example.com/products/1/"

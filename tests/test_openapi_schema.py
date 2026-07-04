@@ -26,6 +26,7 @@ def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, samp
     components = schema["components"]["schemas"]
 
     assert components["ErrorItem"] == {
+        "additionalProperties": False,
         "properties": {
             "message": {"$ref": "#/components/schemas/ErrorMessage"},
             "param": {

@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Closed public admin response schema components with `additionalProperties:
+  false` so generated clients do not accept undocumented metadata fields.
+
 ### Fixed
 
 - Aligned custom `response_change_schema` OpenAPI status maps with runtime

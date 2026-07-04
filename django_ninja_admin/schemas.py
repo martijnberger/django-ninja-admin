@@ -6,27 +6,31 @@ from ninja import Schema
 from pydantic import ConfigDict, Field, RootModel, field_serializer, field_validator
 
 
-class AdminWriteSchema(Schema):
+class AdminSchema(Schema):
     model_config = ConfigDict(extra="forbid")
 
 
-class AdminInlineRowSchema(Schema):
+class AdminWriteSchema(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
 
-class AdminInlineOperationsSchema(Schema):
+class AdminInlineRowSchema(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
 
-class AdminInlinePayloadSchema(Schema):
+class AdminInlineOperationsSchema(AdminSchema):
+    model_config = ConfigDict(extra="forbid")
+
+
+class AdminInlinePayloadSchema(AdminSchema):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
 
-class AdminInlineOperationResultsSchema(Schema):
+class AdminInlineOperationResultsSchema(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
 
-class AdminBulkRowSchema(Schema):
+class AdminBulkRowSchema(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
 
@@ -34,7 +38,7 @@ type DeletedObject = str | list[DeletedObject]
 type ErrorMessage = str | list[str]
 
 
-class ErrorItem(Schema):
+class ErrorItem(AdminSchema):
     message: ErrorMessage
     param: str = "non_field_errors"
 
@@ -50,7 +54,7 @@ class ErrorItem(Schema):
         return value
 
 
-class ErrorResponse(Schema):
+class ErrorResponse(AdminSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -78,16 +82,16 @@ class ErrorResponse(Schema):
     model_count: dict[str, int] | None = None
 
 
-class CsrfTokenResponse(Schema):
+class CsrfTokenResponse(AdminSchema):
     csrf_token: str
 
 
-class SessionLoginPayload(Schema):
+class SessionLoginPayload(AdminSchema):
     username: str
     password: str
 
 
-class SessionResponse(Schema):
+class SessionResponse(AdminSchema):
     is_authenticated: bool
     is_active: bool
     is_staff: bool
@@ -96,7 +100,7 @@ class SessionResponse(Schema):
     csrf_token: str
 
 
-class ActionResponse(Schema):
+class ActionResponse(AdminSchema):
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={
@@ -118,7 +122,7 @@ class ActionResponse(Schema):
         return str(value)
 
 
-class PermissionMap(Schema):
+class PermissionMap(AdminSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -138,7 +142,7 @@ class PermissionMap(Schema):
     has_view_permission: bool = False
 
 
-class ModelSummary(Schema):
+class ModelSummary(AdminSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -165,7 +169,7 @@ class ModelSummary(Schema):
     perms: PermissionMap
 
 
-class AppSummary(Schema):
+class AppSummary(AdminSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -198,7 +202,7 @@ class AppSummary(Schema):
     models: list[ModelSummary]
 
 
-class SiteContext(Schema):
+class SiteContext(AdminSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -242,7 +246,7 @@ class SiteContext(Schema):
     is_nav_sidebar_enabled: bool
 
 
-class PermissionsResponse(Schema):
+class PermissionsResponse(AdminSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -302,7 +306,7 @@ FIELD_DESCRIPTION_ATTRS_EXAMPLE = {
 }
 
 
-class FileFieldValue(Schema):
+class FileFieldValue(AdminSchema):
     name: str
     url: str | None = None
 
@@ -312,7 +316,7 @@ class ImageFieldValue(FileFieldValue):
     height: int | None = None
 
 
-class SelectedOption(Schema):
+class SelectedOption(AdminSchema):
     id: str
     text: str
 
@@ -337,7 +341,7 @@ class JsonObjectResponse(RootModel[JsonObject]):
     )
 
 
-class ChoiceOption(Schema):
+class ChoiceOption(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     value: str | None = None
@@ -346,14 +350,14 @@ class ChoiceOption(Schema):
     coerced_value: FieldMetadataValue = None
 
 
-class ChoiceGroup(Schema):
+class ChoiceGroup(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     label: str | None = None
     options: list[ChoiceOption]
 
 
-class SourceFieldIdentity(Schema):
+class SourceFieldIdentity(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     app_label: str | None = None
@@ -368,7 +372,7 @@ def _to_field_query_json_schema(schema: dict[str, Any]) -> None:
     schema["required"] = ["_to_field" if item == "to_field" else item for item in schema.get("required", [])]
 
 
-class ToFieldQuery(Schema):
+class ToFieldQuery(AdminSchema):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, json_schema_extra=_to_field_query_json_schema)
 
     to_field: str = Field(alias="_to_field", serialization_alias="_to_field")
@@ -414,7 +418,7 @@ class RadioMetadata(SourceFieldIdentity):
     orientation: str | int
 
 
-class PrepopulatedSourceMetadata(Schema):
+class PrepopulatedSourceMetadata(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     field_name: str
@@ -433,7 +437,7 @@ def _class_field_json_schema(schema: dict[str, Any]) -> None:
     schema["required"] = ["class" if item == "class_" else item for item in schema.get("required", [])]
 
 
-class ValidatorDetail(Schema):
+class ValidatorDetail(AdminSchema):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, json_schema_extra=_class_field_json_schema)
 
     class_: str = Field(alias="class", serialization_alias="class")
@@ -443,7 +447,7 @@ class ValidatorDetail(Schema):
     pattern: str | None = None
 
 
-class WidgetMetadata(Schema):
+class WidgetMetadata(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     widget: str
@@ -464,21 +468,21 @@ class SubwidgetMetadata(WidgetMetadata):
     name_suffix: str
 
 
-class IndexedInputFormats(Schema):
+class IndexedInputFormats(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     index: int
     input_formats: list[str]
 
 
-class SelectDateChoice(Schema):
+class SelectDateChoice(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     value: FieldMetadataValue = None
     label: str
 
 
-class SelectDateEmptyChoices(Schema):
+class SelectDateEmptyChoices(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     year: SelectDateChoice
@@ -486,7 +490,7 @@ class SelectDateEmptyChoices(Schema):
     day: SelectDateChoice
 
 
-class SelectDateSelected(Schema):
+class SelectDateSelected(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     year: FieldMetadataValue = None
@@ -494,7 +498,7 @@ class SelectDateSelected(Schema):
     day: FieldMetadataValue = None
 
 
-class SelectDateMetadata(Schema):
+class SelectDateMetadata(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     order: list[Literal["year", "month", "day"]]
@@ -512,13 +516,13 @@ def _schema_field_json_schema(schema: dict[str, Any]) -> None:
     schema["required"] = ["schema" if item == "schema_" else item for item in schema.get("required", [])]
 
 
-class InputSchemaOverrideMetadata(Schema):
+class InputSchemaOverrideMetadata(AdminSchema):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, json_schema_extra=_schema_field_json_schema)
 
     schema_: JsonSchemaValue = Field(alias="schema", serialization_alias="schema")
 
 
-class FieldAttributes(Schema):
+class FieldAttributes(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     required: bool | None = None
@@ -626,7 +630,7 @@ class FieldAttributes(Schema):
     input_schema_override: InputSchemaOverrideMetadata | None = None
 
 
-class ComboFieldMetadata(Schema):
+class ComboFieldMetadata(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     index: int
@@ -637,7 +641,7 @@ class ComboFieldMetadata(Schema):
 FieldAttributes.model_rebuild(_types_namespace={"ComboFieldMetadata": ComboFieldMetadata})
 
 
-class FieldDescription(Schema):
+class FieldDescription(AdminSchema):
     name: str
     type: str
     attrs: FieldAttributes = Field(
@@ -650,16 +654,16 @@ class FieldDescription(Schema):
         return attrs.model_dump(mode="json", exclude_unset=True, by_alias=True)
 
 
-class FormMediaDescription(Schema):
+class FormMediaDescription(AdminSchema):
     css: dict[str, list[str]] = Field(default_factory=dict)
     js: list[str] = Field(default_factory=list)
 
 
-class FieldsetRow(Schema):
+class FieldsetRow(AdminSchema):
     fields: list[str]
 
 
-class FieldsetDescription(Schema):
+class FieldsetDescription(AdminSchema):
     name: str | None = None
     classes: list[str] = Field(default_factory=list)
     description: str | None = None
@@ -671,7 +675,7 @@ type PrepopulatedFieldMap = dict[str, list[str]]
 type RadioFieldMap = dict[str, str | int]
 
 
-class FormDescription(Schema):
+class FormDescription(AdminSchema):
     model: str
     readonly_fields: list[str]
     fields: list[FieldDescription]
@@ -690,7 +694,7 @@ class FormDescription(Schema):
     autocomplete_fields: list[str] = Field(default_factory=list)
 
 
-class InlineFormsetRowMetadata(Schema):
+class InlineFormsetRowMetadata(AdminSchema):
     index: int
     prefix: str
     is_initial: bool
@@ -698,7 +702,7 @@ class InlineFormsetRowMetadata(Schema):
     object_id: str | None = None
 
 
-class InlineDescription(Schema):
+class InlineDescription(AdminSchema):
     model: str
     readonly_fields: list[str]
     fieldset_layout: list[FieldsetDescription] = Field(default_factory=list)
@@ -723,12 +727,12 @@ class InlineDescription(Schema):
     formset: list[list[FieldDescription]]
 
 
-class FormResponse(Schema):
+class FormResponse(AdminSchema):
     form: FormDescription
     inlines: list[InlineDescription] = Field(default_factory=list)
 
 
-class Column(Schema):
+class Column(AdminSchema):
     field: str
     header_name: str
     display_link: bool = False
@@ -745,7 +749,7 @@ class Column(Schema):
     remove_sorting_query_string: str | None = None
 
 
-class CellMetadata(Schema):
+class CellMetadata(AdminSchema):
     field: str
     header_name: str
     value: FieldMetadataValue = None
@@ -759,7 +763,7 @@ class CellMetadata(Schema):
     empty_value_display: str | None = None
 
 
-class Row(Schema):
+class Row(AdminSchema):
     id: FieldMetadataValue
     index: int = 0
     result_index: int = 0
@@ -772,26 +776,26 @@ class Row(Schema):
     permissions: PermissionMap | None = None
 
 
-class ActionChoice(Schema):
+class ActionChoice(AdminSchema):
     action: str
     description: str
     permissions: list[str] = Field(default_factory=list)
 
 
-class FilterChoice(Schema):
+class FilterChoice(AdminSchema):
     selected: bool
     query_string: str
     display: str
     count: int | None = None
 
 
-class FilterDescription(Schema):
+class FilterDescription(AdminSchema):
     title: str
     parameter_name: str = ""
     choices: list[FilterChoice]
 
 
-class DateHierarchyChoice(Schema):
+class DateHierarchyChoice(AdminSchema):
     selected: bool
     query_string: str
     display: str
@@ -800,7 +804,7 @@ class DateHierarchyChoice(Schema):
     count: int | None = None
 
 
-class DateHierarchyDescription(Schema):
+class DateHierarchyDescription(AdminSchema):
     field: str
     title: str
     field_type: str
@@ -812,14 +816,14 @@ class DateHierarchyDescription(Schema):
     choices: list[DateHierarchyChoice]
 
 
-class PageChoice(Schema):
+class PageChoice(AdminSchema):
     display: str
     page: int | None = None
     selected: bool = False
     query_string: str | None = None
 
 
-class Pagination(Schema):
+class Pagination(AdminSchema):
     count: int
     num_pages: int
     page: int = 1
@@ -829,7 +833,7 @@ class Pagination(Schema):
     more: bool = False
 
 
-class ChangelistConfig(Schema):
+class ChangelistConfig(AdminSchema):
     full_count: int | None
     result_count: int
     page_result_count: int = 0
@@ -881,7 +885,7 @@ class ChangelistConfig(Schema):
     search_help_text: str | None = None
 
 
-class ListEditingRow(Schema):
+class ListEditingRow(AdminSchema):
     index: int
     pk: FieldMetadataValue
     pk_name: str
@@ -890,7 +894,7 @@ class ListEditingRow(Schema):
     fields: list[FieldDescription]
 
 
-class ChangelistResponse(Schema):
+class ChangelistResponse(AdminSchema):
     columns: list[Column]
     rows: list[Row]
     config: ChangelistConfig
@@ -903,7 +907,7 @@ class ChangelistResponse(Schema):
     list_editing_rows: list[ListEditingRow] = Field(default_factory=list)
 
 
-class HistoryItem(Schema):
+class HistoryItem(AdminSchema):
     id: FieldMetadataValue
     action_time: datetime
     user_id: FieldMetadataValue
@@ -922,7 +926,7 @@ class HistoryItem(Schema):
     change_message_text: str
 
 
-class HistoryResponse(Schema):
+class HistoryResponse(AdminSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -965,12 +969,12 @@ class HistoryResponse(Schema):
     results: list[HistoryItem]
 
 
-class AutocompleteItem(Schema):
+class AutocompleteItem(AdminSchema):
     id: str
     text: str
 
 
-class AutocompleteResponse(Schema):
+class AutocompleteResponse(AdminSchema):
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -994,7 +998,7 @@ class AutocompleteResponse(Schema):
     pagination: Pagination
 
 
-class ViewOnSiteResponse(Schema):
+class ViewOnSiteResponse(AdminSchema):
     model_config = ConfigDict(json_schema_extra={"examples": [{"url": "https://example.com/products/1/"}]})
 
     url: str
