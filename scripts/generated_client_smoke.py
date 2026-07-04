@@ -433,6 +433,7 @@ def write_sample_project(project_dir: Path) -> None:
 
         list_response = consumer.request("sample_app_product_list", query={"q": "Existing", "pp": 1, "_facets": 1})
         assert list_response.status_code == 200, list_response.content
+        consumer.assert_response_matches_schema("sample_app_product_list", list_response)
         assert list_response.json()["config"]["result_count"] == 1
         assert list_response.json()["config"]["per_page"] == 1
 
@@ -457,6 +458,7 @@ def write_sample_project(project_dir: Path) -> None:
         create_payload["inlines"] = {"sample_app.productimage": {"add": [{"title": "Inline from OpenAPI"}]}}
         created_response = consumer.request("sample_app_product_create", payload=create_payload)
         assert created_response.status_code == 201, created_response.content
+        consumer.assert_response_matches_schema("sample_app_product_create", created_response)
         created = created_response.json()["data"]
         product_id = created["id"]
         assert created["name"] == "Created from OpenAPI"
@@ -466,6 +468,7 @@ def write_sample_project(project_dir: Path) -> None:
 
         detail_response = consumer.request("sample_app_product_detail", path_params={"object_id": product_id})
         assert detail_response.status_code == 200, detail_response.content
+        consumer.assert_response_matches_schema("sample_app_product_detail", detail_response)
         assert detail_response.json()["id"] == product_id
 
         patch_payload = consumer.example("sample_app_product_partial_update", "partial_update")
@@ -477,6 +480,7 @@ def write_sample_project(project_dir: Path) -> None:
             payload=patch_payload,
         )
         assert patched_response.status_code == 200, patched_response.content
+        consumer.assert_response_matches_schema("sample_app_product_partial_update", patched_response)
         assert patched_response.json()["data"]["name"] == "Patched from OpenAPI"
 
         update_payload = consumer.example("sample_app_product_update", "update")
@@ -497,6 +501,7 @@ def write_sample_project(project_dir: Path) -> None:
             payload=update_payload,
         )
         assert updated_response.status_code == 200, updated_response.content
+        consumer.assert_response_matches_schema("sample_app_product_update", updated_response)
         assert updated_response.json()["data"]["name"] == "Updated from OpenAPI"
         assert updated_response.json()["inlines"]["sample_app.productimage"]["change"][0]["title"] == (
             "Inline changed from OpenAPI"
@@ -507,6 +512,7 @@ def write_sample_project(project_dir: Path) -> None:
         bulk_payload["data"] = [{"pk": product_id, "stock_status": "out_of_stock"}]
         bulk_response = consumer.request("sample_app_product_bulk_update", payload=bulk_payload)
         assert bulk_response.status_code == 200, bulk_response.content
+        consumer.assert_response_matches_schema("sample_app_product_bulk_update", bulk_response)
         assert bulk_response.json()["data"]["0"]["stock_status"] == "out_of_stock"
 
         action_payload = consumer.example("sample_app_product_action", "action")
@@ -524,11 +530,13 @@ def write_sample_project(project_dir: Path) -> None:
 
         action_response = consumer.request("sample_app_product_action", payload=action_payload)
         assert action_response.status_code == 200, action_response.content
+        consumer.assert_response_matches_schema("sample_app_product_action", action_response)
         assert action_response.json() == {"updated": 1, "status": "in_stock", "note": "schema consumer"}
         assert Product.objects.get(pk=product_id).stock_status == "in_stock"
 
         form_response = consumer.request("sample_app_product_change_form", path_params={"object_id": product_id})
         assert form_response.status_code == 200, form_response.content
+        consumer.assert_response_matches_schema("sample_app_product_change_form", form_response)
         assert form_response.json()["form"]["model"] == "sample_app.product"
 
         delete_response = consumer.request("sample_app_product_delete", path_params={"object_id": product_id})

@@ -7,11 +7,15 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.39 - 2026-07-04
+
 ### Changed
 
 - Added an `output_exclude` model-admin hook and applied it to default auth
   admins so sensitive user/group permission fields are omitted from read
   schemas and serialized responses.
+- Expanded the installed-wheel generated-client smoke to validate core model
+  workflow success responses against the OpenAPI response schemas.
 - Expanded the installed-wheel generated-client smoke to cover inline add/change
   results, full-object update, and delete flows.
 - Expanded the installed-wheel generated-client smoke to validate documented
