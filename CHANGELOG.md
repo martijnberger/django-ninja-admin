@@ -9,6 +9,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Added a finite OpenAPI pattern for changelist ordering query strings, so
+  malformed `o` values are rejected by the shared typed 422 validation
+  contract before changelist construction.
 - Declared `/history` ordering and action-flag query parameters as finite
   Ninja/Pydantic enums in OpenAPI, with invalid values rejected by the shared
   typed 422 validation contract.

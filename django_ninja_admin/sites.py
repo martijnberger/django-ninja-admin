@@ -117,6 +117,7 @@ class HistoryActionFlag(IntEnum):
 
 NinjaQuery = cast(Any, Query)
 HISTORY_ACTION_FLAG_QUERY = NinjaQuery(None, description="Optional Django admin log action flag.")
+CHANGE_LIST_ORDERING_QUERY_PATTERN = r"^-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*)(?:[,.]-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*))*$"
 TO_FIELD_QUERY_DESCRIPTION = "Use an allowed alternate object id field."
 
 
@@ -1214,6 +1215,7 @@ class NinjaAdminSite:
             q: str | None = NinjaQuery(None, description="Search term matched against the admin search fields."),
             o: str | None = NinjaQuery(
                 None,
+                pattern=CHANGE_LIST_ORDERING_QUERY_PATTERN,
                 description="Ordering token list using 1-based changelist column indexes, e.g. `1,-2`.",
             ),
             p: str | None = NinjaQuery(

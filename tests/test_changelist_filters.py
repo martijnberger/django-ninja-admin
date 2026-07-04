@@ -409,6 +409,16 @@ def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):
     bad_ordering = admin_client.get("/admin-api/testapp/product?o=999")
     assert bad_ordering.status_code == 400
 
+    malformed_ordering = admin_client.get("/admin-api/testapp/product?o=1,,2")
+    assert malformed_ordering.status_code == 422
+    ordering_pattern = r"^-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*)(?:[,.]-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*))*$"
+    assert malformed_ordering.json()["errors"] == [
+        {
+            "message": f"String should match pattern '{ordering_pattern}'",
+            "param": "query.o",
+        }
+    ]
+
     bad_date_hierarchy = admin_client.get("/admin-api/testapp/product?created_at__month=2")
     assert bad_date_hierarchy.status_code == 400
 

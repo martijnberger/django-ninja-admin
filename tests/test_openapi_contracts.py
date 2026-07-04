@@ -422,6 +422,10 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert non_null_parameter_type(list_parameters["_facets"]) == ["boolean"]
     assert non_null_parameter_type(list_parameters["_to_field"]) == ["string"]
     assert list_parameters["_to_field"]["description"] == "Use an allowed alternate object id field."
+    assert (
+        non_null_parameter_schema(list_parameters["o"])["pattern"]
+        == r"^-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*)(?:[,.]-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*))*$"
+    )
     assert non_null_parameter_schema(list_parameters["p"])["pattern"] == r"^(last|[1-9][0-9]*)$"
     assert non_null_parameter_schema(list_parameters["page"])["pattern"] == r"^(last|[1-9][0-9]*)$"
     assert non_null_parameter_schema(list_parameters["pp"])["minimum"] == 1
