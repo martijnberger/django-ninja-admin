@@ -208,6 +208,38 @@ def test_response_hooks_can_return_custom_status(admin_client, sample):
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_invalid_response_hooks_are_validated_inside_mutation_transaction(admin_client, sample):
+    created = admin_client.post(
+        "/invalid-response-hook-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Invalid Add Hook",
+                "category": sample.category_id,
+                "price": "8.00",
+                "stock_status": "in_stock",
+            }
+        },
+        content_type="application/json",
+    )
+
+    assert created.status_code == 400
+    ErrorResponse.model_validate(created.json())
+    assert not Product.objects.filter(name="Invalid Add Hook").exists()
+
+    original_description = sample.description
+    changed = admin_client.patch(
+        f"/invalid-response-hook-admin/testapp/product/{sample.pk}",
+        data={"data": {"description": "Invalid change hook"}},
+        content_type="application/json",
+    )
+
+    assert changed.status_code == 400
+    ErrorResponse.model_validate(changed.json())
+    sample.refresh_from_db()
+    assert sample.description == original_description
+
+
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_split_datetime_payload_uses_pydantic_and_multivalue_form_normalization(admin_client, sample):
     schema = admin_client.get("/split-datetime-admin/openapi.json").json()
     description_schema = schema["components"]["schemas"]["ProductAdminCreateData"]["properties"]["description"][

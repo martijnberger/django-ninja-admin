@@ -94,6 +94,10 @@ Response hook return values are part of the generated-client contract:
 - Hook bodies should be JSON-compatible Pydantic/Ninja response data. They
   should not return Django `HttpResponse` objects, rendered templates, or
   model instances directly.
+- Add/change hook bodies are validated against the advertised response schema
+  before the surrounding mutation transaction commits. If validation fails,
+  the database write is rolled back and the client receives the shared typed
+  error response.
 
 ## Actions, Inlines, And Routes
 

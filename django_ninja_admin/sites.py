@@ -39,6 +39,7 @@ from ninja.errors import AuthenticationError, AuthorizationError, HttpError, Thr
 from ninja.errors import ValidationError as NinjaValidationError
 from ninja.security import SessionAuthIsStaff
 from ninja.utils import is_async_callable
+from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin import actions
@@ -498,6 +499,41 @@ class NinjaAdminSite:
         if isinstance(schema, dict):
             return schema
         return dict.fromkeys(statuses, schema)
+
+    def _validated_mutation_hook_response(
+        self,
+        response,
+        *,
+        default_status,
+        default_schema,
+        hook_schema,
+        hook_name,
+    ):
+        status_code = response.status_code if isinstance(response, Status) else default_status
+        value = response.value if isinstance(response, Status) else response
+        response_schema = self._mutation_hook_response_schema(
+            status_code,
+            default_status=default_status,
+            default_schema=default_schema,
+            hook_schema=hook_schema,
+            hook_name=hook_name,
+        )
+        if response_schema is None:
+            if value is not None:
+                raise AdminValidationError(
+                    [{"message": _("Response status does not allow a body."), "param": hook_name}]
+                )
+        else:
+            TypeAdapter(response_schema).validate_python(value)
+        return Status(status_code, value)
+
+    def _mutation_hook_response_schema(self, status_code, *, default_status, default_schema, hook_schema, hook_name):
+        if status_code == default_status:
+            return default_schema
+        custom_responses = self._custom_hook_responses(hook_schema, (200, 202))
+        if status_code in custom_responses:
+            return custom_responses[status_code]
+        raise AdminValidationError([{"message": _("Unsupported response status."), "param": hook_name}])
 
     def _auth_error_responses(self, *, include_forbidden=False):
         if self.auth is None:
@@ -1836,9 +1872,13 @@ class NinjaAdminSite:
             change_message = model_admin.construct_change_message(request, form, inline_results, add=True)
             model_admin.log_addition(request, obj, change_message)
             response = model_admin.response_add(request, obj, form, inline_results)
-            if isinstance(response, Status):
-                return response
-            return Status(201, response)
+            return self._validated_mutation_hook_response(
+                response,
+                default_status=201,
+                default_schema=model_admin.get_mutation_response_schema(request),
+                hook_schema=model_admin.get_response_add_schema(request),
+                hook_name="response_add",
+            )
 
     def _file_form_field_names(self, model_admin, request=None, obj=None, *, change):
         form_class = model_admin.get_form_class(request, obj, change=change)
@@ -2099,9 +2139,13 @@ class NinjaAdminSite:
             if change_message:
                 model_admin.log_change(request, updated_object, change_message)
             response = model_admin.response_change(request, updated_object, form, inline_results)
-            if isinstance(response, Status):
-                return response
-            return Status(200, response)
+            return self._validated_mutation_hook_response(
+                response,
+                default_status=200,
+                default_schema=model_admin.get_mutation_response_schema(request),
+                hook_schema=model_admin.get_response_change_schema(request),
+                hook_name="response_change",
+            )
 
     def _process_inlines(self, request, model_admin, obj, inline_payload, *, change):
         if not inline_payload:

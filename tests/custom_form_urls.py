@@ -125,6 +125,23 @@ status_hook_site.register(Category, ModelAdmin)
 status_hook_site.register(Product, StatusHookProductAdmin)
 
 
+class InvalidResponseHookProductAdmin(ModelAdmin):
+    def response_add(self, request, obj, form, inline_results):
+        response = super().response_add(request, obj, form, inline_results)
+        response["data"]["unexpected_response_field"] = "invalid"
+        return response
+
+    def response_change(self, request, obj, form, inline_results):
+        response = super().response_change(request, obj, form, inline_results)
+        response["data"]["unexpected_response_field"] = "invalid"
+        return response
+
+
+invalid_response_hook_site = NinjaAdminSite(name="invalid_response_hook_admin", include_auth=False)
+invalid_response_hook_site.register(Category, ModelAdmin)
+invalid_response_hook_site.register(Product, InvalidResponseHookProductAdmin)
+
+
 class FormfieldHookProductAdmin(ModelAdmin):
     formfield_overrides = {
         models.TextField: {
@@ -405,6 +422,7 @@ through_inline_site.register(Article, ThroughInlineArticleAdmin)
 urlpatterns = [
     path("custom-form-admin/", custom_form_site.urls),
     path("status-hook-admin/", status_hook_site.urls),
+    path("invalid-response-hook-admin/", invalid_response_hook_site.urls),
     path("custom-formfield-admin/", custom_formfield_site.urls),
     path("split-datetime-admin/", split_datetime_site.urls),
     path("multi-value-admin/", multi_value_site.urls),

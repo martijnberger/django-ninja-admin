@@ -12,6 +12,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Closed generated admin payload, action payload, output, bulk, and mutation
   response wrapper schemas with `additionalProperties: false` so Pydantic and
   OpenAPI reject undocumented top-level contract fields consistently.
+- Validated add/change response-hook bodies against their advertised schemas
+  before mutation transactions commit, so invalid custom hook responses roll
+  back the database write.
 
 ## 0.1.52 - 2026-07-04
 

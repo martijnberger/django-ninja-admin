@@ -31,6 +31,8 @@ model output components, and mutation/bulk response wrappers are closed with
 Standard mutation responses return typed `data` and optional typed `inlines`.
 Default action responses return the typed `ActionResponse`. Custom hooks and
 actions should declare schemas when they return custom bodies or status maps.
+Add/change response hook bodies are validated against the advertised response
+schema before the surrounding mutation transaction commits.
 The concrete response-hook rules are documented in the
 [hook reference](hook-reference.md#save-delete-and-response-hooks).
 
