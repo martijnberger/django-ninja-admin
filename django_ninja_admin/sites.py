@@ -32,6 +32,7 @@ from django.middleware.csrf import get_token
 from django.utils.functional import LazyObject
 from django.utils.module_loading import import_string
 from django.utils.text import capfirst
+from django.utils.translation import gettext as _
 from ninja import NinjaAPI, Query, Router, Status
 from ninja.constants import NOT_SET
 from ninja.errors import AuthenticationError, AuthorizationError, HttpError, Throttled
@@ -518,18 +519,18 @@ class NinjaAdminSite:
             return error_response(request, str(exc), 409)
 
         def permission_denied(request, exc):
-            return error_response(request, "Permission denied.", 403)
+            return error_response(request, _("Permission denied."), 403)
 
         api.add_exception_handler(PermissionDenied, permission_denied)
         api.add_exception_handler(AuthorizationError, permission_denied)
 
         def not_authenticated(request, exc):
-            return error_response(request, "Authentication required.", 401)
+            return error_response(request, _("Authentication required."), 401)
 
         api.add_exception_handler(AuthenticationError, not_authenticated)
 
         def throttled(request, exc):
-            response = error_response(request, str(exc), 429)
+            response = error_response(request, _("Too many requests."), 429)
             wait = getattr(exc, "wait", None)
             if wait is not None:
                 response["Retry-After"] = str(ceil(wait))
@@ -538,7 +539,7 @@ class NinjaAdminSite:
         api.add_exception_handler(Throttled, throttled)
 
         def not_found(request, exc):
-            return error_response(request, "Not found.", 404)
+            return error_response(request, _("Not found."), 404)
 
         api.add_exception_handler(Http404, not_found)
         api.add_exception_handler(NotRegistered, not_found)
@@ -573,7 +574,7 @@ class NinjaAdminSite:
 
         @api.exception_handler(MissingSearchFields)
         def missing_search_fields(request, exc):
-            return error_response(request, "Missing search_fields.", 409, param="search_fields")
+            return error_response(request, _("Missing search_fields."), 409, param="search_fields")
 
     def _request_validation_param(self, error):
         if error.get("type") == "union_tag_invalid":
@@ -626,7 +627,7 @@ class NinjaAdminSite:
     def _history_content_type_ids(self, request, *, app_label=None, model_name=None):
         if model_name and not app_label:
             raise AdminValidationError(
-                [{"message": "app_label is required when model is provided.", "param": "app_label"}]
+                [{"message": _("app_label is required when model is provided."), "param": "app_label"}]
             )
         if app_label and model_name:
             try:
@@ -728,7 +729,7 @@ class NinjaAdminSite:
         def login(request, payload: SessionLoginPayload):
             user = authenticate(request, username=payload.username, password=payload.password)
             if user is None:
-                raise AdminValidationError([{"message": "Invalid username or password.", "param": "username"}])
+                raise AdminValidationError([{"message": _("Invalid username or password."), "param": "username"}])
             request.user = user
             if not site.has_permission(request):
                 raise PermissionDenied
@@ -820,16 +821,17 @@ class NinjaAdminSite:
             from django_ninja_admin.models import ACTION_FLAG_CHOICES, LogEntry
 
             if o not in {"action_time", "-action_time"}:
-                raise AdminValidationError([{"message": "Invalid ordering provided.", "param": "o"}])
+                raise AdminValidationError([{"message": _("Invalid ordering provided."), "param": "o"}])
             if action_flag is not None and action_flag not in dict(ACTION_FLAG_CHOICES):
-                raise AdminValidationError([{"message": "Invalid action flag provided.", "param": "action_flag"}])
+                raise AdminValidationError([{"message": _("Invalid action flag provided."), "param": "action_flag"}])
             if per_page < 1:
-                raise AdminValidationError([{"message": "Invalid page size.", "param": "per_page"}])
+                raise AdminValidationError([{"message": _("Invalid page size."), "param": "per_page"}])
             if per_page > site.history_max_per_page:
                 raise AdminValidationError(
                     [
                         {
-                            "message": f"Page size cannot exceed {site.history_max_per_page}.",
+                            "message": _("Page size cannot exceed %(max_page_size)s.")
+                            % {"max_page_size": site.history_max_per_page},
                             "param": "per_page",
                         }
                     ]
@@ -1015,7 +1017,10 @@ class NinjaAdminSite:
             else:
                 absurl = None
             if not absurl:
-                return Status(409, {"errors": [{"message": "Object has no get_absolute_url().", "param": "object_id"}]})
+                return Status(
+                    409,
+                    {"errors": [{"message": _("Object has no get_absolute_url()."), "param": "object_id"}]},
+                )
             if absurl.startswith(("http://", "https://", "//")):
                 return {"url": absurl}
             try:
@@ -1370,7 +1375,7 @@ class NinjaAdminSite:
                 return Status(
                     409,
                     deletion_error_payload(
-                        "Cannot delete protected objects.",
+                        _("Cannot delete protected objects."),
                         deleted_objects=deleted_objects,
                         protected=protected,
                         model_count=model_count,
@@ -1380,7 +1385,7 @@ class NinjaAdminSite:
                 return Status(
                     403,
                     deletion_error_payload(
-                        "Permission denied.",
+                        _("Permission denied."),
                         deleted_objects=deleted_objects,
                         perms_needed=perms_needed,
                         model_count=model_count,
@@ -1399,7 +1404,12 @@ class NinjaAdminSite:
     def _get_object_or_404(self, request, model_admin, object_id, to_field=None):
         if to_field and not model_admin.to_field_allowed(request, to_field):
             raise AdminValidationError(
-                [{"message": f"The field '{to_field}' cannot be referenced.", "param": "_to_field"}]
+                [
+                    {
+                        "message": _("The field '%(field)s' cannot be referenced.") % {"field": to_field},
+                        "param": "_to_field",
+                    }
+                ]
             )
         obj = model_admin.get_object(request, unquote(object_id), to_field)
         if obj is None:
@@ -2159,7 +2169,9 @@ class NinjaAdminSite:
         }
         for inline_id, operations in inline_payload.items():
             if inline_id not in inline_by_id:
-                raise AdminValidationError({inline_id: [{"message": "Unknown inline.", "param": "non_field_errors"}]})
+                raise AdminValidationError(
+                    {inline_id: [{"message": _("Unknown inline."), "param": "non_field_errors"}]}
+                )
             inline = inline_by_id[inline_id]
             fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
             related_name = fk.remote_field.accessor_name
@@ -2182,7 +2194,8 @@ class NinjaAdminSite:
                 {
                     f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": [
                         {
-                            "message": f"Unknown inline operation: {', '.join(sorted(unknown_operations))}.",
+                            "message": _("Unknown inline operation: %(operations)s.")
+                            % {"operations": ", ".join(sorted(unknown_operations))},
                             "param": "non_field_errors",
                         }
                     ]
@@ -2203,7 +2216,7 @@ class NinjaAdminSite:
             raise AdminValidationError(
                 {
                     f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": {
-                        "delete": [{"message": "Inline deletion is not allowed.", "param": "delete"}]
+                        "delete": [{"message": _("Inline deletion is not allowed."), "param": "delete"}]
                     }
                 }
             )
@@ -2221,7 +2234,7 @@ class NinjaAdminSite:
                     inline_errors,
                     "delete",
                     index,
-                    message="Duplicate inline delete pk.",
+                    message=_("Duplicate inline delete pk."),
                     param="pk",
                 )
         self._collect_inline_row_field_errors(inline_errors, add_rows, editable_fields, operation="add")
@@ -2245,7 +2258,7 @@ class NinjaAdminSite:
                     inline_errors,
                     "change",
                     index,
-                    message="Missing pk.",
+                    message=_("Missing pk."),
                     param="pk",
                 )
                 continue
@@ -2255,7 +2268,7 @@ class NinjaAdminSite:
                     inline_errors,
                     "change",
                     index,
-                    message="Duplicate inline change pk.",
+                    message=_("Duplicate inline change pk."),
                     param="pk",
                 )
                 has_row_error = True
@@ -2265,7 +2278,7 @@ class NinjaAdminSite:
                     inline_errors,
                     "change",
                     index,
-                    message="Unknown inline object.",
+                    message=_("Unknown inline object."),
                     param="pk",
                 )
                 has_row_error = True
@@ -2274,7 +2287,7 @@ class NinjaAdminSite:
                     inline_errors,
                     "change",
                     index,
-                    message="Inline object cannot be changed and deleted in the same request.",
+                    message=_("Inline object cannot be changed and deleted in the same request."),
                     param="pk",
                 )
                 has_row_error = True
@@ -2286,7 +2299,7 @@ class NinjaAdminSite:
                     inline_errors,
                     "delete",
                     index,
-                    message="Unknown inline object.",
+                    message=_("Unknown inline object."),
                     param="pk",
                 )
         if inline_errors:
@@ -2329,7 +2342,7 @@ class NinjaAdminSite:
                     inline_errors,
                     operation,
                     index,
-                    message="Unknown or readonly inline field.",
+                    message=_("Unknown or readonly inline field."),
                     param=field,
                 )
 
@@ -2405,7 +2418,7 @@ class NinjaAdminSite:
             for item in payload.data
         ]
         if not payload_data:
-            raise AdminValidationError([{"message": "Change data cannot be empty.", "param": "data"}])
+            raise AdminValidationError([{"message": _("Change data cannot be empty."), "param": "data"}])
         queryset = queryset if queryset is not None else model_admin.get_queryset(request)
         validated_rows = []
         row_errors = {}
@@ -2415,28 +2428,28 @@ class NinjaAdminSite:
         for idx, data in enumerate(payload_data):
             pk = data.get("pk") or data.get(model_admin.model._meta.pk.name)
             if pk is None:
-                row_errors[idx] = [{"message": "This field is required.", "param": "pk"}]
+                row_errors[idx] = [{"message": _("This field is required."), "param": "pk"}]
                 continue
             pk_key = str(pk)
             if pk_key in seen_pks:
-                row_errors[idx] = [{"message": "Duplicate object in bulk update.", "param": "pk"}]
+                row_errors[idx] = [{"message": _("Duplicate object in bulk update."), "param": "pk"}]
                 continue
             seen_pks.add(pk_key)
             unknown_fields = sorted(set(data) - allowed)
             if unknown_fields:
                 row_errors[idx] = [
                     {
-                        "message": f"Field is not list editable: {', '.join(unknown_fields)}.",
+                        "message": _("Field is not list editable: %(fields)s.") % {"fields": ", ".join(unknown_fields)},
                         "param": unknown_fields[0],
                     }
                 ]
                 continue
             obj = self._bulk_object_from_queryset(queryset, pk, object_id_field=object_id_field)
             if obj is None:
-                row_errors[idx] = [{"message": "Object not found.", "param": "pk"}]
+                row_errors[idx] = [{"message": _("Object not found."), "param": "pk"}]
                 continue
             if not model_admin.has_change_permission(request, obj):
-                row_errors[idx] = [{"message": "Permission denied.", "param": "pk"}]
+                row_errors[idx] = [{"message": _("Permission denied."), "param": "pk"}]
                 has_permission_errors = True
                 continue
             form_class = model_admin.get_changelist_form_class(request)

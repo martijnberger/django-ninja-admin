@@ -1,4 +1,5 @@
 from django.core.exceptions import SuspiciousOperation
+from django.utils.translation import gettext as _
 
 NON_FIELD_ERRORS = "non_field_errors"
 
@@ -6,7 +7,7 @@ NON_FIELD_ERRORS = "non_field_errors"
 def normalize_admin_errors(errors):
     normalized = []
     _flatten_admin_errors(errors, (), normalized)
-    return normalized or [{"message": "Validation failed.", "param": NON_FIELD_ERRORS}]
+    return normalized or [{"message": _("Validation failed."), "param": NON_FIELD_ERRORS}]
 
 
 def _flatten_admin_errors(value, prefix, normalized):
@@ -109,7 +110,7 @@ class AdminValidationError(AdminError):
     status_code = 400
 
     def __init__(self, errors):
-        super().__init__("Validation failed")
+        super().__init__(_("Validation failed"))
         self.errors = normalize_admin_errors(errors)
 
 
@@ -117,5 +118,5 @@ class AdminPermissionError(AdminError):
     status_code = 403
 
     def __init__(self, errors):
-        super().__init__("Permission denied")
+        super().__init__(_("Permission denied"))
         self.errors = normalize_admin_errors(errors)

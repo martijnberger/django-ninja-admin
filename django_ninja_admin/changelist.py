@@ -11,6 +11,7 @@ from django.db import models
 from django.db.models.expressions import F, OrderBy
 from django.http import Http404, QueryDict
 from django.utils import timezone
+from django.utils.translation import gettext as _
 
 from django_ninja_admin.constants import ShowFacets
 from django_ninja_admin.exceptions import AdminValidationError, DisallowedModelAdminLookup
@@ -89,7 +90,12 @@ class ChangeList:
             return None
         if not self.model_admin.to_field_allowed(self.request, to_field):
             raise AdminValidationError(
-                [{"message": f"The field '{to_field}' cannot be referenced.", "param": "_to_field"}]
+                [
+                    {
+                        "message": _("The field '%(field)s' cannot be referenced.") % {"field": to_field},
+                        "param": "_to_field",
+                    }
+                ]
             )
         return to_field
 
@@ -231,7 +237,7 @@ class ChangeList:
 
     def lookup_value_error(self, params, *, fallback_param):
         param = next(iter(params), fallback_param)
-        return AdminValidationError([{"message": "Invalid lookup value.", "param": param}])
+        return AdminValidationError([{"message": _("Invalid lookup value."), "param": param}])
 
     def apply_search(self, queryset, params):
         search_term = params.get("q")
@@ -260,13 +266,20 @@ class ChangeList:
             field = model_field_from_path(self.model, field_name)
         except FieldDoesNotExist as exc:
             raise AdminValidationError(
-                [{"message": f"The date_hierarchy field {field_name!r} does not exist.", "param": "date_hierarchy"}]
+                [
+                    {
+                        "message": _("The date_hierarchy field %(field)s does not exist.")
+                        % {"field": repr(field_name)},
+                        "param": "date_hierarchy",
+                    }
+                ]
             ) from exc
         if not isinstance(field, (models.DateField, models.DateTimeField)):
             raise AdminValidationError(
                 [
                     {
-                        "message": f"The date_hierarchy field {field_name!r} is not a date field.",
+                        "message": _("The date_hierarchy field %(field)s is not a date field.")
+                        % {"field": repr(field_name)},
                         "param": "date_hierarchy",
                     }
                 ]
@@ -286,22 +299,26 @@ class ChangeList:
             try:
                 value = int(raw_value)
             except (TypeError, ValueError) as exc:
-                raise AdminValidationError([{"message": f"Invalid {part}.", "param": param}]) from exc
+                raise AdminValidationError(
+                    [{"message": _("Invalid %(part)s.") % {"part": part}, "param": param}]
+                ) from exc
             if value < lower or value > upper:
-                raise AdminValidationError([{"message": f"Invalid {part}.", "param": param}])
+                raise AdminValidationError([{"message": _("Invalid %(part)s.") % {"part": part}, "param": param}])
             values[part] = value
         if "day" in values and "month" not in values:
             raise AdminValidationError(
-                [{"message": "A day requires a selected month.", "param": f"{self.date_hierarchy_field}__day"}]
+                [{"message": _("A day requires a selected month."), "param": f"{self.date_hierarchy_field}__day"}]
             )
         if "month" in values and "year" not in values:
             raise AdminValidationError(
-                [{"message": "A month requires a selected year.", "param": f"{self.date_hierarchy_field}__month"}]
+                [{"message": _("A month requires a selected year."), "param": f"{self.date_hierarchy_field}__month"}]
             )
         if {"year", "month", "day"} <= set(values):
             max_day = calendar.monthrange(values["year"], values["month"])[1]
             if values["day"] > max_day:
-                raise AdminValidationError([{"message": "Invalid day.", "param": f"{self.date_hierarchy_field}__day"}])
+                raise AdminValidationError(
+                    [{"message": _("Invalid day."), "param": f"{self.date_hierarchy_field}__day"}]
+                )
         return values
 
     def apply_date_hierarchy(self, queryset, params):
@@ -380,7 +397,12 @@ class ChangeList:
 
         if invalid_fields:
             raise AdminValidationError(
-                [{"message": f"Invalid ordering field: {', '.join(invalid_fields)}.", "param": "o"}]
+                [
+                    {
+                        "message": _("Invalid ordering field: %(fields)s.") % {"fields": ", ".join(invalid_fields)},
+                        "param": "o",
+                    }
+                ]
             )
         return self.get_deterministic_ordering(self.get_queryset_ordering(ordering, queryset))
 
@@ -568,9 +590,9 @@ class ChangeList:
         try:
             per_page = int(value)
         except (TypeError, ValueError) as exc:
-            raise AdminValidationError([{"message": "Invalid page size.", "param": "pp"}]) from exc
+            raise AdminValidationError([{"message": _("Invalid page size."), "param": "pp"}]) from exc
         if per_page < 1:
-            raise AdminValidationError([{"message": "Invalid page size.", "param": "pp"}])
+            raise AdminValidationError([{"message": _("Invalid page size."), "param": "pp"}])
         return per_page
 
     def can_show_all(self):

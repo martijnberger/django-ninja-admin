@@ -12,6 +12,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added Django Ninja throttle hooks for history, autocomplete, model
   changelist routes, and custom admin routes, with typed 429 error responses.
 
+### Changed
+
+- Routed core site, changelist, inline, and bulk API error messages through
+  Django gettext while preserving the existing typed error response shapes.
+
 ## 0.1.41 - 2026-07-04
 
 ### Changed

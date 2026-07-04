@@ -31,6 +31,24 @@ For example, the snippet above exposes `/admin-api/docs`. These schema and docs
 routes use the site auth unless the site is explicitly created with
 `auth=None`.
 
+## Localization
+
+API error bodies use Django's active translation for package-owned messages
+such as authentication failures, permission denials, changelist validation,
+inline validation, and bulk-update errors. The response shape remains the
+typed `ErrorResponse` contract:
+
+```json
+{
+  "errors": [
+    {"message": "Permission denied.", "param": "non_field_errors"}
+  ]
+}
+```
+
+Model, form, and validator messages continue to come from Django's own
+translation machinery and application code.
+
 ## Ninja-Native Customization Hooks
 
 DRF-style `serializer_class` customizations are intentionally not part of this
