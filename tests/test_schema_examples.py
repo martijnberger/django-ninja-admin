@@ -11,6 +11,7 @@ from django_ninja_admin.utils.schema_examples import (
     coerce_choice_example,
     form_data_example,
     iter_choice_values,
+    json_request_examples_extra,
     model_choice_target_field,
     pydantic_choice_values,
     pydantic_model_example,
@@ -32,6 +33,27 @@ def test_schema_example_returns_first_declared_example():
         name: str
 
     assert schema_example(ExampleSchema) == {"name": "declared"}
+
+
+def test_json_request_examples_extra_wraps_named_non_null_examples():
+    assert json_request_examples_extra(create={"data": {"name": "Camera"}}, empty=None) == {
+        "requestBody": {
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "create": {
+                            "summary": "Create",
+                            "value": {"data": {"name": "Camera"}},
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+def test_json_request_examples_extra_returns_empty_dict_without_examples():
+    assert json_request_examples_extra(create=None) == {}
 
 
 def test_form_data_example_uses_required_fields_and_overrides():

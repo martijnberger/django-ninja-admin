@@ -20,6 +20,25 @@ def schema_example(schema):
     return (schema.model_json_schema().get("examples") or [{}])[0]
 
 
+def json_request_examples_extra(**examples):
+    openapi_examples = {
+        name: {"summary": name.replace("_", " ").title(), "value": value}
+        for name, value in examples.items()
+        if value is not None
+    }
+    if not openapi_examples:
+        return {}
+    return {
+        "requestBody": {
+            "content": {
+                "application/json": {
+                    "examples": openapi_examples,
+                }
+            }
+        }
+    }
+
+
 def form_data_example(
     form_fields: Mapping[str, forms.Field],
     *,

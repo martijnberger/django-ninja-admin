@@ -92,6 +92,7 @@ from django_ninja_admin.utils.schema_examples import (
     choice_example_value,
     form_data_example,
     json_example_value,
+    json_request_examples_extra,
     model_choice_target_field,
     pydantic_model_example,
 )
@@ -1157,7 +1158,7 @@ class NinjaAdminSite:
             response=create_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_create",
-            openapi_extra=site._json_request_examples_extra(
+            openapi_extra=json_request_examples_extra(
                 create=site._mutation_payload_example(model_admin, change=False, partial=False)
             ),
         )
@@ -1193,7 +1194,7 @@ class NinjaAdminSite:
             response=action_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_action",
-            openapi_extra=site._json_request_examples_extra(
+            openapi_extra=json_request_examples_extra(
                 action=site._action_payload_example(model_admin),
             ),
         )
@@ -1214,7 +1215,7 @@ class NinjaAdminSite:
             },
             tags=tags,
             operation_id=f"{app_label}_{model_name}_bulk_update",
-            openapi_extra=site._json_request_examples_extra(
+            openapi_extra=json_request_examples_extra(
                 bulk_update=site._bulk_payload_example(model_admin),
             ),
         )
@@ -1278,7 +1279,7 @@ class NinjaAdminSite:
             response=change_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_partial_update",
-            openapi_extra=site._json_request_examples_extra(
+            openapi_extra=json_request_examples_extra(
                 partial_update=site._mutation_payload_example(model_admin, change=True, partial=True)
             ),
         )
@@ -1295,7 +1296,7 @@ class NinjaAdminSite:
             response=change_response,
             tags=tags,
             operation_id=f"{app_label}_{model_name}_update",
-            openapi_extra=site._json_request_examples_extra(
+            openapi_extra=json_request_examples_extra(
                 update=site._mutation_payload_example(model_admin, change=True, partial=False)
             ),
         )
@@ -1818,24 +1819,6 @@ class NinjaAdminSite:
     def _file_form_field_names(self, model_admin, request=None, obj=None, *, change):
         form_class = model_admin.get_form_class(request, obj, change=change)
         return [name for name, field in form_class.base_fields.items() if isinstance(field, forms.FileField)]
-
-    def _json_request_examples_extra(self, **examples):
-        openapi_examples = {
-            name: {"summary": name.replace("_", " ").title(), "value": value}
-            for name, value in examples.items()
-            if value is not None
-        }
-        if not openapi_examples:
-            return {}
-        return {
-            "requestBody": {
-                "content": {
-                    "application/json": {
-                        "examples": openapi_examples,
-                    }
-                }
-            }
-        }
 
     def _mutation_payload_example(self, model_admin, *, change, partial):
         form_class = model_admin.get_form_class(None, None, change=change)
