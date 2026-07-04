@@ -514,6 +514,16 @@ def test_changelist_direct_lookup_params_prepare_in_and_isnull_values(admin_clie
     beta = Product.objects.get(name="Beta")
     Product.objects.filter(pk=sample.pk).update(condition="new")
 
+    repeated_scalar = admin_client.get("/admin-api/testapp/product?price=12.50&price=3.00")
+    assert repeated_scalar.status_code == 200
+    assert repeated_scalar.json()["config"]["result_count"] == 2
+    assert {row["cells"]["name"] for row in repeated_scalar.json()["rows"]} == {"Alpha", "Beta"}
+
+    blank_scalar = admin_client.get("/admin-api/testapp/product?description=")
+    assert blank_scalar.status_code == 200
+    assert blank_scalar.json()["config"]["result_count"] == 1
+    assert blank_scalar.json()["rows"][0]["cells"]["name"] == "Beta"
+
     in_lookup = admin_client.get(f"/admin-api/testapp/product?id__in={sample.pk},{beta.pk}")
 
     assert in_lookup.status_code == 200
@@ -532,10 +542,19 @@ def test_changelist_direct_lookup_params_prepare_in_and_isnull_values(admin_clie
     assert non_null.json()["config"]["result_count"] == 1
     assert non_null.json()["rows"][0]["cells"]["name"] == "Alpha"
 
+    empty_is_false = admin_client.get("/admin-api/testapp/product?condition__isnull=")
+    assert empty_is_false.status_code == 200
+    assert empty_is_false.json()["config"]["result_count"] == 1
+    assert empty_is_false.json()["rows"][0]["cells"]["name"] == "Alpha"
+
     null = admin_client.get("/admin-api/testapp/product?condition__isnull=true")
     assert null.status_code == 200
     assert null.json()["config"]["result_count"] == 1
     assert null.json()["rows"][0]["cells"]["name"] == "Beta"
+
+    hidden_invalid_scalar = admin_client.get("/admin-api/testapp/product?price=not-a-decimal&price=12.50")
+    assert hidden_invalid_scalar.status_code == 400
+    assert hidden_invalid_scalar.json()["errors"] == [{"message": "Invalid lookup value.", "param": "price"}]
 
     invalid_in = admin_client.get("/admin-api/testapp/product?id__in=not-a-number")
     assert invalid_in.status_code == 400
@@ -544,6 +563,12 @@ def test_changelist_direct_lookup_params_prepare_in_and_isnull_values(admin_clie
     invalid_isnull = admin_client.get("/admin-api/testapp/product?condition__isnull=maybe")
     assert invalid_isnull.status_code == 400
     assert invalid_isnull.json()["errors"] == [{"message": "Invalid lookup value.", "param": "condition__isnull"}]
+
+    hidden_invalid_isnull = admin_client.get("/admin-api/testapp/product?condition__isnull=maybe&condition__isnull=1")
+    assert hidden_invalid_isnull.status_code == 400
+    assert hidden_invalid_isnull.json()["errors"] == [
+        {"message": "Invalid lookup value.", "param": "condition__isnull"}
+    ]
 
 
 def test_empty_field_list_filter_validates_values(admin_client, sample, monkeypatch):

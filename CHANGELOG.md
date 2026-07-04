@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Fixed
+
+- Matched Django changelist semantics for repeated direct lookup parameters by
+  OR-filtering repeated values, validating every supplied value, and preserving
+  empty-string direct lookups instead of silently ignoring them.
+
 ## 0.1.59 - 2026-07-04
 
 ### Changed

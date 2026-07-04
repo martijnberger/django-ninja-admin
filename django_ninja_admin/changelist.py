@@ -189,26 +189,38 @@ class ChangeList:
         return "__".join(related_parts) if related_parts else None
 
     def apply_remaining_lookup_params(self, queryset, params, filter_specs):
-        for key, value in self.remaining_lookup_items(params):
-            if key in self.expected_special_params(filter_specs) or value in ("", None):
+        for key, values in self.remaining_lookup_items(params):
+            if key in self.expected_special_params(filter_specs) or not values:
                 continue
-            if not self.model_admin.lookup_allowed(key, value, self.request):
-                raise DisallowedModelAdminLookup(f"Filtering by {key!r} is not allowed.")
-            try:
-                queryset = queryset.filter(**{key: self.prepare_lookup_value(key, value)})
-            except (FieldError, TypeError, ValueError, ValidationError) as exc:
-                raise self.lookup_value_error({key: value}, fallback_param=key) from exc
+            queryset = self.apply_lookup_values(queryset, key, values)
         return queryset
 
     def remaining_lookup_items(self, params):
         if not hasattr(params, "lists"):
-            yield from params.items()
+            for key, value in params.items():
+                yield key, (value,)
             return
         for key, values in params.lists():
-            if key.endswith("__in"):
-                yield key, values
-            else:
-                yield key, values[-1] if values else None
+            yield key, tuple(values)
+
+    def apply_lookup_values(self, queryset, key, values):
+        q_object = None
+        for value in values:
+            if value is None:
+                continue
+            if not self.model_admin.lookup_allowed(key, value, self.request):
+                raise DisallowedModelAdminLookup(f"Filtering by {key!r} is not allowed.")
+            try:
+                condition = models.Q(**{key: self.prepare_lookup_value(key, value)})
+            except (FieldError, TypeError, ValueError, ValidationError) as exc:
+                raise self.lookup_value_error({key: value}, fallback_param=key) from exc
+            q_object = condition if q_object is None else q_object | condition
+        if q_object is None:
+            return queryset
+        try:
+            return queryset.filter(q_object)
+        except (FieldError, TypeError, ValueError, ValidationError) as exc:
+            raise self.lookup_value_error({key: values[0]}, fallback_param=key) from exc
 
     def prepare_lookup_value(self, key, value):
         if isinstance(value, (list, tuple)):
@@ -232,7 +244,7 @@ class ChangeList:
         normalized = str(value).lower()
         if normalized in {"1", "true"}:
             return True
-        if normalized in {"0", "false"}:
+        if normalized in {"", "0", "false"}:
             return False
         raise ValueError(f"Invalid boolean lookup value for {key}.")
 
