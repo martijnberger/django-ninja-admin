@@ -46,6 +46,10 @@ controls. These hints describe source fields, related models, target fields,
 and mount-aware endpoint/query data without exposing rendered Django widget
 internals.
 
+Changelist, history, and autocomplete responses share the `Pagination`
+component. History and autocomplete page-size parameters are bounded in
+OpenAPI; changelist keeps Django-admin-style `pp` and `all` controls.
+
 ## Error Shapes
 
 Runtime errors use HTTP status codes and the shared `ErrorResponse` body.

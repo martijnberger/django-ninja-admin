@@ -40,15 +40,16 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
             "field_name": "tags",
             "term": "Tag",
             "page": 1,
+            "per_page": 10,
         },
     )
     assert first_page.status_code == 200
-    assert len(first_page.json()["results"]) == 20
+    assert len(first_page.json()["results"]) == 10
     assert first_page.json()["pagination"] == {
         "count": 25,
-        "num_pages": 2,
+        "num_pages": 3,
         "page": 1,
-        "per_page": 20,
+        "per_page": 10,
         "has_next": True,
         "has_previous": False,
         "more": True,
@@ -62,18 +63,19 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
             "field_name": "tags",
             "term": "Tag",
             "page": 2,
+            "per_page": 10,
         },
     )
     assert second_page.status_code == 200
-    assert len(second_page.json()["results"]) == 5
+    assert len(second_page.json()["results"]) == 10
     assert second_page.json()["pagination"] == {
         "count": 25,
-        "num_pages": 2,
+        "num_pages": 3,
         "page": 2,
-        "per_page": 20,
-        "has_next": False,
+        "per_page": 10,
+        "has_next": True,
         "has_previous": True,
-        "more": False,
+        "more": True,
     }
     assert all(result["text"].startswith("Tag ") for result in second_page.json()["results"])
 
@@ -90,6 +92,36 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
     assert bad_page.status_code == 422
     assert bad_page.json()["errors"] == [
         {"message": "Input should be greater than or equal to 1", "param": "query.page"}
+    ]
+
+    bad_page_size = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "tags",
+            "term": "Tag",
+            "per_page": 0,
+        },
+    )
+    assert bad_page_size.status_code == 422
+    assert bad_page_size.json()["errors"] == [
+        {"message": "Input should be greater than or equal to 1", "param": "query.per_page"}
+    ]
+
+    excessive_page_size = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "tags",
+            "term": "Tag",
+            "per_page": 101,
+        },
+    )
+    assert excessive_page_size.status_code == 422
+    assert excessive_page_size.json()["errors"] == [
+        {"message": "Input should be less than or equal to 100", "param": "query.per_page"}
     ]
 
 
@@ -145,6 +177,7 @@ def test_autocomplete_uses_remote_model_admin_paginator_hook(admin_client, sampl
             "model_name": "product",
             "field_name": "tags",
             "term": "Tag",
+            "per_page": 2,
         },
     )
 
@@ -153,7 +186,7 @@ def test_autocomplete_uses_remote_model_admin_paginator_hook(admin_client, sampl
         "path": "/admin-api/autocomplete",
         "model": Tag,
         "is_queryset": True,
-        "per_page": 20,
+        "per_page": 2,
         "orphans": 0,
         "allow_empty_first_page": True,
     }

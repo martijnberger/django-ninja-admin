@@ -540,11 +540,15 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         autocomplete_parameters["term"]["description"] == "Search term matched against the remote admin search fields."
     )
     assert autocomplete_parameters["page"]["description"] == "1-based page number."
+    assert autocomplete_parameters["per_page"]["description"] == "Page size from 1 to 100."
     assert autocomplete_parameters["app_label"]["required"] is True
     assert autocomplete_parameters["model_name"]["required"] is True
     assert autocomplete_parameters["field_name"]["required"] is True
     assert non_null_parameter_type(autocomplete_parameters["page"]) == ["integer"]
+    assert non_null_parameter_type(autocomplete_parameters["per_page"]) == ["integer"]
     assert autocomplete_parameters["page"]["schema"]["minimum"] == 1
+    assert autocomplete_parameters["per_page"]["schema"]["minimum"] == 1
+    assert autocomplete_parameters["per_page"]["schema"]["maximum"] == 100
     autocomplete_example = components["AutocompleteResponse"]["examples"][0]
     assert autocomplete_example["results"] == [{"id": "1", "text": "Cameras"}]
     assert autocomplete_example["pagination"]["more"] is False

@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Added a bounded `per_page` query parameter to `/autocomplete`, mirroring the
+  shared pagination contract used by history while preserving the 20-result
+  default.
+
 ### Fixed
 
 - Validated delete response-hook bodies against their advertised schemas before

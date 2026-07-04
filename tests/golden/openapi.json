@@ -10511,6 +10511,20 @@
               "title": "Page",
               "type": "integer"
             }
+          },
+          {
+            "description": "Page size from 1 to 100.",
+            "in": "query",
+            "name": "per_page",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Page size from 1 to 100.",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Per Page",
+              "type": "integer"
+            }
           }
         ],
         "responses": {

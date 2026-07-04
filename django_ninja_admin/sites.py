@@ -121,6 +121,7 @@ class NinjaAdminSite:
     include_auth = True
     history_max_per_page = 100
     autocomplete_per_page = 20
+    autocomplete_max_per_page = 100
     history_throttle: Any = NOT_SET
     autocomplete_throttle: Any = NOT_SET
 
@@ -1008,6 +1009,12 @@ class NinjaAdminSite:
             field_name: str = NinjaQuery(..., description="Source relation field configured for autocomplete."),
             term: str = NinjaQuery("", description="Search term matched against the remote admin search fields."),
             page: int = NinjaQuery(1, ge=1, description="1-based page number."),
+            per_page: int = NinjaQuery(
+                site.autocomplete_per_page,
+                ge=1,
+                le=site.autocomplete_max_per_page,
+                description=f"Page size from 1 to {site.autocomplete_max_per_page}.",
+            ),
         ):
             try:
                 source_model = apps.get_model(app_label, model_name)
@@ -1038,7 +1045,6 @@ class NinjaAdminSite:
                 qs = qs.distinct()
             if not qs.ordered:
                 qs = qs.order_by(remote_model._meta.pk.name)
-            per_page = site.autocomplete_per_page
             use_visibility_filter = site._model_admin_method_overridden(model_admin, "has_view_permission")
             paginator = model_admin.get_paginator(request, qs, per_page)
             try:

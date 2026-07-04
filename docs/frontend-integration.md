@@ -70,7 +70,9 @@ with an `_to_field` query hint for looking up selectable objects.
 
 Changelist, history, and autocomplete routes use one shared pagination shape.
 Clients should use the advertised page metadata and generated query-parameter
-types instead of hand-building query strings.
+types instead of hand-building query strings. History and autocomplete expose
+bounded `per_page` parameters; changelist uses `pp` and preserves Django
+admin's `all`/show-all behavior.
 
 ## Errors
 
