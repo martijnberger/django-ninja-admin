@@ -3025,6 +3025,17 @@
             ],
             "title": "App Label"
           },
+          "available_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available Count"
+          },
           "direction": {
             "enum": [
               "horizontal",
@@ -3106,6 +3117,17 @@
               }
             ],
             "title": "Related Verbose Name Plural"
+          },
+          "selected_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selected Count"
           },
           "to_field_attname": {
             "anyOf": [

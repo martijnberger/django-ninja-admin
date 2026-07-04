@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Added
 
+- Added `selected_count` and `available_count` to filtered-select form metadata
+  for dual-select many-to-many controls.
 - Added mounted coverage for editing manual-through many-to-many relationships
   through explicit inline admins.
 - Added mounted permission coverage for manual-through many-to-many inline

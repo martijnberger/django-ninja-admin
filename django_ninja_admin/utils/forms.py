@@ -630,6 +630,8 @@ def form_field_descriptions(
             source_model=model,
             request=request,
             model_admin=model_admin,
+            form_field=field,
+            current_value=current_value,
         )
         descriptions.append(description)
     for readonly_field in readonly_fields:
@@ -666,6 +668,8 @@ def form_field_descriptions(
                 source_model=model,
                 request=request,
                 model_admin=model_admin,
+                form_field=None,
+                current_value=None,
             )
             descriptions.append(description)
     return descriptions
@@ -692,6 +696,8 @@ def _apply_admin_field_metadata(
     source_model=None,
     request=None,
     model_admin=None,
+    form_field=None,
+    current_value=None,
 ):
     attrs = description["attrs"]
     if name in autocomplete_fields:
@@ -717,11 +723,23 @@ def _apply_admin_field_metadata(
     if name in filter_horizontal:
         attrs["admin_widget"] = "filter_horizontal"
         if source_model is not None:
-            attrs["filtered_select"] = _filtered_select_metadata(source_model, name, direction="horizontal")
+            attrs["filtered_select"] = _filtered_select_metadata(
+                source_model,
+                name,
+                direction="horizontal",
+                form_field=form_field,
+                current_value=current_value,
+            )
     if name in filter_vertical:
         attrs["admin_widget"] = "filter_vertical"
         if source_model is not None:
-            attrs["filtered_select"] = _filtered_select_metadata(source_model, name, direction="vertical")
+            attrs["filtered_select"] = _filtered_select_metadata(
+                source_model,
+                name,
+                direction="vertical",
+                form_field=form_field,
+                current_value=current_value,
+            )
     if name in radio_fields:
         attrs["admin_widget"] = "radio"
         attrs["radio_orientation"] = radio_fields[name]
@@ -837,12 +855,15 @@ def _mount_path_model_candidates(source_model, model_admin):
         yield candidate_model
 
 
-def _filtered_select_metadata(source_model, field_name, *, direction):
+def _filtered_select_metadata(source_model, field_name, *, direction, form_field=None, current_value=None):
     metadata = {
         **_source_field_identity(source_model, field_name),
         "direction": direction,
         "is_stacked": direction == "vertical",
     }
+    if isinstance(form_field, ModelMultipleChoiceField):
+        metadata["selected_count"] = _model_multiple_choice_value_count(current_value)
+        metadata["available_count"] = _model_multiple_choice_available_count(form_field)
     field = _model_field_for_name(source_model, field_name)
     if field is not None:
         metadata["verbose_name"] = str(getattr(field, "verbose_name", field_name))
@@ -862,6 +883,29 @@ def _filtered_select_metadata(source_model, field_name, *, direction):
                 }
             )
     return metadata
+
+
+def _model_multiple_choice_value_count(value):
+    if value in (None, ""):
+        return 0
+    if hasattr(value, "count") and not isinstance(value, (list, tuple, set, str, bytes, dict)):
+        try:
+            return value.count()
+        except TypeError:
+            pass
+    if isinstance(value, str | bytes):
+        return 1
+    try:
+        return len(value)
+    except TypeError:
+        return 1
+
+
+def _model_multiple_choice_available_count(field):
+    try:
+        return field.queryset.count()
+    except (AttributeError, TypeError, ValueError):
+        return None
 
 
 def _prepopulated_source_metadata(source_model, field_name):

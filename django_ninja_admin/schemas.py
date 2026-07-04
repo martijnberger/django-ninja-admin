@@ -394,6 +394,8 @@ class FilteredSelectMetadata(SourceFieldIdentity):
     direction: Literal["horizontal", "vertical"]
     is_stacked: bool
     verbose_name: str | None = None
+    selected_count: int | None = None
+    available_count: int | None = None
     related_model: str | None = None
     related_app_label: str | None = None
     related_model_name: str | None = None

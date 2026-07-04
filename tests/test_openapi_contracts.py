@@ -653,6 +653,14 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert field_attrs_props["autocomplete"]["anyOf"][0] == {"$ref": "#/components/schemas/RelationWidgetMetadata"}
     assert field_attrs_props["raw_id"]["anyOf"][0] == {"$ref": "#/components/schemas/RelationWidgetMetadata"}
     assert field_attrs_props["filtered_select"]["anyOf"][0] == {"$ref": "#/components/schemas/FilteredSelectMetadata"}
+    assert components["FilteredSelectMetadata"]["properties"]["selected_count"]["anyOf"] == [
+        {"type": "integer"},
+        {"type": "null"},
+    ]
+    assert components["FilteredSelectMetadata"]["properties"]["available_count"]["anyOf"] == [
+        {"type": "integer"},
+        {"type": "null"},
+    ]
     assert field_attrs_props["radio"]["anyOf"][0] == {"$ref": "#/components/schemas/RadioMetadata"}
     assert field_attrs_props["prepopulated"]["anyOf"][0] == {"$ref": "#/components/schemas/PrepopulatedMetadata"}
     assert field_attrs_props["input_schema_override"]["anyOf"][0] == {

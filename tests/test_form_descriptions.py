@@ -9,7 +9,7 @@ from django.test import RequestFactory
 from django.test.utils import isolate_apps
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, display, site
-from tests.testapp.models import Product
+from tests.testapp.models import Product, Tag
 
 RENDERED_FIELD_ATTR_KEYS = {
     "aria_describedby",
@@ -191,6 +191,7 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
     user.user_permissions.set(Permission.objects.all())
     request = RequestFactory().get(f"/admin-api/testapp/product/{sample.pk}/form")
     request.user = user
+    Tag.objects.create(name="Available")
 
     class RawWidgetProductAdmin(ModelAdmin):
         raw_id_fields = ("category",)
@@ -230,6 +231,8 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
         "direction": "vertical",
         "is_stacked": True,
         "verbose_name": "tags",
+        "selected_count": 2,
+        "available_count": 3,
         "related_model": "testapp.tag",
         "related_app_label": "testapp",
         "related_model_name": "tag",
