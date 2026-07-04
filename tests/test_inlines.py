@@ -369,6 +369,73 @@ def test_manual_through_many_to_many_can_be_edited_with_explicit_inline(admin_cl
     assert not ArticleLabel.objects.filter(pk=removed.pk).exists()
 
 
+@override_settings(ROOT_URLCONF="tests.custom_form_urls")
+def test_manual_through_many_to_many_inline_enforces_through_model_permissions(staff_client):
+    primary = Label.objects.create(name="Primary")
+    secondary = Label.objects.create(name="Secondary")
+    archived = Label.objects.create(name="Archived")
+    article = Article.objects.create(title="Permissioned through API")
+    existing = ArticleLabel.objects.create(article=article, label=primary, note="Lead")
+    removed = ArticleLabel.objects.create(article=article, label=archived, note="Remove")
+
+    parent_only_client = staff_client("change_article")
+    form_response = parent_only_client.get(f"/through-inline-admin/testapp/article/{article.pk}/form")
+
+    assert form_response.status_code == 200
+    assert form_response.json()["inlines"] == []
+
+    add_denied = parent_only_client.patch(
+        f"/through-inline-admin/testapp/article/{article.pk}",
+        data={"data": {}, "inlines": {"testapp.articlelabel": {"add": [{"label": secondary.pk, "note": "Denied"}]}}},
+        content_type="application/json",
+    )
+
+    assert add_denied.status_code == 403
+    assert not ArticleLabel.objects.filter(article=article, label=secondary).exists()
+
+    change_only_client = staff_client("change_article", "change_articlelabel")
+    change_allowed = change_only_client.patch(
+        f"/through-inline-admin/testapp/article/{article.pk}",
+        data={
+            "data": {},
+            "inlines": {"testapp.articlelabel": {"change": [{"pk": existing.pk, "note": "Lead updated"}]}},
+        },
+        content_type="application/json",
+    )
+    delete_denied = change_only_client.patch(
+        f"/through-inline-admin/testapp/article/{article.pk}",
+        data={"data": {}, "inlines": {"testapp.articlelabel": {"delete": [removed.pk]}}},
+        content_type="application/json",
+    )
+
+    assert change_allowed.status_code == 200, change_allowed.json()
+    existing.refresh_from_db()
+    assert existing.note == "Lead updated"
+    assert delete_denied.status_code == 403
+    assert ArticleLabel.objects.filter(pk=removed.pk).exists()
+
+    delete_only_client = staff_client("change_article", "delete_articlelabel")
+    delete_allowed = delete_only_client.patch(
+        f"/through-inline-admin/testapp/article/{article.pk}",
+        data={"data": {}, "inlines": {"testapp.articlelabel": {"delete": [removed.pk]}}},
+        content_type="application/json",
+    )
+    change_denied = delete_only_client.patch(
+        f"/through-inline-admin/testapp/article/{article.pk}",
+        data={
+            "data": {},
+            "inlines": {"testapp.articlelabel": {"change": [{"pk": existing.pk, "note": "Denied change"}]}},
+        },
+        content_type="application/json",
+    )
+
+    assert delete_allowed.status_code == 200, delete_allowed.json()
+    assert not ArticleLabel.objects.filter(pk=removed.pk).exists()
+    assert change_denied.status_code == 403
+    existing.refresh_from_db()
+    assert existing.note == "Lead updated"
+
+
 def test_inline_mutations_check_inline_permissions(staff_client, sample):
     client = staff_client("change_product")
     image = ProductImage.objects.get(product=sample)

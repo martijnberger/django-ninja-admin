@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added mounted coverage for editing manual-through many-to-many relationships
   through explicit inline admins.
+- Added mounted permission coverage for manual-through many-to-many inline
+  add, change, and delete operations.
 
 ### Fixed
 
