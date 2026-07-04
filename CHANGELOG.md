@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.53 - 2026-07-04
+
 ### Changed
 
 - Closed generated admin payload, action payload, output, bulk, and mutation
