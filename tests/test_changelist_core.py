@@ -453,6 +453,7 @@ def test_changelist_row_metadata_honors_object_permissions(staff_client, sample)
     assert row["result_index"] == 1
     assert row["detail_url"] == f"/admin-api/testapp/product/{sample.pk}"
     assert row["change_form_url"] == f"/admin-api/testapp/product/{sample.pk}/form"
+    assert row["cell_metadata"]["name"]["link_url"] == row["detail_url"]
     assert row["delete_url"] is None
     assert row["permissions"] == {
         "has_add_permission": False,
@@ -460,6 +461,28 @@ def test_changelist_row_metadata_honors_object_permissions(staff_client, sample)
         "has_delete_permission": False,
         "has_view_permission": True,
     }
+
+
+def test_changelist_cell_link_url_honors_object_view_permission(admin_client, sample, monkeypatch):
+    product_admin = site.get_model_admin(Product)
+
+    def has_view_permission(request, obj=None):
+        return obj is None or obj.pk != sample.pk
+
+    def has_change_permission(request, obj=None):
+        return obj is None or obj.pk != sample.pk
+
+    monkeypatch.setattr(product_admin, "has_view_permission", has_view_permission)
+    monkeypatch.setattr(product_admin, "has_change_permission", has_change_permission)
+
+    response = admin_client.get("/admin-api/testapp/product?q=Alpha")
+
+    assert response.status_code == 200
+    row = response.json()["rows"][0]
+    assert row["detail_url"] is None
+    assert row["change_form_url"] is None
+    assert row["cell_metadata"]["name"]["display_link"] is True
+    assert row["cell_metadata"]["name"]["link_url"] is None
 
 
 def test_change_form_metadata_honors_custom_object_permission_hooks(admin_client, sample, monkeypatch):
