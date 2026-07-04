@@ -29,6 +29,8 @@ validation runs.
 Standard mutation responses return typed `data` and optional typed `inlines`.
 Default action responses return the typed `ActionResponse`. Custom hooks and
 actions should declare schemas when they return custom bodies or status maps.
+The concrete response-hook rules are documented in the
+[hook reference](hook-reference.md#save-delete-and-response-hooks).
 
 Custom site and model routes default to `JsonObjectResponse`, a named JSON
 object schema. Declare a concrete Ninja/Pydantic schema for generated clients

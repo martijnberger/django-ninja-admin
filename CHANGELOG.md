@@ -20,6 +20,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added OpenAPI pattern/minimum constraints for changelist `p`/`page`/`pp`
   query parameters, with invalid changelist page and page-size values using
   the shared typed 422 validation contract.
+- Documented the generated-client contract for add/change/delete response
+  hooks, including default statuses, custom schemas, status maps, and invalid
+  return-value categories.
 
 ## 0.1.51 - 2026-07-04
 

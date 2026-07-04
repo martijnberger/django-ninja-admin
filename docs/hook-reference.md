@@ -75,6 +75,26 @@ Custom response hooks that return non-default `Status(...)` bodies should
 declare `response_add_schema`, `response_change_schema`, or
 `response_delete_schema` so OpenAPI remains typed.
 
+Response hook return values are part of the generated-client contract:
+
+- The base `response_add()` and `response_change()` implementations return the
+  standard mutation shape generated from the saved object and inline results.
+- Plain `response_add()` or `response_change()` dictionaries are wrapped in
+  the conventional success status (`201` for add, `200` for change). These
+  statuses are advertised with the standard mutation schema, so custom
+  add/change bodies should return `Status(200, body)` or `Status(202, body)`
+  and declare `response_add_schema` or `response_change_schema`.
+- `response_delete()` may return `None` for the default `204` response, a plain
+  dictionary for a typed `200` response, or `Status(...)` for an explicit
+  status/body pair.
+- Hooks returning custom bodies should declare a schema class, or a
+  status-to-schema mapping when different statuses return different shapes.
+  A schema class is advertised on `200` and `202` for add/change/delete hooks;
+  a mapping is used exactly as provided.
+- Hook bodies should be JSON-compatible Pydantic/Ninja response data. They
+  should not return Django `HttpResponse` objects, rendered templates, or
+  model instances directly.
+
 ## Actions, Inlines, And Routes
 
 - `@action(...)` supports permissions, Pydantic input schemas, and custom
