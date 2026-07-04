@@ -2014,6 +2014,7 @@ class NinjaAdminSite:
         required.extend(field_name for field_name in file_fields if field_name in required_file_fields)
         if required:
             schema["required"] = required
+        schema["additionalProperties"] = False
         return {"requestBody": {"required": True, "content": {"multipart/form-data": {"schema": schema}}}}
 
     def _required_file_form_field_names(self, model_admin, request=None, obj=None, *, change):
@@ -2025,6 +2026,7 @@ class NinjaAdminSite:
         ]
 
     def _multipart_mutation_payload(self, request, payload_schema, file_fields=()):
+        self._validate_multipart_part_names(request, file_fields)
         data = self._json_form_part(request, "data", default={})
         inlines = self._json_form_part(request, "inlines", default=None)
         if not isinstance(data, dict):
@@ -2055,6 +2057,30 @@ class NinjaAdminSite:
             return payload_schema.model_validate(payload_data)
         except PydanticValidationError as exc:
             self._raise_request_validation(exc)
+
+    def _validate_multipart_part_names(self, request, file_fields):
+        form_data, files = self._multipart_request_parts(request)
+        allowed_form_parts = {"data", "inlines"}
+        allowed_file_parts = set(file_fields)
+        errors = []
+        for part_name in sorted(set(form_data) - allowed_form_parts):
+            errors.append(
+                {
+                    "loc": ("body", "payload", part_name),
+                    "msg": "Extra inputs are not permitted",
+                    "type": "extra_forbidden",
+                }
+            )
+        for part_name in sorted(set(files) - allowed_file_parts):
+            errors.append(
+                {
+                    "loc": ("body", "payload", part_name),
+                    "msg": "Extra inputs are not permitted",
+                    "type": "extra_forbidden",
+                }
+            )
+        if errors:
+            raise NinjaValidationError(errors)
 
     def _multipart_payload_data_with_file_parts(self, request, data, file_fields):
         if not file_fields:

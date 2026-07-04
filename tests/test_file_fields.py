@@ -233,6 +233,37 @@ def test_multipart_file_fields_reject_duplicate_file_parts(admin_client, sample,
         assert not any(tmp_path.rglob("*.txt"))
 
 
+def test_multipart_file_fields_reject_unknown_top_level_parts(admin_client, sample, tmp_path):
+    with override_settings(MEDIA_ROOT=tmp_path):
+        response = admin_client.post(
+            "/admin-api/testapp/product/multipart",
+            data={
+                "data": json.dumps(
+                    {
+                        "name": "Unknown multipart part",
+                        "category": sample.category_id,
+                        "tags": list(sample.tags.values_list("pk", flat=True)),
+                        "price": "7.00",
+                        "stock_status": "in_stock",
+                    }
+                ),
+                "manual": SimpleUploadedFile("manual.txt", b"manual", content_type="text/plain"),
+                "extra": "not in the multipart contract",
+                "attachment": SimpleUploadedFile("attachment.txt", b"extra", content_type="text/plain"),
+            },
+        )
+
+        assert response.status_code == 422
+        body = response.json()
+        ErrorResponse.model_validate(body)
+        assert body["errors"] == [
+            {"message": "Extra inputs are not permitted", "param": "extra"},
+            {"message": "Extra inputs are not permitted", "param": "attachment"},
+        ]
+        assert not Product.objects.filter(name="Unknown multipart part").exists()
+        assert not any(tmp_path.rglob("*.txt"))
+
+
 def test_image_field_validates_and_uploads_with_multipart_payload(admin_client, sample, tmp_path):
     with override_settings(MEDIA_ROOT=tmp_path):
         invalid = admin_client.patch(

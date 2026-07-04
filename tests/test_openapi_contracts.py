@@ -36,6 +36,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert multipart_schema["properties"]["manual"] == {"type": "string", "format": "binary"}
     assert multipart_schema["properties"]["photo"] == {"type": "string", "format": "binary"}
     assert multipart_schema["required"] == ["data"]
+    assert multipart_schema["additionalProperties"] is False
     assert {
         "ProductAdminCreateData",
         "ProductAdminCreatePayload",

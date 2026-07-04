@@ -12722,6 +12722,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
+                "additionalProperties": false,
                 "properties": {
                   "data": {
                     "contentMediaType": "application/json",
@@ -13408,6 +13409,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
+                "additionalProperties": false,
                 "properties": {
                   "data": {
                     "contentMediaType": "application/json",
@@ -13542,6 +13544,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
+                "additionalProperties": false,
                 "properties": {
                   "data": {
                     "contentMediaType": "application/json",

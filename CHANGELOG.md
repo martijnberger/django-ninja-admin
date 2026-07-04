@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Closed multipart mutation envelopes in OpenAPI and runtime validation so
+  unknown top-level multipart form or file parts return the shared typed 422
+  error body.
+
 ### Fixed
 
 - Rejected duplicate multipart file parts for a single `FileField` with the
