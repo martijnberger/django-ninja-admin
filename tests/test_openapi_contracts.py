@@ -589,8 +589,28 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     autocomplete_example = components["AutocompleteResponse"]["examples"][0]
     assert autocomplete_example["results"] == [{"id": "1", "text": "Cameras"}]
     assert autocomplete_example["pagination"]["more"] is False
-    assert components["ChangelistConfig"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
-    assert components["ChangelistConfig"]["properties"]["date_hierarchy"]["anyOf"][0] == {
+    changelist_config_props = components["ChangelistConfig"]["properties"]
+    assert changelist_config_props["pagination"] == {"$ref": "#/components/schemas/Pagination"}
+    assert changelist_config_props["full_count"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
+    assert changelist_config_props["result_count"]["minimum"] == 0
+    assert changelist_config_props["page_result_count"]["minimum"] == 0
+    assert changelist_config_props["result_start_index"]["minimum"] == 0
+    assert changelist_config_props["result_end_index"]["minimum"] == 0
+    assert changelist_config_props["page_count"]["minimum"] == 0
+    assert changelist_config_props["page"]["minimum"] == 1
+    assert changelist_config_props["per_page"]["minimum"] == 1
+    assert components["FilterChoice"]["properties"]["count"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
+    assert components["PageChoice"]["properties"]["page"]["anyOf"] == [
+        {"minimum": 1, "type": "integer"},
+        {"type": "null"},
+    ]
+    assert changelist_config_props["date_hierarchy"]["anyOf"][0] == {
         "$ref": "#/components/schemas/DateHierarchyDescription"
     }
     assert components["DateHierarchyLevel"] == {
@@ -604,6 +624,11 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["DateHierarchyChoice"]["properties"]["level"] == {
         "$ref": "#/components/schemas/DateHierarchyLevel"
     }
+    assert components["DateHierarchyChoice"]["properties"]["value"]["minimum"] == 1
+    assert components["DateHierarchyChoice"]["properties"]["count"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
     assert components["DateHierarchyDescription"]["properties"]["level"] == {
         "$ref": "#/components/schemas/DateHierarchyLevel"
     }

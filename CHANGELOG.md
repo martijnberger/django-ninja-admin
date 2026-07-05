@@ -7,8 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.66 - 2026-07-05
+
 ### Changed
 
+- Added explicit nonnegative/positive bounds to changelist count, page,
+  result-index, facet-count, page-choice, and date-hierarchy metadata schemas.
 - Narrowed date hierarchy OpenAPI metadata to enum-backed `year`/`month`/`day`
   levels and parameter names instead of arbitrary strings.
 - Narrowed radio field orientation schemas to Django admin's `HORIZONTAL` and

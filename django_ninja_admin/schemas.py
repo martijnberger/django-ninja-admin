@@ -882,7 +882,7 @@ class FilterChoice(AdminSchema):
     selected: bool
     query_string: str
     display: str
-    count: int | None = None
+    count: int | None = Field(default=None, ge=0)
 
 
 class FilterDescription(AdminSchema):
@@ -904,8 +904,8 @@ class DateHierarchyChoice(AdminSchema):
     query_string: str
     display: str
     level: DateHierarchyLevel
-    value: int
-    count: int | None = None
+    value: int = Field(ge=1)
+    count: int | None = Field(default=None, ge=0)
 
 
 class DateHierarchyDescription(AdminSchema):
@@ -922,7 +922,7 @@ class DateHierarchyDescription(AdminSchema):
 
 class PageChoice(AdminSchema):
     display: str
-    page: int | None = None
+    page: int | None = Field(default=None, ge=1)
     selected: bool = False
     query_string: str | None = None
 
@@ -938,14 +938,14 @@ class Pagination(AdminSchema):
 
 
 class ChangelistConfig(AdminSchema):
-    full_count: int | None
-    result_count: int
-    page_result_count: int = 0
-    result_start_index: int = 0
-    result_end_index: int = 0
-    page_count: int
-    page: int
-    per_page: int
+    full_count: int | None = Field(ge=0)
+    result_count: int = Field(ge=0)
+    page_result_count: int = Field(default=0, ge=0)
+    result_start_index: int = Field(default=0, ge=0)
+    result_end_index: int = Field(default=0, ge=0)
+    page_count: int = Field(ge=0)
+    page: int = Field(ge=1)
+    per_page: int = Field(ge=1)
     pagination: Pagination
     has_next: bool = False
     has_previous: bool = False

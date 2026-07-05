@@ -964,6 +964,7 @@
           "full_count": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -1057,6 +1058,7 @@
             "type": "object"
           },
           "page": {
+            "minimum": 1,
             "title": "Page",
             "type": "integer"
           },
@@ -1068,6 +1070,7 @@
             "type": "array"
           },
           "page_count": {
+            "minimum": 0,
             "title": "Page Count",
             "type": "integer"
           },
@@ -1087,6 +1090,7 @@
           },
           "page_result_count": {
             "default": 0,
+            "minimum": 0,
             "title": "Page Result Count",
             "type": "integer"
           },
@@ -1099,6 +1103,7 @@
             "type": "boolean"
           },
           "per_page": {
+            "minimum": 1,
             "title": "Per Page",
             "type": "integer"
           },
@@ -1125,16 +1130,19 @@
             "title": "Remove Facets Query String"
           },
           "result_count": {
+            "minimum": 0,
             "title": "Result Count",
             "type": "integer"
           },
           "result_end_index": {
             "default": 0,
+            "minimum": 0,
             "title": "Result End Index",
             "type": "integer"
           },
           "result_start_index": {
             "default": 0,
+            "minimum": 0,
             "title": "Result Start Index",
             "type": "integer"
           },
@@ -1563,6 +1571,7 @@
           "count": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -1587,6 +1596,7 @@
             "type": "boolean"
           },
           "value": {
+            "minimum": 1,
             "title": "Value",
             "type": "integer"
           }
@@ -3152,6 +3162,7 @@
           "count": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -4801,6 +4812,7 @@
           "page": {
             "anyOf": [
               {
+                "minimum": 1,
                 "type": "integer"
               },
               {
