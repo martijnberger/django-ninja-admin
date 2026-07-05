@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added mounted response-hook status-map coverage for change hooks with
   distinct schemas for `200` and `202` responses.
+- Added a global OpenAPI contract regression guard against loose object
+  schemas and unconstrained maps on documented API surfaces.
 
 ## 0.1.73 - 2026-07-05
 

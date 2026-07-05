@@ -23,6 +23,32 @@ from django_ninja_admin.schemas import (
 from tests.testapp.models import Product
 
 
+def _walk_schema(node, path=()):
+    if isinstance(node, dict):
+        yield path, node
+        for key, value in node.items():
+            yield from _walk_schema(value, (*path, str(key)))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            yield from _walk_schema(value, (*path, str(index)))
+
+
+def test_openapi_does_not_advertise_loose_object_schemas(admin_client, sample):
+    schema = admin_client.get("/admin-api/openapi.json").json()
+    loose_object_paths = []
+    unconstrained_map_paths = []
+
+    for path, node in _walk_schema(schema):
+        if node.get("type") == "object" and "properties" not in node and "additionalProperties" not in node:
+            loose_object_paths.append("/".join(path))
+        additional_properties = node.get("additionalProperties")
+        if additional_properties is True or additional_properties == {}:
+            unconstrained_map_paths.append("/".join(path))
+
+    assert loose_object_paths == []
+    assert unconstrained_map_paths == []
+
+
 def test_apps_context_docs_and_schema(admin_client, sample):
     assert admin_client.get("/admin-api/apps").status_code == 200
     assert admin_client.get("/admin-api/apps/testapp").json()["app_label"] == "testapp"
