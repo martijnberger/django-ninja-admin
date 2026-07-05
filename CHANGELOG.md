@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Added an explicit year-range upper bound to date-hierarchy choice value
+  schemas.
+
 ## 0.1.68 - 2026-07-05
 
 ### Changed

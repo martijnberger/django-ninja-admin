@@ -905,6 +905,7 @@ type DateHierarchyLevel = Literal["year", "month", "day"]
 type DateHierarchyYear = Annotated[int, Field(ge=1, le=9999)]
 type DateHierarchyMonth = Annotated[int, Field(ge=1, le=12)]
 type DateHierarchyDay = Annotated[int, Field(ge=1, le=31)]
+type DateHierarchyChoiceValue = Annotated[int, Field(ge=1, le=9999)]
 
 
 class DateHierarchyParams(AdminSchema):
@@ -922,7 +923,7 @@ class DateHierarchyChoice(AdminSchema):
     query_string: str
     display: str
     level: DateHierarchyLevel
-    value: int = Field(ge=1)
+    value: DateHierarchyChoiceValue
     count: int | None = Field(default=None, ge=0)
 
 

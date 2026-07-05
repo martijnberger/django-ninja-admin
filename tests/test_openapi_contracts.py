@@ -8,6 +8,7 @@ from django_ninja_admin.schemas import (
     ActionResponse,
     ChangelistConfig,
     ChangelistResponse,
+    DateHierarchyChoice,
     DateHierarchyParams,
     ErrorResponse,
     FieldAttributes,
@@ -672,7 +673,10 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["DateHierarchyChoice"]["properties"]["level"] == {
         "$ref": "#/components/schemas/DateHierarchyLevel"
     }
-    assert components["DateHierarchyChoice"]["properties"]["value"]["minimum"] == 1
+    assert components["DateHierarchyChoice"]["properties"]["value"] == {
+        "$ref": "#/components/schemas/DateHierarchyChoiceValue"
+    }
+    assert components["DateHierarchyChoiceValue"] == {"minimum": 1, "maximum": 9999, "type": "integer"}
     assert components["DateHierarchyChoice"]["properties"]["count"]["anyOf"] == [
         {"minimum": 0, "type": "integer"},
         {"type": "null"},
@@ -1370,6 +1374,19 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
         DateHierarchyParams.model_validate({"quarter": 1})
     assert exc_info.value.errors()[0]["type"] == "extra_forbidden"
     assert exc_info.value.errors()[0]["loc"] == ("quarter",)
+
+    with pytest.raises(ValidationError) as exc_info:
+        DateHierarchyChoice.model_validate(
+            {
+                "selected": False,
+                "query_string": "?year=10000",
+                "display": "10000",
+                "level": "year",
+                "value": 10000,
+            }
+        )
+    assert exc_info.value.errors()[0]["type"] == "less_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("value",)
 
 
 def test_formset_management_form_schemas_are_typed_and_closed(admin_client, sample):

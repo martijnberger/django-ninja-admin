@@ -1594,9 +1594,7 @@
             "type": "boolean"
           },
           "value": {
-            "minimum": 1,
-            "title": "Value",
-            "type": "integer"
+            "$ref": "#/components/schemas/DateHierarchyChoiceValue"
           }
         },
         "required": [
@@ -1608,6 +1606,11 @@
         ],
         "title": "DateHierarchyChoice",
         "type": "object"
+      },
+      "DateHierarchyChoiceValue": {
+        "maximum": 9999,
+        "minimum": 1,
+        "type": "integer"
       },
       "DateHierarchyDay": {
         "maximum": 31,
