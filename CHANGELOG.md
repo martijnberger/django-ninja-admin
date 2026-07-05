@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added runtime and OpenAPI coverage for Ninja throttle lists on changelist,
+  history, autocomplete, and custom admin routes.
+
 ## 0.1.72 - 2026-07-05
 
 ### Changed

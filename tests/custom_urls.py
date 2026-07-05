@@ -419,7 +419,7 @@ auth_models_site = NinjaAdminSite(name="auth_models_admin", auth=None, include_a
 class ThrottledProductAdmin(ModelAdmin):
     list_display = ("name",)
     autocomplete_fields = ("category",)
-    changelist_throttle = OneRequestPerPathThrottle()
+    changelist_throttle = [OneRequestPerPathThrottle()]
 
 
 class ThrottledAdminSite(NinjaAdminSite):
@@ -434,7 +434,7 @@ class ThrottledAdminSite(NinjaAdminSite):
                 response=SiteStatusResponse,
                 operation_id="throttled_limited_status",
                 auth=None,
-                throttle=OneRequestPerPathThrottle(),
+                throttle=[OneRequestPerPathThrottle()],
             )
         ]
 
@@ -443,8 +443,8 @@ throttled_site = ThrottledAdminSite(
     name="throttled_admin",
     auth=None,
     include_auth=False,
-    history_throttle=OneRequestPerPathThrottle(),
-    autocomplete_throttle=OneRequestPerPathThrottle(),
+    history_throttle=[OneRequestPerPathThrottle()],
+    autocomplete_throttle=[OneRequestPerPathThrottle()],
 )
 throttled_site.register(Category, SearchableCategoryAdmin)
 throttled_site.register(Product, ThrottledProductAdmin)

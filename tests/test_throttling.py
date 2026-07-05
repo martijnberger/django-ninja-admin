@@ -25,7 +25,7 @@ def test_site_throttle_constructor_preserves_subclass_defaults():
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
-def test_changelist_autocomplete_and_custom_routes_support_throttles(admin_client, sample):
+def test_changelist_autocomplete_and_custom_routes_support_throttle_lists(admin_client, sample):
     first_list = admin_client.get("/throttled-admin/testapp/product")
     second_list = admin_client.get("/throttled-admin/testapp/product")
 
