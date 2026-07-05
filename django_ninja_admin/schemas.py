@@ -335,7 +335,7 @@ type FieldMetadataValue = (
 )
 type JsonSchemaValue = dict[str, JsonSchemaValue] | list[JsonSchemaValue] | str | int | FiniteJsonFloat | bool | None
 type JsonObject = dict[str, JsonSchemaValue]
-type ObjectIdentifier = str | int | float
+type ObjectIdentifier = str | int | FiniteJsonFloat
 type ChoicePair = tuple[str | None, str]
 type ErrorMessageMap = dict[str, str]
 type NonNegativeMetadataInteger = Annotated[int, Field(ge=0)]

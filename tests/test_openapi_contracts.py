@@ -2,7 +2,7 @@ import math
 from copy import deepcopy
 
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, action, site
 from django_ninja_admin.schemas import (
@@ -17,6 +17,7 @@ from django_ninja_admin.schemas import (
     HistoryResponse,
     ImageFieldValue,
     JsonObjectResponse,
+    ObjectIdentifier,
     Pagination,
 )
 from tests.testapp.models import Product
@@ -233,7 +234,9 @@ def test_apps_context_docs_and_schema(admin_client, sample):
         "type": "integer",
     }
     assert components["ProductAdminCreateData"]["properties"]["stock_status"]["type"] == "string"
-    assert components["ObjectIdentifier"] == {"anyOf": [{"type": "string"}, {"type": "integer"}, {"type": "number"}]}
+    assert components["ObjectIdentifier"] == {
+        "anyOf": [{"type": "string"}, {"type": "integer"}, {"$ref": "#/components/schemas/FiniteJsonFloat"}]
+    }
     assert components["ProductAdminPartialUpdateData"]["properties"]["manual"] == {
         "anyOf": [{"type": "string"}, {"type": "null"}],
         "title": "Manual",
@@ -1401,6 +1404,12 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
     JsonObjectResponse.model_validate({"metadata": {"score": 1.5}})
     with pytest.raises(ValidationError) as exc_info:
         JsonObjectResponse.model_validate({"metadata": {"score": -math.inf}})
+    assert any(error["type"] == "finite_number" for error in exc_info.value.errors())
+
+    object_identifier_adapter = TypeAdapter(ObjectIdentifier)
+    assert object_identifier_adapter.validate_python(1.25) == 1.25
+    with pytest.raises(ValidationError) as exc_info:
+        object_identifier_adapter.validate_python(math.inf)
     assert any(error["type"] == "finite_number" for error in exc_info.value.errors())
 
     FieldAttributes.model_validate(

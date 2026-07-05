@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Rejected non-finite numeric object identifiers in generated schemas for rows,
+  history, bulk/editing payloads, action selections, and inline operations.
+
 ## 0.1.69 - 2026-07-05
 
 ### Changed

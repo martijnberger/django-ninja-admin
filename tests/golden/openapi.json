@@ -4748,7 +4748,7 @@
             "type": "integer"
           },
           {
-            "type": "number"
+            "$ref": "#/components/schemas/FiniteJsonFloat"
           }
         ]
       },
