@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.73 - 2026-07-05
+
 ### Added
 
 - Added runtime and OpenAPI coverage for Ninja throttle lists on changelist,
