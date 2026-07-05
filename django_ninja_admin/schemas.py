@@ -451,8 +451,8 @@ class ValidatorDetail(AdminSchema):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, json_schema_extra=_class_field_json_schema)
 
     class_: str = Field(alias="class", serialization_alias="class")
-    code: FieldMetadataValue = None
-    message: FieldMetadataValue = None
+    code: str | None = None
+    message: str | None = None
     limit_value: FieldMetadataValue = None
     pattern: str | None = None
 

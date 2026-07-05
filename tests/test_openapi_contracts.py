@@ -947,6 +947,8 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["ValidatorDetail"]["additionalProperties"] is False
     assert components["ValidatorDetail"]["required"] == ["class"]
     assert components["ValidatorDetail"]["properties"]["class"]["type"] == "string"
+    assert components["ValidatorDetail"]["properties"]["code"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    assert components["ValidatorDetail"]["properties"]["message"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert components["ValidatorDetail"]["properties"]["limit_value"]["allOf"] == [
         {"$ref": "#/components/schemas/FieldMetadataValue"}
     ]
@@ -1364,6 +1366,46 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
     assert any(
         error["type"] == "greater_than_equal" and error["loc"][-1] == "index" for error in exc_info.value.errors()
     )
+
+    FieldAttributes.model_validate(
+        {
+            "validator_details": [
+                {
+                    "class": "MinLengthValidator",
+                    "code": "min_length",
+                    "message": "",
+                    "limit_value": 3,
+                }
+            ]
+        }
+    )
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate(
+            {
+                "validator_details": [
+                    {
+                        "class": "MinLengthValidator",
+                        "code": ["min_length"],
+                    }
+                ]
+            }
+        )
+    assert exc_info.value.errors()[0]["type"] == "string_type"
+    assert exc_info.value.errors()[0]["loc"] == ("validator_details", 0, "code")
+
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate(
+            {
+                "validator_details": [
+                    {
+                        "class": "MinLengthValidator",
+                        "message": {"text": "invalid"},
+                    }
+                ]
+            }
+        )
+    assert exc_info.value.errors()[0]["type"] == "string_type"
+    assert exc_info.value.errors()[0]["loc"] == ("validator_details", 0, "message")
 
     select_date_metadata = {
         "order": ["year", "month", "day"],

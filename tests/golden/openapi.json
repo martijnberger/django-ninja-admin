@@ -8732,11 +8732,15 @@
             "type": "string"
           },
           "code": {
-            "allOf": [
+            "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "type": "string"
+              },
+              {
+                "type": "null"
               }
-            ]
+            ],
+            "title": "Code"
           },
           "limit_value": {
             "allOf": [
@@ -8746,11 +8750,15 @@
             ]
           },
           "message": {
-            "allOf": [
+            "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "type": "string"
+              },
+              {
+                "type": "null"
               }
-            ]
+            ],
+            "title": "Message"
           },
           "pattern": {
             "anyOf": [
