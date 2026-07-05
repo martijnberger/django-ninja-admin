@@ -1609,6 +1609,11 @@
         "title": "DateHierarchyChoice",
         "type": "object"
       },
+      "DateHierarchyDay": {
+        "maximum": 31,
+        "minimum": 1,
+        "type": "integer"
+      },
       "DateHierarchyDescription": {
         "additionalProperties": false,
         "properties": {
@@ -1684,27 +1689,52 @@
         ],
         "type": "string"
       },
-      "DateHierarchyParamName": {
-        "enum": [
-          "day",
-          "month",
-          "year"
-        ],
-        "type": "string"
-      },
-      "DateHierarchyParamValue": {
+      "DateHierarchyMonth": {
+        "maximum": 12,
         "minimum": 1,
         "type": "integer"
       },
       "DateHierarchyParams": {
-        "additionalProperties": {
-          "$ref": "#/components/schemas/DateHierarchyParamValue"
-        },
-        "propertyNames": {
-          "$ref": "#/components/schemas/DateHierarchyParamName"
+        "additionalProperties": false,
+        "properties": {
+          "day": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateHierarchyDay"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "month": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateHierarchyMonth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "year": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DateHierarchyYear"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
         },
         "title": "DateHierarchyParams",
         "type": "object"
+      },
+      "DateHierarchyYear": {
+        "maximum": 9999,
+        "minimum": 1,
+        "type": "integer"
       },
       "DeletedObject": {
         "anyOf": [

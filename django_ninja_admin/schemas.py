@@ -4,7 +4,7 @@ from typing import Annotated, Any, Literal
 
 from django.utils.functional import Promise
 from ninja import Schema
-from pydantic import ConfigDict, Field, RootModel, field_serializer, field_validator
+from pydantic import ConfigDict, Field, RootModel, field_serializer, field_validator, model_serializer
 
 
 class AdminSchema(Schema):
@@ -899,12 +899,19 @@ class FilterDescription(AdminSchema):
 
 
 type DateHierarchyLevel = Literal["year", "month", "day"]
-type DateHierarchyParamName = Literal["year", "month", "day"]
-type DateHierarchyParamValue = Annotated[int, Field(ge=1)]
+type DateHierarchyYear = Annotated[int, Field(ge=1, le=9999)]
+type DateHierarchyMonth = Annotated[int, Field(ge=1, le=12)]
+type DateHierarchyDay = Annotated[int, Field(ge=1, le=31)]
 
 
-class DateHierarchyParams(RootModel[dict[DateHierarchyParamName, DateHierarchyParamValue]]):
-    pass
+class DateHierarchyParams(AdminSchema):
+    year: DateHierarchyYear | None = None
+    month: DateHierarchyMonth | None = None
+    day: DateHierarchyDay | None = None
+
+    @model_serializer(mode="plain")
+    def serialize_sparse(self):
+        return {field: value for field in ("year", "month", "day") if (value := getattr(self, field)) is not None}
 
 
 class DateHierarchyChoice(AdminSchema):

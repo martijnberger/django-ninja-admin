@@ -661,10 +661,6 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "enum": ["year", "month", "day"],
         "type": "string",
     }
-    assert components["DateHierarchyParamName"] == {
-        "enum": ["year", "month", "day"],
-        "type": "string",
-    }
     assert components["DateHierarchyChoice"]["properties"]["level"] == {
         "$ref": "#/components/schemas/DateHierarchyLevel"
     }
@@ -679,13 +675,16 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["DateHierarchyDescription"]["properties"]["params"] == {
         "$ref": "#/components/schemas/DateHierarchyParams"
     }
-    assert components["DateHierarchyParams"] == {
-        "additionalProperties": {"$ref": "#/components/schemas/DateHierarchyParamValue"},
-        "propertyNames": {"$ref": "#/components/schemas/DateHierarchyParamName"},
-        "title": "DateHierarchyParams",
-        "type": "object",
+    date_hierarchy_params = components["DateHierarchyParams"]
+    assert date_hierarchy_params["additionalProperties"] is False
+    assert date_hierarchy_params["properties"]["year"]["anyOf"][0] == {"$ref": "#/components/schemas/DateHierarchyYear"}
+    assert date_hierarchy_params["properties"]["month"]["anyOf"][0] == {
+        "$ref": "#/components/schemas/DateHierarchyMonth"
     }
-    assert components["DateHierarchyParamValue"] == {"minimum": 1, "type": "integer"}
+    assert date_hierarchy_params["properties"]["day"]["anyOf"][0] == {"$ref": "#/components/schemas/DateHierarchyDay"}
+    assert components["DateHierarchyYear"] == {"minimum": 1, "maximum": 9999, "type": "integer"}
+    assert components["DateHierarchyMonth"] == {"minimum": 1, "maximum": 12, "type": "integer"}
+    assert components["DateHierarchyDay"] == {"minimum": 1, "maximum": 31, "type": "integer"}
     assert _response_schema_ref(paths["/admin-api/view-on-site/{content_type_id}/{object_id}"]["get"], "200") == (
         "#/components/schemas/ViewOnSiteResponse"
     )
@@ -1281,6 +1280,27 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
         DateHierarchyParams.model_validate({"year": 2026, "month": 0})
     assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
     assert exc_info.value.errors()[0]["loc"] == ("month",)
+    assert DateHierarchyParams.model_validate({"year": 2026}).model_dump(mode="json") == {"year": 2026}
+
+    with pytest.raises(ValidationError) as exc_info:
+        DateHierarchyParams.model_validate({"year": 10000})
+    assert exc_info.value.errors()[0]["type"] == "less_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("year",)
+
+    with pytest.raises(ValidationError) as exc_info:
+        DateHierarchyParams.model_validate({"month": 13})
+    assert exc_info.value.errors()[0]["type"] == "less_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("month",)
+
+    with pytest.raises(ValidationError) as exc_info:
+        DateHierarchyParams.model_validate({"day": 32})
+    assert exc_info.value.errors()[0]["type"] == "less_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("day",)
+
+    with pytest.raises(ValidationError) as exc_info:
+        DateHierarchyParams.model_validate({"quarter": 1})
+    assert exc_info.value.errors()[0]["type"] == "extra_forbidden"
+    assert exc_info.value.errors()[0]["loc"] == ("quarter",)
 
 
 def test_formset_management_form_schemas_are_typed_and_closed(admin_client, sample):
