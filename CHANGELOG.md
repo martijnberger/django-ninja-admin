@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added runtime and OpenAPI coverage for Ninja throttle lists on changelist,
   history, autocomplete, and custom admin routes.
+- Added mounted autocomplete coverage for `OneToOneField` source relations,
+  including form metadata and route results.
 
 ## 0.1.72 - 2026-07-05
 

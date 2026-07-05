@@ -5,7 +5,15 @@ from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 
 from django_ninja_admin import site
-from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product, ProductReview, Tag
+from tests.testapp.models import (
+    Category,
+    CategoryLimitedLink,
+    CategorySlugLink,
+    Product,
+    ProductFeature,
+    ProductReview,
+    Tag,
+)
 
 
 def test_autocomplete_honors_remote_get_search_fields_hook(admin_client, sample, monkeypatch):
@@ -293,6 +301,59 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
 
     assert response.status_code == 200
     assert response.json()["results"] == [{"id": "cameras", "text": "Cameras"}]
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_autocomplete_supports_one_to_one_source_fields(admin_client, sample):
+    feature = ProductFeature.objects.create(product=sample, title="Hero feature")
+    source_model_name = ProductFeature._meta.model_name
+
+    form = admin_client.get(f"/one-to-one-autocomplete-admin/testapp/productfeature/{feature.pk}/form")
+    assert form.status_code == 200
+    fields_by_name = {field["name"]: field for field in form.json()["form"]["fields"]}
+    product_attrs = fields_by_name["product"]["attrs"]
+    assert product_attrs["admin_widget"] == "autocomplete"
+    assert product_attrs["to_field_name"] == "id"
+    assert product_attrs["to_field_class"] == "BigAutoField"
+    assert product_attrs["to_field_internal_type"] == "BigAutoField"
+    assert product_attrs["to_field_attname"] == "id"
+    assert product_attrs["multiple"] is False
+    assert product_attrs["selected_options"] == [{"id": str(sample.pk), "text": "Alpha"}]
+    assert product_attrs["autocomplete"] == {
+        "app_label": "testapp",
+        "model_name": source_model_name,
+        "field_name": "product",
+        "related_model": "testapp.product",
+        "related_app_label": "testapp",
+        "related_model_name": "product",
+        "related_object_name": "Product",
+        "related_verbose_name": "product",
+        "related_verbose_name_plural": "products",
+        "to_field_name": "id",
+        "to_field_class": "BigAutoField",
+        "to_field_internal_type": "BigAutoField",
+        "to_field_attname": "id",
+        "multiple": False,
+        "url": "/one-to-one-autocomplete-admin/autocomplete",
+        "query": {
+            "app_label": "testapp",
+            "model_name": source_model_name,
+            "field_name": "product",
+        },
+    }
+
+    response = admin_client.get(
+        "/one-to-one-autocomplete-admin/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": source_model_name,
+            "field_name": "product",
+            "term": "Al",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["results"] == [{"id": str(sample.pk), "text": "Alpha"}]
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")

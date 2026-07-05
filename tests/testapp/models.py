@@ -128,6 +128,14 @@ class Product(models.Model):
     subtitle = property(_subtitle)
 
 
+class ProductFeature(models.Model):
+    product = models.OneToOneField(Product, on_delete=models.CASCADE, related_name="feature")
+    title = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.title
+
+
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="images")
     title = models.CharField(max_length=100)

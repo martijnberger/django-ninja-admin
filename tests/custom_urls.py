@@ -6,7 +6,7 @@ from pydantic import ConfigDict
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, action
 from django_ninja_admin.schemas import ErrorResponse
-from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product, ProductReview
+from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product, ProductFeature, ProductReview
 
 
 class ClosedSchema(Schema):
@@ -202,6 +202,16 @@ class SearchableReviewAdmin(ModelAdmin):
     search_fields = ("note",)
 
 
+class SearchableProductAdmin(ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
+class ProductFeatureAdmin(ModelAdmin):
+    list_display = ("title", "product")
+    autocomplete_fields = ("product",)
+
+
 class CustomAdminSite(NinjaAdminSite):
     def status(self, request):
         return {"site": "ok"}
@@ -369,6 +379,10 @@ reverse_autocomplete_site = NinjaAdminSite(name="reverse_autocomplete_admin", in
 reverse_autocomplete_site.register(Product, ReverseAutocompleteProductAdmin)
 reverse_autocomplete_site.register(ProductReview, SearchableReviewAdmin)
 
+one_to_one_autocomplete_site = NinjaAdminSite(name="one_to_one_autocomplete_admin", include_auth=False)
+one_to_one_autocomplete_site.register(Product, SearchableProductAdmin)
+one_to_one_autocomplete_site.register(ProductFeature, ProductFeatureAdmin)
+
 
 class MultiAuthAdminSite(NinjaAdminSite):
     def whoami(self, request):
@@ -458,6 +472,7 @@ urlpatterns = [
     path("slug-autocomplete-admin/", slug_autocomplete_site.urls),
     path("slug-editable-admin/", slug_editable_site.urls),
     path("reverse-autocomplete-admin/", reverse_autocomplete_site.urls),
+    path("one-to-one-autocomplete-admin/", one_to_one_autocomplete_site.urls),
     path("multi-auth-admin/", multi_auth_site.urls),
     path("context-admin/", context_site.urls),
     path("locked-context-admin/", locked_context_site.urls),
