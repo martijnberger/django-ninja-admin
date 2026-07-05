@@ -333,6 +333,8 @@ type JsonSchemaValue = dict[str, JsonSchemaValue] | list[JsonSchemaValue] | str 
 type JsonObject = dict[str, JsonSchemaValue]
 type ObjectIdentifier = str | int | float
 type ChoicePair = tuple[str | None, str]
+type NonNegativeMetadataInteger = Annotated[int, Field(ge=0)]
+type PositiveMetadataInteger = Annotated[int, Field(ge=1)]
 
 
 class JsonObjectResponse(RootModel[JsonObject]):
@@ -589,16 +591,16 @@ class FieldAttributes(AdminSchema):
 
     initial: FieldMetadataValue = None
     value: FieldMetadataValue = None
-    max_length: int | None = None
-    min_length: int | None = None
+    max_length: NonNegativeMetadataInteger | None = None
+    min_length: NonNegativeMetadataInteger | None = None
     strip: bool | None = None
     empty_value: FieldMetadataValue = None
     min_value: FieldMetadataValue = None
     max_value: FieldMetadataValue = None
     step_size: FieldMetadataValue = None
     step_offset: FieldMetadataValue = None
-    max_digits: int | None = None
-    decimal_places: int | None = None
+    max_digits: PositiveMetadataInteger | None = None
+    decimal_places: NonNegativeMetadataInteger | None = None
     null_boolean: bool | None = None
 
     path: str | None = None

@@ -2184,13 +2184,12 @@
           "decimal_places": {
             "anyOf": [
               {
-                "type": "integer"
+                "$ref": "#/components/schemas/NonNegativeMetadataInteger"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Decimal Places"
+            ]
           },
           "default": {
             "allOf": [
@@ -2478,24 +2477,22 @@
           "max_digits": {
             "anyOf": [
               {
-                "type": "integer"
+                "$ref": "#/components/schemas/PositiveMetadataInteger"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Max Digits"
+            ]
           },
           "max_length": {
             "anyOf": [
               {
-                "type": "integer"
+                "$ref": "#/components/schemas/NonNegativeMetadataInteger"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Max Length"
+            ]
           },
           "max_value": {
             "allOf": [
@@ -2507,13 +2504,12 @@
           "min_length": {
             "anyOf": [
               {
-                "type": "integer"
+                "$ref": "#/components/schemas/NonNegativeMetadataInteger"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Min Length"
+            ]
           },
           "min_value": {
             "allOf": [
@@ -4727,6 +4723,10 @@
         "title": "ModelSummary",
         "type": "object"
       },
+      "NonNegativeMetadataInteger": {
+        "minimum": 0,
+        "type": "integer"
+      },
       "ObjectIdentifier": {
         "anyOf": [
           {
@@ -5053,6 +5053,10 @@
         ],
         "title": "PermissionsResponse",
         "type": "object"
+      },
+      "PositiveMetadataInteger": {
+        "minimum": 1,
+        "type": "integer"
       },
       "PrepopulatedFieldMap": {
         "additionalProperties": {

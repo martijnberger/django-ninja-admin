@@ -17,6 +17,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   schemas.
 - Narrowed date-hierarchy selected parameter metadata to explicit bounded
   `year`, `month`, and `day` fields while preserving sparse response output.
+- Added explicit bounds to form length and decimal precision metadata schemas.
 
 ## 0.1.67 - 2026-07-05
 

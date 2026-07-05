@@ -874,7 +874,24 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert RENDERED_FIELD_ATTR_KEYS.isdisjoint(field_attrs_props)
     assert field_attrs_props["required"]["anyOf"] == [{"type": "boolean"}, {"type": "null"}]
     assert field_attrs_props["ordering_field"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
-    assert field_attrs_props["max_length"]["anyOf"] == [{"type": "integer"}, {"type": "null"}]
+    assert field_attrs_props["max_length"]["anyOf"] == [
+        {"$ref": "#/components/schemas/NonNegativeMetadataInteger"},
+        {"type": "null"},
+    ]
+    assert field_attrs_props["min_length"]["anyOf"] == [
+        {"$ref": "#/components/schemas/NonNegativeMetadataInteger"},
+        {"type": "null"},
+    ]
+    assert field_attrs_props["decimal_places"]["anyOf"] == [
+        {"$ref": "#/components/schemas/NonNegativeMetadataInteger"},
+        {"type": "null"},
+    ]
+    assert field_attrs_props["max_digits"]["anyOf"] == [
+        {"$ref": "#/components/schemas/PositiveMetadataInteger"},
+        {"type": "null"},
+    ]
+    assert components["NonNegativeMetadataInteger"] == {"minimum": 0, "type": "integer"}
+    assert components["PositiveMetadataInteger"] == {"minimum": 1, "type": "integer"}
     for metadata_value_field in (
         "default",
         "initial",
@@ -1250,6 +1267,17 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
         FieldAttributes.model_validate({"combo_fields": [{"index": -1, "type": "CharField", "attrs": {}}]})
     assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
     assert exc_info.value.errors()[0]["loc"] == ("combo_fields", 0, "index")
+
+    for field_name in ("max_length", "min_length", "decimal_places"):
+        with pytest.raises(ValidationError) as exc_info:
+            FieldAttributes.model_validate({field_name: -1})
+        assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+        assert exc_info.value.errors()[0]["loc"] == (field_name,)
+
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"max_digits": 0})
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("max_digits",)
 
     with pytest.raises(ValidationError) as exc_info:
         FieldAttributes.model_validate({"input_formats": [{"index": -1, "input_formats": ["%Y-%m-%d"]}]})
