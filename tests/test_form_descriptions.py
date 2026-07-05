@@ -204,7 +204,7 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
     user.user_permissions.set(Permission.objects.all())
     request = RequestFactory().get(f"/admin-api/testapp/product/{sample.pk}/form")
     request.user = user
-    Tag.objects.create(name="Available")
+    available = Tag.objects.create(name="Available")
 
     class RawWidgetProductAdmin(ModelAdmin):
         raw_id_fields = ("category",)
@@ -247,6 +247,8 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
         "selected_count": 2,
         "available_count": 3,
         "unselected_count": 1,
+        "unselected_options": [{"id": str(available.pk), "text": "Available"}],
+        "unselected_options_truncated": False,
         "related_model": "testapp.tag",
         "related_app_label": "testapp",
         "related_model_name": "tag",

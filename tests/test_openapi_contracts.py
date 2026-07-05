@@ -1098,6 +1098,18 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         {"minimum": 0, "type": "integer"},
         {"type": "null"},
     ]
+    assert components["FilteredSelectMetadata"]["properties"]["unselected_options"]["anyOf"][0] == {
+        "$ref": "#/components/schemas/FilteredSelectOptionList"
+    }
+    assert components["FilteredSelectOptionList"] == {
+        "items": {"$ref": "#/components/schemas/SelectedOption"},
+        "maxItems": 200,
+        "type": "array",
+    }
+    assert components["FilteredSelectMetadata"]["properties"]["unselected_options_truncated"]["anyOf"] == [
+        {"type": "boolean"},
+        {"type": "null"},
+    ]
     assert field_attrs_props["radio"]["anyOf"][0] == {"$ref": "#/components/schemas/RadioMetadata"}
     assert field_attrs_props["radio_orientation"]["anyOf"] == [
         {"enum": [1, 2], "type": "integer"},

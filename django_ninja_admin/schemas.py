@@ -343,6 +343,7 @@ type ErrorMessageMap = dict[str, str]
 type NonNegativeMetadataInteger = Annotated[int, Field(ge=0)]
 type PositiveMetadataInteger = Annotated[int, Field(ge=1)]
 type AdminWidgetName = Literal["autocomplete", "raw_id", "filter_horizontal", "filter_vertical", "radio"]
+type FilteredSelectOptionList = Annotated[list[SelectedOption], Field(max_length=200)]
 
 
 class JsonObjectResponse(RootModel[JsonObject]):
@@ -422,6 +423,8 @@ class FilteredSelectMetadata(SourceFieldIdentity):
     selected_count: int | None = Field(default=None, ge=0)
     available_count: int | None = Field(default=None, ge=0)
     unselected_count: int | None = Field(default=None, ge=0)
+    unselected_options: FilteredSelectOptionList | None = None
+    unselected_options_truncated: bool | None = None
     related_model: str | None = None
     related_app_label: str | None = None
     related_model_name: str | None = None

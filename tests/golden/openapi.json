@@ -3502,6 +3502,27 @@
             ],
             "title": "Unselected Count"
           },
+          "unselected_options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FilteredSelectOptionList"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unselected_options_truncated": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unselected Options Truncated"
+          },
           "url": {
             "anyOf": [
               {
@@ -3532,6 +3553,13 @@
         ],
         "title": "FilteredSelectMetadata",
         "type": "object"
+      },
+      "FilteredSelectOptionList": {
+        "items": {
+          "$ref": "#/components/schemas/SelectedOption"
+        },
+        "maxItems": 200,
+        "type": "array"
       },
       "FiniteJsonFloat": {
         "type": "number"

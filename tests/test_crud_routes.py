@@ -62,6 +62,15 @@ def test_form_relation_widget_metadata_reports_related_permissions(staff_client,
 
 def test_forms_create_update_delete_and_history(admin_client, sample):
     category = sample.category
+    tag_options = [
+        {
+            "id": str(tag.pk),
+            "text": tag.name,
+            "detail_url": f"/admin-api/testapp/tag/{tag.pk}",
+            "change_form_url": f"/admin-api/testapp/tag/{tag.pk}/form",
+        }
+        for tag in Tag.objects.order_by("pk")
+    ]
     form = admin_client.get("/admin-api/testapp/product/form")
     assert form.status_code == 200
     form_body = form.json()["form"]
@@ -180,6 +189,8 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
         "selected_count": 0,
         "available_count": 2,
         "unselected_count": 2,
+        "unselected_options": tag_options,
+        "unselected_options_truncated": False,
         "related_model": "testapp.tag",
         "related_app_label": "testapp",
         "related_model_name": "tag",
@@ -221,6 +232,8 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["selected_count"] == 2
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["available_count"] == 2
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["unselected_count"] == 0
+    assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["unselected_options"] == []
+    assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["unselected_options_truncated"] is False
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["url"] == "/admin-api/testapp/tag"
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["query"] == {"_to_field": "id"}
     assert change_fields_by_name["manual"]["attrs"]["current_file"] == {

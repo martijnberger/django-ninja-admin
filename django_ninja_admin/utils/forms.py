@@ -26,6 +26,8 @@ from django_ninja_admin.utils.lookup import (
 )
 from django_ninja_admin.utils.quote import quote
 
+FILTERED_SELECT_OPTION_LIMIT = 200
+
 
 def file_value_metadata(value):
     name = getattr(value, "name", "") or ""
@@ -136,8 +138,7 @@ def _relation_selected_options(field, current_value, *, request=None, model_admi
         return []
     if current_value in (None, ""):
         return []
-    values = current_value if isinstance(field, ModelMultipleChoiceField) else [current_value]
-    values = list(values)
+    values = _relation_values(field, current_value)
     if not values:
         return []
 
@@ -167,11 +168,18 @@ def _relation_selected_options(field, current_value, *, request=None, model_admi
             selected.append(
                 {
                     "id": str(option_value),
-                    "text": str(obj),
+                    "text": _relation_option_text(field, obj),
                     **_selected_option_link_metadata(obj, str(option_value), request=request, model_admin=model_admin),
                 }
             )
     return selected
+
+
+def _relation_option_text(field, obj):
+    label_from_instance = getattr(field, "label_from_instance", None)
+    if callable(label_from_instance):
+        return str(label_from_instance(obj))
+    return str(obj)
 
 
 def _selected_option_link_metadata(obj, option_id, *, request=None, model_admin=None):
@@ -911,6 +919,15 @@ def _filtered_select_metadata(
         metadata["available_count"] = available_count
         if available_count is not None:
             metadata["unselected_count"] = max(available_count - selected_count, 0)
+        unselected_options, unselected_options_truncated = _filtered_select_unselected_options(
+            form_field,
+            current_value,
+            request=request,
+            model_admin=model_admin,
+        )
+        if unselected_options is not None:
+            metadata["unselected_options"] = unselected_options
+            metadata["unselected_options_truncated"] = unselected_options_truncated
     field = _model_field_for_name(source_model, field_name)
     remote_model = None
     to_field_name = None
@@ -939,6 +956,62 @@ def _filtered_select_metadata(
         if to_field_name is not None:
             metadata["query"] = {"_to_field": to_field_name}
     return metadata
+
+
+def _filtered_select_unselected_options(field, current_value, *, request=None, model_admin=None):
+    if not isinstance(field, ModelMultipleChoiceField):
+        return None, None
+    model = field.queryset.model
+    lookup_field = field.to_field_name or model._meta.pk.name
+    selected_values = _relation_value_strings(field, current_value)
+    queryset = field.queryset
+    if selected_values:
+        try:
+            queryset = queryset.exclude(**{f"{lookup_field}__in": list(selected_values)})
+        except (AttributeError, TypeError, ValueError):
+            return None, None
+    try:
+        objects = list(queryset[: FILTERED_SELECT_OPTION_LIMIT + 1])
+    except (AttributeError, TypeError, ValueError):
+        return None, None
+    truncated = len(objects) > FILTERED_SELECT_OPTION_LIMIT
+    options = [
+        {
+            "id": str(getattr(obj, lookup_field)),
+            "text": _relation_option_text(field, obj),
+            **_selected_option_link_metadata(
+                obj,
+                str(getattr(obj, lookup_field)),
+                request=request,
+                model_admin=model_admin,
+            ),
+        }
+        for obj in objects[:FILTERED_SELECT_OPTION_LIMIT]
+    ]
+    return options, truncated
+
+
+def _relation_value_strings(field, current_value):
+    model = field.queryset.model
+    lookup_field = field.to_field_name or model._meta.pk.name
+    selected = set()
+    for value in _relation_values(field, current_value):
+        if hasattr(value, "_meta"):
+            selected.add(str(getattr(value, lookup_field)))
+        else:
+            selected.add(str(value))
+    return selected
+
+
+def _relation_values(field, current_value):
+    if current_value in (None, ""):
+        return []
+    if not isinstance(field, ModelMultipleChoiceField) or isinstance(current_value, str | bytes):
+        return [current_value]
+    try:
+        return list(current_value)
+    except TypeError:
+        return [current_value]
 
 
 def _model_multiple_choice_value_count(value):

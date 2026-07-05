@@ -60,7 +60,10 @@ without exposing rendered Django widget internals. The top-level admin widget
 intent is a closed enum covering `autocomplete`, `raw_id`, `filter_horizontal`,
 `filter_vertical`, and `radio`.
 Selected relation options include labels and, when the related admin permits
-access, detail and change-form URLs for the selected related object.
+access, detail and change-form URLs for the selected related object. Filtered
+dual-select widgets also expose bounded `unselected_options` with
+`unselected_options_truncated` so clients can render small option sets without
+an additional lookup.
 
 Changelist responses expose typed row/cell metadata and typed action controls.
 Cells marked as display links include a `link_url` pointing at the same

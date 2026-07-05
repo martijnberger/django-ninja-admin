@@ -64,7 +64,9 @@ HTML ids, template names, and rendered attributes.
 For relation widgets, prefer the semantic metadata over hard-coded endpoints.
 Autocomplete metadata points at `/autocomplete` with the source-field identity;
 raw-id and dual-select filtered metadata point at the related model changelist
-with an `_to_field` query hint for looking up selectable objects.
+with an `_to_field` query hint for looking up selectable objects. Dual-select
+metadata also includes a bounded `unselected_options` list and a truncation
+flag so small forms can render both panes directly.
 
 ## Pagination
 

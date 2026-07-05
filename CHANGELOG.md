@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added bounded `unselected_options` metadata for filtered dual-select
+  relation widgets, including a truncation flag for large option sets.
+
 ### Changed
 
 - Narrowed form-description `admin_widget` metadata from an open string to a
