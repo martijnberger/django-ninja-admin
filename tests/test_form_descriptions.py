@@ -241,6 +241,7 @@ def test_form_description_marks_raw_id_and_filter_vertical_widget_modes(db, samp
         "verbose_name": "tags",
         "selected_count": 2,
         "available_count": 3,
+        "unselected_count": 1,
         "related_model": "testapp.tag",
         "related_app_label": "testapp",
         "related_model_name": "tag",

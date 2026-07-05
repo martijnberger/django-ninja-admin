@@ -414,6 +414,7 @@ class FilteredSelectMetadata(SourceFieldIdentity):
     verbose_name: str | None = None
     selected_count: int | None = Field(default=None, ge=0)
     available_count: int | None = Field(default=None, ge=0)
+    unselected_count: int | None = Field(default=None, ge=0)
     related_model: str | None = None
     related_app_label: str | None = None
     related_model_name: str | None = None

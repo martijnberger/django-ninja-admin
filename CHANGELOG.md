@@ -12,6 +12,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added Django-admin comparison coverage for relation-edge lookup validation,
   including remote primary-key, remote `to_field`, declared relation, missing
   field, and suspicious multi-hop lookup decisions.
+- Added typed `unselected_count` filtered-select metadata so clients can render
+  many-to-many dual-select widgets without recomputing available pane counts.
 
 ## 0.1.74 - 2026-07-05
 

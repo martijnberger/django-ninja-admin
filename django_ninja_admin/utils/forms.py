@@ -849,8 +849,12 @@ def _filtered_select_metadata(
         "is_stacked": direction == "vertical",
     }
     if isinstance(form_field, ModelMultipleChoiceField):
-        metadata["selected_count"] = _model_multiple_choice_value_count(current_value)
-        metadata["available_count"] = _model_multiple_choice_available_count(form_field)
+        selected_count = _model_multiple_choice_value_count(current_value)
+        available_count = _model_multiple_choice_available_count(form_field)
+        metadata["selected_count"] = selected_count
+        metadata["available_count"] = available_count
+        if available_count is not None:
+            metadata["unselected_count"] = max(available_count - selected_count, 0)
     field = _model_field_for_name(source_model, field_name)
     remote_model = None
     to_field_name = None

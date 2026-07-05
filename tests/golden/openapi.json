@@ -3437,6 +3437,18 @@
             ],
             "title": "To Field Name"
           },
+          "unselected_count": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unselected Count"
+          },
           "url": {
             "anyOf": [
               {

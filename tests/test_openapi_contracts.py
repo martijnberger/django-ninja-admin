@@ -1074,6 +1074,10 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         {"minimum": 0, "type": "integer"},
         {"type": "null"},
     ]
+    assert components["FilteredSelectMetadata"]["properties"]["unselected_count"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
     assert field_attrs_props["radio"]["anyOf"][0] == {"$ref": "#/components/schemas/RadioMetadata"}
     assert field_attrs_props["radio_orientation"]["anyOf"] == [
         {"enum": [1, 2], "type": "integer"},
@@ -1386,6 +1390,20 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
         )
     assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
     assert exc_info.value.errors()[0]["loc"] == ("filtered_select", "selected_count")
+
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate(
+            {
+                "filtered_select": {
+                    "field_name": "tags",
+                    "direction": "vertical",
+                    "is_stacked": True,
+                    "unselected_count": -1,
+                }
+            }
+        )
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("filtered_select", "unselected_count")
 
     with pytest.raises(ValidationError) as exc_info:
         FieldAttributes.model_validate({"combo_fields": [{"index": -1, "type": "CharField", "attrs": {}}]})

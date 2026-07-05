@@ -150,6 +150,7 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
         "verbose_name": "tags",
         "selected_count": 0,
         "available_count": 2,
+        "unselected_count": 2,
         "related_model": "testapp.tag",
         "related_app_label": "testapp",
         "related_model_name": "tag",
@@ -178,6 +179,7 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     }
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["selected_count"] == 2
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["available_count"] == 2
+    assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["unselected_count"] == 0
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["url"] == "/admin-api/testapp/tag"
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["query"] == {"_to_field": "id"}
     assert change_fields_by_name["manual"]["attrs"]["current_file"] == {
