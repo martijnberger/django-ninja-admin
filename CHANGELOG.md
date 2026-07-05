@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Narrowed form-description `admin_widget` metadata from an open string to a
+  typed enum of supported Django-admin widget intents.
+
 ## 0.1.75 - 2026-07-05
 
 ### Added

@@ -941,6 +941,18 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     ]
     assert components["NonNegativeMetadataInteger"] == {"minimum": 0, "type": "integer"}
     assert components["PositiveMetadataInteger"] == {"minimum": 1, "type": "integer"}
+    assert field_attrs_props["admin_widget"]["anyOf"] == [
+        {"$ref": "#/components/schemas/AdminWidgetName"},
+        {"type": "null"},
+    ]
+    assert set(components["AdminWidgetName"]["enum"]) == {
+        "autocomplete",
+        "filter_horizontal",
+        "filter_vertical",
+        "radio",
+        "raw_id",
+    }
+    assert components["AdminWidgetName"]["type"] == "string"
     for metadata_value_field in (
         "default",
         "initial",

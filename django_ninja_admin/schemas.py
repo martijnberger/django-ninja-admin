@@ -342,6 +342,7 @@ type ChoicePair = tuple[str | None, str]
 type ErrorMessageMap = dict[str, str]
 type NonNegativeMetadataInteger = Annotated[int, Field(ge=0)]
 type PositiveMetadataInteger = Annotated[int, Field(ge=1)]
+type AdminWidgetName = Literal["autocomplete", "raw_id", "filter_horizontal", "filter_vertical", "radio"]
 
 
 class JsonObjectResponse(RootModel[JsonObject]):
@@ -600,7 +601,7 @@ class FieldAttributes(AdminSchema):
     add_id_index: bool | None = None
     checked_attribute: dict[str, FieldMetadataValue] | str | bool | None = None
     supports_microseconds: bool | None = None
-    admin_widget: str | None = None
+    admin_widget: AdminWidgetName | None = None
     radio_orientation: Literal[1, 2] | None = None
 
     model_field_name: str | None = None

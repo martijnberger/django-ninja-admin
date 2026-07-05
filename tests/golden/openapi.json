@@ -203,6 +203,16 @@
         "title": "ActionSelectedIdsFieldDescription",
         "type": "object"
       },
+      "AdminWidgetName": {
+        "enum": [
+          "autocomplete",
+          "filter_horizontal",
+          "filter_vertical",
+          "radio",
+          "raw_id"
+        ],
+        "type": "string"
+      },
       "AppSummary": {
         "additionalProperties": false,
         "examples": [
@@ -1947,13 +1957,12 @@
           "admin_widget": {
             "anyOf": [
               {
-                "type": "string"
+                "$ref": "#/components/schemas/AdminWidgetName"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Admin Widget"
+            ]
           },
           "allow_empty_file": {
             "anyOf": [

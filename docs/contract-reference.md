@@ -56,7 +56,9 @@ Form-description responses expose typed semantic widget metadata, including
 relation lookup hints for autocomplete, raw-id, and dual-select filtered
 controls. These hints describe source fields, related models, target fields,
 related add/change/delete/view permissions, and mount-aware endpoint/query data
-without exposing rendered Django widget internals.
+without exposing rendered Django widget internals. The top-level admin widget
+intent is a closed enum covering `autocomplete`, `raw_id`, `filter_horizontal`,
+`filter_vertical`, and `radio`.
 Selected relation options include labels and, when the related admin permits
 access, detail and change-form URLs for the selected related object.
 
