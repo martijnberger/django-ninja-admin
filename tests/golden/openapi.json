@@ -1576,8 +1576,7 @@
             "type": "string"
           },
           "level": {
-            "title": "Level",
-            "type": "string"
+            "$ref": "#/components/schemas/DateHierarchyLevel"
           },
           "query_string": {
             "title": "Query String",
@@ -1636,15 +1635,10 @@
             "type": "string"
           },
           "level": {
-            "title": "Level",
-            "type": "string"
+            "$ref": "#/components/schemas/DateHierarchyLevel"
           },
           "params": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "title": "Params",
-            "type": "object"
+            "$ref": "#/components/schemas/DateHierarchyParams"
           },
           "timezone": {
             "anyOf": [
@@ -1672,6 +1666,32 @@
           "title"
         ],
         "title": "DateHierarchyDescription",
+        "type": "object"
+      },
+      "DateHierarchyLevel": {
+        "enum": [
+          "day",
+          "month",
+          "year"
+        ],
+        "type": "string"
+      },
+      "DateHierarchyParamName": {
+        "enum": [
+          "day",
+          "month",
+          "year"
+        ],
+        "type": "string"
+      },
+      "DateHierarchyParams": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "propertyNames": {
+          "$ref": "#/components/schemas/DateHierarchyParamName"
+        },
+        "title": "DateHierarchyParams",
         "type": "object"
       },
       "DeletedObject": {

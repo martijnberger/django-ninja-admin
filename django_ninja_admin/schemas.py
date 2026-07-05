@@ -891,11 +891,19 @@ class FilterDescription(AdminSchema):
     choices: list[FilterChoice]
 
 
+type DateHierarchyLevel = Literal["year", "month", "day"]
+type DateHierarchyParamName = Literal["year", "month", "day"]
+
+
+class DateHierarchyParams(RootModel[dict[DateHierarchyParamName, int]]):
+    pass
+
+
 class DateHierarchyChoice(AdminSchema):
     selected: bool
     query_string: str
     display: str
-    level: str
+    level: DateHierarchyLevel
     value: int
     count: int | None = None
 
@@ -905,8 +913,8 @@ class DateHierarchyDescription(AdminSchema):
     title: str
     field_type: str
     timezone: str | None = None
-    level: str
-    params: dict[str, int]
+    level: DateHierarchyLevel
+    params: DateHierarchyParams
     clear_query_string: str
     back_query_string: str | None = None
     choices: list[DateHierarchyChoice]

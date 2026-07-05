@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Narrowed date hierarchy OpenAPI metadata to enum-backed `year`/`month`/`day`
+  levels and parameter names instead of arbitrary strings.
 - Narrowed radio field orientation schemas to Django admin's `HORIZONTAL` and
   `VERTICAL` integer constants instead of advertising arbitrary strings.
 

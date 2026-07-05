@@ -590,6 +590,32 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert autocomplete_example["results"] == [{"id": "1", "text": "Cameras"}]
     assert autocomplete_example["pagination"]["more"] is False
     assert components["ChangelistConfig"]["properties"]["pagination"] == {"$ref": "#/components/schemas/Pagination"}
+    assert components["ChangelistConfig"]["properties"]["date_hierarchy"]["anyOf"][0] == {
+        "$ref": "#/components/schemas/DateHierarchyDescription"
+    }
+    assert components["DateHierarchyLevel"] == {
+        "enum": ["year", "month", "day"],
+        "type": "string",
+    }
+    assert components["DateHierarchyParamName"] == {
+        "enum": ["year", "month", "day"],
+        "type": "string",
+    }
+    assert components["DateHierarchyChoice"]["properties"]["level"] == {
+        "$ref": "#/components/schemas/DateHierarchyLevel"
+    }
+    assert components["DateHierarchyDescription"]["properties"]["level"] == {
+        "$ref": "#/components/schemas/DateHierarchyLevel"
+    }
+    assert components["DateHierarchyDescription"]["properties"]["params"] == {
+        "$ref": "#/components/schemas/DateHierarchyParams"
+    }
+    assert components["DateHierarchyParams"] == {
+        "additionalProperties": {"type": "integer"},
+        "propertyNames": {"$ref": "#/components/schemas/DateHierarchyParamName"},
+        "title": "DateHierarchyParams",
+        "type": "object",
+    }
     assert _response_schema_ref(paths["/admin-api/view-on-site/{content_type_id}/{object_id}"]["get"], "200") == (
         "#/components/schemas/ViewOnSiteResponse"
     )
