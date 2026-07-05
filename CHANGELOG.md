@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.65 - 2026-07-05
+
 ### Changed
 
 - Aligned changelist `all` and `_facets` runtime handling with their boolean
