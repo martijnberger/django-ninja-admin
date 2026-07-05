@@ -7296,6 +7296,28 @@
       "SelectedOption": {
         "additionalProperties": false,
         "properties": {
+          "change_form_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Form Url"
+          },
+          "detail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail Url"
+          },
           "id": {
             "title": "Id",
             "type": "string"

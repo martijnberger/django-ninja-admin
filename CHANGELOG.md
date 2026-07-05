@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.75 - 2026-07-05
+
 ### Added
 
 - Added Django-admin comparison coverage for relation-edge lookup validation,
@@ -16,6 +18,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   many-to-many dual-select widgets without recomputing available pane counts.
 - Added related add/change/delete/view permission metadata to autocomplete,
   raw-id, and filtered-select form widget descriptions.
+- Added permission-filtered detail and change-form URLs to selected relation
+  option metadata.
 
 ## 0.1.74 - 2026-07-05
 

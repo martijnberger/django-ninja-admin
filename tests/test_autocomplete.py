@@ -326,7 +326,14 @@ def test_autocomplete_supports_one_to_one_source_fields(admin_client, sample):
     assert product_attrs["to_field_internal_type"] == "BigAutoField"
     assert product_attrs["to_field_attname"] == "id"
     assert product_attrs["multiple"] is False
-    assert product_attrs["selected_options"] == [{"id": str(sample.pk), "text": "Alpha"}]
+    assert product_attrs["selected_options"] == [
+        {
+            "id": str(sample.pk),
+            "text": "Alpha",
+            "detail_url": f"/one-to-one-autocomplete-admin/testapp/product/{sample.pk}",
+            "change_form_url": f"/one-to-one-autocomplete-admin/testapp/product/{sample.pk}/form",
+        }
+    ]
     assert product_attrs["autocomplete"] == {
         "app_label": "testapp",
         "model_name": source_model_name,
@@ -411,7 +418,12 @@ def test_autocomplete_applies_source_field_limit_choices_to(admin_client):
     change_fields_by_name = {field["name"]: field for field in change_form.json()["form"]["fields"]}
     assert change_fields_by_name["category"]["attrs"]["value"] == public.pk
     assert change_fields_by_name["category"]["attrs"]["selected_options"] == [
-        {"id": str(public.pk), "text": "Public Cameras"}
+        {
+            "id": str(public.pk),
+            "text": "Public Cameras",
+            "detail_url": f"/slug-autocomplete-admin/testapp/category/{public.pk}",
+            "change_form_url": f"/slug-autocomplete-admin/testapp/category/{public.pk}/form",
+        }
     ]
 
     openapi = admin_client.get("/slug-autocomplete-admin/openapi.json")

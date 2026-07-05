@@ -24,6 +24,7 @@ from django_ninja_admin.utils.lookup import (
     label_for_field,
     lookup_field,
 )
+from django_ninja_admin.utils.quote import quote
 
 
 def file_value_metadata(value):
@@ -130,7 +131,7 @@ def _relation_metadata(field):
     return attrs
 
 
-def _relation_selected_options(field, current_value):
+def _relation_selected_options(field, current_value, *, request=None, model_admin=None):
     if not isinstance(field, (ModelChoiceField, ModelMultipleChoiceField)):
         return []
     if current_value in (None, ""):
@@ -163,8 +164,34 @@ def _relation_selected_options(field, current_value):
         option_value = getattr(value, lookup_field) if hasattr(value, "_meta") else value
         obj = objects_by_value.get(str(option_value))
         if obj is not None:
-            selected.append({"id": str(option_value), "text": str(obj)})
+            selected.append(
+                {
+                    "id": str(option_value),
+                    "text": str(obj),
+                    **_selected_option_link_metadata(obj, str(option_value), request=request, model_admin=model_admin),
+                }
+            )
     return selected
+
+
+def _selected_option_link_metadata(obj, option_id, *, request=None, model_admin=None):
+    if request is None or model_admin is None or getattr(model_admin, "admin_site", None) is None:
+        return {}
+    try:
+        related_admin = model_admin.admin_site.get_model_admin(obj.__class__)
+    except NotRegistered:
+        return {}
+    base_path = _admin_mount_path(request, obj.__class__, model_admin=model_admin)
+    if base_path is None:
+        return {}
+    quoted_id = quote(option_id)
+    model_path = f"{base_path}/{obj._meta.app_label}/{obj._meta.model_name}/{quoted_id}"
+    metadata = {}
+    if related_admin.has_view_or_change_permission(request, obj):
+        metadata["detail_url"] = model_path
+    if related_admin.has_change_permission(request, obj):
+        metadata["change_form_url"] = f"{model_path}/form"
+    return metadata
 
 
 def _media_asset_path(media, asset):
@@ -467,7 +494,17 @@ def _clearable_file_widget_metadata(name, widget, *, bound_field=None):
     }
 
 
-def field_description(name, field, *, read_only=False, current_value=None, model_field=None, bound_field=None):
+def field_description(
+    name,
+    field,
+    *,
+    read_only=False,
+    current_value=None,
+    model_field=None,
+    bound_field=None,
+    request=None,
+    model_admin=None,
+):
     widget = field.widget
     attrs = {
         "required": field.required,
@@ -543,7 +580,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         if current_file is not None:
             attrs["current_file"] = current_file
     attrs.update(_relation_metadata(field))
-    selected_options = _relation_selected_options(field, current_value)
+    selected_options = _relation_selected_options(field, current_value, request=request, model_admin=model_admin)
     if selected_options:
         attrs["selected_options"] = selected_options
     return {"name": name, "type": field.__class__.__name__, "attrs": attrs}
@@ -588,6 +625,8 @@ def form_field_descriptions(
             current_value=current_value,
             model_field=_model_field_for_name(model, name),
             bound_field=form[name],
+            request=request,
+            model_admin=model_admin,
         )
         _apply_admin_field_metadata(
             description,

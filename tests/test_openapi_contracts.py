@@ -1063,6 +1063,14 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     selected_options_schema = field_attrs_props["selected_options"]["anyOf"][0]
     assert selected_options_schema["items"] == {"$ref": "#/components/schemas/SelectedOption"}
     assert components["SelectedOption"]["required"] == ["id", "text"]
+    assert components["SelectedOption"]["properties"]["detail_url"]["anyOf"] == [
+        {"type": "string"},
+        {"type": "null"},
+    ]
+    assert components["SelectedOption"]["properties"]["change_form_url"]["anyOf"] == [
+        {"type": "string"},
+        {"type": "null"},
+    ]
     assert field_attrs_props["autocomplete"]["anyOf"][0] == {"$ref": "#/components/schemas/RelationWidgetMetadata"}
     assert field_attrs_props["raw_id"]["anyOf"][0] == {"$ref": "#/components/schemas/RelationWidgetMetadata"}
     assert field_attrs_props["filtered_select"]["anyOf"][0] == {"$ref": "#/components/schemas/FilteredSelectMetadata"}

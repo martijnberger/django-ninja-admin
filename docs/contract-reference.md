@@ -57,6 +57,8 @@ relation lookup hints for autocomplete, raw-id, and dual-select filtered
 controls. These hints describe source fields, related models, target fields,
 related add/change/delete/view permissions, and mount-aware endpoint/query data
 without exposing rendered Django widget internals.
+Selected relation options include labels and, when the related admin permits
+access, detail and change-form URLs for the selected related object.
 
 Changelist responses expose typed row/cell metadata and typed action controls.
 Cells marked as display links include a `link_url` pointing at the same

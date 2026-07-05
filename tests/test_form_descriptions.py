@@ -57,7 +57,12 @@ def test_add_form_description_uses_changeform_initial_data(admin_client, sample)
     assert fields_by_name["name"]["attrs"]["value"] == "Seed product"
     assert fields_by_name["category"]["attrs"]["value"] == str(sample.category_id)
     assert fields_by_name["category"]["attrs"]["selected_options"] == [
-        {"id": str(sample.category_id), "text": "Cameras"}
+        {
+            "id": str(sample.category_id),
+            "text": "Cameras",
+            "detail_url": f"/admin-api/testapp/category/{sample.category_id}",
+            "change_form_url": f"/admin-api/testapp/category/{sample.category_id}/form",
+        }
     ]
     assert set(fields_by_name["tags"]["attrs"]["value"]) == {str(tag_id) for tag_id in tag_ids}
     assert {option["text"] for option in fields_by_name["tags"]["attrs"]["selected_options"]} == {

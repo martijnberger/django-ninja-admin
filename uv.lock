@@ -306,7 +306,7 @@ wheels = [
 
 [[package]]
 name = "django-ninja-admin"
-version = "0.1.74"
+version = "0.1.75"
 source = { editable = "." }
 dependencies = [
     { name = "django" },

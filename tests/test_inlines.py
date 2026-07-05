@@ -340,7 +340,14 @@ def test_manual_through_many_to_many_can_be_edited_with_explicit_inline(admin_cl
     assert inline["fieldset_layout"][0]["fields"] == ["id", "article", "label", "note"]
     first_row = {field["name"]: field for field in inline["formset"][0]}
     assert first_row["label"]["attrs"]["value"] == primary.pk
-    assert first_row["label"]["attrs"]["selected_options"] == [{"id": str(primary.pk), "text": "Primary"}]
+    assert first_row["label"]["attrs"]["selected_options"] == [
+        {
+            "id": str(primary.pk),
+            "text": "Primary",
+            "detail_url": f"/through-inline-admin/testapp/label/{primary.pk}",
+            "change_form_url": f"/through-inline-admin/testapp/label/{primary.pk}/form",
+        }
+    ]
     assert first_row["note"]["attrs"]["value"] == "Lead"
 
     patch_response = admin_client.patch(

@@ -327,6 +327,8 @@ class ImageFieldValue(FileFieldValue):
 class SelectedOption(AdminSchema):
     id: str
     text: str
+    detail_url: str | None = None
+    change_form_url: str | None = None
 
 
 type FiniteJsonFloat = Annotated[float, Field(allow_inf_nan=False)]

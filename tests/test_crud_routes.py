@@ -55,6 +55,9 @@ def test_form_relation_widget_metadata_reports_related_permissions(staff_client,
     assert {
         key: fields_by_name["tags"]["attrs"]["filtered_select"][key] for key in related_permission_metadata
     } == related_permission_metadata
+    category_option = fields_by_name["category"]["attrs"]["selected_options"][0]
+    assert "detail_url" not in category_option
+    assert "change_form_url" not in category_option
 
 
 def test_forms_create_update_delete_and_history(admin_client, sample):
@@ -197,13 +200,24 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
     assert change_form.status_code == 200
     change_fields_by_name = {field["name"]: field for field in change_form.json()["form"]["fields"]}
     assert change_fields_by_name["category"]["attrs"]["selected_options"] == [
-        {"id": str(sample.category_id), "text": "Cameras"}
+        {
+            "id": str(sample.category_id),
+            "text": "Cameras",
+            "detail_url": f"/admin-api/testapp/category/{sample.category_id}",
+            "change_form_url": f"/admin-api/testapp/category/{sample.category_id}/form",
+        }
     ]
     assert set(change_fields_by_name["tags"]["attrs"]["value"]) == set(sample.tags.values_list("pk", flat=True))
     assert {option["text"] for option in change_fields_by_name["tags"]["attrs"]["selected_options"]} == {
         "Featured",
         "Compact",
     }
+    tag_options_by_text = {
+        option["text"]: option for option in change_fields_by_name["tags"]["attrs"]["selected_options"]
+    }
+    for tag in sample.tags.all():
+        assert tag_options_by_text[tag.name]["detail_url"] == f"/admin-api/testapp/tag/{tag.pk}"
+        assert tag_options_by_text[tag.name]["change_form_url"] == f"/admin-api/testapp/tag/{tag.pk}/form"
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["selected_count"] == 2
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["available_count"] == 2
     assert change_fields_by_name["tags"]["attrs"]["filtered_select"]["unselected_count"] == 0
