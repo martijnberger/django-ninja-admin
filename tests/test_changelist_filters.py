@@ -428,6 +428,13 @@ def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):
     bad_date_hierarchy = admin_client.get("/admin-api/testapp/product?created_at__month=2")
     assert bad_date_hierarchy.status_code == 400
 
+    hidden_bad_date_hierarchy = admin_client.get(
+        "/admin-api/testapp/product",
+        {"created_at__year": ["not-a-year", "2024"]},
+    )
+    assert hidden_bad_date_hierarchy.status_code == 400
+    assert hidden_bad_date_hierarchy.json()["errors"] == [{"message": "Invalid year.", "param": "created_at__year"}]
+
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_related_list_filters_use_remote_to_field_values(admin_client, monkeypatch):

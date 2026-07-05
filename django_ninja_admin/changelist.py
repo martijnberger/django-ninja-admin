@@ -307,18 +307,21 @@ class ChangeList:
         values = {}
         for part, lower, upper in (("year", 1, 9999), ("month", 1, 12), ("day", 1, 31)):
             param = f"{self.date_hierarchy_field}__{part}"
-            raw_value = params.get(param)
-            if raw_value in (None, ""):
-                continue
-            try:
-                value = int(raw_value)
-            except (TypeError, ValueError) as exc:
-                raise AdminValidationError(
-                    [{"message": _("Invalid %(part)s.") % {"part": part}, "param": param}]
-                ) from exc
-            if value < lower or value > upper:
-                raise AdminValidationError([{"message": _("Invalid %(part)s.") % {"part": part}, "param": param}])
-            values[part] = value
+            value = None
+            for raw_value in self.date_hierarchy_param_values(params, param):
+                if raw_value in (None, ""):
+                    continue
+                try:
+                    parsed_value = int(raw_value)
+                except (TypeError, ValueError) as exc:
+                    raise AdminValidationError(
+                        [{"message": _("Invalid %(part)s.") % {"part": part}, "param": param}]
+                    ) from exc
+                if parsed_value < lower or parsed_value > upper:
+                    raise AdminValidationError([{"message": _("Invalid %(part)s.") % {"part": part}, "param": param}])
+                value = parsed_value
+            if value is not None:
+                values[part] = value
         if "day" in values and "month" not in values:
             raise AdminValidationError(
                 [{"message": _("A day requires a selected month."), "param": f"{self.date_hierarchy_field}__day"}]
@@ -334,6 +337,14 @@ class ChangeList:
                     [{"message": _("Invalid day."), "param": f"{self.date_hierarchy_field}__day"}]
                 )
         return values
+
+    def date_hierarchy_param_values(self, params, param):
+        if hasattr(params, "getlist"):
+            return params.getlist(param)
+        value = params.get(param)
+        if isinstance(value, (list, tuple)):
+            return value
+        return (value,)
 
     def apply_date_hierarchy(self, queryset, params):
         values = self.get_date_hierarchy_values(params)
