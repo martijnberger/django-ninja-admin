@@ -711,8 +711,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert form_description_props["prepopulated"] == {"$ref": "#/components/schemas/PrepopulatedFieldMap"}
     assert form_description_props["radio_fields"]["allOf"] == [{"$ref": "#/components/schemas/RadioFieldMap"}]
     assert components["PrepopulatedFieldMap"]["additionalProperties"]["items"] == {"type": "string"}
-    assert {"type": "string"} in components["RadioFieldMap"]["additionalProperties"]["anyOf"]
-    assert {"type": "integer"} in components["RadioFieldMap"]["additionalProperties"]["anyOf"]
+    assert components["RadioFieldMap"]["additionalProperties"] == {"enum": [1, 2], "type": "integer"}
     fieldset_description_props = components["FieldsetDescription"]["properties"]
     assert fieldset_description_props["name"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert fieldset_description_props["classes"]["items"] == {"type": "string"}
@@ -838,6 +837,10 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         {"type": "null"},
     ]
     assert field_attrs_props["radio"]["anyOf"][0] == {"$ref": "#/components/schemas/RadioMetadata"}
+    assert field_attrs_props["radio_orientation"]["anyOf"] == [
+        {"enum": [1, 2], "type": "integer"},
+        {"type": "null"},
+    ]
     assert field_attrs_props["prepopulated"]["anyOf"][0] == {"$ref": "#/components/schemas/PrepopulatedMetadata"}
     assert field_attrs_props["input_schema_override"]["anyOf"][0] == {
         "$ref": "#/components/schemas/InputSchemaOverrideMetadata"
@@ -862,10 +865,11 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         {"type": "null"},
     ]
     assert components["FilteredSelectMetadata"]["required"] == ["field_name", "direction", "is_stacked"]
-    assert components["RadioMetadata"]["properties"]["orientation"]["anyOf"] == [
-        {"type": "string"},
-        {"type": "integer"},
-    ]
+    assert components["RadioMetadata"]["properties"]["orientation"] == {
+        "enum": [1, 2],
+        "title": "Orientation",
+        "type": "integer",
+    }
     assert components["PrepopulatedMetadata"]["properties"]["sources"]["items"] == {
         "$ref": "#/components/schemas/PrepopulatedSourceMetadata"
     }

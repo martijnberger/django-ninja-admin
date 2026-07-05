@@ -2596,9 +2596,10 @@
           "radio_orientation": {
             "anyOf": [
               {
-                "type": "string"
-              },
-              {
+                "enum": [
+                  1,
+                  2
+                ],
                 "type": "integer"
               },
               {
@@ -6438,14 +6439,11 @@
       },
       "RadioFieldMap": {
         "additionalProperties": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "integer"
-            }
-          ]
+          "enum": [
+            1,
+            2
+          ],
+          "type": "integer"
         },
         "type": "object"
       },
@@ -6479,15 +6477,12 @@
             "title": "Model Name"
           },
           "orientation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "integer"
-              }
+            "enum": [
+              1,
+              2
             ],
-            "title": "Orientation"
+            "title": "Orientation",
+            "type": "integer"
           }
         },
         "required": [

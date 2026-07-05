@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Narrowed radio field orientation schemas to Django admin's `HORIZONTAL` and
+  `VERTICAL` integer constants instead of advertising arbitrary strings.
+
 ### Fixed
 
 - Translated dynamic inline count validation errors through package gettext so

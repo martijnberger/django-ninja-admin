@@ -415,7 +415,7 @@ class FilteredSelectMetadata(SourceFieldIdentity):
 
 
 class RadioMetadata(SourceFieldIdentity):
-    orientation: str | int
+    orientation: Literal[1, 2]
 
 
 class PrepopulatedSourceMetadata(AdminSchema):
@@ -551,7 +551,7 @@ class FieldAttributes(AdminSchema):
     checked_attribute: dict[str, FieldMetadataValue] | str | bool | None = None
     supports_microseconds: bool | None = None
     admin_widget: str | None = None
-    radio_orientation: str | int | None = None
+    radio_orientation: Literal[1, 2] | None = None
 
     model_field_name: str | None = None
     model_field_class: str | None = None
@@ -767,7 +767,7 @@ class FieldsetDescription(AdminSchema):
 
 
 type PrepopulatedFieldMap = dict[str, list[str]]
-type RadioFieldMap = dict[str, str | int]
+type RadioFieldMap = dict[str, Literal[1, 2]]
 
 
 class FormDescription(AdminSchema):
