@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   row-index, and management-form count metadata schemas.
 - Added explicit bounds to filtered-select count metadata, multiwidget/combo
   field index metadata, and changelist sort-position metadata schemas.
+- Added explicit nonnegative bounds to image file width/height metadata
+  schemas.
 - Reused the Django admin log action-flag enum for history response rows, so
   action flags no longer advertise arbitrary integers.
 

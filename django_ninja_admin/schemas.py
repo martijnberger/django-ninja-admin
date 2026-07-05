@@ -319,8 +319,8 @@ class FileFieldValue(AdminSchema):
 
 
 class ImageFieldValue(FileFieldValue):
-    width: int | None = None
-    height: int | None = None
+    width: int | None = Field(default=None, ge=0)
+    height: int | None = Field(default=None, ge=0)
 
 
 class SelectedOption(AdminSchema):

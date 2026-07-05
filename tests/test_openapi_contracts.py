@@ -10,6 +10,7 @@ from django_ninja_admin.schemas import (
     FieldAttributes,
     FormResponse,
     HistoryResponse,
+    ImageFieldValue,
     Pagination,
 )
 from tests.testapp.models import Product
@@ -94,6 +95,20 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     assert components["ProductAdminOut"]["properties"]["photo"] == {
         "anyOf": [{"$ref": "#/components/schemas/ImageFieldValue"}, {"type": "null"}]
     }
+    image_value_props = components["ImageFieldValue"]["properties"]
+    assert image_value_props["width"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
+    assert image_value_props["height"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
+    ImageFieldValue.model_validate({"name": "photos/sample.png", "width": 1, "height": 1})
+    with pytest.raises(ValidationError) as exc_info:
+        ImageFieldValue.model_validate({"name": "photos/sample.png", "width": -1, "height": 1})
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("width",)
     photo_width_options = components["ProductAdminOut"]["properties"]["photo_width"]["anyOf"]
     photo_width_integer_schema = next(option for option in photo_width_options if option.get("type") == "integer")
     assert photo_width_integer_schema["minimum"] == 0

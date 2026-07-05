@@ -4186,6 +4186,7 @@
           "height": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -4212,6 +4213,7 @@
           "width": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
