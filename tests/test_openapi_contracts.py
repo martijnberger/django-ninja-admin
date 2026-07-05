@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 from pydantic import BaseModel, ValidationError
 
@@ -649,6 +651,8 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "$ref": "#/components/schemas/CellMetadata"
     }
     assert components["Row"]["properties"]["id"] == {"$ref": "#/components/schemas/ObjectIdentifier"}
+    assert components["Row"]["properties"]["index"]["minimum"] == 0
+    assert components["Row"]["properties"]["result_index"]["minimum"] == 0
     assert components["Row"]["properties"]["cells"]["additionalProperties"] == {
         "$ref": "#/components/schemas/FieldMetadataValue"
     }
@@ -734,15 +738,16 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert required_management_attrs["properties"]["is_hidden"]["const"] is True
     assert required_management_attrs["properties"]["input_type"]["const"] == "hidden"
     assert required_management_attrs["properties"]["value"]["type"] == "integer"
+    assert required_management_attrs["properties"]["value"]["minimum"] == 0
     optional_management_attrs = components["OptionalManagementFormFieldAttributes"]
     assert optional_management_attrs["additionalProperties"] is False
     assert optional_management_attrs["properties"]["required"]["const"] is False
     assert changelist_response_props["list_editing_total_form_count"]["anyOf"] == [
-        {"type": "integer"},
+        {"minimum": 0, "type": "integer"},
         {"type": "null"},
     ]
     assert changelist_response_props["list_editing_initial_form_count"]["anyOf"] == [
-        {"type": "integer"},
+        {"minimum": 0, "type": "integer"},
         {"type": "null"},
     ]
     assert changelist_response_props["list_editing_formset"]["items"]["items"] == {
@@ -750,6 +755,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     }
     assert changelist_response_props["list_editing_rows"]["items"] == {"$ref": "#/components/schemas/ListEditingRow"}
     list_editing_row_props = components["ListEditingRow"]["properties"]
+    assert list_editing_row_props["index"]["minimum"] == 0
     assert list_editing_row_props["pk"] == {"$ref": "#/components/schemas/ObjectIdentifier"}
     assert list_editing_row_props["form_prefix"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert list_editing_row_props["empty_permitted"]["type"] == "boolean"
@@ -777,7 +783,25 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert inline_response_props["formset_row_metadata"]["items"] == {
         "$ref": "#/components/schemas/InlineFormsetRowMetadata"
     }
+    assert inline_response_props["total_form_count"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
+    assert inline_response_props["initial_form_count"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
+    assert inline_response_props["extra"]["minimum"] == 0
+    assert inline_response_props["min_num"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
+    assert inline_response_props["max_num"]["anyOf"] == [
+        {"minimum": 0, "type": "integer"},
+        {"type": "null"},
+    ]
     inline_row_metadata_props = components["InlineFormsetRowMetadata"]["properties"]
+    assert inline_row_metadata_props["index"]["minimum"] == 0
     assert inline_row_metadata_props["prefix"]["type"] == "string"
     assert inline_row_metadata_props["is_initial"]["type"] == "boolean"
     assert inline_row_metadata_props["empty_permitted"]["type"] == "boolean"
@@ -1136,6 +1160,41 @@ def test_formset_management_form_schemas_are_typed_and_closed(admin_client, samp
         "MIN_NUM_FORMS",
         "MAX_NUM_FORMS",
     }
+
+    invalid_changelist_count = deepcopy(changelist_body)
+    invalid_changelist_count["list_editing_total_form_count"] = -1
+    with pytest.raises(ValidationError) as exc_info:
+        ChangelistResponse.model_validate(invalid_changelist_count)
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("list_editing_total_form_count",)
+
+    invalid_changelist_row_index = deepcopy(changelist_body)
+    invalid_changelist_row_index["rows"][0]["index"] = -1
+    with pytest.raises(ValidationError) as exc_info:
+        ChangelistResponse.model_validate(invalid_changelist_row_index)
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("rows", 0, "index")
+
+    invalid_list_editing_row_index = deepcopy(changelist_body)
+    invalid_list_editing_row_index["list_editing_rows"][0]["index"] = -1
+    with pytest.raises(ValidationError) as exc_info:
+        ChangelistResponse.model_validate(invalid_list_editing_row_index)
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("list_editing_rows", 0, "index")
+
+    invalid_inline_count = deepcopy(form_body)
+    invalid_inline_count["inlines"][0]["total_form_count"] = -1
+    with pytest.raises(ValidationError) as exc_info:
+        FormResponse.model_validate(invalid_inline_count)
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("inlines", 0, "total_form_count")
+
+    invalid_inline_extra = deepcopy(form_body)
+    invalid_inline_extra["inlines"][0]["extra"] = -1
+    with pytest.raises(ValidationError) as exc_info:
+        FormResponse.model_validate(invalid_inline_extra)
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("inlines", 0, "extra")
 
     invalid_changelist_body = dict(changelist_body)
     invalid_changelist_body["list_editing_management_form"] = [

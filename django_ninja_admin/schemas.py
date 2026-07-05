@@ -706,7 +706,7 @@ class ManagementFormFieldAttributes(AdminSchema):
     multiple: Literal[False] = False
     input_type: Literal["hidden"] = "hidden"
     needs_multipart_form: Literal[False] = False
-    value: int
+    value: int = Field(ge=0)
 
 
 class RequiredManagementFormFieldAttributes(ManagementFormFieldAttributes):
@@ -790,7 +790,7 @@ class FormDescription(AdminSchema):
 
 
 class InlineFormsetRowMetadata(AdminSchema):
-    index: int
+    index: int = Field(ge=0)
     prefix: str
     is_initial: bool
     empty_permitted: bool
@@ -806,14 +806,14 @@ class InlineDescription(AdminSchema):
     permissions: PermissionMap
     formset_prefix: str | None = None
     management_form: list[ManagementFormField] = Field(default_factory=list)
-    total_form_count: int | None = None
-    initial_form_count: int | None = None
+    total_form_count: int | None = Field(default=None, ge=0)
+    initial_form_count: int | None = Field(default=None, ge=0)
     empty_form_prefix: str | None = None
     empty_form: list[FieldDescription] = Field(default_factory=list)
     formset_row_metadata: list[InlineFormsetRowMetadata] = Field(default_factory=list)
-    extra: int = 3
-    min_num: int | None = None
-    max_num: int | None = None
+    extra: int = Field(default=3, ge=0)
+    min_num: int | None = Field(default=None, ge=0)
+    max_num: int | None = Field(default=None, ge=0)
     verbose_name: str
     verbose_name_plural: str
     can_delete: bool = True
@@ -861,8 +861,8 @@ class CellMetadata(AdminSchema):
 
 class Row(AdminSchema):
     id: ObjectIdentifier
-    index: int = 0
-    result_index: int = 0
+    index: int = Field(default=0, ge=0)
+    result_index: int = Field(default=0, ge=0)
     cells: dict[str, FieldMetadataValue]
     cell_metadata: dict[str, CellMetadata] = Field(default_factory=dict)
     detail_url: str | None = None
@@ -990,7 +990,7 @@ class ChangelistConfig(AdminSchema):
 
 
 class ListEditingRow(AdminSchema):
-    index: int
+    index: int = Field(ge=0)
     pk: ObjectIdentifier
     pk_name: str
     form_prefix: str | None = None
@@ -1005,8 +1005,8 @@ class ChangelistResponse(AdminSchema):
     action_form: list[ActionFormField] = Field(default_factory=list)
     list_editing_formset_prefix: str | None = None
     list_editing_management_form: list[ManagementFormField] = Field(default_factory=list)
-    list_editing_total_form_count: int | None = None
-    list_editing_initial_form_count: int | None = None
+    list_editing_total_form_count: int | None = Field(default=None, ge=0)
+    list_editing_initial_form_count: int | None = Field(default=None, ge=0)
     list_editing_formset: list[list[FieldDescription]] = Field(default_factory=list)
     list_editing_rows: list[ListEditingRow] = Field(default_factory=list)
 

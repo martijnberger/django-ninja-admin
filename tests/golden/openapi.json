@@ -1271,6 +1271,7 @@
           "list_editing_initial_form_count": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -1296,6 +1297,7 @@
           "list_editing_total_form_count": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -4300,6 +4302,7 @@
           },
           "extra": {
             "default": 3,
+            "minimum": 0,
             "title": "Extra",
             "type": "integer"
           },
@@ -4341,6 +4344,7 @@
           "initial_form_count": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -4359,6 +4363,7 @@
           "max_num": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -4377,6 +4382,7 @@
           "min_num": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -4410,6 +4416,7 @@
           "total_form_count": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -4448,6 +4455,7 @@
             "type": "boolean"
           },
           "index": {
+            "minimum": 0,
             "title": "Index",
             "type": "integer"
           },
@@ -4551,6 +4559,7 @@
             "title": "Form Prefix"
           },
           "index": {
+            "minimum": 0,
             "title": "Index",
             "type": "integer"
           },
@@ -4778,6 +4787,7 @@
             "type": "array"
           },
           "value": {
+            "minimum": 0,
             "title": "Value",
             "type": "integer"
           },
@@ -6803,6 +6813,7 @@
             "type": "array"
           },
           "value": {
+            "minimum": 0,
             "title": "Value",
             "type": "integer"
           },
@@ -6882,6 +6893,7 @@
           },
           "index": {
             "default": 0,
+            "minimum": 0,
             "title": "Index",
             "type": "integer"
           },
@@ -6897,6 +6909,7 @@
           },
           "result_index": {
             "default": 0,
+            "minimum": 0,
             "title": "Result Index",
             "type": "integer"
           },
