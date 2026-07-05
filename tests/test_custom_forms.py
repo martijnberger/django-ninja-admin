@@ -159,7 +159,7 @@ def test_response_hooks_can_return_custom_status(admin_client, sample):
     )
     assert (
         _response_schema_ref(paths["/status-hook-admin/testapp/product/{object_id}"]["patch"], "202")
-        == "#/components/schemas/ProductChangeHookResponse"
+        == "#/components/schemas/ProductChangeAcceptedHookResponse"
     )
     assert (
         _response_schema_ref(paths["/status-hook-admin/testapp/product/{object_id}"]["patch"], "200")
@@ -228,6 +228,20 @@ def test_response_hooks_can_return_custom_status(admin_client, sample):
         "description": "Custom status response",
     }
     assert Product.objects.get(pk=created_id).description == "Custom status response"
+
+    accepted_changed = admin_client.patch(
+        f"/status-hook-admin/testapp/product/{created_id}",
+        data={"data": {"description": "Accepted custom status response"}},
+        content_type="application/json",
+    )
+
+    assert accepted_changed.status_code == 202
+    assert accepted_changed.json() == {
+        "hook": "change",
+        "id": created_id,
+        "accepted": True,
+    }
+    assert Product.objects.get(pk=created_id).description == "Accepted custom status response"
 
     deleted = admin_client.delete(f"/status-hook-admin/testapp/product/{created_id}")
 

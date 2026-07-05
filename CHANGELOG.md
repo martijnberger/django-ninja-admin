@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added mounted response-hook status-map coverage for change hooks with
+  distinct schemas for `200` and `202` responses.
+
 ## 0.1.73 - 2026-07-05
 
 ### Added

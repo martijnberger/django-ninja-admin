@@ -69,6 +69,12 @@ class ProductChangeHookResponse(ClosedSchema):
     description: str
 
 
+class ProductChangeAcceptedHookResponse(ClosedSchema):
+    hook: str
+    id: int
+    accepted: bool
+
+
 class ProductDeleteStatusHookResponse(ClosedSchema):
     hook: str
     id: str
@@ -124,7 +130,7 @@ custom_form_site.register(Product, CustomFormProductAdmin)
 
 class StatusHookProductAdmin(ModelAdmin):
     response_add_schema = {200: ProductAddImmediateHookResponse, 202: ProductAddHookResponse}
-    response_change_schema = ProductChangeHookResponse
+    response_change_schema = {200: ProductChangeHookResponse, 202: ProductChangeAcceptedHookResponse}
     response_delete_schema = {200: ProductDeleteImmediateHookResponse, 202: ProductDeleteStatusHookResponse}
 
     def response_add(self, request, obj, form, inline_results):
@@ -133,6 +139,8 @@ class StatusHookProductAdmin(ModelAdmin):
         return Status(202, {"hook": "add", "id": obj.pk, "name": obj.name})
 
     def response_change(self, request, obj, form, inline_results):
+        if obj.description.startswith("Accepted"):
+            return Status(202, {"hook": "change", "id": obj.pk, "accepted": True})
         return Status(200, {"hook": "change", "id": obj.pk, "description": obj.description})
 
     def response_delete(self, request, obj_display, obj_id):
