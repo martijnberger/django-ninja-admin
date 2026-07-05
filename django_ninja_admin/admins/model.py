@@ -542,7 +542,7 @@ class ModelAdmin(BaseAdmin):
 
     def get_action_response_schema(self, request=None):
         cache = getattr(self, "_action_response_schema_cache", {})
-        actions = self._get_base_actions()
+        actions = self.get_schema_actions()
         action_response_schemas = self._action_schemas(actions, "action_response_schema")
         response_schemas = (*action_response_schemas, ActionResponse)
         cache_key = ("action-response", response_schemas)

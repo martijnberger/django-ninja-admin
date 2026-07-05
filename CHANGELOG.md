@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Fixed
+
+- Kept disabled-action response schema generation aligned with disabled action
+  routes and payloads, so site-wide custom action responses are not advertised
+  for admins with `actions = None`.
+
 ## 0.1.63 - 2026-07-04
 
 ### Changed

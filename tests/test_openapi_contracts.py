@@ -1,8 +1,8 @@
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, site
-from django_ninja_admin.schemas import ChangelistResponse, FormResponse, Pagination
+from django_ninja_admin import ModelAdmin, NinjaAdminSite, action, site
+from django_ninja_admin.schemas import ActionResponse, ChangelistResponse, FormResponse, Pagination
 from tests.testapp.models import Product
 
 
@@ -1012,6 +1012,27 @@ def test_disabled_action_payload_schema_rejects_arbitrary_data(db):
 
     assert exc_info.value.errors()[0]["type"] == "none_required"
     assert exc_info.value.errors()[0]["loc"] == ("data",)
+
+
+def test_disabled_action_response_schema_ignores_site_action_schemas(db):
+    class GlobalActionResult(BaseModel):
+        exported: int
+
+    @action(response_schema=GlobalActionResult)
+    def export_products(model_admin, request, queryset):
+        return {"exported": queryset.count()}
+
+    class NoActionsProductAdmin(ModelAdmin):
+        actions = None
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.add_action(export_products)
+    admin_site.register(Product, NoActionsProductAdmin)
+
+    model_admin = admin_site.get_model_admin(Product)
+
+    assert model_admin.has_registered_actions() is False
+    assert model_admin.get_action_response_schema(None) is ActionResponse
 
 
 def test_changelist_action_form_schema_is_typed_and_closed(admin_client, sample):
