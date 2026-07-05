@@ -490,7 +490,10 @@ type SelectDateMonth = Annotated[int, Field(ge=1, le=12)]
 type SelectDateDay = Annotated[int, Field(ge=1, le=31)]
 type SelectDateEmptyChoiceValue = Literal[""] | None
 type SelectDateOrderItem = Literal["year", "month", "day"]
-type SelectDateOrder = Annotated[list[SelectDateOrderItem], Field(min_length=3, max_length=3)]
+type SelectDateOrder = Annotated[
+    list[SelectDateOrderItem],
+    Field(min_length=3, max_length=3, json_schema_extra={"uniqueItems": True}),
+]
 
 
 class SelectDateMonthChoice(AdminSchema):

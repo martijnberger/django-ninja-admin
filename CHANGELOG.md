@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Advertised select-date widget order metadata as unique in the generated
+  OpenAPI contract.
 - Constrained select-date widget order metadata to the exact three date parts
   expected by Django.
 - Replaced broad JSON select-date widget metadata values with bounded

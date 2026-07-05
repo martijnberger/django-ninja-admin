@@ -978,6 +978,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "items": {"$ref": "#/components/schemas/SelectDateOrderItem"},
         "minItems": 3,
         "maxItems": 3,
+        "uniqueItems": True,
         "type": "array",
     }
     assert components["SelectDateOrderItem"] == {"enum": ["year", "month", "day"], "type": "string"}

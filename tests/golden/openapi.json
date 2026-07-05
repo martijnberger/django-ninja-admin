@@ -7134,7 +7134,8 @@
         },
         "maxItems": 3,
         "minItems": 3,
-        "type": "array"
+        "type": "array",
+        "uniqueItems": true
       },
       "SelectDateOrderItem": {
         "enum": [
