@@ -125,19 +125,37 @@ def write_sample_project(project_dir: Path) -> None:
         """
         from typing import Literal
 
-        from ninja import Schema
+        from ninja import Schema, Status
+        from pydantic import ConfigDict
 
         from django_ninja_admin import ModelAdmin, TabularInline, action, site
 
         from .models import Category, Product, ProductImage
 
 
-        class StockStatusActionData(Schema):
+        class ClosedSchema(Schema):
+            model_config = ConfigDict(extra="forbid")
+
+
+        class ProductStatsResponse(ClosedSchema):
+            count: int
+
+
+        class ProductEchoPayload(ClosedSchema):
+            message: str
+            repeat: int = 1
+
+
+        class ProductEchoResponse(ClosedSchema):
+            echoed: list[str]
+
+
+        class StockStatusActionData(ClosedSchema):
             status: Literal["in_stock", "out_of_stock"]
             note: str | None = None
 
 
-        class StockStatusActionResult(Schema):
+        class StockStatusActionResult(ClosedSchema):
             updated: int
             status: str
             note: str | None = None
@@ -160,6 +178,41 @@ def write_sample_project(project_dir: Path) -> None:
             autocomplete_fields = ("category",)
             actions = ["set_stock_status"]
             inlines = [ProductImageInline]
+
+            def stats(self, request):
+                return {"count": Product.objects.count()}
+
+            def echo(self, request, payload: ProductEchoPayload):
+                return {"echoed": [payload.message] * payload.repeat}
+
+            def no_content(self, request):
+                return Status(204, None)
+
+            def get_urls(self):
+                return [
+                    self.route(
+                        "/stats",
+                        self.admin_view(self.stats),
+                        response=ProductStatsResponse,
+                        operation_id="sample_product_stats",
+                        tags=["sample.product"],
+                    ),
+                    self.route(
+                        "/echo",
+                        self.admin_view(self.echo),
+                        methods="POST",
+                        response=ProductEchoResponse,
+                        operation_id="sample_product_echo",
+                        tags=["sample.product"],
+                    ),
+                    self.route(
+                        "/no-content",
+                        self.admin_view(self.no_content),
+                        response={204: None},
+                        operation_id="sample_product_no_content",
+                        tags=["sample.product"],
+                    ),
+                ]
 
             @action(
                 description="Set stock status",
@@ -453,6 +506,9 @@ def write_sample_project(project_dir: Path) -> None:
             "sample_app_product_bulk_update",
             "sample_app_product_action",
             "sample_app_product_change_form",
+            "sample_product_stats",
+            "sample_product_echo",
+            "sample_product_no_content",
         }
         assert expected_operations <= set(consumer.operations)
         assert consumer.path_parameters["admin_get_app"] == {"app_label"}
@@ -489,6 +545,7 @@ def write_sample_project(project_dir: Path) -> None:
         assert components["ActionResponse"]["additionalProperties"] is False
         assert consumer.path_parameters["sample_app_product_detail"] == {"object_id"}
         assert "_to_field" in consumer.query_parameters["sample_app_product_detail"]
+        assert consumer.response_schema("sample_product_no_content", 204) is None
 
         unauthorized_response = anonymous_consumer.request("sample_app_product_list")
         assert unauthorized_response.status_code == 401, unauthorized_response.content
@@ -587,6 +644,28 @@ def write_sample_project(project_dir: Path) -> None:
         consumer.assert_response_matches_schema("sample_app_product_list", list_response)
         assert list_response.json()["config"]["result_count"] == 1
         assert list_response.json()["config"]["per_page"] == 1
+
+        custom_stats_response = consumer.request("sample_product_stats")
+        assert custom_stats_response.status_code == 200, custom_stats_response.content
+        consumer.assert_response_matches_schema("sample_product_stats", custom_stats_response)
+        assert custom_stats_response.json()["count"] == Product.objects.count()
+
+        custom_echo_response = consumer.request(
+            "sample_product_echo",
+            payload={"message": "custom route", "repeat": 2},
+        )
+        assert custom_echo_response.status_code == 200, custom_echo_response.content
+        consumer.assert_response_matches_schema("sample_product_echo", custom_echo_response)
+        assert custom_echo_response.json() == {"echoed": ["custom route", "custom route"]}
+
+        invalid_custom_echo_response = consumer.request("sample_product_echo", payload={"repeat": 2})
+        assert invalid_custom_echo_response.status_code == 422, invalid_custom_echo_response.content
+        consumer.assert_response_matches_schema("sample_product_echo", invalid_custom_echo_response)
+
+        no_content_response = consumer.request("sample_product_no_content")
+        assert no_content_response.status_code == 204, no_content_response.content
+        assert no_content_response.content == b""
+        consumer.assert_response_matches_schema("sample_product_no_content", no_content_response)
 
         missing_response = consumer.request("sample_app_product_detail", path_params={"object_id": 999999})
         assert missing_response.status_code == 404, missing_response.content

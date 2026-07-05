@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added custom site/model route coverage and docs for no-content
   `response={204: None}` contracts.
+- Expanded the installed-wheel generated-client smoke to exercise typed custom
+  admin routes, including request-body validation and no-content responses.
 
 ## 0.1.70 - 2026-07-05
 
