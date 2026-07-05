@@ -4,6 +4,7 @@ from django import forms
 from django.contrib.auth import get_permission_codename
 from django.forms.models import BaseInlineFormSet, _get_foreign_key, inlineformset_factory, modelform_factory
 from django.utils.text import format_lazy
+from django.utils.translation import gettext_lazy as _
 from pydantic import ConfigDict, Field, create_model
 
 from django_ninja_admin.admins.base import BaseAdmin
@@ -61,16 +62,16 @@ class InlineModelAdmin(BaseAdmin):
         min_num = self._clean_formset_count_option("min_num", self.get_min_num(request, obj), allow_none=True)
         max_num = self._clean_formset_count_option("max_num", self.get_max_num(request, obj), allow_none=True)
         if min_num is not None and max_num is not None and min_num > max_num:
-            self._raise_count_option_error("min_num", "Inline 'min_num' must not exceed 'max_num'.")
+            self._raise_count_option_error("min_num", _("Inline 'min_num' must not exceed 'max_num'."))
         return {"extra": extra, "min_num": min_num, "max_num": max_num}
 
     def _clean_formset_count_option(self, option, value, *, allow_none):
         if value is None and allow_none:
             return None
         if not isinstance(value, int) or isinstance(value, bool):
-            self._raise_count_option_error(option, f"Inline '{option}' must be an integer.")
+            self._raise_count_option_error(option, _("Inline '%(option)s' must be an integer.") % {"option": option})
         if value < 0:
-            self._raise_count_option_error(option, f"Inline '{option}' must not be negative.")
+            self._raise_count_option_error(option, _("Inline '%(option)s' must not be negative.") % {"option": option})
         return value
 
     def _raise_count_option_error(self, option, message):

@@ -1,5 +1,6 @@
 from django.test import override_settings
 
+import django_ninja_admin.admins.inline as inline_module
 import django_ninja_admin.changelist as changelist_module
 import django_ninja_admin.sites as sites_module
 from django_ninja_admin import NinjaAdminSite
@@ -91,4 +92,22 @@ def test_mutation_helper_error_messages_use_gettext(monkeypatch, admin_client, s
     assert _first_error(bulk_response, 400) == {
         "message": "translated:Object not found.",
         "param": "data.0.pk",
+    }
+
+
+def test_inline_count_error_messages_use_gettext(monkeypatch, admin_client, sample):
+    from tests.testapp.admin import ProductImageInline
+
+    monkeypatch.setattr(inline_module, "_", _translate)
+
+    def negative_extra(self, request, obj=None, **kwargs):
+        return -1
+
+    monkeypatch.setattr(ProductImageInline, "get_extra", negative_extra)
+
+    response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form")
+
+    assert _first_error(response, 400) == {
+        "message": "translated:Inline 'extra' must not be negative.",
+        "param": "inlines.testapp.productimage.extra",
     }

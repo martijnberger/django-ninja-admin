@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Fixed
+
+- Translated dynamic inline count validation errors through package gettext so
+  client-visible inline form-description errors follow the i18n contract.
+
 ## 0.1.65 - 2026-07-05
 
 ### Changed
