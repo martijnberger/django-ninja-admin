@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added explicit nonnegative bounds to inline formset, list-editing formset,
   row-index, and management-form count metadata schemas.
+- Reused the Django admin log action-flag enum for history response rows, so
+  action flags no longer advertise arbitrary integers.
 
 ## 0.1.66 - 2026-07-05
 

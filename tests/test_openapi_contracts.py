@@ -4,7 +4,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, action, site
-from django_ninja_admin.schemas import ActionResponse, ChangelistResponse, FormResponse, Pagination
+from django_ninja_admin.schemas import ActionResponse, ChangelistResponse, FormResponse, HistoryResponse, Pagination
 from tests.testapp.models import Product
 
 
@@ -534,6 +534,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "$ref": "#/components/schemas/FieldMetadataValue"
     }
     assert components["HistoryItem"]["properties"]["action_time"]["format"] == "date-time"
+    assert components["HistoryItem"]["properties"]["action_flag"] == {"$ref": "#/components/schemas/HistoryActionFlag"}
     assert components["HistoryItem"]["properties"]["change_message_text"]["type"] == "string"
     assert components["HistoryItem"]["properties"]["model"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     assert components["HistoryItem"]["properties"]["detail_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
@@ -565,6 +566,13 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert history_example["pagination"]["more"] is False
     assert history_example["results"][0]["change_form_url"] == "/admin-api/shop/product/1/form"
     assert history_example["results"][0]["change_message_text"] == "Changed Name."
+    HistoryResponse.model_validate(history_example)
+    invalid_history_example = deepcopy(history_example)
+    invalid_history_example["results"][0]["action_flag"] = 99
+    with pytest.raises(ValidationError) as exc_info:
+        HistoryResponse.model_validate(invalid_history_example)
+    assert exc_info.value.errors()[0]["type"] == "enum"
+    assert exc_info.value.errors()[0]["loc"] == ("results", 0, "action_flag")
     assert _response_schema_ref(paths["/admin-api/autocomplete"]["get"], "200") == (
         "#/components/schemas/AutocompleteResponse"
     )

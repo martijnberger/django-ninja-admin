@@ -1,7 +1,6 @@
 import json
 import re
 from collections.abc import Sequence
-from enum import IntEnum
 from functools import wraps
 from math import ceil
 from typing import Any, Literal, cast
@@ -63,6 +62,7 @@ from django_ninja_admin.schemas import (
     CsrfTokenResponse,
     ErrorResponse,
     FormResponse,
+    HistoryActionFlag,
     HistoryResponse,
     JsonObjectResponse,
     Pagination,
@@ -107,12 +107,6 @@ DEFAULT_SITE_HEADER = "Django Ninja administration"
 DEFAULT_INDEX_TITLE = "Site administration"
 CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
 _UNSET = object()
-
-
-class HistoryActionFlag(IntEnum):
-    ADDITION = 1
-    CHANGE = 2
-    DELETION = 3
 
 
 NinjaQuery = cast(Any, Query)

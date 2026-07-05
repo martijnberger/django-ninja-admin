@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import IntEnum
 from typing import Any, Literal
 
 from django.utils.functional import Promise
@@ -32,6 +33,12 @@ class AdminInlineOperationResultsSchema(AdminSchema):
 
 class AdminBulkRowSchema(AdminSchema):
     model_config = ConfigDict(extra="forbid")
+
+
+class HistoryActionFlag(IntEnum):
+    ADDITION = 1
+    CHANGE = 2
+    DELETION = 3
 
 
 type DeletedObject = str | list[DeletedObject]
@@ -1025,7 +1032,7 @@ class HistoryItem(AdminSchema):
     object_repr: str
     detail_url: str | None = None
     change_form_url: str | None = None
-    action_flag: int
+    action_flag: HistoryActionFlag
     change_message: FieldMetadataValue
     change_message_text: str
 

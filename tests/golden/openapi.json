@@ -3978,8 +3978,7 @@
         "additionalProperties": false,
         "properties": {
           "action_flag": {
-            "title": "Action Flag",
-            "type": "integer"
+            "$ref": "#/components/schemas/HistoryActionFlag"
           },
           "action_time": {
             "format": "date-time",
