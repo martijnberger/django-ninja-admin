@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.64 - 2026-07-05
+
 ### Fixed
 
 - Kept disabled-action response schema generation aligned with disabled action
@@ -14,6 +16,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   for admins with `actions = None`.
 - Rejected hidden invalid repeated date-hierarchy query values instead of
   accepting a later valid year, month, or day value.
+- Removed the unused internal protected-delete exception handler and added a
+  package-contract guard for curated public API exports.
 
 ## 0.1.63 - 2026-07-04
 

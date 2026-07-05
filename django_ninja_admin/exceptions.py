@@ -90,10 +90,6 @@ class MissingSearchFields(AdminError):
     status_code = 409
 
 
-class ProtectedDelete(AdminError):
-    status_code = 409
-
-
 class AdminValidationError(AdminError):
     status_code = 400
 

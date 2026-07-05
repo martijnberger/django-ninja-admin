@@ -53,7 +53,6 @@ from django_ninja_admin.exceptions import (
     DisallowedModelAdminToField,
     MissingSearchFields,
     NotRegistered,
-    ProtectedDelete,
 )
 from django_ninja_admin.routes import AdminRoute, normalize_route_methods
 from django_ninja_admin.schemas import (
@@ -621,10 +620,6 @@ class NinjaAdminSite:
         @api.exception_handler(AdminPermissionError)
         def admin_permission_error(request, exc):
             return api.create_response(request, {"errors": exc.errors}, status=exc.status_code)
-
-        @api.exception_handler(ProtectedDelete)
-        def protected_delete(request, exc):
-            return error_response(request, str(exc), 409)
 
         def permission_denied(request, exc):
             return error_response(request, _("Permission denied."), 403)
