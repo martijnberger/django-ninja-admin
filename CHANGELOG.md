@@ -7,8 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.68 - 2026-07-05
+
 ### Changed
 
+- Added explicit nonnegative bounds to action deleted-count and delete-error
+  model-count response maps.
 - Added explicit positive bounds to date-hierarchy selected parameter metadata
   schemas.
 - Narrowed changelist page-range metadata to positive page numbers or Django's

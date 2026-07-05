@@ -9,6 +9,7 @@ from django_ninja_admin.schemas import (
     ChangelistConfig,
     ChangelistResponse,
     DateHierarchyParams,
+    ErrorResponse,
     FieldAttributes,
     FormResponse,
     HistoryResponse,
@@ -311,6 +312,13 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     action_responses = schema_body["paths"]["/admin-api/testapp/product/actions"]["post"]["responses"]
     action_response_schema = action_responses["200"]["content"]["application/json"]["schema"]
     assert components["ActionResponse"]["additionalProperties"] is False
+    assert components["ActionResponse"]["properties"]["deleted"]["anyOf"] == [
+        {
+            "additionalProperties": {"$ref": "#/components/schemas/NonNegativeCount"},
+            "type": "object",
+        },
+        {"type": "null"},
+    ]
     assert {"$ref": "#/components/schemas/ActionResponse"} in action_response_schema["anyOf"]
     assert {"$ref": "#/components/schemas/ReportNamesActionResult"} in action_response_schema["anyOf"]
     assert {"$ref": "#/components/schemas/StockStatusActionResult"} in action_response_schema["anyOf"]
@@ -1028,6 +1036,14 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert error_examples[2]["protected"] == ["Protected review: Nice camera"]
     assert error_examples[2]["perms_needed"] == ["Can delete product review"]
     assert error_examples[2]["model_count"] == {"product reviews": 1}
+    assert components["ErrorResponse"]["properties"]["model_count"]["anyOf"] == [
+        {
+            "additionalProperties": {"$ref": "#/components/schemas/NonNegativeCount"},
+            "type": "object",
+        },
+        {"type": "null"},
+    ]
+    assert components["NonNegativeCount"] == {"minimum": 0, "type": "integer"}
 
     for path, method, statuses in [
         ("/admin-api/apps", "get", {"401", "403"}),
@@ -1184,6 +1200,31 @@ def test_disabled_action_response_schema_ignores_site_action_schemas(db):
 
     assert model_admin.has_registered_actions() is False
     assert model_admin.get_action_response_schema(None) is ActionResponse
+
+
+def test_public_response_count_maps_reject_negative_values():
+    ActionResponse.model_validate({"detail": "Action completed.", "deleted": {"products": 0}})
+    ErrorResponse.model_validate(
+        {
+            "errors": [{"message": "Cannot delete selected objects.", "param": "delete"}],
+            "model_count": {"products": 0},
+        }
+    )
+
+    with pytest.raises(ValidationError) as action_exc_info:
+        ActionResponse.model_validate({"detail": "Action completed.", "deleted": {"products": -1}})
+    assert action_exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert action_exc_info.value.errors()[0]["loc"] == ("deleted", "products")
+
+    with pytest.raises(ValidationError) as error_exc_info:
+        ErrorResponse.model_validate(
+            {
+                "errors": [{"message": "Cannot delete selected objects.", "param": "delete"}],
+                "model_count": {"products": -1},
+            }
+        )
+    assert error_exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert error_exc_info.value.errors()[0]["loc"] == ("model_count", "products")
 
 
 def test_changelist_action_form_schema_is_typed_and_closed(admin_client, sample):

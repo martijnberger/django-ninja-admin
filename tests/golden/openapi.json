@@ -106,7 +106,7 @@
             "anyOf": [
               {
                 "additionalProperties": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/NonNegativeCount"
                 },
                 "type": "object"
               },
@@ -1848,7 +1848,7 @@
             "anyOf": [
               {
                 "additionalProperties": {
-                  "type": "integer"
+                  "$ref": "#/components/schemas/NonNegativeCount"
                 },
                 "type": "object"
               },
@@ -4722,6 +4722,10 @@
         ],
         "title": "ModelSummary",
         "type": "object"
+      },
+      "NonNegativeCount": {
+        "minimum": 0,
+        "type": "integer"
       },
       "NonNegativeMetadataInteger": {
         "minimum": 0,

@@ -81,12 +81,13 @@ def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, samp
         },
         "model_count": {
             "anyOf": [
-                {"additionalProperties": {"type": "integer"}, "type": "object"},
+                {"additionalProperties": {"$ref": "#/components/schemas/NonNegativeCount"}, "type": "object"},
                 {"type": "null"},
             ],
             "title": "Model Count",
         },
     }
+    assert components["NonNegativeCount"] == {"minimum": 0, "type": "integer"}
 
     for path, method, status in [
         ("/admin-api/apps", "get", "401"),

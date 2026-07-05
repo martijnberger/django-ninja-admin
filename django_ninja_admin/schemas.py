@@ -43,6 +43,7 @@ class HistoryActionFlag(IntEnum):
 
 type DeletedObject = str | list[DeletedObject]
 type ErrorMessage = str | list[str]
+type NonNegativeCount = Annotated[int, Field(ge=0)]
 
 
 class ErrorItem(AdminSchema):
@@ -86,7 +87,7 @@ class ErrorResponse(AdminSchema):
     deleted_objects: list[DeletedObject] | None = None
     protected: list[str] | None = None
     perms_needed: list[str] | None = None
-    model_count: dict[str, int] | None = None
+    model_count: dict[str, NonNegativeCount] | None = None
 
 
 class CsrfTokenResponse(AdminSchema):
@@ -119,7 +120,7 @@ class ActionResponse(AdminSchema):
     )
 
     detail: str
-    deleted: dict[str, int] | None = None
+    deleted: dict[str, NonNegativeCount] | None = None
 
     @field_validator("detail", mode="before")
     @classmethod
