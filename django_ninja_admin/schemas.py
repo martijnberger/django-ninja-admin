@@ -404,6 +404,10 @@ class RelationWidgetMetadata(SourceFieldIdentity):
     to_field_internal_type: str | None = None
     to_field_attname: str | None = None
     multiple: bool | None = None
+    can_add_related: bool | None = None
+    can_change_related: bool | None = None
+    can_delete_related: bool | None = None
+    can_view_related: bool | None = None
     url: str | None = None
     query: SourceFieldIdentity | ToFieldQuery | None = None
 
@@ -425,6 +429,10 @@ class FilteredSelectMetadata(SourceFieldIdentity):
     to_field_class: str | None = None
     to_field_internal_type: str | None = None
     to_field_attname: str | None = None
+    can_add_related: bool | None = None
+    can_change_related: bool | None = None
+    can_delete_related: bool | None = None
+    can_view_related: bool | None = None
     url: str | None = None
     query: ToFieldQuery | None = None
 

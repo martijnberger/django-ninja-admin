@@ -3278,6 +3278,50 @@
             ],
             "title": "Available Count"
           },
+          "can_add_related": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Add Related"
+          },
+          "can_change_related": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Change Related"
+          },
+          "can_delete_related": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Delete Related"
+          },
+          "can_view_related": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can View Related"
+          },
           "direction": {
             "enum": [
               "horizontal",
@@ -6628,6 +6672,50 @@
               }
             ],
             "title": "App Label"
+          },
+          "can_add_related": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Add Related"
+          },
+          "can_change_related": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Change Related"
+          },
+          "can_delete_related": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can Delete Related"
+          },
+          "can_view_related": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Can View Related"
           },
           "field_name": {
             "title": "Field Name",

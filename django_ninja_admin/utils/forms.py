@@ -15,6 +15,7 @@ from django.core.validators import (
 from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 
+from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.utils.format_error import format_error
 from django_ninja_admin.utils.json_values import jsonish_value
 from django_ninja_admin.utils.lookup import (
@@ -763,6 +764,7 @@ def _relation_widget_metadata(source_model, field_name, *, widget, request=None,
                 "to_field_name": to_field_name,
                 **_relation_target_field_metadata(remote_model, to_field_name),
                 "multiple": bool(getattr(source_field, "many_to_many", False)),
+                **_related_permission_metadata(remote_model, request=request, model_admin=model_admin),
             }
         )
 
@@ -777,6 +779,21 @@ def _relation_widget_metadata(source_model, field_name, *, widget, request=None,
         if to_field_name is not None:
             metadata["query"] = {"_to_field": to_field_name}
     return metadata
+
+
+def _related_permission_metadata(remote_model, *, request=None, model_admin=None):
+    if request is None or model_admin is None or getattr(model_admin, "admin_site", None) is None:
+        return {}
+    try:
+        related_admin = model_admin.admin_site.get_model_admin(remote_model)
+    except NotRegistered:
+        return {}
+    return {
+        "can_add_related": bool(related_admin.has_add_permission(request)),
+        "can_change_related": bool(related_admin.has_change_permission(request)),
+        "can_delete_related": bool(related_admin.has_delete_permission(request)),
+        "can_view_related": bool(related_admin.has_view_permission(request)),
+    }
 
 
 def _relation_to_field_name(source_field, remote_model):
@@ -874,6 +891,7 @@ def _filtered_select_metadata(
                     "related_verbose_name_plural": str(remote_opts.verbose_name_plural),
                     "to_field_name": to_field_name,
                     **_relation_target_field_metadata(remote_model, to_field_name),
+                    **_related_permission_metadata(remote_model, request=request, model_admin=model_admin),
                 }
             )
     base_path = _admin_mount_path(request, source_model, model_admin=model_admin)

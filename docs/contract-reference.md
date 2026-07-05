@@ -55,8 +55,8 @@ that intentionally return no body can declare `response={204: None}`.
 Form-description responses expose typed semantic widget metadata, including
 relation lookup hints for autocomplete, raw-id, and dual-select filtered
 controls. These hints describe source fields, related models, target fields,
-and mount-aware endpoint/query data without exposing rendered Django widget
-internals.
+related add/change/delete/view permissions, and mount-aware endpoint/query data
+without exposing rendered Django widget internals.
 
 Changelist responses expose typed row/cell metadata and typed action controls.
 Cells marked as display links include a `link_url` pointing at the same

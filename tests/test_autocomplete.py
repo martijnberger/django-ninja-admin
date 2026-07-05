@@ -15,6 +15,13 @@ from tests.testapp.models import (
     Tag,
 )
 
+RELATED_PERMISSION_METADATA = {
+    "can_add_related": True,
+    "can_change_related": True,
+    "can_delete_related": True,
+    "can_view_related": True,
+}
+
 
 def test_autocomplete_honors_remote_get_search_fields_hook(admin_client, sample, monkeypatch):
     category_admin = site.get_model_admin(Category)
@@ -255,6 +262,7 @@ def test_autocomplete_uses_remote_related_to_field(admin_client):
         "to_field_internal_type": "SlugField",
         "to_field_attname": "slug",
         "multiple": False,
+        **RELATED_PERMISSION_METADATA,
         "url": "/slug-autocomplete-admin/autocomplete",
         "query": {
             "app_label": "testapp",
@@ -334,6 +342,7 @@ def test_autocomplete_supports_one_to_one_source_fields(admin_client, sample):
         "to_field_internal_type": "BigAutoField",
         "to_field_attname": "id",
         "multiple": False,
+        **RELATED_PERMISSION_METADATA,
         "url": "/one-to-one-autocomplete-admin/autocomplete",
         "query": {
             "app_label": "testapp",
@@ -388,6 +397,7 @@ def test_autocomplete_applies_source_field_limit_choices_to(admin_client):
         "to_field_internal_type": "BigAutoField",
         "to_field_attname": "id",
         "multiple": False,
+        **RELATED_PERMISSION_METADATA,
         "url": "/slug-autocomplete-admin/autocomplete",
         "query": {
             "app_label": "testapp",

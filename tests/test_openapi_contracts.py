@@ -1100,6 +1100,20 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         {"$ref": "#/components/schemas/SourceFieldIdentity"},
         {"$ref": "#/components/schemas/ToFieldQuery"},
     ]
+    for related_permission_field in (
+        "can_add_related",
+        "can_change_related",
+        "can_delete_related",
+        "can_view_related",
+    ):
+        assert components["RelationWidgetMetadata"]["properties"][related_permission_field]["anyOf"] == [
+            {"type": "boolean"},
+            {"type": "null"},
+        ]
+        assert components["FilteredSelectMetadata"]["properties"][related_permission_field]["anyOf"] == [
+            {"type": "boolean"},
+            {"type": "null"},
+        ]
     assert components["ToFieldQuery"]["properties"]["_to_field"]["type"] == "string"
     assert components["FilteredSelectMetadata"]["properties"]["direction"]["enum"] == ["horizontal", "vertical"]
     assert components["FilteredSelectMetadata"]["properties"]["query"]["anyOf"] == [

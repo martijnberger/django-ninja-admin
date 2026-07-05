@@ -14,6 +14,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   field, and suspicious multi-hop lookup decisions.
 - Added typed `unselected_count` filtered-select metadata so clients can render
   many-to-many dual-select widgets without recomputing available pane counts.
+- Added related add/change/delete/view permission metadata to autocomplete,
+  raw-id, and filtered-select form widget descriptions.
 
 ## 0.1.74 - 2026-07-05
 

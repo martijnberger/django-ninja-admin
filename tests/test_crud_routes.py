@@ -26,10 +26,35 @@ RENDERED_FIELD_ATTR_KEYS = {
     "show_hidden_initial",
     "template_name",
 }
+RELATED_PERMISSION_METADATA = {
+    "can_add_related": True,
+    "can_change_related": True,
+    "can_delete_related": True,
+    "can_view_related": True,
+}
 
 
 def assert_no_rendered_field_attrs(attrs):
     assert RENDERED_FIELD_ATTR_KEYS.isdisjoint(attrs)
+
+
+def test_form_relation_widget_metadata_reports_related_permissions(staff_client, sample):
+    response = staff_client("view_product").get(f"/admin-api/testapp/product/{sample.pk}/form")
+
+    assert response.status_code == 200
+    fields_by_name = {field["name"]: field for field in response.json()["form"]["fields"]}
+    related_permission_metadata = {
+        "can_add_related": False,
+        "can_change_related": False,
+        "can_delete_related": False,
+        "can_view_related": False,
+    }
+    assert {
+        key: fields_by_name["category"]["attrs"]["autocomplete"][key] for key in related_permission_metadata
+    } == related_permission_metadata
+    assert {
+        key: fields_by_name["tags"]["attrs"]["filtered_select"][key] for key in related_permission_metadata
+    } == related_permission_metadata
 
 
 def test_forms_create_update_delete_and_history(admin_client, sample):
@@ -97,6 +122,7 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
         "to_field_internal_type": "BigAutoField",
         "to_field_attname": "id",
         "multiple": False,
+        **RELATED_PERMISSION_METADATA,
         "url": "/admin-api/autocomplete",
         "query": {
             "app_label": "testapp",
@@ -161,6 +187,7 @@ def test_forms_create_update_delete_and_history(admin_client, sample):
         "to_field_class": "BigAutoField",
         "to_field_internal_type": "BigAutoField",
         "to_field_attname": "id",
+        **RELATED_PERMISSION_METADATA,
         "url": "/admin-api/testapp/tag",
         "query": {"_to_field": "id"},
     }
