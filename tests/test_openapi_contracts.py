@@ -973,13 +973,39 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["IndexedInputFormats"]["properties"]["index"]["minimum"] == 0
     assert field_attrs_props["select_date"]["anyOf"][0] == {"$ref": "#/components/schemas/SelectDateMetadata"}
     assert components["SelectDateMetadata"]["additionalProperties"] is False
-    assert components["SelectDateMetadata"]["properties"]["months"]["items"] == {
-        "$ref": "#/components/schemas/SelectDateChoice"
+    assert components["SelectDateMetadata"]["properties"]["years"]["items"] == {
+        "$ref": "#/components/schemas/SelectDateYear"
     }
-    assert components["SelectDateMetadata"]["properties"]["days"]["items"]["minimum"] == 1
-    assert components["SelectDateMetadata"]["properties"]["days"]["items"]["maximum"] == 31
+    assert components["SelectDateMetadata"]["properties"]["months"]["items"] == {
+        "$ref": "#/components/schemas/SelectDateMonthChoice"
+    }
+    assert components["SelectDateMetadata"]["properties"]["days"]["items"] == {
+        "$ref": "#/components/schemas/SelectDateDay"
+    }
     assert components["SelectDateMetadata"]["properties"]["empty_choices"] == {
         "$ref": "#/components/schemas/SelectDateEmptyChoices"
+    }
+    assert components["SelectDateMetadata"]["properties"]["selected"]["anyOf"][0] == {
+        "$ref": "#/components/schemas/SelectDateSelected"
+    }
+    assert components["SelectDateYear"] == {"minimum": 1, "maximum": 9999, "type": "integer"}
+    assert components["SelectDateMonth"] == {"minimum": 1, "maximum": 12, "type": "integer"}
+    assert components["SelectDateDay"] == {"minimum": 1, "maximum": 31, "type": "integer"}
+    assert components["SelectDateMonthChoice"]["properties"]["value"] == {
+        "$ref": "#/components/schemas/SelectDateMonth"
+    }
+    assert components["SelectDateEmptyChoice"]["properties"]["value"]["allOf"] == [
+        {"$ref": "#/components/schemas/SelectDateEmptyChoiceValue"}
+    ]
+    assert components["SelectDateEmptyChoiceValue"] == {"anyOf": [{"const": "", "type": "string"}, {"type": "null"}]}
+    assert components["SelectDateSelected"]["properties"]["year"]["anyOf"][0] == {
+        "$ref": "#/components/schemas/SelectDateYear"
+    }
+    assert components["SelectDateSelected"]["properties"]["month"]["anyOf"][0] == {
+        "$ref": "#/components/schemas/SelectDateMonth"
+    }
+    assert components["SelectDateSelected"]["properties"]["day"]["anyOf"][0] == {
+        "$ref": "#/components/schemas/SelectDateDay"
     }
     selected_options_schema = field_attrs_props["selected_options"]["anyOf"][0]
     assert selected_options_schema["items"] == {"$ref": "#/components/schemas/SelectedOption"}
@@ -1330,24 +1356,54 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
         error["type"] == "greater_than_equal" and error["loc"][-1] == "index" for error in exc_info.value.errors()
     )
 
+    select_date_metadata = {
+        "order": ["year", "month", "day"],
+        "years": [2026],
+        "months": [{"value": 1, "label": "January"}],
+        "days": [1],
+        "empty_choices": {
+            "year": {"value": "", "label": "---"},
+            "month": {"value": "", "label": "---"},
+            "day": {"value": "", "label": "---"},
+        },
+        "selected": {"year": 2026, "month": 1, "day": 1},
+    }
+    FieldAttributes.model_validate({"select_date": select_date_metadata})
+
+    invalid_select_date_days = deepcopy(select_date_metadata)
+    invalid_select_date_days["days"] = [0]
     with pytest.raises(ValidationError) as exc_info:
-        FieldAttributes.model_validate(
-            {
-                "select_date": {
-                    "order": ["year", "month", "day"],
-                    "years": [2026],
-                    "months": [{"value": 1, "label": "January"}],
-                    "days": [0],
-                    "empty_choices": {
-                        "year": {"value": None, "label": "---"},
-                        "month": {"value": None, "label": "---"},
-                        "day": {"value": None, "label": "---"},
-                    },
-                }
-            }
-        )
+        FieldAttributes.model_validate({"select_date": invalid_select_date_days})
     assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
     assert exc_info.value.errors()[0]["loc"] == ("select_date", "days", 0)
+
+    invalid_select_date_years = deepcopy(select_date_metadata)
+    invalid_select_date_years["years"] = [10000]
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"select_date": invalid_select_date_years})
+    assert exc_info.value.errors()[0]["type"] == "less_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("select_date", "years", 0)
+
+    invalid_select_date_month = deepcopy(select_date_metadata)
+    invalid_select_date_month["months"] = [{"value": 13, "label": "Undecimber"}]
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"select_date": invalid_select_date_month})
+    assert exc_info.value.errors()[0]["type"] == "less_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("select_date", "months", 0, "value")
+
+    invalid_select_date_selected = deepcopy(select_date_metadata)
+    invalid_select_date_selected["selected"]["day"] = 32
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"select_date": invalid_select_date_selected})
+    assert exc_info.value.errors()[0]["type"] == "less_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("select_date", "selected", "day")
+
+    invalid_select_date_empty = deepcopy(select_date_metadata)
+    invalid_select_date_empty["empty_choices"]["year"]["value"] = "Year"
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"select_date": invalid_select_date_empty})
+    assert exc_info.value.errors()[0]["type"] == "literal_error"
+    assert exc_info.value.errors()[0]["loc"] == ("select_date", "empty_choices", "year", "value")
 
     with pytest.raises(ValidationError) as exc_info:
         DateHierarchyParams.model_validate({"year": 2026, "month": 0})

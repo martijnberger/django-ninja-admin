@@ -485,36 +485,49 @@ class IndexedInputFormats(AdminSchema):
     input_formats: list[str]
 
 
-class SelectDateChoice(AdminSchema):
+type SelectDateYear = Annotated[int, Field(ge=1, le=9999)]
+type SelectDateMonth = Annotated[int, Field(ge=1, le=12)]
+type SelectDateDay = Annotated[int, Field(ge=1, le=31)]
+type SelectDateEmptyChoiceValue = Literal[""] | None
+
+
+class SelectDateMonthChoice(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
-    value: FieldMetadataValue = None
+    value: SelectDateMonth
+    label: str
+
+
+class SelectDateEmptyChoice(AdminSchema):
+    model_config = ConfigDict(extra="forbid")
+
+    value: SelectDateEmptyChoiceValue = None
     label: str
 
 
 class SelectDateEmptyChoices(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
-    year: SelectDateChoice
-    month: SelectDateChoice
-    day: SelectDateChoice
+    year: SelectDateEmptyChoice
+    month: SelectDateEmptyChoice
+    day: SelectDateEmptyChoice
 
 
 class SelectDateSelected(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
-    year: FieldMetadataValue = None
-    month: FieldMetadataValue = None
-    day: FieldMetadataValue = None
+    year: SelectDateYear | None = None
+    month: SelectDateMonth | None = None
+    day: SelectDateDay | None = None
 
 
 class SelectDateMetadata(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
     order: list[Literal["year", "month", "day"]]
-    years: list[FieldMetadataValue]
-    months: list[SelectDateChoice]
-    days: list[Annotated[int, Field(ge=1, le=31)]]
+    years: list[SelectDateYear]
+    months: list[SelectDateMonthChoice]
+    days: list[SelectDateDay]
     empty_choices: SelectDateEmptyChoices
     selected: SelectDateSelected | None = None
 

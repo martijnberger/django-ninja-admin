@@ -6996,7 +6996,12 @@
         "title": "Row",
         "type": "object"
       },
-      "SelectDateChoice": {
+      "SelectDateDay": {
+        "maximum": 31,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "SelectDateEmptyChoice": {
         "additionalProperties": false,
         "properties": {
           "label": {
@@ -7006,7 +7011,7 @@
           "value": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "$ref": "#/components/schemas/SelectDateEmptyChoiceValue"
               }
             ]
           }
@@ -7014,20 +7019,31 @@
         "required": [
           "label"
         ],
-        "title": "SelectDateChoice",
+        "title": "SelectDateEmptyChoice",
         "type": "object"
+      },
+      "SelectDateEmptyChoiceValue": {
+        "anyOf": [
+          {
+            "const": "",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
       "SelectDateEmptyChoices": {
         "additionalProperties": false,
         "properties": {
           "day": {
-            "$ref": "#/components/schemas/SelectDateChoice"
+            "$ref": "#/components/schemas/SelectDateEmptyChoice"
           },
           "month": {
-            "$ref": "#/components/schemas/SelectDateChoice"
+            "$ref": "#/components/schemas/SelectDateEmptyChoice"
           },
           "year": {
-            "$ref": "#/components/schemas/SelectDateChoice"
+            "$ref": "#/components/schemas/SelectDateEmptyChoice"
           }
         },
         "required": [
@@ -7043,9 +7059,7 @@
         "properties": {
           "days": {
             "items": {
-              "maximum": 31,
-              "minimum": 1,
-              "type": "integer"
+              "$ref": "#/components/schemas/SelectDateDay"
             },
             "title": "Days",
             "type": "array"
@@ -7055,7 +7069,7 @@
           },
           "months": {
             "items": {
-              "$ref": "#/components/schemas/SelectDateChoice"
+              "$ref": "#/components/schemas/SelectDateMonthChoice"
             },
             "title": "Months",
             "type": "array"
@@ -7084,7 +7098,7 @@
           },
           "years": {
             "items": {
-              "$ref": "#/components/schemas/FieldMetadataValue"
+              "$ref": "#/components/schemas/SelectDateYear"
             },
             "title": "Years",
             "type": "array"
@@ -7100,33 +7114,70 @@
         "title": "SelectDateMetadata",
         "type": "object"
       },
+      "SelectDateMonth": {
+        "maximum": 12,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "SelectDateMonthChoice": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "$ref": "#/components/schemas/SelectDateMonth"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "SelectDateMonthChoice",
+        "type": "object"
+      },
       "SelectDateSelected": {
         "additionalProperties": false,
         "properties": {
           "day": {
-            "allOf": [
+            "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "$ref": "#/components/schemas/SelectDateDay"
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "month": {
-            "allOf": [
+            "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "$ref": "#/components/schemas/SelectDateMonth"
+              },
+              {
+                "type": "null"
               }
             ]
           },
           "year": {
-            "allOf": [
+            "anyOf": [
               {
-                "$ref": "#/components/schemas/FieldMetadataValue"
+                "$ref": "#/components/schemas/SelectDateYear"
+              },
+              {
+                "type": "null"
               }
             ]
           }
         },
         "title": "SelectDateSelected",
         "type": "object"
+      },
+      "SelectDateYear": {
+        "maximum": 9999,
+        "minimum": 1,
+        "type": "integer"
       },
       "SelectedOption": {
         "additionalProperties": false,

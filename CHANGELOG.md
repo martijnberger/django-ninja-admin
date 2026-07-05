@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Replaced broad JSON select-date widget metadata values with bounded
+  year/month/day and empty-choice schemas.
 - Added an explicit year-range upper bound to date-hierarchy choice value
   schemas.
 
