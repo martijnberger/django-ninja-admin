@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added Django-admin comparison coverage for relation-edge lookup validation,
+  including remote primary-key, remote `to_field`, declared relation, missing
+  field, and suspicious multi-hop lookup decisions.
+
 ## 0.1.74 - 2026-07-05
 
 ### Added

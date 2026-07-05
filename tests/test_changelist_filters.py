@@ -1,5 +1,8 @@
 from datetime import UTC, datetime
 
+import pytest
+from django.contrib.admin.options import ModelAdmin as DjangoModelAdmin
+from django.contrib.admin.sites import AdminSite as DjangoAdminSite
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.test import RequestFactory, override_settings
@@ -338,6 +341,47 @@ def test_changelist_allows_local_field_lookup_suffixes(admin_client, sample):
     assert response.status_code == 200
     assert response.json()["config"]["result_count"] == 1
     assert response.json()["rows"][0]["cells"]["name"] == "Alpha"
+
+
+def _lookup_allowed_decisions(model, lookup, value, *, list_filter=()):
+    request = RequestFactory().get(f"/admin-api/{model._meta.app_label}/{model._meta.model_name}")
+    admin_attrs = {"list_filter": list_filter}
+    NinjaModelAdmin = type("NinjaLookupAdmin", (ModelAdmin,), admin_attrs)
+    DjangoModelAdminClass = type("DjangoLookupAdmin", (DjangoModelAdmin,), admin_attrs)
+
+    admin_site = NinjaAdminSite(include_auth=False)
+    admin_site.register(model, NinjaModelAdmin)
+    ninja_admin = admin_site.get_model_admin(model)
+    django_admin = DjangoModelAdminClass(model, DjangoAdminSite())
+
+    return (
+        ninja_admin.lookup_allowed(lookup, value, request),
+        django_admin.lookup_allowed(lookup, value, request),
+    )
+
+
+@pytest.mark.parametrize(
+    ("model", "lookup", "value", "list_filter", "expected"),
+    [
+        pytest.param(Product, "price__gte", "10", (), True, id="local-transform"),
+        pytest.param(Product, "missing__exact", "x", (), True, id="missing-field-deferred"),
+        pytest.param(Product, "category__id__exact", "1", (), True, id="remote-primary-key"),
+        pytest.param(CategorySlugLink, "category__slug__exact", "cameras", (), True, id="remote-to-field"),
+        pytest.param(Product, "category__slug__exact", "cameras", (), False, id="undeclared-remote-non-pk"),
+        pytest.param(Product, "category__slug__exact", "cameras", ("category__slug",), True, id="declared-relation"),
+        pytest.param(Product, "category__products__name", "Alpha", (), False, id="suspicious-multihop"),
+    ],
+)
+def test_lookup_allowed_matches_django_admin_for_relation_edge_cases(model, lookup, value, list_filter, expected):
+    ninja_allowed, django_allowed = _lookup_allowed_decisions(
+        model,
+        lookup,
+        value,
+        list_filter=list_filter,
+    )
+
+    assert ninja_allowed is expected
+    assert ninja_allowed == django_allowed
 
 
 @isolate_apps("tests.testapp")
