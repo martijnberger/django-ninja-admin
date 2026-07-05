@@ -1482,6 +1482,7 @@
           "ordering_index": {
             "anyOf": [
               {
+                "minimum": 1,
                 "type": "integer"
               },
               {
@@ -1504,6 +1505,7 @@
           "sort_priority": {
             "anyOf": [
               {
+                "minimum": 1,
                 "type": "integer"
               },
               {
@@ -1537,6 +1539,7 @@
             "$ref": "#/components/schemas/FieldAttributes"
           },
           "index": {
+            "minimum": 0,
             "title": "Index",
             "type": "integer"
           },
@@ -3238,6 +3241,7 @@
           "available_count": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -3352,6 +3356,7 @@
           "selected_count": {
             "anyOf": [
               {
+                "minimum": 0,
                 "type": "integer"
               },
               {
@@ -4226,6 +4231,7 @@
         "additionalProperties": false,
         "properties": {
           "index": {
+            "minimum": 0,
             "title": "Index",
             "type": "integer"
           },

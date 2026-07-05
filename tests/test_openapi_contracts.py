@@ -4,7 +4,14 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, action, site
-from django_ninja_admin.schemas import ActionResponse, ChangelistResponse, FormResponse, HistoryResponse, Pagination
+from django_ninja_admin.schemas import (
+    ActionResponse,
+    ChangelistResponse,
+    FieldAttributes,
+    FormResponse,
+    HistoryResponse,
+    Pagination,
+)
 from tests.testapp.models import Product
 
 
@@ -655,6 +662,15 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "#/components/schemas/ViewOnSiteResponse"
     )
     assert components["ViewOnSiteResponse"]["examples"][0] == {"url": "https://example.com/products/1/"}
+    column_props = components["Column"]["properties"]
+    assert column_props["sort_priority"]["anyOf"] == [
+        {"minimum": 1, "type": "integer"},
+        {"type": "null"},
+    ]
+    assert column_props["ordering_index"]["anyOf"] == [
+        {"minimum": 1, "type": "integer"},
+        {"type": "null"},
+    ]
     assert components["Row"]["properties"]["cell_metadata"]["additionalProperties"] == {
         "$ref": "#/components/schemas/CellMetadata"
     }
@@ -865,6 +881,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert field_attrs_props["combo_fields"]["anyOf"][0]["items"] == {"$ref": "#/components/schemas/ComboFieldMetadata"}
     assert components["ComboFieldMetadata"]["additionalProperties"] is False
     assert set(components["ComboFieldMetadata"]["required"]) == {"attrs", "index", "type"}
+    assert components["ComboFieldMetadata"]["properties"]["index"]["minimum"] == 0
     assert components["ComboFieldMetadata"]["properties"]["attrs"] == {"$ref": "#/components/schemas/FieldAttributes"}
     assert {"type": "string"} in components["FieldMetadataValue"]["anyOf"]
     assert {"type": "null"} in components["FieldMetadataValue"]["anyOf"]
@@ -897,6 +914,7 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert {"$ref": "#/components/schemas/IndexedInputFormats"} in input_format_items
     assert components["IndexedInputFormats"]["additionalProperties"] is False
     assert set(components["IndexedInputFormats"]["required"]) == {"index", "input_formats"}
+    assert components["IndexedInputFormats"]["properties"]["index"]["minimum"] == 0
     assert field_attrs_props["select_date"]["anyOf"][0] == {"$ref": "#/components/schemas/SelectDateMetadata"}
     assert components["SelectDateMetadata"]["additionalProperties"] is False
     assert components["SelectDateMetadata"]["properties"]["months"]["items"] == {
@@ -912,11 +930,11 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert field_attrs_props["raw_id"]["anyOf"][0] == {"$ref": "#/components/schemas/RelationWidgetMetadata"}
     assert field_attrs_props["filtered_select"]["anyOf"][0] == {"$ref": "#/components/schemas/FilteredSelectMetadata"}
     assert components["FilteredSelectMetadata"]["properties"]["selected_count"]["anyOf"] == [
-        {"type": "integer"},
+        {"minimum": 0, "type": "integer"},
         {"type": "null"},
     ]
     assert components["FilteredSelectMetadata"]["properties"]["available_count"]["anyOf"] == [
-        {"type": "integer"},
+        {"minimum": 0, "type": "integer"},
         {"type": "null"},
     ]
     assert field_attrs_props["radio"]["anyOf"][0] == {"$ref": "#/components/schemas/RadioMetadata"}
@@ -1147,6 +1165,49 @@ def test_changelist_action_form_schema_is_typed_and_closed(admin_client, sample)
     assert error["type"] == "extra_forbidden"
     assert error["loc"][:2] == ("action_form", 0)
     assert error["loc"][-2:] == ("attrs", "unexpected")
+
+
+def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client, sample):
+    changelist_body = admin_client.get("/admin-api/testapp/product").json()
+
+    invalid_sort_priority = deepcopy(changelist_body)
+    invalid_sort_priority["columns"][0]["sort_priority"] = 0
+    with pytest.raises(ValidationError) as exc_info:
+        ChangelistResponse.model_validate(invalid_sort_priority)
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("columns", 0, "sort_priority")
+
+    invalid_ordering_index = deepcopy(changelist_body)
+    invalid_ordering_index["columns"][0]["ordering_index"] = 0
+    with pytest.raises(ValidationError) as exc_info:
+        ChangelistResponse.model_validate(invalid_ordering_index)
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("columns", 0, "ordering_index")
+
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate(
+            {
+                "filtered_select": {
+                    "field_name": "tags",
+                    "direction": "vertical",
+                    "is_stacked": True,
+                    "selected_count": -1,
+                }
+            }
+        )
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("filtered_select", "selected_count")
+
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"combo_fields": [{"index": -1, "type": "CharField", "attrs": {}}]})
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("combo_fields", 0, "index")
+
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"input_formats": [{"index": -1, "input_formats": ["%Y-%m-%d"]}]})
+    assert any(
+        error["type"] == "greater_than_equal" and error["loc"][-1] == "index" for error in exc_info.value.errors()
+    )
 
 
 def test_formset_management_form_schemas_are_typed_and_closed(admin_client, sample):

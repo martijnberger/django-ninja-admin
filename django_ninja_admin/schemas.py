@@ -405,8 +405,8 @@ class FilteredSelectMetadata(SourceFieldIdentity):
     direction: Literal["horizontal", "vertical"]
     is_stacked: bool
     verbose_name: str | None = None
-    selected_count: int | None = None
-    available_count: int | None = None
+    selected_count: int | None = Field(default=None, ge=0)
+    available_count: int | None = Field(default=None, ge=0)
     related_model: str | None = None
     related_app_label: str | None = None
     related_model_name: str | None = None
@@ -478,7 +478,7 @@ class SubwidgetMetadata(WidgetMetadata):
 class IndexedInputFormats(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
-    index: int
+    index: int = Field(ge=0)
     input_formats: list[str]
 
 
@@ -640,7 +640,7 @@ class FieldAttributes(AdminSchema):
 class ComboFieldMetadata(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
-    index: int
+    index: int = Field(ge=0)
     type: str
     attrs: FieldAttributes
 
@@ -843,9 +843,9 @@ class Column(AdminSchema):
     sortable: bool = False
     sorted: bool = False
     ascending: bool = False
-    sort_priority: int | None = None
+    sort_priority: int | None = Field(default=None, ge=1)
     ordering_field: str | None = None
-    ordering_index: int | None = None
+    ordering_index: int | None = Field(default=None, ge=1)
     ascending_query_string: str | None = None
     descending_query_string: str | None = None
     remove_sorting_query_string: str | None = None
