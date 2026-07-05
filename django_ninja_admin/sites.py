@@ -94,6 +94,7 @@ from django_ninja_admin.utils.schema_examples import (
     form_data_example,
     form_field_example_value,
     json_request_examples_extra,
+    normalize_schema_override,
     pydantic_model_example,
     relation_form_field_example_value,
     schema_type_example,
@@ -2137,7 +2138,7 @@ class NinjaAdminSite:
         if schema_owner is not None:
 
             def override_example(value):
-                field_type, default = schema_owner._normalize_schema_override(value)
+                field_type, default = normalize_schema_override(value)
                 return schema_type_example(field_type, default)
 
         return form_data_example(

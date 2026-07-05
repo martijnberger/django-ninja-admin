@@ -16,7 +16,7 @@ from django_ninja_admin.schemas import (
     ObjectIdentifier,
 )
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
-from django_ninja_admin.utils.schema_examples import schema_example
+from django_ninja_admin.utils.schema_examples import schema_example, schema_override_cache_key
 
 PydanticCreateModel = cast(Any, create_model)
 
@@ -126,7 +126,7 @@ class InlineModelAdmin(BaseAdmin):
         cache_key = (
             "inline-row",
             tuple(form_fields),
-            self._schema_override_cache_key(overrides),
+            schema_override_cache_key(overrides),
             change,
             partial,
             require_pk,

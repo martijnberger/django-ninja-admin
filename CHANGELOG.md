@@ -12,6 +12,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Extracted shared JSON-compatible admin metadata normalization into
   `django_ninja_admin.utils.json_values` with direct coverage for Django lazy
   strings, `Q` objects, Decimals, model identifiers, and nested containers.
+- Removed remaining internal BaseAdmin schema-override shim methods so admin
+  schema generation calls the extracted schema example helpers directly.
 
 ## 0.1.71 - 2026-07-05
 

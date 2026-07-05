@@ -304,7 +304,7 @@ class BaseAdmin:
         form_fields = form_class.base_fields
         selected_fields = tuple(fields or form_fields.keys())
         overrides = self.get_form_schema_field_overrides(request, obj, change=change) or {}
-        cache_key = ("write", selected_fields, self._schema_override_cache_key(overrides), change, partial, name_suffix)
+        cache_key = ("write", selected_fields, schema_override_cache_key(overrides), change, partial, name_suffix)
         if cache_key not in cache:
             schema_fields = {}
             for field_name in selected_fields:
@@ -385,7 +385,7 @@ class BaseAdmin:
     def get_bulk_payload_schema(self, request=None):
         cache = getattr(self, "_mutation_payload_schema_cache", {})
         overrides = self.get_form_schema_field_overrides(request, change=True) or {}
-        cache_key = ("bulk", tuple(self.list_editable), self._schema_override_cache_key(overrides))
+        cache_key = ("bulk", tuple(self.list_editable), schema_override_cache_key(overrides))
         if cache_key not in cache:
             form_fields = {}
             if self.list_editable:
@@ -434,7 +434,7 @@ class BaseAdmin:
 
     def _form_data_example(self, form_fields, *, selected_fields=None, partial=False, overrides=None):
         def override_example(value):
-            field_type, default = self._normalize_schema_override(value)
+            field_type, default = normalize_schema_override(value)
             return schema_type_example(field_type, default)
 
         return form_data_example(
@@ -486,7 +486,7 @@ class BaseAdmin:
         if overrides is None:
             overrides = self.get_form_schema_field_overrides() or {}
         if field_name in overrides:
-            return self._normalize_schema_override(overrides[field_name])[0]
+            return normalize_schema_override(overrides[field_name])[0]
         if form_field is None:
             return Any
         return self.get_pydantic_type_for_form_field(form_field, choices_as_literal=choices_as_literal)
@@ -867,7 +867,7 @@ class BaseAdmin:
         custom_fields.extend(
             (name, field_type, default)
             for name, value in overrides.items()
-            for field_type, default in [self._normalize_schema_override(value)]
+            for field_type, default in [normalize_schema_override(value)]
         )
         return self._output_schema_for_fields(tuple(fields), tuple(custom_fields))
 
@@ -940,9 +940,6 @@ class BaseAdmin:
             return field.name, field_type, field.default
         return field.name, field_type, ...
 
-    def _normalize_schema_override(self, value):
-        return normalize_schema_override(value)
-
     def get_pydantic_type_for_model_field(self, field):
         if isinstance(
             field,
@@ -987,9 +984,6 @@ class BaseAdmin:
         from ninja.orm.fields import TYPES
 
         return TYPES.get(field.get_internal_type())
-
-    def _schema_override_cache_key(self, overrides):
-        return schema_override_cache_key(overrides)
 
     def get_form_fields_description(self, request, obj=None, *, initial=None, form=None):
         form_class = form.__class__ if form is not None else self.get_form_class(request, obj, change=obj is not None)
