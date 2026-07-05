@@ -473,6 +473,42 @@ def test_admin_checks_require_closed_custom_contract_schemas(db, make_site):
     }
 
 
+def test_admin_checks_validate_response_hook_status_map_keys(db, make_site):
+    class ClosedSchema(Schema):
+        model_config = ConfigDict(extra="forbid")
+
+    class HookResponse(ClosedSchema):
+        detail: str
+
+    class ValidResponseMapProductAdmin(ModelAdmin):
+        response_add_schema = {200: HookResponse, 202: HookResponse, 204: None}
+        response_change_schema = {200: HookResponse}
+        response_delete_schema = {204: None}
+
+    class InvalidResponseMapProductAdmin(ModelAdmin):
+        response_add_schema = {"200": HookResponse}
+        response_change_schema = {True: HookResponse}
+        response_delete_schema = {99: HookResponse, 600: HookResponse}
+
+    valid_ids = {
+        error.id for error in make_site(Product, ValidResponseMapProductAdmin).get_model_admin(Product).check()
+    }
+    invalid_errors = make_site(Product, InvalidResponseMapProductAdmin).get_model_admin(Product).check()
+
+    assert "django_ninja_admin.E197" not in valid_ids
+    assert [error.id for error in invalid_errors] == [
+        "django_ninja_admin.E197",
+        "django_ninja_admin.E197",
+        "django_ninja_admin.E197",
+        "django_ninja_admin.E197",
+    ]
+    assert {error.msg for error in invalid_errors} == {
+        "Keys in 'response_add_schema' status maps must be integer HTTP status codes from 100 to 599.",
+        "Keys in 'response_change_schema' status maps must be integer HTTP status codes from 100 to 599.",
+        "Keys in 'response_delete_schema' status maps must be integer HTTP status codes from 100 to 599.",
+    }
+
+
 def test_admin_checks_reject_non_sequence_actions_option(db, make_site):
     admin_site = make_site(Product, actions="delete_selected")
 

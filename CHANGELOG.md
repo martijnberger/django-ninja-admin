@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   including form metadata and route results.
 - Added mounted response-hook status-map coverage for add and delete hooks
   with distinct schemas for `200` and `202` responses.
+- Added admin system checks for invalid response-hook status-map keys, rejecting
+  non-integer and out-of-range HTTP status codes before route construction.
 
 ## 0.1.72 - 2026-07-05
 

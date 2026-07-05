@@ -108,6 +108,7 @@ PACKAGE_OPTION_CODES = {
     "list_select_related_path": "E193",
     "actions_type": "E195",
     "open_contract_schema": "E196",
+    "response_hook_status": "E197",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -737,7 +738,25 @@ def _check_form_schema_field_overrides(model_admin):
 def _check_response_hook_schemas(model_admin):
     errors = []
     for option in ("response_add_schema", "response_change_schema", "response_delete_schema"):
-        errors.extend(_check_closed_contract_schema(model_admin, getattr(model_admin, option, None), f"'{option}'"))
+        schema = getattr(model_admin, option, None)
+        errors.extend(_check_response_hook_status_map(model_admin, schema, option))
+        errors.extend(_check_closed_contract_schema(model_admin, schema, f"'{option}'"))
+    return errors
+
+
+def _check_response_hook_status_map(model_admin, schema, option):
+    if not isinstance(schema, Mapping):
+        return []
+    errors = []
+    for status_code in schema:
+        if type(status_code) is not int or not 100 <= status_code <= 599:
+            errors.append(
+                _error(
+                    model_admin.__class__,
+                    f"Keys in '{option}' status maps must be integer HTTP status codes from 100 to 599.",
+                    PACKAGE_OPTION_CODES["response_hook_status"],
+                )
+            )
     return errors
 
 

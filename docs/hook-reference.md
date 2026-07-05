@@ -98,7 +98,8 @@ Response hook return values are part of the generated-client contract:
 - Hooks returning custom bodies should declare a schema class, or a
   status-to-schema mapping when different statuses return different shapes.
   A schema class is advertised on `200` and `202` for add/change/delete hooks;
-  a mapping is used exactly as provided.
+  a mapping is used exactly as provided. Mapping keys must be integer HTTP
+  status codes from `100` through `599`.
 - Hook bodies should be JSON-compatible Pydantic/Ninja response data. They
   should not return Django `HttpResponse` objects, rendered templates, or
   model instances directly.
