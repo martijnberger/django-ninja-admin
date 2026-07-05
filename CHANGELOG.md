@@ -7,8 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.69 - 2026-07-05
+
 ### Changed
 
+- Rejected non-finite floats in recursive JSON metadata and default custom-route
+  JSON object response schemas.
 - Narrowed form and management-form error-message metadata maps to string
   values instead of arbitrary JSON values.
 - Narrowed validator detail `code` and `message` metadata to nullable strings

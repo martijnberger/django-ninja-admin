@@ -3087,7 +3087,7 @@
             "type": "integer"
           },
           {
-            "type": "number"
+            "$ref": "#/components/schemas/FiniteJsonFloat"
           },
           {
             "type": "boolean"
@@ -3467,6 +3467,9 @@
         ],
         "title": "FilteredSelectMetadata",
         "type": "object"
+      },
+      "FiniteJsonFloat": {
+        "type": "number"
       },
       "FormDescription": {
         "additionalProperties": false,
@@ -4557,7 +4560,7 @@
             "type": "integer"
           },
           {
-            "type": "number"
+            "$ref": "#/components/schemas/FiniteJsonFloat"
           },
           {
             "type": "boolean"

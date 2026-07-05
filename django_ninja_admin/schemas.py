@@ -329,8 +329,11 @@ class SelectedOption(AdminSchema):
     text: str
 
 
-type FieldMetadataValue = dict[str, FieldMetadataValue] | list[FieldMetadataValue] | str | int | float | bool | None
-type JsonSchemaValue = dict[str, JsonSchemaValue] | list[JsonSchemaValue] | str | int | float | bool | None
+type FiniteJsonFloat = Annotated[float, Field(allow_inf_nan=False)]
+type FieldMetadataValue = (
+    dict[str, FieldMetadataValue] | list[FieldMetadataValue] | str | int | FiniteJsonFloat | bool | None
+)
+type JsonSchemaValue = dict[str, JsonSchemaValue] | list[JsonSchemaValue] | str | int | FiniteJsonFloat | bool | None
 type JsonObject = dict[str, JsonSchemaValue]
 type ObjectIdentifier = str | int | float
 type ChoicePair = tuple[str | None, str]

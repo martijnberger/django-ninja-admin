@@ -1,3 +1,4 @@
+import math
 from decimal import Decimal
 
 import pytest
@@ -203,13 +204,15 @@ def test_json_model_fields_have_explicit_output_and_write_schemas(db):
             {"items": {"$ref": "#/$defs/FieldMetadataValue"}, "type": "array"},
             {"type": "string"},
             {"type": "integer"},
-            {"type": "number"},
+            {"$ref": "#/$defs/FiniteJsonFloat"},
             {"type": "boolean"},
             {"type": "null"},
         ],
     }
 
+    assert output_json_schema["$defs"]["FiniteJsonFloat"] == {"type": "number"}
     assert output_json_schema["$defs"]["FieldMetadataValue"] == json_value_schema
+    assert write_json_schema["$defs"]["FiniteJsonFloat"] == {"type": "number"}
     assert write_json_schema["$defs"]["FieldMetadataValue"] == json_value_schema
     assert output_json_schema["properties"]["payload"] == {"$ref": "#/$defs/FieldMetadataValue"}
     assert output_json_schema["properties"]["optional_payload"] == {
@@ -228,7 +231,11 @@ def test_json_model_fields_have_explicit_output_and_write_schemas(db):
     with pytest.raises(PydanticValidationError):
         output_schema.model_validate({"id": 1, "payload": object(), "optional_payload": None})
     with pytest.raises(PydanticValidationError):
+        output_schema.model_validate({"id": 1, "payload": {"score": math.nan}, "optional_payload": None})
+    with pytest.raises(PydanticValidationError):
         write_schema.model_validate({"payload": object(), "optional_payload": None})
+    with pytest.raises(PydanticValidationError):
+        write_schema.model_validate({"payload": {"score": math.inf}, "optional_payload": None})
     assert model_admin.serialize_object(JsonRecord(id=1, payload={"nested": [1, "two"]}, optional_payload=None)) == {
         "id": 1,
         "payload": {"nested": [1, "two"]},

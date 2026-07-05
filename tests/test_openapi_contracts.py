@@ -1,3 +1,4 @@
+import math
 from copy import deepcopy
 
 import pytest
@@ -15,6 +16,7 @@ from django_ninja_admin.schemas import (
     FormResponse,
     HistoryResponse,
     ImageFieldValue,
+    JsonObjectResponse,
     Pagination,
 )
 from tests.testapp.models import Product
@@ -948,7 +950,10 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["ComboFieldMetadata"]["properties"]["index"]["minimum"] == 0
     assert components["ComboFieldMetadata"]["properties"]["attrs"] == {"$ref": "#/components/schemas/FieldAttributes"}
     assert {"type": "string"} in components["FieldMetadataValue"]["anyOf"]
+    assert {"$ref": "#/components/schemas/FiniteJsonFloat"} in components["FieldMetadataValue"]["anyOf"]
     assert {"type": "null"} in components["FieldMetadataValue"]["anyOf"]
+    assert {"$ref": "#/components/schemas/FiniteJsonFloat"} in components["JsonSchemaValue"]["anyOf"]
+    assert components["FiniteJsonFloat"] == {"type": "number"}
     assert field_attrs_props["validator_details"]["anyOf"][0]["items"] == {
         "$ref": "#/components/schemas/ValidatorDetail"
     }
@@ -1380,6 +1385,23 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
         FieldAttributes.model_validate({"error_messages": {"required": ["This field is required."]}})
     assert exc_info.value.errors()[0]["type"] == "string_type"
     assert exc_info.value.errors()[0]["loc"] == ("error_messages", "required")
+
+    FieldAttributes.model_validate({"value": 1.25, "widget_attrs": {"data-score": 2.5}})
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"value": math.nan})
+    assert any(error["type"] == "finite_number" and error["loc"][0] == "value" for error in exc_info.value.errors())
+
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"widget_attrs": {"data-score": math.inf}})
+    assert any(
+        error["type"] == "finite_number" and error["loc"][:2] == ("widget_attrs", "data-score")
+        for error in exc_info.value.errors()
+    )
+
+    JsonObjectResponse.model_validate({"metadata": {"score": 1.5}})
+    with pytest.raises(ValidationError) as exc_info:
+        JsonObjectResponse.model_validate({"metadata": {"score": -math.inf}})
+    assert any(error["type"] == "finite_number" for error in exc_info.value.errors())
 
     FieldAttributes.model_validate(
         {
