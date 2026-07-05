@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.67 - 2026-07-05
+
 ### Changed
 
 - Added explicit nonnegative bounds to inline formset, list-editing formset,
