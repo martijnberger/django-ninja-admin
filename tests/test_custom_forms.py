@@ -150,6 +150,10 @@ def test_response_hooks_can_return_custom_status(admin_client, sample):
     schema = admin_client.get("/status-hook-admin/openapi.json").json()
     paths = schema["paths"]
     assert (
+        _response_schema_ref(paths["/status-hook-admin/testapp/product"]["post"], "200")
+        == "#/components/schemas/ProductAddImmediateHookResponse"
+    )
+    assert (
         _response_schema_ref(paths["/status-hook-admin/testapp/product"]["post"], "202")
         == "#/components/schemas/ProductAddHookResponse"
     )
@@ -162,6 +166,10 @@ def test_response_hooks_can_return_custom_status(admin_client, sample):
         == "#/components/schemas/ProductChangeHookResponse"
     )
     assert "201" not in paths["/status-hook-admin/testapp/product/{object_id}"]["patch"]["responses"]
+    assert (
+        _response_schema_ref(paths["/status-hook-admin/testapp/product/{object_id}"]["delete"], "200")
+        == "#/components/schemas/ProductDeleteImmediateHookResponse"
+    )
     assert (
         _response_schema_ref(paths["/status-hook-admin/testapp/product/{object_id}"]["delete"], "202")
         == "#/components/schemas/ProductDeleteStatusHookResponse"
@@ -186,6 +194,27 @@ def test_response_hooks_can_return_custom_status(admin_client, sample):
     created_id = created_body["id"]
     assert Product.objects.filter(pk=created_id, name="Status Hook").exists()
 
+    immediate_created = admin_client.post(
+        "/status-hook-admin/testapp/product",
+        data={
+            "data": {
+                "name": "Immediate Status Hook",
+                "category": sample.category_id,
+                "price": "8.00",
+                "stock_status": "in_stock",
+            }
+        },
+        content_type="application/json",
+    )
+
+    assert immediate_created.status_code == 200
+    immediate_created_body = immediate_created.json()
+    assert immediate_created_body["hook"] == "add"
+    assert immediate_created_body["immediate"] is True
+    assert isinstance(immediate_created_body["product_id"], int)
+    immediate_created_id = immediate_created_body["product_id"]
+    assert Product.objects.filter(pk=immediate_created_id, name="Immediate Status Hook").exists()
+
     changed = admin_client.patch(
         f"/status-hook-admin/testapp/product/{created_id}",
         data={"data": {"description": "Custom status response"}},
@@ -205,6 +234,16 @@ def test_response_hooks_can_return_custom_status(admin_client, sample):
     assert deleted.status_code == 202
     assert deleted.json() == {"hook": "delete", "id": str(created_id), "display": "Status Hook"}
     assert not Product.objects.filter(pk=created_id).exists()
+
+    immediate_deleted = admin_client.delete(f"/status-hook-admin/testapp/product/{immediate_created_id}")
+
+    assert immediate_deleted.status_code == 200
+    assert immediate_deleted.json() == {
+        "hook": "delete",
+        "deleted_id": str(immediate_created_id),
+        "immediate": True,
+    }
+    assert not Product.objects.filter(pk=immediate_created_id).exists()
 
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")

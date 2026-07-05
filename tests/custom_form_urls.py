@@ -57,6 +57,12 @@ class ProductAddHookResponse(ClosedSchema):
     name: str
 
 
+class ProductAddImmediateHookResponse(ClosedSchema):
+    hook: str
+    product_id: int
+    immediate: bool
+
+
 class ProductChangeHookResponse(ClosedSchema):
     hook: str
     id: int
@@ -67,6 +73,12 @@ class ProductDeleteStatusHookResponse(ClosedSchema):
     hook: str
     id: str
     display: str
+
+
+class ProductDeleteImmediateHookResponse(ClosedSchema):
+    hook: str
+    deleted_id: str
+    immediate: bool
 
 
 class CustomFormProductAdmin(ModelAdmin):
@@ -111,17 +123,21 @@ custom_form_site.register(Product, CustomFormProductAdmin)
 
 
 class StatusHookProductAdmin(ModelAdmin):
-    response_add_schema = ProductAddHookResponse
+    response_add_schema = {200: ProductAddImmediateHookResponse, 202: ProductAddHookResponse}
     response_change_schema = ProductChangeHookResponse
-    response_delete_schema = ProductDeleteStatusHookResponse
+    response_delete_schema = {200: ProductDeleteImmediateHookResponse, 202: ProductDeleteStatusHookResponse}
 
     def response_add(self, request, obj, form, inline_results):
+        if obj.name.startswith("Immediate"):
+            return Status(200, {"hook": "add", "product_id": obj.pk, "immediate": True})
         return Status(202, {"hook": "add", "id": obj.pk, "name": obj.name})
 
     def response_change(self, request, obj, form, inline_results):
         return Status(200, {"hook": "change", "id": obj.pk, "description": obj.description})
 
     def response_delete(self, request, obj_display, obj_id):
+        if obj_display.startswith("Immediate"):
+            return Status(200, {"hook": "delete", "deleted_id": obj_id, "immediate": True})
         return Status(202, {"hook": "delete", "id": obj_id, "display": obj_display})
 
 

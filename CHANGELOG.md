@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   history, autocomplete, and custom admin routes.
 - Added mounted autocomplete coverage for `OneToOneField` source relations,
   including form metadata and route results.
+- Added mounted response-hook status-map coverage for add and delete hooks
+  with distinct schemas for `200` and `202` responses.
 
 ## 0.1.72 - 2026-07-05
 
