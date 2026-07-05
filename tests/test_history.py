@@ -127,6 +127,22 @@ def test_history_filters_by_permission_and_params(staff_client, sample):
     ErrorResponse.model_validate(invalid_action_flag.json())
     assert invalid_action_flag.json()["errors"][0]["param"] == "query.action_flag"
 
+    hidden_bad_page = client.get("/admin-api/history", {"page": ["0", "1"]})
+    assert hidden_bad_page.status_code == 400
+    assert hidden_bad_page.json()["errors"] == [{"message": "Invalid page.", "param": "page"}]
+
+    hidden_bad_page_size = client.get("/admin-api/history", {"per_page": ["101", "1"]})
+    assert hidden_bad_page_size.status_code == 400
+    assert hidden_bad_page_size.json()["errors"] == [{"message": "Page size must be at most 100.", "param": "per_page"}]
+
+    hidden_invalid_ordering = client.get("/admin-api/history", {"o": ["object_repr", "-action_time"]})
+    assert hidden_invalid_ordering.status_code == 400
+    assert hidden_invalid_ordering.json()["errors"] == [{"message": "Invalid ordering.", "param": "o"}]
+
+    hidden_invalid_action_flag = client.get("/admin-api/history", {"action_flag": ["99", ADDITION]})
+    assert hidden_invalid_action_flag.status_code == 400
+    assert hidden_invalid_action_flag.json()["errors"] == [{"message": "Invalid action flag.", "param": "action_flag"}]
+
 
 def test_history_uses_queryset_pagination_for_global_permissions(admin_client, sample, monkeypatch):
     actor = get_user_model().objects.create_user("history-query-actor", password="pw", is_staff=True)

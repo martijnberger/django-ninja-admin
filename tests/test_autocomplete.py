@@ -124,6 +124,32 @@ def test_autocomplete_paginates_and_supports_many_to_many_source_fields(admin_cl
         {"message": "Input should be less than or equal to 100", "param": "query.per_page"}
     ]
 
+    hidden_bad_page = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "tags",
+            "term": "Tag",
+            "page": ["0", "1"],
+        },
+    )
+    assert hidden_bad_page.status_code == 400
+    assert hidden_bad_page.json()["errors"] == [{"message": "Invalid page.", "param": "page"}]
+
+    hidden_bad_page_size = admin_client.get(
+        "/admin-api/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "tags",
+            "term": "Tag",
+            "per_page": ["101", "10"],
+        },
+    )
+    assert hidden_bad_page_size.status_code == 400
+    assert hidden_bad_page_size.json()["errors"] == [{"message": "Page size must be at most 100.", "param": "per_page"}]
+
 
 def test_autocomplete_query_count_is_bounded_by_requested_page(admin_client, sample, monkeypatch):
     product_admin = site.get_model_admin(Product)

@@ -582,6 +582,46 @@ class NinjaAdminSite:
     def _throttle_error_responses(self, throttle):
         return {429: ErrorResponse} if throttle is not NOT_SET else {}
 
+    def _query_param_values(self, request, param):
+        query = cast(Any, getattr(request, "GET", {}))
+        if hasattr(query, "getlist"):
+            return tuple(query.getlist(param))
+        value = query.get(param) if hasattr(query, "get") else None
+        if isinstance(value, (list, tuple)):
+            return tuple(value)
+        return (value,) if value is not None else ()
+
+    def _validate_repeated_int_query_param(self, request, param, *, minimum=None, maximum=None, label=None):
+        for raw_value in self._query_param_values(request, param):
+            try:
+                value = int(raw_value)
+            except (TypeError, ValueError) as exc:
+                raise AdminValidationError(
+                    [{"message": _("Invalid %(label)s.") % {"label": label or param}, "param": param}]
+                ) from exc
+            if minimum is not None and value < minimum:
+                raise AdminValidationError(
+                    [{"message": _("Invalid %(label)s.") % {"label": label or param}, "param": param}]
+                )
+            if maximum is not None and value > maximum:
+                raise AdminValidationError(
+                    [
+                        {
+                            "message": _("%(label)s must be at most %(max)d.")
+                            % {"label": capfirst(label or param), "max": maximum},
+                            "param": param,
+                        }
+                    ]
+                )
+
+    def _validate_repeated_choice_query_param(self, request, param, choices, *, label=None):
+        allowed = {str(choice) for choice in choices}
+        for raw_value in self._query_param_values(request, param):
+            if str(raw_value) not in allowed:
+                raise AdminValidationError(
+                    [{"message": _("Invalid %(label)s.") % {"label": label or param}, "param": param}]
+                )
+
     def _custom_route_view_func(self, view_func):
         if not (hasattr(view_func, "__self__") and hasattr(view_func, "__func__")):
             return view_func
@@ -932,6 +972,22 @@ class NinjaAdminSite:
         ):
             from django_ninja_admin.models import LogEntry
 
+            site._validate_repeated_choice_query_param(request, "o", ("action_time", "-action_time"), label="ordering")
+            site._validate_repeated_int_query_param(request, "page", minimum=1, label="page")
+            site._validate_repeated_int_query_param(
+                request,
+                "per_page",
+                minimum=1,
+                maximum=site.history_max_per_page,
+                label="page size",
+            )
+            site._validate_repeated_choice_query_param(
+                request,
+                "action_flag",
+                [flag.value for flag in HistoryActionFlag],
+                label="action flag",
+            )
+
             content_type_ids = site._history_content_type_ids(
                 request,
                 app_label=app_label,
@@ -1037,6 +1093,14 @@ class NinjaAdminSite:
                 description=f"Page size from 1 to {site.autocomplete_max_per_page}.",
             ),
         ):
+            site._validate_repeated_int_query_param(request, "page", minimum=1, label="page")
+            site._validate_repeated_int_query_param(
+                request,
+                "per_page",
+                minimum=1,
+                maximum=site.autocomplete_max_per_page,
+                label="page size",
+            )
             try:
                 source_model = apps.get_model(app_label, model_name)
                 source_admin = site.get_model_admin(source_model)

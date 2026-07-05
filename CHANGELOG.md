@@ -17,6 +17,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Rejected hidden invalid repeated changelist control query values for
   pagination, ordering, show-all, and facets instead of accepting a later valid
   value.
+- Rejected hidden invalid repeated history and autocomplete control query
+  values instead of accepting a later valid page, page size, ordering, or
+  action flag value.
 
 ## 0.1.64 - 2026-07-05
 
