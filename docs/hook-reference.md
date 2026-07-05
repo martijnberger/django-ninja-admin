@@ -120,7 +120,8 @@ Response hook return values are part of the generated-client contract:
   Ninja-native response, auth, throttle, tags, descriptions, and operation ids.
   Custom route response schemas must emit closed object contracts or typed
   maps; use `model_config = ConfigDict(extra="forbid")` on concrete
-  Ninja/Pydantic response models.
+  Ninja/Pydantic response models. Use `response={204: None}` with
+  `Status(204, None)` for no-content custom route responses.
 
 Use `admin_view()` around custom views that should enforce admin permissions in
 addition to route-level auth.

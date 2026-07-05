@@ -463,7 +463,9 @@ class ProductAdmin(ModelAdmin):
 When `response` is omitted, custom routes advertise the named
 `JsonObjectResponse` fallback: a JSON object whose values may be nested JSON
 scalars, arrays, or objects. Declare a concrete `Schema` for generated clients
-that need field-level response types.
+that need field-level response types. For no-content custom responses, use a
+status map such as `response={204: None}` and return `Status(204, None)`;
+OpenAPI will advertise the status without a response body.
 
 ## Throttling
 

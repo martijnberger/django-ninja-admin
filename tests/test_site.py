@@ -331,6 +331,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert default_site_response.status_code == 200
     assert default_site_response.json() == {"site": "default", "metadata": {"source": "default-response"}}
 
+    no_content_site_response = admin_client.get("/custom-admin/no-content-status")
+    assert no_content_site_response.status_code == 204
+    assert no_content_site_response.content == b""
+
     echo_response = admin_client.post(
         "/custom-admin/echo-status",
         data={"message": "hello", "repeat": 2},
@@ -370,6 +374,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     default_stats = admin_client.get("/custom-admin/testapp/product/default-stats")
     assert default_stats.status_code == 200
     assert default_stats.json() == {"count": 2, "metadata": {"source": "default-response"}}
+
+    no_content_stats = admin_client.get("/custom-admin/testapp/product/no-content-stats")
+    assert no_content_stats.status_code == 204
+    assert no_content_stats.content == b""
 
     threshold_stats = admin_client.post(
         "/custom-admin/testapp/product/threshold-stats",
@@ -416,12 +424,14 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     token_operation = schema["paths"]["/custom-admin/token-status"]["get"]
     public_operation = schema["paths"]["/custom-admin/public-status"]["get"]
     default_status_operation = schema["paths"]["/custom-admin/default-status"]["get"]
+    no_content_status_operation = schema["paths"]["/custom-admin/no-content-status"]["get"]
     echo_status_operation = schema["paths"]["/custom-admin/echo-status"]["post"]
     stats_operation = schema["paths"]["/custom-admin/testapp/product/stats"]["get"]
     async_stats_operation = schema["paths"]["/custom-admin/testapp/product/async-stats"]["get"]
     decorated_stats_operation = schema["paths"]["/custom-admin/testapp/product/decorated-stats"]["get"]
     auto_stats_operation = schema["paths"]["/custom-admin/testapp/product/auto-stats"]["get"]
     default_stats_operation = schema["paths"]["/custom-admin/testapp/product/default-stats"]["get"]
+    no_content_stats_operation = schema["paths"]["/custom-admin/testapp/product/no-content-stats"]["get"]
     threshold_stats_operation = schema["paths"]["/custom-admin/testapp/product/threshold-stats"]["post"]
     auto_multi_get_operation = schema["paths"]["/custom-admin/testapp/product/auto-multi-stats"]["get"]
     auto_multi_post_operation = schema["paths"]["/custom-admin/testapp/product/auto-multi-stats"]["post"]
@@ -497,6 +507,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert default_status_operation["tags"] == ["custom.site"]
     assert _response_schema_ref(default_status_operation, "200") == "#/components/schemas/JsonObjectResponse"
     assert_custom_route_error_responses(default_status_operation)
+    assert no_content_status_operation["operationId"] == "custom_no_content_status"
+    assert no_content_status_operation["tags"] == ["custom.site"]
+    assert "content" not in no_content_status_operation["responses"]["204"]
+    assert_custom_route_error_responses(no_content_status_operation)
     assert echo_status_operation["operationId"] == "custom_echo_status"
     assert echo_status_operation["tags"] == ["custom.site"]
     assert _request_schema_ref(echo_status_operation) == "#/components/schemas/SiteEchoPayload"
@@ -524,6 +538,10 @@ def test_custom_site_and_model_admin_views_are_registered_and_permissioned(admin
     assert default_stats_operation["tags"] == ["custom.product"]
     assert _response_schema_ref(default_stats_operation, "200") == "#/components/schemas/JsonObjectResponse"
     assert_custom_route_error_responses(default_stats_operation)
+    assert no_content_stats_operation["operationId"] == "custom_product_no_content_stats"
+    assert no_content_stats_operation["tags"] == ["custom.product"]
+    assert "content" not in no_content_stats_operation["responses"]["204"]
+    assert_custom_route_error_responses(no_content_stats_operation)
     assert threshold_stats_operation["operationId"] == "custom_product_threshold_stats"
     assert threshold_stats_operation["tags"] == ["custom.product"]
     assert _request_schema_ref(threshold_stats_operation) == "#/components/schemas/ProductThresholdPayload"

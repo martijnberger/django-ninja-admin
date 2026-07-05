@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added custom site/model route coverage and docs for no-content
+  `response={204: None}` contracts.
+
 ## 0.1.70 - 2026-07-05
 
 ### Added

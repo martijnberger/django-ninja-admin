@@ -1,5 +1,5 @@
 from django.urls import path
-from ninja import Schema
+from ninja import Schema, Status
 from ninja.security import APIKeyHeader
 from ninja.throttling import BaseThrottle
 from pydantic import ConfigDict
@@ -89,6 +89,9 @@ class CustomProductAdmin(ModelAdmin):
     def default_stats(self, request):
         return {"count": Product.objects.count(), "metadata": {"source": "default-response"}}
 
+    def no_content_stats(self, request):
+        return Status(204, None)
+
     def threshold_stats(self, request, payload: ProductThresholdPayload):
         return {"count": Product.objects.filter(price__gte=payload.minimum_price).count()}
 
@@ -137,6 +140,13 @@ class CustomProductAdmin(ModelAdmin):
                 "/default-stats",
                 self.admin_view(self.default_stats),
                 operation_id="custom_product_default_stats",
+                tags=["custom.product"],
+            ),
+            self.route(
+                "/no-content-stats",
+                self.admin_view(self.no_content_stats),
+                response={204: None},
+                operation_id="custom_product_no_content_stats",
                 tags=["custom.product"],
             ),
             self.route(
@@ -209,6 +219,9 @@ class CustomAdminSite(NinjaAdminSite):
 
     def default_status(self, request):
         return {"site": "default", "metadata": {"source": "default-response"}}
+
+    def no_content_status(self, request):
+        return Status(204, None)
 
     def echo_status(self, request, payload: SiteEchoPayload):
         return {"echoed": [payload.message] * payload.repeat}
@@ -300,6 +313,13 @@ class CustomAdminSite(NinjaAdminSite):
                 "/default-status",
                 self.admin_view(self.default_status),
                 operation_id="custom_default_status",
+                tags=["custom.site"],
+            ),
+            self.route(
+                "/no-content-status",
+                self.admin_view(self.no_content_status),
+                response={204: None},
+                operation_id="custom_no_content_status",
                 tags=["custom.site"],
             ),
             self.route(

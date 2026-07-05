@@ -49,7 +49,8 @@ Custom site and model routes default to `JsonObjectResponse`, a named JSON
 object schema. Declare a concrete Ninja/Pydantic schema for generated clients
 that require field-level response typing. Declared custom route response object
 schemas must also be closed with `additionalProperties: false`, or shaped as
-typed maps, so generated clients do not silently accept extra fields.
+typed maps, so generated clients do not silently accept extra fields. Routes
+that intentionally return no body can declare `response={204: None}`.
 
 Form-description responses expose typed semantic widget metadata, including
 relation lookup hints for autocomplete, raw-id, and dual-select filtered
