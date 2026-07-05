@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.71 - 2026-07-05
+
 ### Added
 
 - Added custom site/model route coverage and docs for no-content
