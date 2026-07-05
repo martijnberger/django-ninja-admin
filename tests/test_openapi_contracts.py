@@ -7,6 +7,7 @@ from django_ninja_admin import ModelAdmin, NinjaAdminSite, action, site
 from django_ninja_admin.schemas import (
     ActionResponse,
     ChangelistResponse,
+    DateHierarchyParams,
     FieldAttributes,
     FormResponse,
     HistoryResponse,
@@ -668,11 +669,12 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "$ref": "#/components/schemas/DateHierarchyParams"
     }
     assert components["DateHierarchyParams"] == {
-        "additionalProperties": {"type": "integer"},
+        "additionalProperties": {"$ref": "#/components/schemas/DateHierarchyParamValue"},
         "propertyNames": {"$ref": "#/components/schemas/DateHierarchyParamName"},
         "title": "DateHierarchyParams",
         "type": "object",
     }
+    assert components["DateHierarchyParamValue"] == {"minimum": 1, "type": "integer"}
     assert _response_schema_ref(paths["/admin-api/view-on-site/{content_type_id}/{object_id}"]["get"], "200") == (
         "#/components/schemas/ViewOnSiteResponse"
     )
@@ -1244,6 +1246,11 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
         )
     assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
     assert exc_info.value.errors()[0]["loc"] == ("select_date", "days", 0)
+
+    with pytest.raises(ValidationError) as exc_info:
+        DateHierarchyParams.model_validate({"year": 2026, "month": 0})
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("month",)
 
 
 def test_formset_management_form_schemas_are_typed_and_closed(admin_client, sample):

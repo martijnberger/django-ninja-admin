@@ -900,9 +900,10 @@ class FilterDescription(AdminSchema):
 
 type DateHierarchyLevel = Literal["year", "month", "day"]
 type DateHierarchyParamName = Literal["year", "month", "day"]
+type DateHierarchyParamValue = Annotated[int, Field(ge=1)]
 
 
-class DateHierarchyParams(RootModel[dict[DateHierarchyParamName, int]]):
+class DateHierarchyParams(RootModel[dict[DateHierarchyParamName, DateHierarchyParamValue]]):
     pass
 
 

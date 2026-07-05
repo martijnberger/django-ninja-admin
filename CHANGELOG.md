@@ -7,6 +7,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Added explicit positive bounds to date-hierarchy selected parameter metadata
+  schemas.
+
 ## 0.1.67 - 2026-07-05
 
 ### Changed

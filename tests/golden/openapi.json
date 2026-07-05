@@ -1699,9 +1699,13 @@
         ],
         "type": "string"
       },
+      "DateHierarchyParamValue": {
+        "minimum": 1,
+        "type": "integer"
+      },
       "DateHierarchyParams": {
         "additionalProperties": {
-          "type": "integer"
+          "$ref": "#/components/schemas/DateHierarchyParamValue"
         },
         "propertyNames": {
           "$ref": "#/components/schemas/DateHierarchyParamName"
