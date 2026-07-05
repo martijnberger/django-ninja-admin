@@ -6986,6 +6986,8 @@
         "properties": {
           "days": {
             "items": {
+              "maximum": 31,
+              "minimum": 1,
               "type": "integer"
             },
             "title": "Days",

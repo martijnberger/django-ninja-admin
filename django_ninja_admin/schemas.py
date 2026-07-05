@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import IntEnum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from django.utils.functional import Promise
 from ninja import Schema
@@ -511,7 +511,7 @@ class SelectDateMetadata(AdminSchema):
     order: list[Literal["year", "month", "day"]]
     years: list[FieldMetadataValue]
     months: list[SelectDateChoice]
-    days: list[int]
+    days: list[Annotated[int, Field(ge=1, le=31)]]
     empty_choices: SelectDateEmptyChoices
     selected: SelectDateSelected | None = None
 

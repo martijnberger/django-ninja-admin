@@ -935,6 +935,8 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["SelectDateMetadata"]["properties"]["months"]["items"] == {
         "$ref": "#/components/schemas/SelectDateChoice"
     }
+    assert components["SelectDateMetadata"]["properties"]["days"]["items"]["minimum"] == 1
+    assert components["SelectDateMetadata"]["properties"]["days"]["items"]["maximum"] == 31
     assert components["SelectDateMetadata"]["properties"]["empty_choices"] == {
         "$ref": "#/components/schemas/SelectDateEmptyChoices"
     }
@@ -1223,6 +1225,25 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
     assert any(
         error["type"] == "greater_than_equal" and error["loc"][-1] == "index" for error in exc_info.value.errors()
     )
+
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate(
+            {
+                "select_date": {
+                    "order": ["year", "month", "day"],
+                    "years": [2026],
+                    "months": [{"value": 1, "label": "January"}],
+                    "days": [0],
+                    "empty_choices": {
+                        "year": {"value": None, "label": "---"},
+                        "month": {"value": None, "label": "---"},
+                        "day": {"value": None, "label": "---"},
+                    },
+                }
+            }
+        )
+    assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
+    assert exc_info.value.errors()[0]["loc"] == ("select_date", "days", 0)
 
 
 def test_formset_management_form_schemas_are_typed_and_closed(admin_client, sample):

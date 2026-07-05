@@ -15,6 +15,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   field index metadata, and changelist sort-position metadata schemas.
 - Added explicit nonnegative bounds to image file width/height metadata
   schemas.
+- Added explicit day-of-month bounds to select-date widget day metadata
+  schemas.
 - Reused the Django admin log action-flag enum for history response rows, so
   action flags no longer advertise arbitrary integers.
 
