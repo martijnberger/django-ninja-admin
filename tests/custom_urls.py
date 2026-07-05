@@ -2,38 +2,43 @@ from django.urls import path
 from ninja import Schema
 from ninja.security import APIKeyHeader
 from ninja.throttling import BaseThrottle
+from pydantic import ConfigDict
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, action
 from django_ninja_admin.schemas import ErrorResponse
 from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product
 
 
-class ProductStatsResponse(Schema):
+class ClosedSchema(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ProductStatsResponse(ClosedSchema):
     count: int
 
 
-class ProductThresholdPayload(Schema):
+class ProductThresholdPayload(ClosedSchema):
     minimum_price: int
 
 
-class SiteStatusResponse(Schema):
+class SiteStatusResponse(ClosedSchema):
     site: str
 
 
-class SiteEchoPayload(Schema):
+class SiteEchoPayload(ClosedSchema):
     message: str
     repeat: int = 1
 
 
-class SiteEchoResponse(Schema):
+class SiteEchoResponse(ClosedSchema):
     echoed: list[str]
 
 
-class PublicStatusResponse(Schema):
+class PublicStatusResponse(ClosedSchema):
     public: str
 
 
-class AuthStatusResponse(Schema):
+class AuthStatusResponse(ClosedSchema):
     auth: str
 
 

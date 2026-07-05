@@ -6786,6 +6786,7 @@
         "type": "object"
       },
       "ReportNamesActionResult": {
+        "additionalProperties": false,
         "properties": {
           "names": {
             "items": {
@@ -7378,6 +7379,7 @@
         "type": "object"
       },
       "StockStatusActionData": {
+        "additionalProperties": false,
         "properties": {
           "note": {
             "anyOf": [
@@ -7406,6 +7408,7 @@
         "type": "object"
       },
       "StockStatusActionResult": {
+        "additionalProperties": false,
         "properties": {
           "note": {
             "anyOf": [

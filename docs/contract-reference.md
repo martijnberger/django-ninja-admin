@@ -36,6 +36,10 @@ routes. `_to_field` only accepts fields allowed by the registered
 Standard mutation responses return typed `data` and optional typed `inlines`.
 Default action responses return the typed `ActionResponse`. Custom hooks and
 actions should declare schemas when they return custom bodies or status maps.
+Declared custom action and response-hook object schemas must be closed with
+`additionalProperties: false` or shaped as typed maps; the admin system checks
+reject open object contracts so generated clients do not silently accept extra
+fields.
 Add/change/delete response hook bodies are validated against the advertised
 response schema before the surrounding mutation transaction commits.
 The concrete response-hook rules are documented in the

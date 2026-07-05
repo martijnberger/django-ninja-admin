@@ -77,6 +77,10 @@ declare `response_add_schema`, `response_change_schema`, or
 
 Response hook return values are part of the generated-client contract:
 
+- Custom action `input_schema`/`response_schema` models and response-hook
+  schemas must emit closed object contracts. Set
+  `model_config = ConfigDict(extra="forbid")` on Ninja/Pydantic schema classes
+  unless the schema is intentionally a typed map.
 - The base `response_add()` and `response_change()` implementations return the
   standard mutation shape generated from the saved object and inline results.
 - Plain `response_add()` or `response_change()` dictionaries are wrapped in

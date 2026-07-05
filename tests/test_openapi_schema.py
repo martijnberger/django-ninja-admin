@@ -9,6 +9,32 @@ def _response_schema_ref(operation, status):
     return operation["responses"][status]["content"]["application/json"]["schema"]["$ref"]
 
 
+def _open_object_schema_paths(schema):
+    paths = []
+
+    def walk(node, path):
+        if isinstance(node, dict):
+            if node.get("type") == "object":
+                additional_properties = node.get("additionalProperties")
+                if (
+                    ("properties" in node and additional_properties is not False)
+                    or ("properties" not in node and "additionalProperties" not in node)
+                    or additional_properties is True
+                    or additional_properties == {}
+                ):
+                    paths.append(path)
+            for key, value in node.items():
+                if key in {"example", "examples"}:
+                    continue
+                walk(value, f"{path}.{key}" if path else str(key))
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                walk(value, f"{path}[{index}]")
+
+    walk(schema, "")
+    return paths
+
+
 def test_docs_and_openapi_require_site_auth(db):
     client = Client()
 
@@ -19,6 +45,12 @@ def test_docs_and_openapi_require_site_auth(db):
         body = response.json()
         ErrorResponse.model_validate(body)
         assert body["errors"] == [{"message": "Authentication required.", "param": "non_field_errors"}]
+
+
+def test_openapi_object_schemas_are_closed_or_typed_maps(admin_client, sample):
+    schema = admin_client.get("/admin-api/openapi.json").json()
+
+    assert _open_object_schema_paths(schema) == []
 
 
 def test_error_response_openapi_schema_is_semantic_and_stable(admin_client, sample):

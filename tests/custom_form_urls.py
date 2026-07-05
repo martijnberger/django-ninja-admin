@@ -4,6 +4,7 @@ from django.db import models
 from django.forms.models import BaseModelFormSet
 from django.urls import path
 from ninja import Schema, Status
+from pydantic import ConfigDict
 
 from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline
 from tests.testapp.models import Article, ArticleLabel, Category, Label, Product, ProductImage, Tag
@@ -40,25 +41,29 @@ class ProductAdminForm(forms.ModelForm):
         return name
 
 
-class ProductDeleteHookResponse(Schema):
+class ClosedSchema(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ProductDeleteHookResponse(ClosedSchema):
     deleted_id: str
     deleted_display: str
     response_hook: str
 
 
-class ProductAddHookResponse(Schema):
+class ProductAddHookResponse(ClosedSchema):
     hook: str
     id: int
     name: str
 
 
-class ProductChangeHookResponse(Schema):
+class ProductChangeHookResponse(ClosedSchema):
     hook: str
     id: int
     description: str
 
 
-class ProductDeleteStatusHookResponse(Schema):
+class ProductDeleteStatusHookResponse(ClosedSchema):
     hook: str
     id: str
     display: str

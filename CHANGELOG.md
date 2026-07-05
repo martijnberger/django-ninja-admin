@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Added
+
+- Added admin system checks and an OpenAPI regression test requiring custom
+  action and response-hook schemas to emit closed object contracts or typed
+  maps.
+
 ### Changed
 
 - Rejected non-finite numeric object identifiers in generated schemas for rows,

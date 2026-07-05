@@ -12,6 +12,8 @@ from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.expressions import Combinable
 from django.forms.models import BaseInlineFormSet, BaseModelForm, _get_foreign_key
+from pydantic import TypeAdapter
+from pydantic.errors import PydanticSchemaGenerationError, PydanticUserError
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.filters import FieldListFilter, ListFilter, SimpleListFilter
@@ -106,6 +108,7 @@ PACKAGE_OPTION_CODES = {
     "list_select_related_item": "E192",
     "list_select_related_path": "E193",
     "actions_type": "E195",
+    "open_contract_schema": "E196",
 }
 
 DJANGO_RELATION_OPTION_CODES = {
@@ -180,6 +183,7 @@ def check_model_admin(model_admin):
     errors.extend(_check_formfield_overrides(model_admin))
     errors.extend(_check_form_schema_field_overrides(model_admin))
     errors.extend(_check_schema_field_overrides(model_admin))
+    errors.extend(_check_response_hook_schemas(model_admin))
     errors.extend(_check_form_layout(model_admin))
     errors.extend(_check_prepopulated_fields(model_admin))
     errors.extend(_check_list_filters(model_admin))
@@ -729,6 +733,71 @@ def _check_form_schema_field_overrides(model_admin):
                 )
             )
     return errors
+
+
+def _check_response_hook_schemas(model_admin):
+    errors = []
+    for option in ("response_add_schema", "response_change_schema", "response_delete_schema"):
+        errors.extend(_check_closed_contract_schema(model_admin, getattr(model_admin, option, None), f"'{option}'"))
+    return errors
+
+
+def _check_closed_contract_schema(obj, schema, label):
+    errors = []
+    for schema_label, schema_type in _iter_contract_schemas(schema, label):
+        open_paths = _open_object_schema_paths(schema_type)
+        if open_paths:
+            errors.append(
+                _error(
+                    obj.__class__ if not isinstance(obj, type) else obj,
+                    f"The schema for {schema_label} must forbid extra object properties.",
+                    PACKAGE_OPTION_CODES["open_contract_schema"],
+                    hint=(
+                        "Set model_config = ConfigDict(extra='forbid') on the Pydantic/Ninja schema, "
+                        "or use a schema whose object members define typed additionalProperties."
+                    ),
+                )
+            )
+    return errors
+
+
+def _iter_contract_schemas(schema, label):
+    if schema is None:
+        return
+    if isinstance(schema, Mapping):
+        for status_code, status_schema in schema.items():
+            yield f"{label}[{status_code}]", status_schema
+        return
+    yield label, schema
+
+
+def _open_object_schema_paths(schema_type):
+    try:
+        json_schema = TypeAdapter(schema_type).json_schema()
+    except (PydanticSchemaGenerationError, PydanticUserError, TypeError, ValueError):
+        return []
+
+    paths = []
+
+    def walk(node, path):
+        if isinstance(node, Mapping):
+            if node.get("type") == "object":
+                additional_properties = node.get("additionalProperties", None)
+                if (
+                    ("properties" in node and additional_properties is not False)
+                    or ("properties" not in node and "additionalProperties" not in node)
+                    or additional_properties is True
+                    or additional_properties == {}
+                ):
+                    paths.append(path)
+            for key, value in node.items():
+                walk(value, f"{path}.{key}" if path else str(key))
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                walk(value, f"{path}[{index}]")
+
+    walk(json_schema, "")
+    return paths
 
 
 def _editable_form_field_names(model_admin):
@@ -1500,6 +1569,20 @@ def _check_actions(model_admin):
             continue
         resolved_actions.append(action)
         func = action[0]
+        errors.extend(
+            _check_closed_contract_schema(
+                model_admin,
+                getattr(func, "action_input_schema", None),
+                f"action '{action[1]}' input_schema",
+            )
+        )
+        errors.extend(
+            _check_closed_contract_schema(
+                model_admin,
+                getattr(func, "action_response_schema", None),
+                f"action '{action[1]}' response_schema",
+            )
+        )
         for permission in getattr(func, "allowed_permissions", ()):
             if not isinstance(permission, str) or not hasattr(model_admin, f"has_{permission}_permission"):
                 errors.append(

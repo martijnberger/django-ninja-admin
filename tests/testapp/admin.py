@@ -1,6 +1,7 @@
 from typing import Literal
 
 from ninja import Schema
+from pydantic import ConfigDict
 
 from django_ninja_admin import VERTICAL, ModelAdmin, SimpleListFilter, TabularInline, action, display, site
 from tests.testapp.models import Category, Product, ProductImage, Tag
@@ -28,18 +29,22 @@ class ProductImageInline(TabularInline):
     max_num = 3
 
 
-class StockStatusActionData(Schema):
+class ClosedSchema(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+
+class StockStatusActionData(ClosedSchema):
     status: Literal["in_stock", "out_of_stock"]
     note: str | None = None
 
 
-class StockStatusActionResult(Schema):
+class StockStatusActionResult(ClosedSchema):
     updated: int
     status: str
     note: str | None = None
 
 
-class ReportNamesActionResult(Schema):
+class ReportNamesActionResult(ClosedSchema):
     names: list[str]
 
 

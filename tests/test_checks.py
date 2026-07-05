@@ -7,6 +7,8 @@ from django.db import models
 from django.forms.models import BaseInlineFormSet
 from django.test import RequestFactory
 from django.test.utils import isolate_apps
+from ninja import Schema
+from pydantic import ConfigDict
 
 from django_ninja_admin import (
     VERTICAL,
@@ -419,6 +421,56 @@ def test_admin_checks_validate_action_permission_hooks(db, make_site):
 
     assert "django_ninja_admin.E129" not in valid_ids
     assert bad_ids == {"django_ninja_admin.E129"}
+
+
+def test_admin_checks_require_closed_custom_contract_schemas(db, make_site):
+    class OpenActionPayload(Schema):
+        label: str
+
+    class OpenActionResult(Schema):
+        count: int
+
+    class ClosedSchema(Schema):
+        model_config = ConfigDict(extra="forbid")
+
+    class ClosedActionPayload(ClosedSchema):
+        label: str
+
+    class ClosedActionResult(ClosedSchema):
+        count: int
+
+    @action(input_schema=OpenActionPayload, response_schema=OpenActionResult)
+    def open_action(model_admin, request, queryset, data):
+        return {"count": queryset.count()}
+
+    @action(input_schema=ClosedActionPayload, response_schema=ClosedActionResult)
+    def closed_action(model_admin, request, queryset, data):
+        return {"count": queryset.count()}
+
+    class BadActionSchemaProductAdmin(ModelAdmin):
+        actions = [open_action]
+        response_add_schema = OpenActionResult
+
+    class ValidActionSchemaProductAdmin(ModelAdmin):
+        actions = [closed_action]
+        response_add_schema = ClosedActionResult
+
+    bad_errors = make_site(Product, BadActionSchemaProductAdmin).get_model_admin(Product).check()
+    valid_ids = {
+        error.id for error in make_site(Product, ValidActionSchemaProductAdmin).get_model_admin(Product).check()
+    }
+
+    assert valid_ids.isdisjoint({"django_ninja_admin.E196"})
+    assert [error.id for error in bad_errors] == [
+        "django_ninja_admin.E196",
+        "django_ninja_admin.E196",
+        "django_ninja_admin.E196",
+    ]
+    assert {error.msg for error in bad_errors} == {
+        "The schema for 'response_add_schema' must forbid extra object properties.",
+        "The schema for action 'open_action' input_schema must forbid extra object properties.",
+        "The schema for action 'open_action' response_schema must forbid extra object properties.",
+    }
 
 
 def test_admin_checks_reject_non_sequence_actions_option(db, make_site):
