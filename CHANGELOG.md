@@ -7,6 +7,17 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Aligned changelist `all` and `_facets` runtime handling with their boolean
+  query contract, so false values remain false instead of acting by presence.
+
+### Fixed
+
+- Rejected hidden invalid repeated changelist control query values for
+  pagination, ordering, show-all, and facets instead of accepting a later valid
+  value.
+
 ## 0.1.64 - 2026-07-05
 
 ### Fixed

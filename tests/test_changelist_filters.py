@@ -435,6 +435,30 @@ def test_changelist_rejects_bad_lookup_page_and_ordering(admin_client, sample):
     assert hidden_bad_date_hierarchy.status_code == 400
     assert hidden_bad_date_hierarchy.json()["errors"] == [{"message": "Invalid year.", "param": "created_at__year"}]
 
+    hidden_bad_page = admin_client.get("/admin-api/testapp/product", {"p": ["0", "1"]})
+    assert hidden_bad_page.status_code == 400
+    assert hidden_bad_page.json()["errors"] == [{"message": "Invalid page.", "param": "p"}]
+
+    hidden_bad_page_alias = admin_client.get("/admin-api/testapp/product", {"page": ["0", "1"]})
+    assert hidden_bad_page_alias.status_code == 400
+    assert hidden_bad_page_alias.json()["errors"] == [{"message": "Invalid page.", "param": "page"}]
+
+    hidden_bad_page_size = admin_client.get("/admin-api/testapp/product", {"pp": ["201", "1"]})
+    assert hidden_bad_page_size.status_code == 400
+    assert hidden_bad_page_size.json()["errors"] == [{"message": "Page size must be at most 200.", "param": "pp"}]
+
+    hidden_malformed_ordering = admin_client.get("/admin-api/testapp/product", {"o": ["1,,2", "1"]})
+    assert hidden_malformed_ordering.status_code == 400
+    assert hidden_malformed_ordering.json()["errors"] == [{"message": "Invalid ordering.", "param": "o"}]
+
+    hidden_bad_show_all = admin_client.get("/admin-api/testapp/product", {"all": ["maybe", "1"]})
+    assert hidden_bad_show_all.status_code == 400
+    assert hidden_bad_show_all.json()["errors"] == [{"message": "Invalid boolean value.", "param": "all"}]
+
+    hidden_bad_facets = admin_client.get("/admin-api/testapp/product", {"_facets": ["maybe", "1"]})
+    assert hidden_bad_facets.status_code == 400
+    assert hidden_bad_facets.json()["errors"] == [{"message": "Invalid boolean value.", "param": "_facets"}]
+
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_related_list_filters_use_remote_to_field_values(admin_client, monkeypatch):

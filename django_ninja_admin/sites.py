@@ -45,6 +45,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 from django_ninja_admin import actions
 from django_ninja_admin.admins.model import ModelAdmin
+from django_ninja_admin.changelist import CHANGE_LIST_ORDERING_QUERY_PATTERN, PAGE_QUERY_PATTERN
 from django_ninja_admin.exceptions import (
     AdminPermissionError,
     AdminValidationError,
@@ -116,7 +117,6 @@ class HistoryActionFlag(IntEnum):
 
 NinjaQuery = cast(Any, Query)
 HISTORY_ACTION_FLAG_QUERY = NinjaQuery(None, description="Optional Django admin log action flag.")
-CHANGE_LIST_ORDERING_QUERY_PATTERN = r"^-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*)(?:[,.]-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*))*$"
 TO_FIELD_QUERY_DESCRIPTION = "Use an allowed alternate object id field."
 
 
@@ -1219,12 +1219,12 @@ class NinjaAdminSite:
             ),
             p: str | None = NinjaQuery(
                 None,
-                pattern=r"^(last|[1-9][0-9]*)$",
+                pattern=PAGE_QUERY_PATTERN,
                 description="1-based page number, or `last`.",
             ),
             page: str | None = NinjaQuery(
                 None,
-                pattern=r"^(last|[1-9][0-9]*)$",
+                pattern=PAGE_QUERY_PATTERN,
                 description="Legacy alias for `p`; generated links use `p`.",
             ),
             pp: int | None = NinjaQuery(

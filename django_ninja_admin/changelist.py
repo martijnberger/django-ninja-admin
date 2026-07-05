@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+import re
 from contextlib import suppress
 from datetime import date, datetime, timedelta
 
@@ -24,6 +25,11 @@ from django_ninja_admin.utils.lookup import (
 
 IGNORED_LOOKUP_PARAMS = {"q", "p", "page", "pp", "all", "o", "_facets", "_to_field"}
 PAGE_PARAMS = {"p", "page"}
+PAGE_QUERY_PATTERN = r"^(last|[1-9][0-9]*)$"
+CHANGE_LIST_ORDERING_QUERY_PATTERN = r"^-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*)(?:[,.]-?(?:\d+|[A-Za-z_][A-Za-z0-9_]*))*$"
+TRUE_BOOLEAN_QUERY_VALUES = {"1", "true", "t", "yes", "y", "on"}
+FALSE_BOOLEAN_QUERY_VALUES = {"0", "false", "f", "no", "n", "off"}
+BOOLEAN_QUERY_VALUES = TRUE_BOOLEAN_QUERY_VALUES | FALSE_BOOLEAN_QUERY_VALUES
 
 
 class ChangeList:
@@ -46,12 +52,13 @@ class ChangeList:
         self.has_filters = any(filter_spec.has_output() for filter_spec in self.filter_specs)
         self.ordering = []
         self._facet_count_cache = {}
+        self.max_per_page = self.get_max_per_page()
+        self.validate_control_params()
         self.queryset = self.get_queryset(self.params, self.filter_specs)
         self.show_full_result_count = bool(getattr(model_admin, "show_full_result_count", True))
         self.full_result_count = model_admin.get_queryset(request).count() if self.show_full_result_count else None
         self.result_count = self.queryset.count()
         self.show_admin_actions = not self.show_full_result_count or bool(self.full_result_count)
-        self.max_per_page = self.get_max_per_page()
         self.per_page = self.get_per_page()
         self.can_show_all_results = self.result_count <= self.get_show_all_limit()
         self.show_all = self.can_show_all()
@@ -203,6 +210,60 @@ class ChangeList:
             return
         for key, values in params.lists():
             yield key, tuple(values)
+
+    def param_values(self, param):
+        if hasattr(self.params, "getlist"):
+            return tuple(self.params.getlist(param))
+        value = self.params.get(param)
+        if isinstance(value, (list, tuple)):
+            return tuple(value)
+        return (value,) if value is not None else ()
+
+    def validate_control_params(self):
+        for param in ("p", "page"):
+            self.validate_pattern_param(param, PAGE_QUERY_PATTERN, message=_("Invalid page."))
+        self.validate_pattern_param("o", CHANGE_LIST_ORDERING_QUERY_PATTERN, message=_("Invalid ordering."))
+        self.validate_page_size_param()
+        for param in ("all", "_facets"):
+            self.validate_boolean_param(param)
+
+    def validate_pattern_param(self, param, pattern, *, message):
+        compiled = re.compile(pattern)
+        for value in self.param_values(param):
+            if value in (None, ""):
+                raise AdminValidationError([{"message": message, "param": param}])
+            if not compiled.fullmatch(str(value)):
+                raise AdminValidationError([{"message": message, "param": param}])
+
+    def validate_page_size_param(self):
+        for value in self.param_values("pp"):
+            try:
+                per_page = int(value)
+            except (TypeError, ValueError) as exc:
+                raise AdminValidationError([{"message": _("Invalid page size."), "param": "pp"}]) from exc
+            if per_page < 1:
+                raise AdminValidationError([{"message": _("Invalid page size."), "param": "pp"}])
+            if per_page > self.max_per_page:
+                raise AdminValidationError(
+                    [
+                        {
+                            "message": _("Page size must be at most %(max)d.") % {"max": self.max_per_page},
+                            "param": "pp",
+                        }
+                    ]
+                )
+
+    def validate_boolean_param(self, param):
+        for value in self.param_values(param):
+            normalized = str(value).lower()
+            if normalized not in BOOLEAN_QUERY_VALUES:
+                raise AdminValidationError([{"message": _("Invalid boolean value."), "param": param}])
+
+    def boolean_param_enabled(self, param):
+        values = self.param_values(param)
+        if not values:
+            return False
+        return str(values[-1]).lower() in TRUE_BOOLEAN_QUERY_VALUES
 
     def apply_lookup_values(self, queryset, key, values):
         q_object = None
@@ -645,7 +706,7 @@ class ChangeList:
         return min(self.model_admin.list_max_show_all, self.max_per_page)
 
     def can_show_all(self):
-        wants_all = "all" in self.params
+        wants_all = self.boolean_param_enabled("all")
         return wants_all and self.can_show_all_results
 
     def should_show_facets(self):
@@ -654,7 +715,7 @@ class ChangeList:
             return True
         if show_facets is ShowFacets.NEVER:
             return False
-        return self.params.get("_facets") in {"1", "true", "True"}
+        return self.boolean_param_enabled("_facets")
 
     def facets_optional(self):
         return getattr(self.model_admin, "show_facets", ShowFacets.ALLOW) is ShowFacets.ALLOW

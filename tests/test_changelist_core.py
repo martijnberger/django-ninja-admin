@@ -285,12 +285,14 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert rows_by_name["Alpha"]["cell_metadata"]["price"]["value"] == "12.50"
     assert rows_by_name["Alpha"]["cell_metadata"]["price"]["display_value"] == "12.50"
 
-    show_all_by_presence = admin_client.get("/admin-api/testapp/product?all=0")
-    assert show_all_by_presence.status_code == 200
-    show_all_by_presence_body = show_all_by_presence.json()
-    assert show_all_by_presence_body["config"]["show_all"] is True
-    assert show_all_by_presence_body["config"]["pagination_required"] is False
-    assert len(show_all_by_presence_body["rows"]) == show_all_by_presence_body["config"]["result_count"]
+    show_all_false = admin_client.get("/admin-api/testapp/product?pp=1&all=0")
+    assert show_all_false.status_code == 200
+    show_all_false_body = show_all_false.json()
+    assert show_all_false_body["config"]["show_all"] is False
+    assert show_all_false_body["config"]["pagination_required"] is True
+    assert len(show_all_false_body["rows"]) == 1
+    assert show_all_false_body["config"]["show_all_query_string"] == "?pp=1&all=1"
+    assert show_all_false_body["config"]["clear_show_all_query_string"] is None
 
     alpha_row = rows_by_name["Alpha"]
     content_type = ContentType.objects.get_for_model(Product)
