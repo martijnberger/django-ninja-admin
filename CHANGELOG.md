@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.72 - 2026-07-05
+
 ### Changed
 
 - Extracted shared JSON-compatible admin metadata normalization into
@@ -14,6 +16,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
   strings, `Q` objects, Decimals, model identifiers, and nested containers.
 - Removed remaining internal BaseAdmin schema-override shim methods so admin
   schema generation calls the extracted schema example helpers directly.
+
+### Fixed
+
+- Rejected reverse relation source fields on the autocomplete route with a
+  typed 404 response, matching the admin check contract for invalid
+  `autocomplete_fields`.
 
 ## 0.1.71 - 2026-07-05
 

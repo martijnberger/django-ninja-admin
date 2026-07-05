@@ -5,7 +5,7 @@ from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 
 from django_ninja_admin import site
-from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product, Tag
+from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product, ProductReview, Tag
 
 
 def test_autocomplete_honors_remote_get_search_fields_hook(admin_client, sample, monkeypatch):
@@ -527,3 +527,21 @@ def test_autocomplete_requires_source_model_access_and_declared_field(admin_clie
         },
     )
     assert non_relation_field.status_code == 404
+
+
+@override_settings(ROOT_URLCONF="tests.custom_urls")
+def test_autocomplete_rejects_reverse_relation_source_fields(admin_client, sample):
+    ProductReview.objects.create(product=sample, note="Worth protecting")
+
+    response = admin_client.get(
+        "/reverse-autocomplete-admin/autocomplete",
+        {
+            "app_label": "testapp",
+            "model_name": "product",
+            "field_name": "reviews",
+            "term": "Worth",
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["errors"] == [{"message": "Not found.", "param": "non_field_errors"}]

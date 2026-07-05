@@ -23,7 +23,7 @@ from django.core.exceptions import (
     ValidationError,
 )
 from django.core.paginator import InvalidPage, Paginator
-from django.db import router, transaction
+from django.db import models, router, transaction
 from django.db.models.base import ModelBase
 from django.forms.models import _get_foreign_key
 from django.http import Http404
@@ -1114,6 +1114,8 @@ class NinjaAdminSite:
                 source_model = apps.get_model(app_label, model_name)
                 source_admin = site.get_model_admin(source_model)
                 source_field = source_model._meta.get_field(field_name)
+                if not isinstance(source_field, (models.ForeignKey, models.ManyToManyField)):
+                    raise Http404
                 remote_field = source_field.remote_field
                 if remote_field is None:
                     raise Http404
