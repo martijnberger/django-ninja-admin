@@ -7075,16 +7075,7 @@
             "type": "array"
           },
           "order": {
-            "items": {
-              "enum": [
-                "day",
-                "month",
-                "year"
-              ],
-              "type": "string"
-            },
-            "title": "Order",
-            "type": "array"
+            "$ref": "#/components/schemas/SelectDateOrder"
           },
           "selected": {
             "anyOf": [
@@ -7136,6 +7127,22 @@
         ],
         "title": "SelectDateMonthChoice",
         "type": "object"
+      },
+      "SelectDateOrder": {
+        "items": {
+          "$ref": "#/components/schemas/SelectDateOrderItem"
+        },
+        "maxItems": 3,
+        "minItems": 3,
+        "type": "array"
+      },
+      "SelectDateOrderItem": {
+        "enum": [
+          "day",
+          "month",
+          "year"
+        ],
+        "type": "string"
       },
       "SelectDateSelected": {
         "additionalProperties": false,

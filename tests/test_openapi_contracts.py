@@ -973,6 +973,14 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert components["IndexedInputFormats"]["properties"]["index"]["minimum"] == 0
     assert field_attrs_props["select_date"]["anyOf"][0] == {"$ref": "#/components/schemas/SelectDateMetadata"}
     assert components["SelectDateMetadata"]["additionalProperties"] is False
+    assert components["SelectDateMetadata"]["properties"]["order"] == {"$ref": "#/components/schemas/SelectDateOrder"}
+    assert components["SelectDateOrder"] == {
+        "items": {"$ref": "#/components/schemas/SelectDateOrderItem"},
+        "minItems": 3,
+        "maxItems": 3,
+        "type": "array",
+    }
+    assert components["SelectDateOrderItem"] == {"enum": ["year", "month", "day"], "type": "string"}
     assert components["SelectDateMetadata"]["properties"]["years"]["items"] == {
         "$ref": "#/components/schemas/SelectDateYear"
     }
@@ -1369,6 +1377,20 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
         "selected": {"year": 2026, "month": 1, "day": 1},
     }
     FieldAttributes.model_validate({"select_date": select_date_metadata})
+
+    invalid_select_date_short_order = deepcopy(select_date_metadata)
+    invalid_select_date_short_order["order"] = ["year", "month"]
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"select_date": invalid_select_date_short_order})
+    assert exc_info.value.errors()[0]["type"] == "too_short"
+    assert exc_info.value.errors()[0]["loc"] == ("select_date", "order")
+
+    invalid_select_date_duplicate_order = deepcopy(select_date_metadata)
+    invalid_select_date_duplicate_order["order"] = ["year", "month", "month"]
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"select_date": invalid_select_date_duplicate_order})
+    assert exc_info.value.errors()[0]["type"] == "value_error"
+    assert exc_info.value.errors()[0]["loc"] == ("select_date", "order")
 
     invalid_select_date_days = deepcopy(select_date_metadata)
     invalid_select_date_days["days"] = [0]

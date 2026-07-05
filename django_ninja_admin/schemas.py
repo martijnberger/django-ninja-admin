@@ -489,6 +489,8 @@ type SelectDateYear = Annotated[int, Field(ge=1, le=9999)]
 type SelectDateMonth = Annotated[int, Field(ge=1, le=12)]
 type SelectDateDay = Annotated[int, Field(ge=1, le=31)]
 type SelectDateEmptyChoiceValue = Literal[""] | None
+type SelectDateOrderItem = Literal["year", "month", "day"]
+type SelectDateOrder = Annotated[list[SelectDateOrderItem], Field(min_length=3, max_length=3)]
 
 
 class SelectDateMonthChoice(AdminSchema):
@@ -524,12 +526,19 @@ class SelectDateSelected(AdminSchema):
 class SelectDateMetadata(AdminSchema):
     model_config = ConfigDict(extra="forbid")
 
-    order: list[Literal["year", "month", "day"]]
+    order: SelectDateOrder
     years: list[SelectDateYear]
     months: list[SelectDateMonthChoice]
     days: list[SelectDateDay]
     empty_choices: SelectDateEmptyChoices
     selected: SelectDateSelected | None = None
+
+    @field_validator("order")
+    @classmethod
+    def validate_order(cls, value):
+        if set(value) != {"year", "month", "day"}:
+            raise ValueError("Select date order must include year, month, and day exactly once.")
+        return value
 
 
 def _schema_field_json_schema(schema: dict[str, Any]) -> None:
