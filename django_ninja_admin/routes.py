@@ -8,6 +8,7 @@ from django.core.exceptions import ImproperlyConfigured
 from ninja.constants import NOT_SET
 
 from django_ninja_admin.schemas import JsonObjectResponse
+from django_ninja_admin.utils.schema_contracts import iter_contract_schemas, open_object_schema_paths
 
 ALLOWED_ROUTE_METHODS = {"DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"}
 
@@ -38,6 +39,14 @@ def normalize_route_methods(methods: Any) -> tuple[str, ...]:
     return tuple(normalized)
 
 
+def validate_route_response_contract(path: str, response: Any) -> None:
+    for label, schema_type in iter_contract_schemas(response, "response"):
+        if open_object_schema_paths(schema_type):
+            raise ImproperlyConfigured(
+                f"Custom admin route {label} schema for '{path}' must forbid extra object properties."
+            )
+
+
 @dataclass(frozen=True)
 class AdminRoute:
     path: str
@@ -51,3 +60,6 @@ class AdminRoute:
     auth: Any = NOT_SET
     throttle: Any = NOT_SET
     include_in_schema: bool = True
+
+    def __post_init__(self) -> None:
+        validate_route_response_contract(self.path, self.response)

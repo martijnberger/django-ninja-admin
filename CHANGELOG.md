@@ -7,11 +7,15 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.70 - 2026-07-05
+
 ### Added
 
 - Added admin system checks and an OpenAPI regression test requiring custom
   action and response-hook schemas to emit closed object contracts or typed
   maps.
+- Added fail-fast custom site/model route response-schema validation so route
+  response objects also emit closed contracts or typed maps.
 
 ### Changed
 

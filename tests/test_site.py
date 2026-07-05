@@ -4,6 +4,8 @@ from django.core.paginator import Paginator
 from django.db import models
 from django.test import Client, override_settings
 from django.test.utils import isolate_apps
+from ninja import Schema
+from pydantic import ConfigDict
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, register
 from django_ninja_admin.exceptions import AlreadyRegistered, NotRegistered
@@ -106,6 +108,38 @@ def test_custom_route_methods_are_validated(db):
     assert model_admin.route("/post", view, methods="post").methods == ("POST",)
     with pytest.raises(ImproperlyConfigured, match="at least one HTTP method"):
         model_admin.route("/empty", view, methods=())
+
+
+def test_custom_route_response_schemas_must_be_closed(db):
+    admin_site = NinjaAdminSite(include_auth=False)
+
+    class OpenRouteResponse(Schema):
+        count: int
+
+    class ClosedRouteResponse(Schema):
+        model_config = ConfigDict(extra="forbid")
+
+        count: int
+
+    def view(request):
+        return {"count": 1}
+
+    with pytest.raises(ImproperlyConfigured, match=r"response schema for '/open' must forbid"):
+        admin_site.route("/open", view, response=OpenRouteResponse)
+
+    route = admin_site.route("/closed", view, response=ClosedRouteResponse)
+    assert route.response is ClosedRouteResponse
+
+    with pytest.raises(ImproperlyConfigured, match=r"response\[202\] schema for '/open-map' must forbid"):
+        admin_site.route("/open-map", view, response={202: OpenRouteResponse})
+
+    response_map_route = admin_site.route("/closed-map", view, response={200: ClosedRouteResponse, 204: None})
+    assert response_map_route.response == {200: ClosedRouteResponse, 204: None}
+
+    admin_site.register(Product, ModelAdmin)
+    model_admin = admin_site.get_model_admin(Product)
+    with pytest.raises(ImproperlyConfigured, match=r"response schema for '/model-open' must forbid"):
+        model_admin.route("/model-open", view, response=OpenRouteResponse)
 
 
 @isolate_apps("tests.testapp")

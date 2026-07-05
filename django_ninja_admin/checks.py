@@ -12,8 +12,6 @@ from django.db import models
 from django.db.models.base import ModelBase
 from django.db.models.expressions import Combinable
 from django.forms.models import BaseInlineFormSet, BaseModelForm, _get_foreign_key
-from pydantic import TypeAdapter
-from pydantic.errors import PydanticSchemaGenerationError, PydanticUserError
 
 from django_ninja_admin.exceptions import NotRegistered
 from django_ninja_admin.filters import FieldListFilter, ListFilter, SimpleListFilter
@@ -23,6 +21,7 @@ from django_ninja_admin.utils.lookup import (
     model_field_from_path,
     single_valued_model_field_from_path,
 )
+from django_ninja_admin.utils.schema_contracts import iter_contract_schemas, open_object_schema_paths
 
 ERROR_PREFIX = "django_ninja_admin"
 
@@ -744,8 +743,8 @@ def _check_response_hook_schemas(model_admin):
 
 def _check_closed_contract_schema(obj, schema, label):
     errors = []
-    for schema_label, schema_type in _iter_contract_schemas(schema, label):
-        open_paths = _open_object_schema_paths(schema_type)
+    for schema_label, schema_type in iter_contract_schemas(schema, label):
+        open_paths = open_object_schema_paths(schema_type)
         if open_paths:
             errors.append(
                 _error(
@@ -759,45 +758,6 @@ def _check_closed_contract_schema(obj, schema, label):
                 )
             )
     return errors
-
-
-def _iter_contract_schemas(schema, label):
-    if schema is None:
-        return
-    if isinstance(schema, Mapping):
-        for status_code, status_schema in schema.items():
-            yield f"{label}[{status_code}]", status_schema
-        return
-    yield label, schema
-
-
-def _open_object_schema_paths(schema_type):
-    try:
-        json_schema = TypeAdapter(schema_type).json_schema()
-    except (PydanticSchemaGenerationError, PydanticUserError, TypeError, ValueError):
-        return []
-
-    paths = []
-
-    def walk(node, path):
-        if isinstance(node, Mapping):
-            if node.get("type") == "object":
-                additional_properties = node.get("additionalProperties", None)
-                if (
-                    ("properties" in node and additional_properties is not False)
-                    or ("properties" not in node and "additionalProperties" not in node)
-                    or additional_properties is True
-                    or additional_properties == {}
-                ):
-                    paths.append(path)
-            for key, value in node.items():
-                walk(value, f"{path}.{key}" if path else str(key))
-        elif isinstance(node, list):
-            for index, value in enumerate(node):
-                walk(value, f"{path}[{index}]")
-
-    walk(json_schema, "")
-    return paths
 
 
 def _editable_form_field_names(model_admin):

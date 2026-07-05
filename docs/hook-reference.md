@@ -118,6 +118,9 @@ Response hook return values are part of the generated-client contract:
   for validation and typed Pydantic envelopes for add/change/delete rows.
 - `route()` and `get_urls()` add sync or async custom site or model routes with
   Ninja-native response, auth, throttle, tags, descriptions, and operation ids.
+  Custom route response schemas must emit closed object contracts or typed
+  maps; use `model_config = ConfigDict(extra="forbid")` on concrete
+  Ninja/Pydantic response models.
 
 Use `admin_view()` around custom views that should enforce admin permissions in
 addition to route-level auth.
