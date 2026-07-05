@@ -75,7 +75,6 @@ from django_ninja_admin.schemas import (
 from django_ninja_admin.utils.deletion import deletion_error_payload
 from django_ninja_admin.utils.format_error import format_error
 from django_ninja_admin.utils.forms import (
-    _jsonish_value,
     fieldset_layout_description,
     form_errors,
     form_field_descriptions,
@@ -83,6 +82,7 @@ from django_ninja_admin.utils.forms import (
     formset_errors,
     model_data_for_form,
 )
+from django_ninja_admin.utils.json_values import jsonish_value
 from django_ninja_admin.utils.lookup import (
     display_metadata_for_field,
     field_name_for_display,
@@ -1046,10 +1046,10 @@ class NinjaAdminSite:
                 )
                 results.append(
                     {
-                        "id": _jsonish_value(item.pk),
+                        "id": jsonish_value(item.pk),
                         "action_time": item.action_time,
-                        "user_id": _jsonish_value(item.user_id),
-                        "content_type_id": _jsonish_value(item.content_type_id),
+                        "user_id": jsonish_value(item.user_id),
+                        "content_type_id": jsonish_value(item.content_type_id),
                         "model": f"{opts.app_label}.{opts.model_name}" if opts is not None else None,
                         "app_label": opts.app_label if opts is not None else None,
                         "model_name": opts.model_name if opts is not None else None,
@@ -1059,7 +1059,7 @@ class NinjaAdminSite:
                         "object_repr": item.object_repr,
                         **object_links,
                         "action_flag": item.action_flag,
-                        "change_message": _jsonish_value(message),
+                        "change_message": jsonish_value(message),
                         "change_message_text": item.get_change_message(),
                     }
                 )
@@ -1677,14 +1677,14 @@ class NinjaAdminSite:
         empty_value = model_admin.get_empty_value_display()
         result_start_index = changelist.page.start_index()
         for index, obj in enumerate(changelist.result_list):
-            object_id = _jsonish_value(changelist.object_id_for(obj))
+            object_id = jsonish_value(changelist.object_id_for(obj))
             row_metadata = self._changelist_row_metadata(request, model_admin, obj, object_id, changelist.to_field)
             cells = {}
             cell_metadata = {}
             for field in list_display:
                 field_key = field_name_for_display(field)
                 raw_value = lookup_field(field, obj, model_admin)
-                value = _jsonish_value(raw_value)
+                value = jsonish_value(raw_value)
                 display_metadata = display_metadata_for_field(field, model_admin.model, model_admin)
                 field_empty_value = (
                     display_metadata["empty_value_display"]
@@ -1755,7 +1755,7 @@ class NinjaAdminSite:
             list_editing_total_form_count = formset.total_form_count()
             list_editing_initial_form_count = formset.initial_form_count()
             for index, obj in enumerate(changelist.result_list):
-                object_id = _jsonish_value(changelist.object_id_for(obj))
+                object_id = jsonish_value(changelist.object_id_for(obj))
                 form = form_class(instance=obj, prefix=f"{formset.prefix}-{index}")
                 field_descriptions = model_admin.get_changelist_form_fields_description(request, obj, form=form)
                 editable_fields = [field for field in field_descriptions if field["name"] in model_admin.list_editable]

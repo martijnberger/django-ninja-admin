@@ -14,9 +14,9 @@ from django.core.validators import (
 )
 from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
-from django.utils.functional import Promise
 
 from django_ninja_admin.utils.format_error import format_error
+from django_ninja_admin.utils.json_values import jsonish_value
 from django_ninja_admin.utils.lookup import (
     display_metadata_for_field,
     field_name_for_display,
@@ -67,10 +67,10 @@ def _choice_value(value):
 
 def _choice_option(value, label, *, coerce=None):
     raw = getattr(value, "value", value)
-    option = {"value": _choice_value(value), "raw_value": _jsonish_value(raw), "label": str(label)}
+    option = {"value": _choice_value(value), "raw_value": jsonish_value(raw), "label": str(label)}
     if coerce is not None:
         with suppress(TypeError, ValueError):
-            option["coerced_value"] = _jsonish_value(coerce(raw))
+            option["coerced_value"] = jsonish_value(coerce(raw))
     return option
 
 
@@ -107,36 +107,6 @@ def _choice_metadata(choices, *, coerce=None):
     return flat_choices, choice_options, []
 
 
-def _jsonish_value(value):
-    if isinstance(value, Promise):
-        return str(value)
-    if callable(value):
-        return None
-    if isinstance(value, Decimal):
-        return str(value)
-    if isinstance(value, models.Q):
-        return {
-            "connector": value.connector,
-            "negated": value.negated,
-            "children": [_jsonish_q_child(child) for child in value.children],
-        }
-    if hasattr(value, "pk"):
-        return value.pk
-    if isinstance(value, str | int | float | bool) or value is None:
-        return value
-    if isinstance(value, (list, tuple)):
-        return [_jsonish_value(item) for item in value]
-    if isinstance(value, dict):
-        return {str(key): _jsonish_value(item) for key, item in value.items()}
-    return str(value)
-
-
-def _jsonish_q_child(child):
-    if isinstance(child, tuple) and len(child) == 2 and isinstance(child[0], str):
-        return {"lookup": child[0], "value": _jsonish_value(child[1])}
-    return _jsonish_value(child)
-
-
 def _relation_metadata(field):
     if not isinstance(field, (ModelChoiceField, ModelMultipleChoiceField)):
         return {}
@@ -155,7 +125,7 @@ def _relation_metadata(field):
         "multiple": isinstance(field, ModelMultipleChoiceField),
     }
     if isinstance(field, ModelChoiceField):
-        attrs["empty_label"] = _jsonish_value(field.empty_label)
+        attrs["empty_label"] = jsonish_value(field.empty_label)
     return attrs
 
 
@@ -249,7 +219,7 @@ def _validator_details(field):
     for validator in getattr(field, "validators", ()):
         detail = {"class": validator.__class__.__name__}
         for attr_name in ("code", "message", "limit_value"):
-            value = _jsonish_value(getattr(validator, attr_name, None))
+            value = jsonish_value(getattr(validator, attr_name, None))
             if value is not None:
                 detail[attr_name] = value
         regex = getattr(validator, "regex", None)
@@ -328,7 +298,7 @@ def _model_field_metadata(field):
     if getattr(field, "column", None):
         attrs["column"] = field.column
     if getattr(field, "default", None) is not None and field.default is not models.NOT_PROVIDED:
-        default = _jsonish_value(field.default)
+        default = jsonish_value(field.default)
         if default is not None:
             attrs["default"] = default
     if isinstance(field, models.FileField):
@@ -338,7 +308,7 @@ def _model_field_metadata(field):
         attrs["width_field"] = getattr(field, "width_field", None) or None
         attrs["height_field"] = getattr(field, "height_field", None) or None
     if hasattr(field, "get_limit_choices_to"):
-        limit_choices_to = _jsonish_value(field.get_limit_choices_to())
+        limit_choices_to = jsonish_value(field.get_limit_choices_to())
         if limit_choices_to not in (None, {}, []):
             attrs["limit_choices_to"] = limit_choices_to
     return attrs
@@ -347,7 +317,7 @@ def _model_field_metadata(field):
 def _widget_metadata(widget):
     metadata = {
         "widget": widget.__class__.__name__,
-        "widget_attrs": _jsonish_value(getattr(widget, "attrs", {})),
+        "widget_attrs": jsonish_value(getattr(widget, "attrs", {})),
         "is_hidden": widget.is_hidden,
         "is_localized": bool(getattr(widget, "is_localized", False)),
         "multiple": getattr(widget, "allow_multiple_selected", False),
@@ -364,7 +334,7 @@ def _widget_metadata(widget):
         metadata["add_id_index"] = bool(widget.add_id_index)
     checked_attribute = getattr(widget, "checked_attribute", None)
     if checked_attribute:
-        metadata["checked_attribute"] = _jsonish_value(checked_attribute)
+        metadata["checked_attribute"] = jsonish_value(checked_attribute)
     if getattr(widget, "supports_microseconds", True) is False:
         metadata["supports_microseconds"] = False
     return metadata
@@ -388,18 +358,18 @@ def _select_date_metadata(name, field, current_value):
     order = list(widget._parse_date_fmt()) or ["month", "day", "year"]
     select_date = {
         "order": order,
-        "years": [_jsonish_value(year) for year in widget.years],
-        "months": [{"value": _jsonish_value(value), "label": str(label)} for value, label in widget.months.items()],
+        "years": [jsonish_value(year) for year in widget.years],
+        "months": [{"value": jsonish_value(value), "label": str(label)} for value, label in widget.months.items()],
         "days": list(range(1, 32)),
         "empty_choices": {
-            "year": {"value": _jsonish_value(widget.year_none_value[0]), "label": str(widget.year_none_value[1])},
-            "month": {"value": _jsonish_value(widget.month_none_value[0]), "label": str(widget.month_none_value[1])},
-            "day": {"value": _jsonish_value(widget.day_none_value[0]), "label": str(widget.day_none_value[1])},
+            "year": {"value": jsonish_value(widget.year_none_value[0]), "label": str(widget.year_none_value[1])},
+            "month": {"value": jsonish_value(widget.month_none_value[0]), "label": str(widget.month_none_value[1])},
+            "day": {"value": jsonish_value(widget.day_none_value[0]), "label": str(widget.day_none_value[1])},
         },
     }
     if current_value not in (None, ""):
         selected = {
-            key: _jsonish_value(value)
+            key: jsonish_value(value)
             for key, value in widget.format_value(current_value).items()
             if value not in (None, "")
         }
@@ -429,12 +399,12 @@ def _filepath_metadata(field):
     if not isinstance(field, forms.FilePathField):
         return {}
     attrs = {
-        "path": _jsonish_value(getattr(field, "path", None)),
+        "path": jsonish_value(getattr(field, "path", None)),
         "recursive": bool(getattr(field, "recursive", False)),
         "allow_files": bool(getattr(field, "allow_files", True)),
         "allow_folders": bool(getattr(field, "allow_folders", False)),
     }
-    match = _jsonish_value(getattr(field, "match", None))
+    match = jsonish_value(getattr(field, "match", None))
     if match not in (None, ""):
         attrs["match"] = match
     return {key: value for key, value in attrs.items() if value is not None}
@@ -459,10 +429,10 @@ def _combo_metadata(field):
 def _step_metadata(field):
     if getattr(field, "step_size", None) is None:
         return {}
-    attrs = {"step_size": _jsonish_value(field.step_size)}
+    attrs = {"step_size": jsonish_value(field.step_size)}
     for validator in getattr(field, "validators", ()):
         if isinstance(validator, StepValueValidator) and getattr(validator, "offset", None) is not None:
-            attrs["step_offset"] = _jsonish_value(validator.offset)
+            attrs["step_offset"] = jsonish_value(validator.offset)
             break
     return attrs
 
@@ -509,7 +479,7 @@ def field_description(name, field, *, read_only=False, current_value=None, model
         **_widget_metadata(widget),
     }
     if getattr(field, "error_messages", None):
-        attrs["error_messages"] = _jsonish_value(field.error_messages)
+        attrs["error_messages"] = jsonish_value(field.error_messages)
     if isinstance(field, forms.NullBooleanField):
         attrs["null_boolean"] = True
     validator_details = _validator_details(field)
@@ -535,10 +505,10 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     attrs.update(_filepath_metadata(field))
     attrs.update(_combo_metadata(field))
     if getattr(field, "initial", None) not in (None, ""):
-        initial = _jsonish_value(field.initial)
+        initial = jsonish_value(field.initial)
         if initial is not None:
             attrs["initial"] = initial
-    current = _jsonish_value(current_value)
+    current = jsonish_value(current_value)
     if current not in (None, ""):
         attrs["value"] = current
     min_length, max_length = _string_length_bounds(field)
@@ -549,12 +519,12 @@ def field_description(name, field, *, read_only=False, current_value=None, model
     if hasattr(field, "strip"):
         attrs["strip"] = bool(field.strip)
     if hasattr(field, "empty_value"):
-        attrs["empty_value"] = _jsonish_value(field.empty_value)
+        attrs["empty_value"] = jsonish_value(field.empty_value)
     min_value, max_value = _numeric_bounds(field)
     if min_value is not None:
-        attrs["min_value"] = _jsonish_value(min_value)
+        attrs["min_value"] = jsonish_value(min_value)
     if max_value is not None:
-        attrs["max_value"] = _jsonish_value(max_value)
+        attrs["max_value"] = jsonish_value(max_value)
     attrs.update(_step_metadata(field))
     if getattr(field, "max_digits", None) is not None:
         attrs["max_digits"] = field.max_digits
@@ -684,7 +654,7 @@ def _readonly_value(name, instance, model_admin, model_field):
         return image_value_metadata(getattr(instance, name))
     if model_field is not None and isinstance(model_field, models.FileField):
         return file_value_metadata(getattr(instance, name))
-    return _jsonish_value(lookup_field(name, instance, model_admin))
+    return jsonish_value(lookup_field(name, instance, model_admin))
 
 
 def _apply_admin_field_metadata(

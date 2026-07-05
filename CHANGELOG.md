@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Extracted shared JSON-compatible admin metadata normalization into
+  `django_ninja_admin.utils.json_values` with direct coverage for Django lazy
+  strings, `Q` objects, Decimals, model identifiers, and nested containers.
+
 ## 0.1.71 - 2026-07-05
 
 ### Added
