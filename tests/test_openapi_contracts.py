@@ -802,9 +802,15 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert required_management_attrs["properties"]["input_type"]["const"] == "hidden"
     assert required_management_attrs["properties"]["value"]["type"] == "integer"
     assert required_management_attrs["properties"]["value"]["minimum"] == 0
+    assert required_management_attrs["properties"]["error_messages"]["allOf"] == [
+        {"$ref": "#/components/schemas/ErrorMessageMap"}
+    ]
     optional_management_attrs = components["OptionalManagementFormFieldAttributes"]
     assert optional_management_attrs["additionalProperties"] is False
     assert optional_management_attrs["properties"]["required"]["const"] is False
+    assert optional_management_attrs["properties"]["error_messages"]["allOf"] == [
+        {"$ref": "#/components/schemas/ErrorMessageMap"}
+    ]
     assert changelist_response_props["list_editing_total_form_count"]["anyOf"] == [
         {"minimum": 0, "type": "integer"},
         {"type": "null"},
@@ -915,6 +921,8 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         "step_offset",
     ):
         assert field_attrs_props[metadata_value_field]["allOf"] == [{"$ref": "#/components/schemas/FieldMetadataValue"}]
+    assert field_attrs_props["error_messages"]["anyOf"][0] == {"$ref": "#/components/schemas/ErrorMessageMap"}
+    assert components["ErrorMessageMap"] == {"additionalProperties": {"type": "string"}, "type": "object"}
     assert {"$ref": "#/components/schemas/FileFieldValue"} in field_attrs_props["current_file"]["anyOf"]
     assert {"$ref": "#/components/schemas/ImageFieldValue"} in field_attrs_props["current_file"]["anyOf"]
     assert field_attrs_props["choices"]["anyOf"][0]["items"] == {"$ref": "#/components/schemas/ChoicePair"}
@@ -1366,6 +1374,12 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
     assert any(
         error["type"] == "greater_than_equal" and error["loc"][-1] == "index" for error in exc_info.value.errors()
     )
+
+    FieldAttributes.model_validate({"error_messages": {"required": "This field is required."}})
+    with pytest.raises(ValidationError) as exc_info:
+        FieldAttributes.model_validate({"error_messages": {"required": ["This field is required."]}})
+    assert exc_info.value.errors()[0]["type"] == "string_type"
+    assert exc_info.value.errors()[0]["loc"] == ("error_messages", "required")
 
     FieldAttributes.model_validate(
         {

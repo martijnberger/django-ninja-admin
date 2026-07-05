@@ -334,6 +334,7 @@ type JsonSchemaValue = dict[str, JsonSchemaValue] | list[JsonSchemaValue] | str 
 type JsonObject = dict[str, JsonSchemaValue]
 type ObjectIdentifier = str | int | float
 type ChoicePair = tuple[str | None, str]
+type ErrorMessageMap = dict[str, str]
 type NonNegativeMetadataInteger = Annotated[int, Field(ge=0)]
 type PositiveMetadataInteger = Annotated[int, Field(ge=1)]
 
@@ -568,7 +569,7 @@ class FieldAttributes(AdminSchema):
     localize: bool | None = None
     validators: list[str] | None = None
     validator_details: list[ValidatorDetail] | None = None
-    error_messages: dict[str, FieldMetadataValue] | None = None
+    error_messages: ErrorMessageMap | None = None
     boolean: bool | None = None
     empty_value_display: str | None = None
     ordering_field: str | None = None
@@ -733,7 +734,7 @@ class ManagementFormFieldAttributes(AdminSchema):
     disabled: Literal[False] = False
     localize: Literal[False] = False
     validators: list[str] = Field(default_factory=list)
-    error_messages: dict[str, FieldMetadataValue] = Field(default_factory=dict)
+    error_messages: ErrorMessageMap = Field(default_factory=dict)
     widget: Literal["HiddenInput"] = "HiddenInput"
     widget_attrs: dict[str, FieldMetadataValue] = Field(default_factory=dict)
     is_hidden: Literal[True] = True

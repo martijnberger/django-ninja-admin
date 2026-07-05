@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Narrowed form and management-form error-message metadata maps to string
+  values instead of arbitrary JSON values.
 - Narrowed validator detail `code` and `message` metadata to nullable strings
   instead of arbitrary JSON values.
 - Advertised select-date widget order metadata as unique in the generated

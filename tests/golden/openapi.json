@@ -1783,6 +1783,12 @@
           }
         ]
       },
+      "ErrorMessageMap": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "type": "object"
+      },
       "ErrorResponse": {
         "additionalProperties": false,
         "examples": [
@@ -2255,16 +2261,12 @@
           "error_messages": {
             "anyOf": [
               {
-                "additionalProperties": {
-                  "$ref": "#/components/schemas/FieldMetadataValue"
-                },
-                "type": "object"
+                "$ref": "#/components/schemas/ErrorMessageMap"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Error Messages"
+            ]
           },
           "filtered_select": {
             "anyOf": [
@@ -4757,11 +4759,11 @@
             "type": "boolean"
           },
           "error_messages": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/FieldMetadataValue"
-            },
-            "title": "Error Messages",
-            "type": "object"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ErrorMessageMap"
+              }
+            ]
           },
           "help_text": {
             "default": "",
@@ -6806,11 +6808,11 @@
             "type": "boolean"
           },
           "error_messages": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/FieldMetadataValue"
-            },
-            "title": "Error Messages",
-            "type": "object"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ErrorMessageMap"
+              }
+            ]
           },
           "help_text": {
             "default": "",
