@@ -937,6 +937,7 @@ class PageChoice(AdminSchema):
 
 type PageRangePage = Annotated[int, Field(ge=1)]
 type PageRangeItem = PageRangePage | Literal["\u2026"]
+type OrderingFieldColumnIndex = Annotated[int, Field(ge=1)]
 
 
 class Pagination(AdminSchema):
@@ -992,7 +993,7 @@ class ChangelistConfig(AdminSchema):
     list_display_links: list[str] = Field(default_factory=list)
     to_field: str | None = None
     object_id_field: str
-    ordering_field_columns: dict[str, int] = Field(default_factory=dict)
+    ordering_field_columns: dict[str, OrderingFieldColumnIndex] = Field(default_factory=dict)
     ordering: list[str] = Field(default_factory=list)
     search_term: str = ""
     has_search: bool = False

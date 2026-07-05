@@ -1052,7 +1052,7 @@
           },
           "ordering_field_columns": {
             "additionalProperties": {
-              "type": "integer"
+              "$ref": "#/components/schemas/OrderingFieldColumnIndex"
             },
             "title": "Ordering Field Columns",
             "type": "object"
@@ -4815,6 +4815,10 @@
         ],
         "title": "OptionalManagementFormFieldAttributes",
         "type": "object"
+      },
+      "OrderingFieldColumnIndex": {
+        "minimum": 1,
+        "type": "integer"
       },
       "PageChoice": {
         "additionalProperties": false,

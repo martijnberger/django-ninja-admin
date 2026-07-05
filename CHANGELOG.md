@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   schemas.
 - Narrowed changelist page-range metadata to positive page numbers or Django's
   ellipsis marker.
+- Added explicit positive bounds to changelist ordering-field column metadata
+  schemas.
 
 ## 0.1.67 - 2026-07-05
 
