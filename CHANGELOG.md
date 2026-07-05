@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.74 - 2026-07-05
+
 ### Added
 
 - Added mounted response-hook status-map coverage for change hooks with
