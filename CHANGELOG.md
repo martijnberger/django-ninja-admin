@@ -20,6 +20,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Rejected hidden invalid repeated history and autocomplete control query
   values instead of accepting a later valid page, page size, ordering, or
   action flag value.
+- Rejected hidden invalid repeated `_to_field` values on changelist, action,
+  and object routes instead of accepting a later allowed field.
 
 ## 0.1.64 - 2026-07-05
 

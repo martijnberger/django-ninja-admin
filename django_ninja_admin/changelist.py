@@ -95,6 +95,18 @@ class ChangeList:
 
     def get_to_field(self):
         to_field = self.params.get("_to_field")
+        for raw_to_field in self.param_values("_to_field"):
+            if not raw_to_field:
+                continue
+            if not self.model_admin.to_field_allowed(self.request, raw_to_field):
+                raise AdminValidationError(
+                    [
+                        {
+                            "message": _("The field '%(field)s' cannot be referenced.") % {"field": raw_to_field},
+                            "param": "_to_field",
+                        }
+                    ]
+                )
         if not to_field:
             return None
         if not self.model_admin.to_field_allowed(self.request, to_field):

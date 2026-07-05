@@ -71,6 +71,17 @@ def test_actions_support_changelist_to_field_selected_ids(admin_client):
         {"message": "The field 'name' cannot be referenced.", "param": "_to_field"}
     ]
 
+    hidden_invalid_to_field = admin_client.post(
+        "/slug-editable-admin/testapp/category/actions?_to_field=name&_to_field=slug",
+        data={"action": "mark_reviewed", "selected_ids": ["Reviewed"]},
+        content_type="application/json",
+    )
+
+    assert hidden_invalid_to_field.status_code == 400
+    assert hidden_invalid_to_field.json()["errors"] == [
+        {"message": "The field 'name' cannot be referenced.", "param": "_to_field"}
+    ]
+
 
 @override_settings(ROOT_URLCONF="tests.custom_form_urls")
 def test_bulk_update_uses_changelist_form_hook(admin_client, sample):

@@ -110,6 +110,14 @@ def test_model_routes_validate_to_field(admin_client, sample):
         {"message": "The field 'name' cannot be referenced.", "param": "_to_field"}
     ]
 
+    hidden_bad_category_field = admin_client.get(
+        f"/admin-api/testapp/category/{sample.category_id}?_to_field=name&_to_field=id"
+    )
+    assert hidden_bad_category_field.status_code == 400
+    assert hidden_bad_category_field.json()["errors"] == [
+        {"message": "The field 'name' cannot be referenced.", "param": "_to_field"}
+    ]
+
     bad_product_field = admin_client.delete(f"/admin-api/testapp/product/{sample.category_id}?_to_field=category")
     assert bad_product_field.status_code == 400
     assert Product.objects.filter(pk=sample.pk).exists()
@@ -147,6 +155,12 @@ def test_changelist_routes_support_allowed_to_field(admin_client):
     bad_field = admin_client.get("/slug-autocomplete-admin/testapp/category?_to_field=name")
     assert bad_field.status_code == 400
     assert bad_field.json()["errors"] == [{"message": "The field 'name' cannot be referenced.", "param": "_to_field"}]
+
+    hidden_bad_field = admin_client.get("/slug-autocomplete-admin/testapp/category?_to_field=name&_to_field=slug")
+    assert hidden_bad_field.status_code == 400
+    assert hidden_bad_field.json()["errors"] == [
+        {"message": "The field 'name' cannot be referenced.", "param": "_to_field"}
+    ]
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")

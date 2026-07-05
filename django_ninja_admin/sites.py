@@ -622,6 +622,20 @@ class NinjaAdminSite:
                     [{"message": _("Invalid %(label)s.") % {"label": label or param}, "param": param}]
                 )
 
+    def _validate_repeated_to_field_query_param(self, request, model_admin):
+        for to_field in self._query_param_values(request, "_to_field"):
+            if not to_field:
+                continue
+            if not model_admin.to_field_allowed(request, to_field):
+                raise AdminValidationError(
+                    [
+                        {
+                            "message": _("The field '%(field)s' cannot be referenced.") % {"field": to_field},
+                            "param": "_to_field",
+                        }
+                    ]
+                )
+
     def _custom_route_view_func(self, view_func):
         if not (hasattr(view_func, "__self__") and hasattr(view_func, "__func__")):
             return view_func
@@ -1629,6 +1643,7 @@ class NinjaAdminSite:
                 )
 
     def _get_object_or_404(self, request, model_admin, object_id, to_field=None):
+        self._validate_repeated_to_field_query_param(request, model_admin)
         if to_field and not model_admin.to_field_allowed(request, to_field):
             raise AdminValidationError(
                 [
