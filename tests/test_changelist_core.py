@@ -326,6 +326,24 @@ def test_changelist_filters_ordering_pagination_and_show_all(admin_client, sampl
     assert empty.json()["config"]["result_end_index"] == 0
 
 
+def test_changelist_elided_page_range_uses_positive_pages_and_ellipsis(admin_client, sample):
+    Product.objects.bulk_create(
+        [Product(name=f"Page range {index:03}", category=sample.category, price="1.00") for index in range(100)]
+    )
+
+    response = admin_client.get("/admin-api/testapp/product?pp=1&page=50")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["config"]["page"] == 50
+    assert body["config"]["page_count"] == 102
+    assert body["config"]["page_range"].count("\u2026") == 2
+    assert all((isinstance(item, int) and item >= 1) or item == "\u2026" for item in body["config"]["page_range"])
+    ellipsis_choices = [choice for choice in body["config"]["page_choices"] if choice["page"] is None]
+    assert [choice["display"] for choice in ellipsis_choices] == ["\u2026", "\u2026"]
+    assert all(choice["query_string"] is None for choice in ellipsis_choices)
+
+
 def test_changelist_core_enforces_site_page_size_cap(db, sample):
     class LargePageProductAdmin(ModelAdmin):
         list_per_page = 1000

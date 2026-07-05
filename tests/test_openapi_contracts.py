@@ -6,6 +6,7 @@ from pydantic import BaseModel, ValidationError
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, action, site
 from django_ninja_admin.schemas import (
     ActionResponse,
+    ChangelistConfig,
     ChangelistResponse,
     DateHierarchyParams,
     FieldAttributes,
@@ -643,6 +644,12 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
         {"minimum": 1, "type": "integer"},
         {"type": "null"},
     ]
+    assert changelist_config_props["page_range"]["items"] == {"$ref": "#/components/schemas/PageRangeItem"}
+    assert components["PageRangeItem"]["anyOf"] == [
+        {"$ref": "#/components/schemas/PageRangePage"},
+        {"const": "\u2026", "type": "string"},
+    ]
+    assert components["PageRangePage"] == {"minimum": 1, "type": "integer"}
     assert changelist_config_props["date_hierarchy"]["anyOf"][0] == {
         "$ref": "#/components/schemas/DateHierarchyDescription"
     }
@@ -1202,6 +1209,18 @@ def test_metadata_count_and_index_schemas_reject_impossible_values(admin_client,
         ChangelistResponse.model_validate(invalid_ordering_index)
     assert exc_info.value.errors()[0]["type"] == "greater_than_equal"
     assert exc_info.value.errors()[0]["loc"] == ("columns", 0, "ordering_index")
+
+    invalid_page_number = deepcopy(changelist_body["config"])
+    invalid_page_number["page_range"] = [0]
+    with pytest.raises(ValidationError) as exc_info:
+        ChangelistConfig.model_validate(invalid_page_number)
+    assert any(error["type"] == "greater_than_equal" for error in exc_info.value.errors())
+
+    invalid_page_marker = deepcopy(changelist_body["config"])
+    invalid_page_marker["page_range"] = ["more"]
+    with pytest.raises(ValidationError) as exc_info:
+        ChangelistConfig.model_validate(invalid_page_marker)
+    assert any(error["type"] == "literal_error" for error in exc_info.value.errors())
 
     with pytest.raises(ValidationError) as exc_info:
         FieldAttributes.model_validate(

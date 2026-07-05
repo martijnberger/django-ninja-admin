@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added explicit positive bounds to date-hierarchy selected parameter metadata
   schemas.
+- Narrowed changelist page-range metadata to positive page numbers or Django's
+  ellipsis marker.
 
 ## 0.1.67 - 2026-07-05
 

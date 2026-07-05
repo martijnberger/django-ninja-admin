@@ -753,7 +753,9 @@ class ChangeList:
     def get_page_range(self):
         if not self.pagination_required:
             return []
-        return list(self.paginator.get_elided_page_range(self.page_num))
+        return [
+            item if isinstance(item, int) else str(item) for item in self.paginator.get_elided_page_range(self.page_num)
+        ]
 
     def get_page_choices(self):
         choices = []

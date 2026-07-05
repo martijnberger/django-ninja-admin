@@ -935,6 +935,10 @@ class PageChoice(AdminSchema):
     query_string: str | None = None
 
 
+type PageRangePage = Annotated[int, Field(ge=1)]
+type PageRangeItem = PageRangePage | Literal["\u2026"]
+
+
 class Pagination(AdminSchema):
     count: int = Field(ge=0)
     num_pages: int = Field(ge=0)
@@ -959,7 +963,7 @@ class ChangelistConfig(AdminSchema):
     has_previous: bool = False
     multi_page: bool = False
     pagination_required: bool = False
-    page_range: list[int | str] = Field(default_factory=list)
+    page_range: list[PageRangeItem] = Field(default_factory=list)
     page_choices: list[PageChoice] = Field(default_factory=list)
     first_page_query_string: str | None = None
     previous_page_query_string: str | None = None

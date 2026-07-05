@@ -1076,14 +1076,7 @@
           },
           "page_range": {
             "items": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "string"
-                }
-              ]
+              "$ref": "#/components/schemas/PageRangeItem"
             },
             "title": "Page Range",
             "type": "array"
@@ -4864,6 +4857,21 @@
         ],
         "title": "PageChoice",
         "type": "object"
+      },
+      "PageRangeItem": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/PageRangePage"
+          },
+          {
+            "const": "\u2026",
+            "type": "string"
+          }
+        ]
+      },
+      "PageRangePage": {
+        "minimum": 1,
+        "type": "integer"
       },
       "Pagination": {
         "additionalProperties": false,
