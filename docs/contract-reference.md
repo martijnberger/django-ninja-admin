@@ -76,7 +76,9 @@ fields.
 Inline and list-editable formset management metadata uses the same response
 shape as Django form descriptions, but the OpenAPI items are narrowed to the
 four supported hidden integer controls: `TOTAL_FORMS`, `INITIAL_FORMS`,
-`MIN_NUM_FORMS`, and `MAX_NUM_FORMS`.
+`MIN_NUM_FORMS`, and `MAX_NUM_FORMS`. Inline row metadata includes
+permission-filtered detail and change-form URLs when `show_change_link=True`
+and the inline model is registered on the same admin site.
 
 Changelist, history, and autocomplete responses share the `Pagination`
 component. History and autocomplete page-size parameters are bounded in

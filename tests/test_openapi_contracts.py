@@ -906,6 +906,8 @@ def test_openapi_model_route_contracts_are_semantic_and_stable(admin_client, sam
     assert inline_row_metadata_props["is_initial"]["type"] == "boolean"
     assert inline_row_metadata_props["empty_permitted"]["type"] == "boolean"
     assert inline_row_metadata_props["object_id"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    assert inline_row_metadata_props["detail_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
+    assert inline_row_metadata_props["change_form_url"]["anyOf"] == [{"type": "string"}, {"type": "null"}]
     field_attrs_schema = components["FieldDescription"]["properties"]["attrs"]
     assert field_attrs_schema["$ref"] == "#/components/schemas/FieldAttributes"
     assert field_attrs_schema["description"] == "Semantic form/admin metadata for frontend renderers."

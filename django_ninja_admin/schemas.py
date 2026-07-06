@@ -849,6 +849,8 @@ class InlineFormsetRowMetadata(AdminSchema):
     is_initial: bool
     empty_permitted: bool
     object_id: str | None = None
+    detail_url: str | None = None
+    change_form_url: str | None = None
 
 
 class InlineDescription(AdminSchema):

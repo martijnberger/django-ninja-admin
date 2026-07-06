@@ -11,6 +11,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Added bounded `unselected_options` metadata for filtered dual-select
   relation widgets, including a truncation flag for large option sets.
+- Added permission-filtered inline row detail/change URLs when
+  `show_change_link=True` and the inline model is registered.
 
 ### Changed
 

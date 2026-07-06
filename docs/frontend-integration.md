@@ -56,6 +56,10 @@ Inline mutations live under `inlines` and are keyed by inline id:
 }
 ```
 
+Inline form descriptions include row metadata for prefixes, initial rows, and
+object ids. When an inline sets `show_change_link=True` and the inline model is
+registered, row metadata includes permission-filtered detail/change-form URLs.
+
 Use form-description responses to render field labels, choices, relation
 metadata, initial values, readonly state, disabled state, and widget intent.
 The API intentionally omits rendered Django widget internals such as generated

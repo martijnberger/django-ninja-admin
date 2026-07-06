@@ -336,8 +336,19 @@ def test_manual_through_many_to_many_can_be_edited_with_explicit_inline(admin_cl
     assert [field["name"] for field in body["form"]["fields"]] == ["title"]
     inline = next(item for item in body["inlines"] if item["model"] == "testapp.articlelabel")
     assert inline["formset_prefix"] == "label_links"
+    assert inline["show_change_link"] is True
     assert inline["total_form_count"] == 2
     assert inline["fieldset_layout"][0]["fields"] == ["id", "article", "label", "note"]
+    assert inline["formset_row_metadata"][0]["detail_url"] == (
+        f"/through-inline-admin/testapp/articlelabel/{existing.pk}"
+    )
+    assert inline["formset_row_metadata"][0]["change_form_url"] == (
+        f"/through-inline-admin/testapp/articlelabel/{existing.pk}/form"
+    )
+    assert inline["formset_row_metadata"][1]["detail_url"] == f"/through-inline-admin/testapp/articlelabel/{removed.pk}"
+    assert inline["formset_row_metadata"][1]["change_form_url"] == (
+        f"/through-inline-admin/testapp/articlelabel/{removed.pk}/form"
+    )
     first_row = {field["name"]: field for field in inline["formset"][0]}
     assert first_row["label"]["attrs"]["value"] == primary.pk
     assert first_row["label"]["attrs"]["selected_options"] == [

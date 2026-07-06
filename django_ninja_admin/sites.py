@@ -1955,10 +1955,40 @@ class NinjaAdminSite:
                 }
                 if form_obj is not None:
                     row_metadata["object_id"] = str(form_obj.pk)
+                    row_metadata.update(self._inline_row_object_links(request, inline, form_obj))
                 inline_desc["formset_row_metadata"].append(row_metadata)
             inlines.append(inline_desc)
         data["inlines"] = inlines
         return FormResponse.model_validate(data).model_dump(mode="json")
+
+    def _inline_row_object_links(self, request, inline, obj):
+        if not inline.show_change_link:
+            return {}
+        try:
+            model_admin = self.get_model_admin(inline.model)
+        except NotRegistered:
+            return {}
+        has_view_permission = model_admin.has_view_permission(request, obj)
+        has_change_permission = model_admin.has_change_permission(request, obj)
+        if not has_view_permission and not has_change_permission:
+            return {}
+        base_path = self._admin_base_path_from_model_route(request, inline.parent_model)
+        if base_path is None:
+            return {}
+        object_url = f"{base_path}/{inline.model._meta.app_label}/{inline.model._meta.model_name}/{quote(str(obj.pk))}"
+        return {
+            "detail_url": object_url,
+            "change_form_url": f"{object_url}/form" if has_change_permission else None,
+        }
+
+    @staticmethod
+    def _admin_base_path_from_model_route(request, model):
+        path = getattr(request, "path", None) or getattr(request, "path_info", None) or ""
+        marker = f"/{model._meta.app_label}/{model._meta.model_name}"
+        index = path.find(marker)
+        if index < 0:
+            return None
+        return path[:index].rstrip("/")
 
     def _payload_data(self, payload, *, exclude_unset=True):
         data = cast(Any, getattr(payload, "data", {}))

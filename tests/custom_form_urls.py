@@ -467,6 +467,7 @@ inline_multivalue_site.register(Product, InlineMultiValueProductAdmin)
 class ArticleLabelInline(TabularInline):
     model = ArticleLabel
     extra = 0
+    show_change_link = True
 
 
 class ThroughInlineArticleAdmin(ModelAdmin):
