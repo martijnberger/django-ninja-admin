@@ -92,6 +92,13 @@ def write_sample_project(project_dir: Path) -> None:
                 return self.name
 
 
+        class Tag(models.Model):
+            name = models.CharField(max_length=100)
+
+            def __str__(self):
+                return self.name
+
+
         class Product(models.Model):
             IN_STOCK = "in_stock"
             OUT_OF_STOCK = "out_of_stock"
@@ -102,6 +109,7 @@ def write_sample_project(project_dir: Path) -> None:
 
             name = models.CharField(max_length=100)
             category = models.ForeignKey(Category, on_delete=models.CASCADE)
+            tags = models.ManyToManyField(Tag, blank=True)
             price = models.DecimalField(max_digits=8, decimal_places=2)
             stock_status = models.CharField(max_length=20, choices=STOCK_CHOICES, default=IN_STOCK)
 
@@ -130,7 +138,7 @@ def write_sample_project(project_dir: Path) -> None:
 
         from django_ninja_admin import ModelAdmin, TabularInline, action, site
 
-        from .models import Category, Product, ProductImage
+        from .models import Category, Product, ProductImage, Tag
 
 
         class ClosedSchema(Schema):
@@ -166,9 +174,19 @@ def write_sample_project(project_dir: Path) -> None:
             search_fields = ("name",)
 
 
+        class TagAdmin(ModelAdmin):
+            list_display = ("name",)
+            search_fields = ("name",)
+
+
+        class ProductImageAdmin(ModelAdmin):
+            list_display = ("title",)
+
+
         class ProductImageInline(TabularInline):
             model = ProductImage
             extra = 0
+            show_change_link = True
 
 
         class ProductAdmin(ModelAdmin):
@@ -176,6 +194,7 @@ def write_sample_project(project_dir: Path) -> None:
             list_editable = ("stock_status",)
             search_fields = ("name",)
             autocomplete_fields = ("category",)
+            filter_horizontal = ("tags",)
             actions = ["set_stock_status"]
             inlines = [ProductImageInline]
 
@@ -226,6 +245,8 @@ def write_sample_project(project_dir: Path) -> None:
 
 
         site.register(Category, CategoryAdmin)
+        site.register(Tag, TagAdmin)
+        site.register(ProductImage, ProductImageAdmin)
         site.register(Product, ProductAdmin)
         """,
     )
@@ -307,7 +328,7 @@ def write_sample_project(project_dir: Path) -> None:
 
         from django.contrib.contenttypes.models import ContentType
 
-        from sample_app.models import Category, Product, ProductImage
+        from sample_app.models import Category, Product, ProductImage, Tag
 
 
         class OpenAPIConsumer:
@@ -475,6 +496,8 @@ def write_sample_project(project_dir: Path) -> None:
 
         call_command("migrate", interactive=False, run_syncdb=True, verbosity=0)
         category = Category.objects.create(name="Cameras")
+        featured_tag = Tag.objects.create(name="Featured")
+        available_tag = Tag.objects.create(name="Available")
         Product.objects.create(name="Existing product", category=category, price="12.50")
 
         user = get_user_model().objects.create_user("admin", password="pw", is_staff=True, is_superuser=True)
@@ -583,6 +606,7 @@ def write_sample_project(project_dir: Path) -> None:
             {
                 "name": "Browser session product",
                 "category": category.pk,
+                "tags": [featured_tag.pk],
                 "price": "29.95",
                 "stock_status": "in_stock",
             }
@@ -718,6 +742,7 @@ def write_sample_project(project_dir: Path) -> None:
             {
                 "name": "Updated from OpenAPI",
                 "category": category.pk,
+                "tags": [featured_tag.pk],
                 "price": "24.95",
                 "stock_status": "in_stock",
             }
@@ -767,7 +792,34 @@ def write_sample_project(project_dir: Path) -> None:
         form_response = consumer.request("sample_app_product_change_form", path_params={"object_id": product_id})
         assert form_response.status_code == 200, form_response.content
         consumer.assert_response_matches_schema("sample_app_product_change_form", form_response)
-        assert form_response.json()["form"]["model"] == "sample_app.product"
+        form_body = form_response.json()
+        assert form_body["form"]["model"] == "sample_app.product"
+        form_fields = {field["name"]: field for field in form_body["form"]["fields"]}
+        tag_attrs = form_fields["tags"]["attrs"]
+        assert tag_attrs["filtered_select"]["unselected_options"] == [
+            {
+                "id": str(available_tag.pk),
+                "text": "Available",
+                "detail_url": f"/admin-api/sample_app/tag/{available_tag.pk}",
+                "change_form_url": f"/admin-api/sample_app/tag/{available_tag.pk}/form",
+            }
+        ]
+        assert tag_attrs["filtered_select"]["unselected_options_truncated"] is False
+        assert tag_attrs["selected_options"] == [
+            {
+                "id": str(featured_tag.pk),
+                "text": "Featured",
+                "detail_url": f"/admin-api/sample_app/tag/{featured_tag.pk}",
+                "change_form_url": f"/admin-api/sample_app/tag/{featured_tag.pk}/form",
+            }
+        ]
+        inline = next(item for item in form_body["inlines"] if item["model"] == "sample_app.productimage")
+        assert inline["show_change_link"] is True
+        assert inline["formset_row_metadata"][0]["object_id"] == str(image_id)
+        assert inline["formset_row_metadata"][0]["detail_url"] == f"/admin-api/sample_app/productimage/{image_id}"
+        assert inline["formset_row_metadata"][0]["change_form_url"] == (
+            f"/admin-api/sample_app/productimage/{image_id}/form"
+        )
 
         history_response = consumer.request(
             "admin_history",

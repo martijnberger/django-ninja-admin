@@ -74,8 +74,9 @@ behavior, or permission boundaries.
 - Run `just generated-client-smoke` to prove a clean installed project can use
   OpenAPI operation IDs, request examples, and schema-declared path/query
   parameters, including typed changelist query-parameter schemas, for core
-  model workflows including inline add/change, full update, delete, CSRF
-  bootstrap, session login, authenticated mutation, logout, site context,
+  model workflows including inline add/change, inline row URL metadata,
+  filtered-select selected/unselected option metadata, full update, delete,
+  CSRF bootstrap, session login, authenticated mutation, logout, site context,
   permissions, app-list, history, autocomplete, and view-on-site, and can parse
   documented success and error responses against the advertised response
   schemas.

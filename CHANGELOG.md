@@ -7,17 +7,26 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+## 0.1.76 - 2026-07-06
+
 ### Added
 
 - Added bounded `unselected_options` metadata for filtered dual-select
   relation widgets, including a truncation flag for large option sets.
 - Added permission-filtered inline row detail/change URLs when
   `show_change_link=True` and the inline model is registered.
+- Expanded installed-wheel generated-client smoke coverage for filtered-select
+  selected/unselected option metadata and inline `show_change_link` row URLs.
 
 ### Changed
 
 - Narrowed form-description `admin_widget` metadata from an open string to a
   typed enum of supported Django-admin widget intents.
+
+### Fixed
+
+- Updated the full installed-project smoke sample's custom route/action schemas
+  and relation metadata assertions for the current closed-schema contract.
 
 ## 0.1.75 - 2026-07-05
 

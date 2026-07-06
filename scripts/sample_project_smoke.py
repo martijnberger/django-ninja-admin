@@ -314,22 +314,27 @@ def write_full_sample_project(project_dir: Path) -> None:
         from typing import Literal
 
         from ninja import Schema
+        from pydantic import ConfigDict
 
         from django_ninja_admin import ModelAdmin, TabularInline, action, site
 
         from .models import Category, Product, ProductImage, Tag
 
 
-        class ProductStatsResponse(Schema):
+        class ClosedSchema(Schema):
+            model_config = ConfigDict(extra="forbid")
+
+
+        class ProductStatsResponse(ClosedSchema):
             count: int
 
 
-        class StockStatusActionData(Schema):
+        class StockStatusActionData(ClosedSchema):
             status: Literal["in_stock", "out_of_stock"]
             note: str | None = None
 
 
-        class StockStatusActionResult(Schema):
+        class StockStatusActionResult(ClosedSchema):
             updated: int
             status: str
             note: str | None = None
@@ -582,12 +587,20 @@ def write_full_sample_project(project_dir: Path) -> None:
         assert_status(change_form, 200)
         change_fields_by_name = {field["name"]: field for field in change_form.json()["form"]["fields"]}
         assert change_fields_by_name["category"]["attrs"]["selected_options"] == [
-            {"id": str(cameras.pk), "text": "Cameras"}
+            {
+                "id": str(cameras.pk),
+                "text": "Cameras",
+                "detail_url": f"/admin-api/sample_app/category/{cameras.pk}",
+                "change_form_url": f"/admin-api/sample_app/category/{cameras.pk}/form",
+            }
         ]
-        assert {item["text"] for item in change_fields_by_name["tags"]["attrs"]["selected_options"]} == {
-            "Featured",
-            "Clearance",
+        tag_options = {
+            item["text"]: item for item in change_fields_by_name["tags"]["attrs"]["selected_options"]
         }
+        assert set(tag_options) == {"Featured", "Clearance"}
+        for tag in [featured, clearance]:
+            assert tag_options[tag.name]["detail_url"] == f"/admin-api/sample_app/tag/{tag.pk}"
+            assert tag_options[tag.name]["change_form_url"] == f"/admin-api/sample_app/tag/{tag.pk}/form"
 
         autocomplete = client.get(
             "/admin-api/autocomplete",
