@@ -7,6 +7,15 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Fixed
+
+- Stabilized generated OpenAPI 422 response descriptions across supported
+  Python versions.
+- Made PostgreSQL schema assertions backend-aware and preserved CI matrix
+  Django pins when running `uv run` through `just`.
+- Restored inline form and inline mutation compatibility with Django 5.0's
+  reverse relation accessor API.
+
 ## 0.1.76 - 2026-07-06
 
 ### Added

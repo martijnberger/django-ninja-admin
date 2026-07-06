@@ -79,6 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: dist
     continue-on-error: ${{ matrix.experimental }}
+    env:
+      UV_NO_SYNC: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -188,6 +190,7 @@ jobs:
           --health-retries 5
     env:
       DJANGO_NINJA_ADMIN_TEST_DATABASE: postgres
+      UV_NO_SYNC: "1"
       POSTGRES_DB: django_ninja_admin
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres

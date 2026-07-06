@@ -18,6 +18,19 @@ from pydantic import ValidationError as PydanticValidationError
 from django_ninja_admin import NinjaAdminSite
 
 
+def _integer_validator_bounds(field):
+    minimum = None
+    maximum = None
+    for validator in field.validators:
+        if isinstance(validator, MinValueValidator):
+            minimum = validator.limit_value
+        elif isinstance(validator, MaxValueValidator):
+            maximum = validator.limit_value
+    assert minimum is not None
+    assert maximum is not None
+    return minimum, maximum
+
+
 @isolate_apps("tests.testapp")
 def test_image_field_has_typed_schema_and_image_metadata(db):
     class GalleryImage(models.Model):
@@ -578,31 +591,32 @@ def test_step_value_model_validators_drive_output_and_relation_schemas(db):
     code_output_schema = code_admin.get_output_schema().model_json_schema()
     link_output_schema = link_admin.get_output_schema().model_json_schema()
     link_write_schema = link_admin.get_write_schema(None).model_json_schema()
+    integer_minimum, integer_maximum = _integer_validator_bounds(StepCode._meta.get_field("code"))
 
     assert code_output_schema["properties"]["code"] == {
-        "maximum": 9223372036854775807,
-        "minimum": -9223372036854775808,
+        "maximum": integer_maximum,
+        "minimum": integer_minimum,
         "multipleOf": 5,
         "title": "Code",
         "type": "integer",
     }
     assert link_write_schema["properties"]["code"] == {
-        "maximum": 9223372036854775807,
-        "minimum": -9223372036854775808,
+        "maximum": integer_maximum,
+        "minimum": integer_minimum,
         "multipleOf": 5,
         "title": "Code",
         "type": "integer",
     }
     assert link_output_schema["properties"]["code_id"] == {
-        "maximum": 9223372036854775807,
-        "minimum": -9223372036854775808,
+        "maximum": integer_maximum,
+        "minimum": integer_minimum,
         "multipleOf": 5,
         "title": "Code Id",
         "type": "integer",
     }
     assert link_output_schema["properties"]["codes"]["items"] == {
-        "maximum": 9223372036854775807,
-        "minimum": -9223372036854775808,
+        "maximum": integer_maximum,
+        "minimum": integer_minimum,
         "multipleOf": 5,
         "type": "integer",
     }

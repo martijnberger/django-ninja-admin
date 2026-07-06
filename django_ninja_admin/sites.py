@@ -113,6 +113,38 @@ _UNSET = object()
 NinjaQuery = cast(Any, Query)
 HISTORY_ACTION_FLAG_QUERY = NinjaQuery(None, description="Optional Django admin log action flag.")
 TO_FIELD_QUERY_DESCRIPTION = "Use an allowed alternate object id field."
+STABLE_RESPONSE_DESCRIPTIONS = {
+    422: "Unprocessable Content",
+}
+
+
+class NinjaAdminAPI(NinjaAPI):
+    def get_openapi_schema(self, *args, **kwargs):
+        schema = super().get_openapi_schema(*args, **kwargs)
+        _normalize_response_descriptions(schema)
+        return schema
+
+
+def _normalize_response_descriptions(schema):
+    if isinstance(schema, dict):
+        responses = schema.get("responses")
+        if isinstance(responses, dict):
+            for status_code, description in STABLE_RESPONSE_DESCRIPTIONS.items():
+                response = responses.get(status_code) or responses.get(str(status_code))
+                if isinstance(response, dict):
+                    response["description"] = description
+        for child in schema.values():
+            _normalize_response_descriptions(child)
+    elif isinstance(schema, list):
+        for child in schema:
+            _normalize_response_descriptions(child)
+
+
+def _inline_remote_accessor_name(foreign_key):
+    remote_field = foreign_key.remote_field
+    if hasattr(remote_field, "get_accessor_name"):
+        return remote_field.get_accessor_name()
+    return remote_field.accessor_name
 
 
 class NinjaAdminSite:
@@ -399,7 +431,7 @@ class NinjaAdminSite:
         return self._api
 
     def _build_api(self):
-        api = NinjaAPI(
+        api = NinjaAdminAPI(
             title=self._site_label("site_header", DEFAULT_SITE_HEADER),
             version="2.0.0",
             urls_namespace=self.name,
@@ -1903,7 +1935,7 @@ class NinjaAdminSite:
             queryset = inline.model.objects.none()
             if obj is not None:
                 fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
-                related_name = fk.remote_field.accessor_name
+                related_name = _inline_remote_accessor_name(fk)
                 try:
                     queryset = getattr(obj, related_name).all()
                 except AttributeError:
@@ -2420,7 +2452,7 @@ class NinjaAdminSite:
                 )
             inline = inline_by_id[inline_id]
             fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
-            related_name = fk.remote_field.accessor_name
+            related_name = _inline_remote_accessor_name(fk)
             related_manager = getattr(obj, related_name, None)
             results[inline_id] = self._process_inline_formset(
                 request,

@@ -2,6 +2,7 @@ import math
 from copy import deepcopy
 
 import pytest
+from django.core.validators import MaxValueValidator
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from django_ninja_admin import ModelAdmin, NinjaAdminSite, action, site
@@ -33,6 +34,13 @@ def _walk_schema(node, path=()):
             yield from _walk_schema(value, (*path, str(index)))
 
 
+def _max_validator_limit(model, field_name):
+    for validator in model._meta.get_field(field_name).validators:
+        if isinstance(validator, MaxValueValidator):
+            return validator.limit_value
+    raise AssertionError(f"{model._meta.label}.{field_name} has no MaxValueValidator")
+
+
 def test_openapi_does_not_advertise_loose_object_schemas(admin_client, sample):
     schema = admin_client.get("/admin-api/openapi.json").json()
     loose_object_paths = []
@@ -57,6 +65,13 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     schema = admin_client.get("/admin-api/openapi.json")
     assert schema.status_code == 200
     schema_body = schema.json()
+    unprocessable_descriptions = [
+        node["422"]["description"]
+        for _path, node in _walk_schema(schema_body)
+        if isinstance(node.get("422"), dict) and "description" in node["422"]
+    ]
+    assert unprocessable_descriptions
+    assert set(unprocessable_descriptions) == {"Unprocessable Content"}
     assert "/admin-api/testapp/product" in schema_body["paths"]
     components = schema_body["components"]["schemas"]
     assert schema_body["paths"]["/admin-api/testapp/product"]["post"]["requestBody"]["content"]["application/json"][
@@ -145,7 +160,7 @@ def test_apps_context_docs_and_schema(admin_client, sample):
     photo_width_options = components["ProductAdminOut"]["properties"]["photo_width"]["anyOf"]
     photo_width_integer_schema = next(option for option in photo_width_options if option.get("type") == "integer")
     assert photo_width_integer_schema["minimum"] == 0
-    assert photo_width_integer_schema["maximum"] == 9223372036854775807
+    assert photo_width_integer_schema["maximum"] == _max_validator_limit(Product, "photo_width")
     assert {"type": "null"} in photo_width_options
     assert components["ProductAdminOut"]["properties"]["stock_status"] == {
         "default": "in_stock",
