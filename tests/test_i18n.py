@@ -1,10 +1,13 @@
+from django.db import models
 from django.test import override_settings
+from django.test.utils import isolate_apps
 
+import django_ninja_admin.admins.base as base_module
 import django_ninja_admin.admins.inline as inline_module
 import django_ninja_admin.admins.model as model_module
 import django_ninja_admin.changelist as changelist_module
 import django_ninja_admin.sites as sites_module
-from django_ninja_admin import NinjaAdminSite
+from django_ninja_admin import ModelAdmin, NinjaAdminSite
 from django_ninja_admin.schemas import ErrorResponse
 
 
@@ -125,3 +128,21 @@ def test_default_custom_action_message_uses_gettext(monkeypatch, admin_client, s
 
     assert response.status_code == 200
     assert response.json() == {"detail": "translated:Action completed.", "deleted": None}
+
+
+@isolate_apps("tests.testapp")
+def test_radio_choice_blank_label_uses_gettext(monkeypatch):
+    class StatusModel(models.Model):
+        status = models.CharField(blank=True, choices=[("active", "Active")], max_length=20)
+
+        class Meta:
+            app_label = "testapp"
+
+    class StatusAdmin(ModelAdmin):
+        radio_fields = {"status": 1}
+
+    monkeypatch.setattr(base_module, "_", _translate)
+    admin = StatusAdmin(StatusModel, NinjaAdminSite(include_auth=False))
+    form = admin.get_form_class(None)()
+
+    assert next(iter(form.fields["status"].choices)) == ("", "translated:None")

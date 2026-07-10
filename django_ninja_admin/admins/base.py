@@ -17,6 +17,7 @@ from django.forms.models import BaseModelFormSet, ModelChoiceField, ModelMultipl
 from django.urls import reverse
 from django.utils.dateparse import parse_duration
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _
 from pydantic import (
     AfterValidator,
     AnyUrl,
@@ -268,7 +269,7 @@ class BaseAdmin:
             kwargs.setdefault("widget", forms.RadioSelect)
             kwargs.setdefault(
                 "choices",
-                db_field.get_choices(include_blank=db_field.blank, blank_choice=[("", "None")]),
+                db_field.get_choices(include_blank=db_field.blank, blank_choice=[("", _("None"))]),
             )
         return db_field.formfield(**kwargs)
 
