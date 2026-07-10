@@ -1,7 +1,7 @@
 import re
 from functools import reduce, wraps
 from operator import or_
-from typing import Annotated, Any, ClassVar, Literal, cast
+from typing import Annotated, Any, ClassVar, Literal, cast, override
 
 from asgiref.sync import sync_to_async
 from django.apps import apps
@@ -93,6 +93,7 @@ class ModelAdmin(BaseAdmin):
         self.admin_site = admin_site
         self.paginator = cast(Any, self.paginator or admin_site.paginator)
 
+    @override
     def __repr__(self):
         return f"<{self.__class__.__qualname__}: model={self.model.__qualname__} site={self.admin_site!r}>"
 
@@ -212,6 +213,7 @@ class ModelAdmin(BaseAdmin):
             self._inline_payload_schema_cache = cache
         return cache[cache_key]
 
+    @override
     def get_mutation_payload_schema(self, request=None, obj=None, *, change=False, partial=False):
         cache = getattr(self, "_mutation_payload_schema_cache", {})
         data_schema = self.get_write_schema(request, obj, change=change, partial=partial)
@@ -284,6 +286,7 @@ class ModelAdmin(BaseAdmin):
             self._inline_response_schema_cache = cache
         return cache[cache_key]
 
+    @override
     def get_mutation_response_schema(self, request=None):
         cache = getattr(self, "_mutation_response_schema_cache", {})
         output_schema = self.get_output_schema(request)
@@ -330,6 +333,7 @@ class ModelAdmin(BaseAdmin):
         except (queryset.model.DoesNotExist, ValidationError, ValueError):
             return None
 
+    @override
     def get_list_display(self, request):
         return self.list_display
 
@@ -338,6 +342,7 @@ class ModelAdmin(BaseAdmin):
             return self.list_display_links
         return list(list_display)[:1]
 
+    @override
     def get_list_filter(self, request):
         return self.list_filter
 

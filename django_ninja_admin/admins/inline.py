@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import Any, cast, override
 
 from django import forms
 from django.contrib.auth import get_permission_codename
@@ -80,12 +80,14 @@ class InlineModelAdmin(BaseAdmin):
         inline_id = f"{model._meta.app_label}.{model._meta.model_name}"
         raise AdminValidationError([{"message": message, "param": f"inlines.{inline_id}.{option}"}])
 
+    @override
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         if not self.has_view_or_change_permission(request):
             return queryset.none()
         return queryset
 
+    @override
     def get_form_class(self, request, obj=None, change=False):
         if self.form_class is not None:
             return self.form_class
@@ -227,21 +229,25 @@ class InlineModelAdmin(BaseAdmin):
                 break
         return any(request.user.has_perm(f"{opts.app_label}.{get_permission_codename(perm, opts)}") for perm in perms)
 
+    @override
     def has_add_permission(self, request, obj=None):
         if self.opts.auto_created:
             return self._has_any_perms_for_target_model(request, ["change"])
         return super().has_add_permission(request)
 
+    @override
     def has_change_permission(self, request, obj=None):
         if self.opts.auto_created:
             return self._has_any_perms_for_target_model(request, ["change"])
         return super().has_change_permission(request, obj)
 
+    @override
     def has_delete_permission(self, request, obj=None):
         if self.opts.auto_created:
             return self._has_any_perms_for_target_model(request, ["change"])
         return super().has_delete_permission(request, obj)
 
+    @override
     def has_view_permission(self, request, obj=None):
         if self.opts.auto_created:
             return self._has_any_perms_for_target_model(request, ["view", "change"])

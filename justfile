@@ -19,10 +19,10 @@ format-check:
     UV_CACHE_DIR=.uv-cache uv run ruff format --check .
 
 typecheck-package:
-    UV_CACHE_DIR=.uv-cache uv run ty check django_ninja_admin
+    UV_CACHE_DIR=.uv-cache uv run ty check --error all django_ninja_admin
 
 typecheck-scripts:
-    UV_CACHE_DIR=.uv-cache uv run ty check scripts/dist_check.py scripts/docs_check.py scripts/generated_client_smoke.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/private_django_api_audit.py scripts/sample_project_smoke.py scripts/smoke_utils.py
+    UV_CACHE_DIR=.uv-cache uv run ty check --error all scripts/dist_check.py scripts/docs_check.py scripts/generated_client_smoke.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/private_django_api_audit.py scripts/sample_project_smoke.py scripts/smoke_utils.py
 
 typecheck: typecheck-package typecheck-scripts
 

@@ -3,7 +3,7 @@ import re
 from collections.abc import Sequence
 from functools import wraps
 from math import ceil
-from typing import Any, Literal, cast
+from typing import Any, Literal, cast, override
 from weakref import WeakSet
 
 from asgiref.sync import async_to_sync, sync_to_async
@@ -119,6 +119,7 @@ STABLE_RESPONSE_DESCRIPTIONS = {
 
 
 class NinjaAdminAPI(NinjaAPI):
+    @override
     def get_openapi_schema(self, *args, **kwargs):
         schema = super().get_openapi_schema(*args, **kwargs)
         _normalize_response_descriptions(schema)
@@ -193,6 +194,7 @@ class NinjaAdminSite:
             self.register(get_user_model(), AuthUserAdmin)
             self.register(Group, AuthGroupAdmin)
 
+    @override
     def __repr__(self):
         return f"{self.__class__.__name__}(name={self.name!r})"
 
@@ -204,7 +206,7 @@ class NinjaAdminSite:
         self._api = None
 
     def register(self, model_or_iterable, admin_class=None, **options):
-        admin_class = admin_class or self.admin_class
+        admin_class = cast(type[ModelAdmin], admin_class or self.admin_class)
         if isinstance(model_or_iterable, ModelBase):
             model_or_iterable = [model_or_iterable]
         for model in model_or_iterable:
@@ -216,7 +218,8 @@ class NinjaAdminSite:
                 continue
             if options:
                 options["__module__"] = __name__
-                admin_class = type(f"{model.__name__}Admin", (admin_class,), options)
+                admin_base = cast(Any, admin_class)
+                admin_class = cast(type[ModelAdmin], type(f"{model.__name__}Admin", (admin_base,), options))
             self._registry[model] = admin_class(model, self)
         self.clear_cache()
 
@@ -2814,10 +2817,12 @@ def router_db_for_write(model):
 
 
 class DefaultAdminSite(LazyObject):
+    @override
     def _setup(self):
         AdminSiteClass = import_string(apps.get_app_config("django_ninja_admin").default_site)
         self._wrapped = AdminSiteClass(name="ninja_admin")
 
+    @override
     def __repr__(self):
         return repr(self._wrapped)
 

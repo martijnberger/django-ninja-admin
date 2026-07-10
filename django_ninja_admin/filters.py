@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import override
 
 from django.core.exceptions import FieldDoesNotExist, FieldError, ImproperlyConfigured
 from django.db import models
@@ -120,6 +121,7 @@ class SimpleListFilter(ListFilter):
     def lookups(self, request, model_admin):
         return ()
 
+    @override
     def choices(self, changelist):
         current_value = self.value()
         yield {
@@ -135,6 +137,7 @@ class SimpleListFilter(ListFilter):
                 "display": _display(title),
             }
 
+    @override
     def has_output(self):
         return bool(self.lookup_choices)
 
@@ -166,6 +169,7 @@ class FieldListFilter(ListFilter):
             filter_class = AllValuesFieldListFilter
         return filter_class(field, request, params, model, model_admin, field_path)
 
+    @override
     def expected_parameters(self):
         return [self.lookup_kwarg, self.legacy_lookup_kwarg]
 
@@ -177,6 +181,7 @@ class FieldListFilter(ListFilter):
             used[self.lookup_kwarg] = _parameter_values(params, self.legacy_lookup_kwarg)
         return used
 
+    @override
     def queryset(self, request, queryset):
         if not self.used_parameters:
             return queryset
@@ -198,6 +203,7 @@ class FieldListFilter(ListFilter):
                 parameters[key] = [_bool_value(item) for item in _values(value)]
         return parameters
 
+    @override
     def choices(self, changelist):
         current_values = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         yield {
@@ -227,12 +233,15 @@ class ChoicesFieldListFilter(FieldListFilter):
         if self.lookup_kwarg_isnull in params:
             self.used_parameters[self.lookup_kwarg_isnull] = _parameter_values(params, self.lookup_kwarg_isnull)
 
+    @override
     def expected_parameters(self):
         return [self.lookup_kwarg, self.legacy_lookup_kwarg, self.lookup_kwarg_isnull]
 
+    @override
     def field_choices(self, changelist):
         return list(self.field.flatchoices)
 
+    @override
     def choices(self, changelist):
         current_values = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         selected_isnull = self.selected_isnull()
@@ -278,9 +287,11 @@ class BooleanFieldListFilter(FieldListFilter):
         if self.lookup_kwarg_isnull in params:
             self.used_parameters[self.lookup_kwarg_isnull] = _parameter_values(params, self.lookup_kwarg_isnull)
 
+    @override
     def expected_parameters(self):
         return [self.lookup_kwarg, self.legacy_lookup_kwarg, self.lookup_kwarg_isnull]
 
+    @override
     def choices(self, changelist):
         selected_exact = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         selected_isnull = self.selected_isnull()
@@ -326,6 +337,7 @@ class RelatedFieldListFilter(FieldListFilter):
         if self.lookup_kwarg_isnull in params:
             self.used_parameters[self.lookup_kwarg_isnull] = _parameter_values(params, self.lookup_kwarg_isnull)
 
+    @override
     def expected_parameters(self):
         return [self.lookup_kwarg, self.legacy_lookup_kwarg, self.lookup_kwarg_isnull]
 
@@ -335,6 +347,7 @@ class RelatedFieldListFilter(FieldListFilter):
             getattr(self.field, "is_relation", False) and getattr(self.field, "many_to_many", False)
         )
 
+    @override
     def has_output(self):
         extra = 1 if self.include_empty_choice else 0
         return len(self.field_choices(None)) + extra > 1
@@ -354,9 +367,11 @@ class RelatedFieldListFilter(FieldListFilter):
     def target_value_for_object(self, obj):
         return obj.serializable_value(self.target_field.attname)
 
+    @override
     def field_choices(self, changelist):
         return [(self.target_value_for_object(obj), str(obj)) for obj in self.get_related_queryset()]
 
+    @override
     def choices(self, changelist):
         yield from super().choices(changelist)
         if self.include_empty_choice:
@@ -374,6 +389,7 @@ class RelatedFieldListFilter(FieldListFilter):
 
 
 class RelatedOnlyFieldListFilter(RelatedFieldListFilter):
+    @override
     def field_choices(self, changelist):
         ids = (
             self.model_admin.get_queryset(self.request)
@@ -392,9 +408,11 @@ class AllValuesFieldListFilter(FieldListFilter):
         if self.lookup_kwarg_isnull in params:
             self.used_parameters[self.lookup_kwarg_isnull] = _parameter_values(params, self.lookup_kwarg_isnull)
 
+    @override
     def expected_parameters(self):
         return [*super().expected_parameters(), self.lookup_kwarg_isnull]
 
+    @override
     def field_choices(self, changelist):
         queryset = self.model_admin.get_queryset(self.request)
         values = queryset.order_by(self.field_path).values_list(self.field_path, flat=True).distinct()
@@ -403,6 +421,7 @@ class AllValuesFieldListFilter(FieldListFilter):
     def field_display(self, value):
         return self.model_admin.get_empty_value_display() if value in (None, "") else value
 
+    @override
     def choices(self, changelist):
         current_values = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         selected_isnull = self.selected_isnull()
@@ -454,9 +473,11 @@ class EmptyFieldListFilter(FieldListFilter):
         if self.lookup_kwarg in params:
             self.used_parameters[self.lookup_kwarg] = _parameter_values(params, self.lookup_kwarg)
 
+    @override
     def expected_parameters(self):
         return [self.lookup_kwarg]
 
+    @override
     def queryset(self, request, queryset):
         value = self.used_parameters.get(self.lookup_kwarg)
         if value is None:
@@ -471,6 +492,7 @@ class EmptyFieldListFilter(FieldListFilter):
             filter_q |= empty_q if _bool_value(item) else ~empty_q
         return queryset.filter(filter_q)
 
+    @override
     def choices(self, changelist):
         current_values = _string_values(self.used_parameters.get(self.lookup_kwarg, ()))
         yield {
@@ -498,6 +520,7 @@ class DateFieldListFilter(FieldListFilter):
         }
         self.links = self.get_links()
 
+    @override
     def expected_parameters(self):
         parameters = [self.lookup_kwarg_since, self.lookup_kwarg_until]
         if self.field.null:
@@ -549,6 +572,7 @@ class DateFieldListFilter(FieldListFilter):
             )
         return links
 
+    @override
     def choices(self, changelist):
         current_params = {key: str(_values(value)[-1]) for key, value in self.used_parameters.items() if _values(value)}
         if self.lookup_kwarg_isnull in self.used_parameters:

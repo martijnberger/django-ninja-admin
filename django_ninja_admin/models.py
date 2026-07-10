@@ -1,5 +1,5 @@
 import json
-from typing import Any, ClassVar, cast
+from typing import Any, ClassVar, cast, override
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -76,6 +76,7 @@ class LogEntry(models.Model):
         verbose_name = _("log entry")
         verbose_name_plural = _("log entries")
 
+    @override
     def __str__(self):
         if self.is_addition():
             return gettext("Added %(object)s.") % {"object": self.object_repr}

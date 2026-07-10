@@ -17,7 +17,10 @@ just check
 `just check` runs:
 
 - `just lint` for Ruff.
-- `just test` for the pytest suite.
+- `just format-check` for Ruff formatting.
+- `just typecheck`, which treats every `ty` diagnostic as an error for the
+  package and release tooling.
+- `just coverage-test` for the pytest suite with the configured coverage floor.
 - `just package-smoke` to build a wheel, install it into a temporary target,
   import the public API, and confirm wheel metadata does not depend on DRF or
   drf-spectacular.
@@ -34,6 +37,8 @@ just check
   links.
 - `just docs-build` to run a strict MkDocs build into a temporary output
   directory.
+- `just openapi-snapshot-check` and `just generated-client-smoke` to preserve
+  and exercise the reviewed OpenAPI contract from an installed wheel.
 - Set `DJANGO_NINJA_ADMIN_SMOKE_DJANGO` to a concrete requirement such as
   `django>=5.2,<5.3` when the installed-project smoke should use the same
   Django lane as a compatibility matrix job.

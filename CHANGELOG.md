@@ -9,6 +9,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Promoted every `ty` diagnostic to an error in the required type-check gate
+  and made override relationships explicit across the package.
 - Centralized Django-form to Pydantic request-schema construction for parent
   mutations, list-editable bulk rows, and inline rows while preserving the
   existing admin schema-override hooks and generated examples.

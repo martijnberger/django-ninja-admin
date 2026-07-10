@@ -1,3 +1,5 @@
+from typing import override
+
 from django_ninja_admin.admins.model import ModelAdmin
 
 
@@ -11,11 +13,13 @@ class AuthUserAdmin(ModelAdmin):
     search_fields = ("username", "email", "first_name", "last_name")
     sensitive_fields = ("password", "is_superuser", "user_permissions", "groups")
 
+    @override
     def get_exclude(self, request, obj=None):
         excluded = list(super().get_exclude(request, obj) or [])
         excluded.extend(_existing_model_fields(self.model, self.sensitive_fields))
         return tuple(dict.fromkeys(excluded))
 
+    @override
     def get_output_exclude(self, request=None):
         excluded = list(super().get_output_exclude(request) or [])
         excluded.extend(_existing_model_fields(self.model, self.sensitive_fields))
@@ -27,11 +31,13 @@ class AuthGroupAdmin(ModelAdmin):
     search_fields = ("name",)
     sensitive_fields = ("permissions",)
 
+    @override
     def get_exclude(self, request, obj=None):
         excluded = list(super().get_exclude(request, obj) or [])
         excluded.extend(_existing_model_fields(self.model, self.sensitive_fields))
         return tuple(dict.fromkeys(excluded))
 
+    @override
     def get_output_exclude(self, request=None):
         excluded = list(super().get_output_exclude(request) or [])
         excluded.extend(_existing_model_fields(self.model, self.sensitive_fields))

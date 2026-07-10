@@ -1193,7 +1193,9 @@ class BaseAdmin:
         relation_parts = []
         previous_field = None
         lookup_parts = lookup.split("__")
+        last_part = lookup_parts[-1]
         for part in lookup_parts:
+            last_part = part
             try:
                 field = model._meta.get_field(part)
             except FieldDoesNotExist:
@@ -1224,7 +1226,7 @@ class BaseAdmin:
                 valid_lookups.add(filter_item)
 
         relation_lookup = "__".join(relation_parts)
-        relation_lookup_with_part = "__".join([*relation_parts, part])
+        relation_lookup_with_part = "__".join([*relation_parts, last_part])
         return not {relation_lookup, relation_lookup_with_part}.isdisjoint(valid_lookups)
 
     def to_field_allowed(self, request, to_field):

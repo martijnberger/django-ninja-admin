@@ -6,6 +6,7 @@ from django.db.models import Model
 def model_field_from_path(model, field_path):
     opts = model._meta
     path_parts = field_path.split("__")
+    field = None
     for index, path_part in enumerate(path_parts):
         if path_part == "pk":
             path_part = opts.pk.name
@@ -15,12 +16,15 @@ def model_field_from_path(model, field_path):
             opts = field.path_infos[-1].to_opts
         elif has_more_parts:
             raise FieldDoesNotExist(field_path)
+    if field is None:
+        raise FieldDoesNotExist(field_path)
     return field
 
 
 def single_valued_model_field_from_path(model, field_path):
     opts = model._meta
     path_parts = field_path.split("__")
+    field = None
     for index, path_part in enumerate(path_parts):
         if path_part == "pk":
             path_part = opts.pk.name
@@ -30,6 +34,8 @@ def single_valued_model_field_from_path(model, field_path):
             if not isinstance(field, (models.ForeignKey, models.OneToOneField)):
                 raise FieldDoesNotExist(field_path)
             opts = field.remote_field.model._meta
+    if field is None:
+        raise FieldDoesNotExist(field_path)
     return field
 
 
