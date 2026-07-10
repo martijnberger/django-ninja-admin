@@ -1,6 +1,7 @@
 from django.test import override_settings
 
 import django_ninja_admin.admins.inline as inline_module
+import django_ninja_admin.admins.model as model_module
 import django_ninja_admin.changelist as changelist_module
 import django_ninja_admin.sites as sites_module
 from django_ninja_admin import NinjaAdminSite
@@ -111,3 +112,16 @@ def test_inline_count_error_messages_use_gettext(monkeypatch, admin_client, samp
         "message": "translated:Inline 'extra' must not be negative.",
         "param": "inlines.testapp.productimage.extra",
     }
+
+
+def test_default_custom_action_message_uses_gettext(monkeypatch, admin_client, sample):
+    monkeypatch.setattr(model_module, "_", _translate)
+
+    response = admin_client.post(
+        "/admin-api/testapp/product/actions",
+        data={"action": "mark_out_of_stock", "selected_ids": [sample.pk]},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"detail": "translated:Action completed.", "deleted": None}

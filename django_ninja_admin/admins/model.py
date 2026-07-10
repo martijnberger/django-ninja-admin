@@ -712,7 +712,7 @@ class ModelAdmin(BaseAdmin):
             response = func(self, request, queryset)
         else:
             response = func(self, request, queryset, action_data)
-        return response if response is not None else {"detail": "Action completed."}
+        return response if response is not None else {"detail": _("Action completed.")}
 
     def _check_action_object_permissions(self, request, queryset, func, action_name):
         if self._is_builtin_delete_selected_action(func, action_name):
