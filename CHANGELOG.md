@@ -20,6 +20,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Translated the default success message for custom actions that return no
   response body.
 - Translated the blank choice label emitted for radio-backed admin form fields.
+- Translated package-authored Pydantic choice-validation messages before they
+  become typed request-validation errors.
 - Stabilized generated OpenAPI 422 response descriptions across supported
   Python versions.
 - Made PostgreSQL schema assertions backend-aware and preserved CI matrix

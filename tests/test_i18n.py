@@ -1,6 +1,10 @@
+import pytest
+from django import forms
 from django.db import models
 from django.test import override_settings
 from django.test.utils import isolate_apps
+from pydantic import TypeAdapter
+from pydantic import ValidationError as PydanticValidationError
 
 import django_ninja_admin.admins.base as base_module
 import django_ninja_admin.admins.inline as inline_module
@@ -9,6 +13,7 @@ import django_ninja_admin.changelist as changelist_module
 import django_ninja_admin.sites as sites_module
 from django_ninja_admin import ModelAdmin, NinjaAdminSite
 from django_ninja_admin.schemas import ErrorResponse
+from tests.testapp.models import Category
 
 
 def _translate(message):
@@ -146,3 +151,14 @@ def test_radio_choice_blank_label_uses_gettext(monkeypatch):
     form = admin.get_form_class(None)()
 
     assert next(iter(form.fields["status"].choices)) == ("", "translated:None")
+
+
+def test_pydantic_choice_validation_message_uses_gettext(monkeypatch):
+    monkeypatch.setattr(base_module, "_", _translate)
+    admin = ModelAdmin(Category, NinjaAdminSite(include_auth=False))
+    field_type = admin.get_pydantic_type_for_form_field(forms.TypedChoiceField(choices=[("1", "One")], coerce=int))
+
+    with pytest.raises(PydanticValidationError) as exc_info:
+        TypeAdapter(field_type).validate_python(2)
+
+    assert "translated:Input should be one of: 1" in str(exc_info.value)

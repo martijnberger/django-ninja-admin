@@ -144,7 +144,9 @@ def _choice_membership_validator(choices):
 
     def validate(value):
         if value not in allowed:
-            raise ValueError(f"Input should be one of: {', '.join(str(choice) for choice in allowed)}")
+            raise ValueError(
+                _("Input should be one of: %(choices)s") % {"choices": ", ".join(str(choice) for choice in allowed)}
+            )
         return value
 
     return validate
