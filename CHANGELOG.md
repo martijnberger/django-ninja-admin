@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Centralized Django-form to Pydantic request-schema construction for parent
+  mutations, list-editable bulk rows, and inline rows while preserving the
+  existing admin schema-override hooks and generated examples.
+
 ### Fixed
 
 - Stabilized generated OpenAPI 422 response descriptions across supported

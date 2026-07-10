@@ -38,6 +38,7 @@ from django_ninja_admin.schemas import (
     ObjectIdentifier,
 )
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
+from django_ninja_admin.utils.form_schemas import create_form_schema, form_schema_field_definitions
 from django_ninja_admin.utils.forms import (
     fieldset_layout_description,
     file_value_metadata,
@@ -306,34 +307,28 @@ class BaseAdmin:
         overrides = self.get_form_schema_field_overrides(request, obj, change=change) or {}
         cache_key = ("write", selected_fields, schema_override_cache_key(overrides), change, partial, name_suffix)
         if cache_key not in cache:
-            schema_fields = {}
-            for field_name in selected_fields:
-                form_field = form_fields.get(field_name)
-                field_type = self.get_form_schema_field_type(field_name, form_field, overrides=overrides)
-                required = bool(
-                    form_field and form_field.required and not getattr(form_field, "disabled", False) and not partial
-                )
-                if required:
-                    schema_fields[field_name] = (field_type, ...)
-                else:
-                    schema_fields[field_name] = (field_type | None, None)
-            operation = name_suffix or ("PartialUpdate" if partial else "Update" if change else "Create")
-            cache[cache_key] = PydanticCreateModel(
-                f"{self.model.__name__}Admin{operation}Data",
-                __base__=AdminWriteSchema,
-                __config__=ConfigDict(
-                    json_schema_extra={
-                        "examples": [
-                            self._form_data_example(
-                                form_fields,
-                                selected_fields=selected_fields,
-                                partial=partial,
-                                overrides=overrides,
-                            )
-                        ]
-                    }
+            schema_fields = form_schema_field_definitions(
+                form_fields,
+                selected_fields,
+                resolve_field_type=lambda field_name, form_field, choices_as_literal: self.get_form_schema_field_type(
+                    field_name,
+                    form_field,
+                    overrides=overrides,
+                    choices_as_literal=choices_as_literal,
                 ),
-                **schema_fields,
+                partial=partial,
+            )
+            operation = name_suffix or ("PartialUpdate" if partial else "Update" if change else "Create")
+            cache[cache_key] = create_form_schema(
+                f"{self.model.__name__}Admin{operation}Data",
+                base_schema=AdminWriteSchema,
+                field_definitions=schema_fields,
+                example=self._form_data_example(
+                    form_fields,
+                    selected_fields=selected_fields,
+                    partial=partial,
+                    overrides=overrides,
+                ),
             )
             self._write_schema_cache = cache
         return cache[cache_key]
@@ -391,23 +386,24 @@ class BaseAdmin:
             if self.list_editable:
                 form_class = self.get_changelist_formset(request).form
                 form_fields = form_class.base_fields
-            row_fields = {"pk": (ObjectIdentifier, ...)}
-            for field_name in self.list_editable:
-                form_field = form_fields.get(field_name)
-                field_type = self.get_form_schema_field_type(
+            row_fields = form_schema_field_definitions(
+                form_fields,
+                self.list_editable,
+                resolve_field_type=lambda field_name, form_field, choices_as_literal: self.get_form_schema_field_type(
                     field_name,
                     form_field,
                     overrides=overrides,
-                    choices_as_literal=False,
-                )
-                row_fields[field_name] = (field_type | None, None)
-            row_schema = PydanticCreateModel(
-                f"{self.model.__name__}AdminBulkRow",
-                __base__=AdminBulkRowSchema,
-                __config__=ConfigDict(
-                    json_schema_extra={"examples": [self._bulk_row_example(form_fields, overrides=overrides)]}
+                    choices_as_literal=choices_as_literal,
                 ),
-                **row_fields,
+                partial=True,
+                choices_as_literal=False,
+                extra_fields={"pk": (ObjectIdentifier, ...)},
+            )
+            row_schema = create_form_schema(
+                f"{self.model.__name__}AdminBulkRow",
+                base_schema=AdminBulkRowSchema,
+                field_definitions=row_fields,
+                example=self._bulk_row_example(form_fields, overrides=overrides),
             )
             cache[cache_key] = PydanticCreateModel(
                 f"{self.model.__name__}AdminBulkPayload",

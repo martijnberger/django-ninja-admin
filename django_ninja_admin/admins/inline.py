@@ -16,6 +16,7 @@ from django_ninja_admin.schemas import (
     ObjectIdentifier,
 )
 from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
+from django_ninja_admin.utils.form_schemas import create_form_schema, form_schema_field_definitions
 from django_ninja_admin.utils.schema_examples import schema_example, schema_override_cache_key
 
 PydanticCreateModel = cast(Any, create_model)
@@ -133,13 +134,18 @@ class InlineModelAdmin(BaseAdmin):
         )
         if cache_key not in cache:
             model = cast(Any, self.model)
-            fields = {}
-            if require_pk:
-                fields["pk"] = (ObjectIdentifier, ...)
-            for field_name, form_field in form_fields.items():
-                field_type = self.get_form_schema_field_type(field_name, form_field, overrides=overrides)
-                required = bool(form_field.required and not getattr(form_field, "disabled", False) and not partial)
-                fields[field_name] = (field_type, ...) if required else (field_type | None, None)
+            fields = form_schema_field_definitions(
+                form_fields,
+                tuple(form_fields),
+                resolve_field_type=lambda field_name, form_field, choices_as_literal: self.get_form_schema_field_type(
+                    field_name,
+                    form_field,
+                    overrides=overrides,
+                    choices_as_literal=choices_as_literal,
+                ),
+                partial=partial,
+                extra_fields={"pk": (ObjectIdentifier, ...)} if require_pk else None,
+            )
             operation = "Change" if require_pk else "Add"
             example = self._form_data_example(
                 form_fields,
@@ -149,11 +155,11 @@ class InlineModelAdmin(BaseAdmin):
             )
             if require_pk:
                 example = {"pk": 1, **example}
-            cache[cache_key] = PydanticCreateModel(
+            cache[cache_key] = create_form_schema(
                 f"{model.__name__}Inline{operation}Row",
-                __base__=AdminInlineRowSchema,
-                __config__=ConfigDict(json_schema_extra={"examples": [example]}),
-                **fields,
+                base_schema=AdminInlineRowSchema,
+                field_definitions=fields,
+                example=example,
             )
             self._inline_row_schema_cache = cache
         return cache[cache_key]
