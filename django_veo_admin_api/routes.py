@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from django.core.exceptions import ImproperlyConfigured
-from ninja.constants import NOT_SET
 
 from django_veo_admin_api.schemas import JsonObjectResponse
 from django_veo_admin_api.utils.schema_contracts import iter_contract_schemas, open_object_schema_paths
 
 ALLOWED_ROUTE_METHODS = {"DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"}
+NOT_SET = object()
 
 
 def normalize_route_methods(methods: Any) -> tuple[str, ...]:

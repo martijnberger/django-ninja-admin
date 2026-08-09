@@ -31,7 +31,7 @@ from django.utils.module_loading import import_string
 from django.utils.text import capfirst
 from django.utils.translation import gettext as _
 from ninja import NinjaAPI, Query, Router, Status
-from ninja.constants import NOT_SET
+from ninja.constants import NOT_SET as NINJA_NOT_SET
 from ninja.errors import AuthenticationError, AuthorizationError, HttpError, Throttled
 from ninja.errors import ValidationError as NinjaValidationError
 from ninja.security import SessionAuthIsStaff
@@ -63,7 +63,7 @@ from django_veo_admin_api.core.operations.mutations import MutationOperations
 from django_veo_admin_api.core.operations.objects import ObjectOperations
 from django_veo_admin_api.integrations.ninja.field_types import NinjaModelFieldTypeResolver
 from django_veo_admin_api.integrations.ninja.responses import ninja_operation_response, resolve_ninja_status
-from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
+from django_veo_admin_api.routes import NOT_SET, AdminRoute, normalize_route_methods
 from django_veo_admin_api.schemas import (
     AppSummary,
     AutocompleteResponse,
@@ -108,6 +108,10 @@ TO_FIELD_QUERY_DESCRIPTION = "Use an allowed alternate object id field."
 STABLE_RESPONSE_DESCRIPTIONS = {
     422: "Unprocessable Content",
 }
+
+
+def _ninja_default(value):
+    return NINJA_NOT_SET if value is NOT_SET else value
 
 
 class NinjaAdminAPI(NinjaAPI):
@@ -491,8 +495,8 @@ class NinjaAdminSite:
                     path,
                     [method],
                     view_func,
-                    auth=route.auth,
-                    throttle=route.throttle,
+                    auth=_ninja_default(route.auth),
+                    throttle=_ninja_default(route.throttle),
                     response=response,
                     operation_id=self._custom_route_operation_id(
                         path,
@@ -812,7 +816,7 @@ class NinjaAdminSite:
                 **site._throttle_error_responses(site.history_throttle),
                 422: ErrorResponse,
             },
-            throttle=site.history_throttle,
+            throttle=_ninja_default(site.history_throttle),
             operation_id="admin_history",
         )
         def history(
@@ -872,7 +876,7 @@ class NinjaAdminSite:
                 **site._throttle_error_responses(site.autocomplete_throttle),
                 422: ErrorResponse,
             },
-            throttle=site.autocomplete_throttle,
+            throttle=_ninja_default(site.autocomplete_throttle),
             operation_id="admin_autocomplete",
         )
         def autocomplete(
@@ -1018,7 +1022,7 @@ class NinjaAdminSite:
                 **site._throttle_error_responses(changelist_throttle),
                 422: ErrorResponse,
             },
-            throttle=changelist_throttle,
+            throttle=_ninja_default(changelist_throttle),
             tags=tags,
             operation_id=f"{app_label}_{model_name}_list",
             description=(

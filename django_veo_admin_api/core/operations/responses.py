@@ -21,7 +21,9 @@ def validate_mutation_response(
     plain_status=None,
     status_resolver: StatusResponseResolver | None = None,
 ):
-    resolved = status_resolver(response) if status_resolver is not None else None
+    resolved = response if isinstance(response, OperationResult) else None
+    if resolved is None and status_resolver is not None:
+        resolved = status_resolver(response)
     if resolved is not None:
         status_code = resolved.status_code
         value = resolved.data
@@ -75,7 +77,9 @@ def validate_action_response(
     response_schema,
     status_resolver: StatusResponseResolver | None = None,
 ):
-    resolved = status_resolver(response) if status_resolver is not None else None
+    resolved = response if isinstance(response, OperationResult) else None
+    if resolved is None and status_resolver is not None:
+        resolved = status_resolver(response)
     if resolved is not None:
         status_code = resolved.status_code
         value = resolved.data

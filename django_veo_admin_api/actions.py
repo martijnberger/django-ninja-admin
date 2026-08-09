@@ -3,8 +3,8 @@ from typing import Any, cast
 from django.core.exceptions import PermissionDenied
 from django.db import router, transaction
 from django.utils.translation import gettext_lazy as _
-from ninja import Status
 
+from django_veo_admin_api.core.operations.base import OperationResult
 from django_veo_admin_api.utils.deletion import deletion_error_payload
 
 
@@ -21,8 +21,7 @@ def delete_selected(model_admin, request, queryset):
         protected,
     ) = model_admin.get_deleted_objects(list(queryset), request)
     if protected:
-        return Status(
-            409,
+        return OperationResult(
             deletion_error_payload(
                 _("Cannot delete protected objects."),
                 param="selected_ids",
@@ -30,10 +29,10 @@ def delete_selected(model_admin, request, queryset):
                 protected=protected,
                 model_count=model_count,
             ),
+            status_code=409,
         )
     if perms_needed:
-        return Status(
-            403,
+        return OperationResult(
             deletion_error_payload(
                 _("Permission denied."),
                 param="selected_ids",
@@ -41,6 +40,7 @@ def delete_selected(model_admin, request, queryset):
                 perms_needed=perms_needed,
                 model_count=model_count,
             ),
+            status_code=403,
         )
 
     with transaction.atomic(using=router.db_for_write(model_admin.model)):

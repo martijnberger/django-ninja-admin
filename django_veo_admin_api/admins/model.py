@@ -3,7 +3,7 @@ from functools import reduce, wraps
 from operator import or_
 from typing import Annotated, Any, ClassVar, Literal, cast, override
 
-from asgiref.sync import sync_to_async
+from asgiref.sync import iscoroutinefunction, sync_to_async
 from django.apps import apps
 from django.contrib.admin.utils import lookup_spawns_duplicates
 from django.core.exceptions import FieldDoesNotExist, PermissionDenied, ValidationError
@@ -14,8 +14,6 @@ from django.db.models.functions import Cast
 from django.forms.models import model_to_dict
 from django.utils.text import capfirst, smart_split, unescape_string_literal
 from django.utils.translation import gettext_lazy as _
-from ninja.constants import NOT_SET
-from ninja.utils import is_async_callable
 from pydantic import BaseModel, ConfigDict, Field, RootModel, TypeAdapter, create_model
 from pydantic import ValidationError as PydanticValidationError
 
@@ -23,7 +21,7 @@ from django_veo_admin_api.admins.base import BaseAdmin
 from django_veo_admin_api.constants import ShowFacets
 from django_veo_admin_api.core.exceptions import AdminPermissionError, AdminValidationError
 from django_veo_admin_api.models import ADDITION, CHANGE, DELETION, LogEntry
-from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
+from django_veo_admin_api.routes import NOT_SET, AdminRoute, normalize_route_methods
 from django_veo_admin_api.schemas import (
     ActionResponse,
     AdminInlinePayloadSchema,
@@ -114,7 +112,7 @@ class ModelAdmin(BaseAdmin):
         return inline_instances
 
     def admin_view(self, view_func):
-        if is_async_callable(view_func):
+        if iscoroutinefunction(view_func):
 
             @wraps(view_func)
             async def async_inner(request, *args, **kwargs):
