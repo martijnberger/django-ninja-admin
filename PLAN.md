@@ -286,6 +286,8 @@ than normalizing it away.
 
 ### Phase 1 — Extract The Core
 
+Status: implemented and verified on 2026-08-09.
+
 1. Define `OperationResult`, the canonical operation exceptions, request
    context, and resolver interfaces.
 2. Extract shared schema construction and replace
@@ -307,6 +309,11 @@ installed, and an import scan finds no Ninja import outside
 `integrations.ninja` and compatibility shims.
 
 ### Phase 2 — Make Ninja Optional
+
+Status: in progress. The Ninja transport relocation, lazy compatibility
+imports, base/`ninja` dependency split, clean installed-wheel profiles, and
+migration guide were verified on 2026-08-09. The `mcp`/`all` profiles land with
+the Phase 3 integration so they never advertise an empty capability.
 
 1. Move `NinjaAdminSite`, `NinjaAdminAPI`, routers, routes, auth, throttles,
    `Status` mapping, `NOT_SET`, async helpers, docs/OpenAPI normalization, and

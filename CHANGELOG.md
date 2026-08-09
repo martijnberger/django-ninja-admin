@@ -17,6 +17,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Extracted typed delete preview plus protected-object, permission, audit-log, and delete-hook execution into core.
 - Removed Ninja sentinels, async helpers, and response objects from core route descriptors, `ModelAdmin`, and built-in actions.
 - Moved `NinjaAdminSite`, routing, auth, throttling, docs, and OpenAPI generation to `django_veo_admin_api.integrations.ninja`, leaving lazy top-level compatibility exports.
+- Made Django Ninja optional behind the `django-veo-admin-api[ninja]` extra;
+  the base wheel now depends only on Django and Pydantic and has a clean
+  installed-profile smoke test.
 
 ### Changed
 

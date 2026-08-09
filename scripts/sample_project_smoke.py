@@ -70,7 +70,7 @@ def run_sample_project(
                 "--python",
                 str(python),
                 *smoke_django_requirements(),
-                str(wheel),
+                f"{wheel}[ninja]",
             ],
             env=uv_env,
         )
@@ -129,7 +129,8 @@ def write_sample_project(project_dir: Path) -> None:
     write_file(
         project_dir / "sample_app" / "admin.py",
         """
-        from django_veo_admin_api import ModelAdmin, site
+        from django_veo_admin_api import ModelAdmin
+        from django_veo_admin_api.integrations.ninja import site
 
         from .models import Product
 
@@ -192,7 +193,8 @@ def write_sample_project(project_dir: Path) -> None:
         project_dir / "sample_project" / "urls.py",
         """
         from django.urls import path
-        from django_veo_admin_api import autodiscover, site
+        from django_veo_admin_api import autodiscover
+        from django_veo_admin_api.integrations.ninja import site
 
         autodiscover()
 
@@ -316,7 +318,8 @@ def write_full_sample_project(project_dir: Path) -> None:
         from ninja import Schema
         from pydantic import ConfigDict
 
-        from django_veo_admin_api import ModelAdmin, TabularInline, action, site
+        from django_veo_admin_api import ModelAdmin, TabularInline, action
+        from django_veo_admin_api.integrations.ninja import site
 
         from .models import Category, Product, ProductImage, Tag
 
@@ -449,7 +452,8 @@ def write_full_sample_project(project_dir: Path) -> None:
         """
         from django.http import HttpResponse
         from django.urls import path
-        from django_veo_admin_api import autodiscover, site
+        from django_veo_admin_api import autodiscover
+        from django_veo_admin_api.integrations.ninja import site
 
         autodiscover()
 

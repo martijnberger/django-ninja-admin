@@ -21,16 +21,16 @@ just check
 - `just typecheck`, which treats every `ty` diagnostic as an error for the
   package and release tooling.
 - `just coverage-test` for the pytest suite with the configured coverage floor.
-- `just package-smoke` to build a wheel, install it into a temporary target,
-  import the public API, and confirm wheel metadata does not depend on DRF or
-  drf-spectacular.
+- `just package-smoke` to build a wheel, install the base profile into a clean
+  environment, import core APIs with Django Ninja absent, verify lazy
+  missing-extra errors, and confirm Ninja is only an optional requirement.
 - CI builds and checks the distribution once, uploads the checked wheel, and
   passes it to smoke jobs with `DJANGO_VEO_ADMIN_API_WHEEL`; local smoke commands
   still build their own wheel unless that variable points at a wheel file or
   directory.
-- `just sample-project-smoke` to install the built wheel into a temporary
-  Django project, register a model, mount `site.urls`, open docs/OpenAPI, and
-  exercise authenticated model discovery.
+- `just sample-project-smoke` to install the built wheel with `[ninja]` into a
+  temporary Django project, register a model, mount `site.urls`, open
+  docs/OpenAPI, and exercise authenticated model discovery.
 - `just private-api-audit` to keep private Django API usage matched to
   [`docs/private-django-api-audit.md`](private-django-api-audit.md).
 - `just docs-check` to validate the MkDocs navigation and local documentation

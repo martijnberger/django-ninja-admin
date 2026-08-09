@@ -1,7 +1,8 @@
 # Django Veo Admin API
 
-`django-veo-admin-api` exposes Django admin concepts as a typed HTTP API for
-custom admin frontends. It keeps Django's registry, model-admin hooks,
+`django-veo-admin-api` provides a typed Django admin engine and exposes it
+through optional transport integrations. The Django Ninja adapter provides an
+HTTP API for custom admin frontends. The shared core keeps Django's registry, model-admin hooks,
 `ModelForm` validation, changelists, actions, inlines, history, autocomplete,
 permission checks, protected deletes, and admin log entries, while publishing
 the contract through Django Ninja and Pydantic v2.
@@ -26,4 +27,5 @@ the Pydantic schemas behind it.
 
 - Python 3.12 and newer.
 - Django 5.0 and newer, up to the package's declared dependency ceiling.
-- Django Ninja 1.6 and Pydantic v2.
+- Pydantic v2 in the base package.
+- Django Ninja 1.6 when the `[ninja]` integration extra is installed.

@@ -9,7 +9,8 @@ serializers, viewsets, and response envelopes.
 
 ```python
 from django.urls import path
-from django_veo_admin_api import ModelAdmin, site
+from django_veo_admin_api import ModelAdmin
+from django_veo_admin_api.integrations.ninja import site
 
 from shop.models import Product
 
@@ -362,7 +363,7 @@ The default auth is `ninja.security.SessionAuthIsStaff`. It accepts active staff
 users authenticated through Django sessions.
 
 ```python
-from django_veo_admin_api import NinjaAdminSite
+from django_veo_admin_api.integrations.ninja import NinjaAdminSite
 
 admin_site = NinjaAdminSite()
 ```
@@ -384,7 +385,7 @@ authentication:
 
 ```python
 from ninja.security import APIKeyHeader
-from django_veo_admin_api import NinjaAdminSite
+from django_veo_admin_api.integrations.ninja import NinjaAdminSite
 
 
 class InternalTokenAuth(APIKeyHeader):
@@ -404,7 +405,7 @@ admin API:
 
 ```python
 from ninja.security import APIKeyHeader
-from django_veo_admin_api import NinjaAdminSite
+from django_veo_admin_api.integrations.ninja import NinjaAdminSite
 
 
 class PrimaryTokenAuth(APIKeyHeader):
@@ -432,7 +433,7 @@ Use `auth=None` only for deliberately unauthenticated APIs, such as local tests
 or a separately protected internal mount:
 
 ```python
-from django_veo_admin_api import NinjaAdminSite
+from django_veo_admin_api.integrations.ninja import NinjaAdminSite
 
 admin_site = NinjaAdminSite(auth=None)
 ```
@@ -475,7 +476,8 @@ provides a wait time, a `Retry-After` header.
 
 ```python
 from ninja.throttling import AuthRateThrottle
-from django_veo_admin_api import ModelAdmin, NinjaAdminSite
+from django_veo_admin_api import ModelAdmin
+from django_veo_admin_api.integrations.ninja import NinjaAdminSite
 
 
 class ProductAdmin(ModelAdmin):

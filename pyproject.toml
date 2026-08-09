@@ -1,7 +1,7 @@
 [project]
 name = "django-veo-admin-api"
 version = "0.1.76"
-description = "A Ninja-native API implementation of Django admin for custom frontends."
+description = "A typed Django admin engine with optional Ninja and MCP integrations."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
@@ -22,15 +22,18 @@ classifiers = [
 ]
 dependencies = [
     "django>=5.0,<6.1",
-    "django-ninja>=1.6.2,<2",
     "pydantic>=2,<3",
 ]
+
+[project.optional-dependencies]
+ninja = ["django-ninja>=1.6.2,<2"]
 
 [project.urls]
 Repository = "https://github.com/martijnberger/django-veo-admin-api"
 
 [dependency-groups]
 dev = [
+    "django-ninja>=1.6.2,<2",
     "mkdocs>=1.6",
     "pillow>=10.0",
     "pre-commit>=4.0",

@@ -310,12 +310,17 @@ version = "0.1.76"
 source = { editable = "." }
 dependencies = [
     { name = "django" },
-    { name = "django-ninja" },
     { name = "pydantic" },
+]
+
+[package.optional-dependencies]
+ninja = [
+    { name = "django-ninja" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "django-ninja" },
     { name = "mkdocs" },
     { name = "pillow" },
     { name = "pre-commit" },
@@ -331,12 +336,14 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = ">=5.0,<6.1" },
-    { name = "django-ninja", specifier = ">=1.6.2,<2" },
+    { name = "django-ninja", marker = "extra == 'ninja'", specifier = ">=1.6.2,<2" },
     { name = "pydantic", specifier = ">=2,<3" },
 ]
+provides-extras = ["ninja"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "django-ninja", specifier = ">=1.6.2,<2" },
     { name = "mkdocs", specifier = ">=1.6" },
     { name = "pillow", specifier = ">=10.0" },
     { name = "pre-commit", specifier = ">=4.0" },
