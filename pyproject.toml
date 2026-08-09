@@ -1,6 +1,6 @@
 [project]
 name = "django-veo-admin-api"
-version = "0.1.76"
+version = "0.2.0"
 description = "A typed Django admin engine with optional Ninja and MCP integrations."
 readme = "README.md"
 requires-python = ">=3.12"

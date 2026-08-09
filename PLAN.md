@@ -403,9 +403,12 @@ core/Ninja.
 
 ### Phase 4 — Contract And Release Hardening
 
-Status: in progress. Separate core/MCP documentation, the dependency diagram,
-architecture-boundary tests, security/threat-model guide, and dual golden
-artifact gates were added on 2026-08-09.
+Status: implemented and verified on 2026-08-09. Separate core, Ninja, and MCP
+documentation, the dependency diagram, architecture-boundary tests,
+security/threat-model guide, dual golden artifact gates, installed-profile CI,
+release checklist, attribution audit, migration guide, and `0.2.0` release
+metadata are in place. Tagging and publishing remain explicit maintainer
+release operations rather than implementation steps.
 
 1. Document core, Ninja, and MCP public APIs separately.
 2. Add architecture-boundary tests and a dependency diagram to the docs.
