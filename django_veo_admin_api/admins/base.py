@@ -28,6 +28,7 @@ from pydantic import (
     create_model,
 )
 
+from django_veo_admin_api.core.field_types import ModelFieldTypeResolver, resolve_model_field_type
 from django_veo_admin_api.exceptions import NotRegistered
 from django_veo_admin_api.schemas import (
     AdminBulkRowSchema,
@@ -702,6 +703,7 @@ class BaseAdmin:
     def _output_schema_for_fields(self, fields_key, custom_fields):
         from ninja.orm import create_schema
 
+        ninja_create_schema = cast(Any, create_schema)
         cache = getattr(self, "_output_schema_cache", {})
         cache_key = (
             fields_key,
@@ -719,7 +721,7 @@ class BaseAdmin:
                     ),
                 },
             )
-            cache[cache_key] = create_schema(
+            cache[cache_key] = ninja_create_schema(
                 self.model,
                 name=f"{self.model.__name__}AdminOut",
                 fields=fields,
@@ -980,9 +982,13 @@ class BaseAdmin:
         return str
 
     def get_registered_pydantic_type_for_model_field(self, field):
-        from ninja.orm.fields import TYPES
+        return resolve_model_field_type(field, self.get_model_field_type_resolvers())
 
-        return TYPES.get(field.get_internal_type())
+    def get_model_field_type_resolvers(self) -> tuple[ModelFieldTypeResolver, ...]:
+        get_resolvers = getattr(self.admin_site, "get_model_field_type_resolvers", None)
+        if get_resolvers is None:
+            return ()
+        return tuple(get_resolvers())
 
     def get_form_fields_description(self, request, obj=None, *, initial=None, form=None):
         form_class = form.__class__ if form is not None else self.get_form_class(request, obj, change=obj is not None)

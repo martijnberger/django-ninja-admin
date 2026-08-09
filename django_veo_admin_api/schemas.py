@@ -3,11 +3,10 @@ from enum import IntEnum
 from typing import Annotated, Any, Literal
 
 from django.utils.functional import Promise
-from ninja import Schema
-from pydantic import ConfigDict, Field, RootModel, field_serializer, field_validator, model_serializer
+from pydantic import BaseModel, ConfigDict, Field, RootModel, field_serializer, field_validator, model_serializer
 
 
-class AdminSchema(Schema):
+class AdminSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 

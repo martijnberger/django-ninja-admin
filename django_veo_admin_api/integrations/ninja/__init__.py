@@ -1,0 +1,1 @@
+"""Django Ninja integration internals."""

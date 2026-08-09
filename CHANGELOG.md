@@ -9,6 +9,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Switched shared request and response contracts from `ninja.Schema` to
+  Pydantic `BaseModel` without changing the reviewed OpenAPI contract.
+- Added the transport-neutral model-field resolver seam and isolated Django
+  Ninja's `register_field()` registry adapter under `integrations.ninja`.
 - Renamed the distribution from `django-ninja-admin` to
   `django-veo-admin-api` and the Python/Django package from
   `django_ninja_admin` to `django_veo_admin_api`, including app labels,

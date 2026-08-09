@@ -264,6 +264,8 @@ must be pinned by our full golden and mounted behavior tests.
 
 ### Phase 0 — Contained Compatibility Spike
 
+Status: implemented and verified on 2026-08-09.
+
 Land this as a small, reviewable change before moving modules.
 
 1. Change the shared schema base from `ninja.Schema` to Pydantic `BaseModel`.
@@ -447,4 +449,3 @@ Research snapshot: 2026-08-09.
 - Historical accreted status log: `CHANGELOG_OLD.md`.
 - Admin-behavior checklist: `docs/parity-matrix.md` (advisory).
 - The golden Ninja contract: `tests/golden/openapi.json`.
-

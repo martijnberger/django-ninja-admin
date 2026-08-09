@@ -54,6 +54,7 @@ from django_veo_admin_api.exceptions import (
     MissingSearchFields,
     NotRegistered,
 )
+from django_veo_admin_api.integrations.ninja.field_types import NinjaModelFieldTypeResolver
 from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
 from django_veo_admin_api.schemas import (
     AppSummary,
@@ -162,6 +163,7 @@ class NinjaAdminSite:
     history_max_per_page = 100
     autocomplete_per_page = 20
     autocomplete_max_per_page = 100
+    model_field_type_resolvers = (NinjaModelFieldTypeResolver(),)
     history_throttle: Any = NOT_SET
     autocomplete_throttle: Any = NOT_SET
 
@@ -193,6 +195,9 @@ class NinjaAdminSite:
 
             self.register(get_user_model(), AuthUserAdmin)
             self.register(Group, AuthGroupAdmin)
+
+    def get_model_field_type_resolvers(self):
+        return self.model_field_type_resolvers
 
     @override
     def __repr__(self):

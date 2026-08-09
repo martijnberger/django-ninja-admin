@@ -42,6 +42,27 @@ def test_error_response_runtime_shapes_are_consistent(admin_client, staff_client
     invalid_query_body = assert_error_body(admin_client.get("/admin-api/testapp/product?pp=not-an-int"), 422)
     assert invalid_query_body["errors"][0]["param"] == "query.pp"
 
+    extra_body = assert_error_body(
+        admin_client.post(
+            "/admin-api/testapp/product",
+            data={
+                "data": {
+                    "name": "Unexpected field",
+                    "category": sample.category_id,
+                    "price": "9.00",
+                    "stock_status": "in_stock",
+                    "unexpected": True,
+                }
+            },
+            content_type="application/json",
+        ),
+        422,
+    )
+    assert extra_body["errors"][0] == {
+        "message": "Extra inputs are not permitted",
+        "param": "data.unexpected",
+    }
+
     form_body = assert_error_body(
         admin_client.post(
             "/admin-api/testapp/product",
