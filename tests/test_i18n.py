@@ -1,3 +1,5 @@
+from importlib import import_module
+
 import pytest
 from django import forms
 from django.db import models
@@ -10,7 +12,6 @@ import django_veo_admin_api.admins.base as base_module
 import django_veo_admin_api.admins.inline as inline_module
 import django_veo_admin_api.admins.model as model_module
 import django_veo_admin_api.changelist as changelist_module
-import django_veo_admin_api.sites as sites_module
 from django_veo_admin_api import ModelAdmin, NinjaAdminSite
 from django_veo_admin_api.core.operations import bulk as bulk_operations_module
 from django_veo_admin_api.core.operations import changelist as changelist_operations_module
@@ -18,6 +19,8 @@ from django_veo_admin_api.core.operations import history as history_operations_m
 from django_veo_admin_api.core.operations import inlines as inline_operations_module
 from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Category
+
+sites_module = import_module("django_veo_admin_api.integrations.ninja.site")
 
 
 def _translate(message):

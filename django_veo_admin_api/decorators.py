@@ -56,8 +56,8 @@ def display(
 
 def register(*models, site=None):
     from django_veo_admin_api.admins.model import ModelAdmin
-    from django_veo_admin_api.sites import NinjaAdminSite
-    from django_veo_admin_api.sites import site as default_site
+    from django_veo_admin_api.integrations.ninja import NinjaAdminSite
+    from django_veo_admin_api.integrations.ninja import site as default_site
 
     def _model_admin_wrapper(admin_class):
         if not models:

@@ -40,6 +40,12 @@ def test_public_api_exports_are_curated():
     assert {name for name in expected_exports if getattr(django_veo_admin_api, name, None) is None} == set()
 
 
+def test_ninja_integration_has_a_canonical_import_path():
+    from django_veo_admin_api.integrations.ninja import NinjaAdminSite
+
+    assert NinjaAdminSite.__module__ == "django_veo_admin_api.integrations.ninja.site"
+
+
 def test_legacy_exception_module_reexports_core_vocabulary():
     from django_veo_admin_api.core.exceptions import AdminValidationError as CoreAdminValidationError
     from django_veo_admin_api.exceptions import AdminValidationError

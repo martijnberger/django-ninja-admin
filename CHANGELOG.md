@@ -16,6 +16,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Extracted filtered admin-action dispatch, transaction handling, and response validation into a typed core operation.
 - Extracted typed delete preview plus protected-object, permission, audit-log, and delete-hook execution into core.
 - Removed Ninja sentinels, async helpers, and response objects from core route descriptors, `ModelAdmin`, and built-in actions.
+- Moved `NinjaAdminSite`, routing, auth, throttling, docs, and OpenAPI generation to `django_veo_admin_api.integrations.ninja`, leaving lazy top-level compatibility exports.
 
 ### Changed
 

@@ -36,7 +36,7 @@ PRIVATE_API_INVENTORY = (
     PrivateApiUse(
         symbol="request.parse_file_upload",
         pattern=r"\.parse_file_upload\(",
-        expected_paths=("django_veo_admin_api/sites.py",),
+        expected_paths=("django_veo_admin_api/integrations/ninja/site.py",),
         reason="Parse multipart JSON+file requests through Django's request upload parser.",
         upgrade_check="Verify Django request upload parsing still accepts the same META/request arguments.",
     ),
