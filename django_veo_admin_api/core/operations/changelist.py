@@ -5,7 +5,8 @@ from django.utils.translation import gettext as _
 
 from django_veo_admin_api.core.exceptions import AdminPermissionError
 from django_veo_admin_api.core.operations.base import AdminRequestContext, OperationResult
-from django_veo_admin_api.schemas import ChangelistResponse, Pagination
+from django_veo_admin_api.core.operations.pagination import pagination_result
+from django_veo_admin_api.schemas import ChangelistResponse
 from django_veo_admin_api.utils.forms import form_field_descriptions
 from django_veo_admin_api.utils.json_values import jsonish_value
 from django_veo_admin_api.utils.lookup import (
@@ -158,7 +159,7 @@ class ChangelistOperations:
                 "page_count": changelist.paginator.num_pages,
                 "page": changelist.page_num,
                 "per_page": changelist.per_page,
-                "pagination": _pagination_payload(changelist.paginator, changelist.page),
+                "pagination": pagination_result(changelist.paginator, changelist.page),
                 "has_next": changelist.page.has_next(),
                 "has_previous": changelist.page.has_previous(),
                 "multi_page": changelist.multi_page,
@@ -203,19 +204,6 @@ class ChangelistOperations:
             "list_editing_rows": list_editing_rows,
         }
         return OperationResult(ChangelistResponse.model_validate(payload))
-
-
-def _pagination_payload(paginator, page_obj):
-    has_next = page_obj.has_next()
-    return Pagination(
-        count=paginator.count,
-        num_pages=paginator.num_pages,
-        page=page_obj.number,
-        per_page=paginator.per_page,
-        has_next=has_next,
-        has_previous=page_obj.has_previous(),
-        more=has_next,
-    ).model_dump(mode="json")
 
 
 def _row_metadata(request, model_admin, obj, object_id, to_field=None):

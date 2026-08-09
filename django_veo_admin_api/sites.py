@@ -23,7 +23,7 @@ from django.core.exceptions import (
     ValidationError,
 )
 from django.core.paginator import InvalidPage, Paginator
-from django.db import models, router, transaction
+from django.db import router, transaction
 from django.db.models.base import ModelBase
 from django.forms.models import _get_foreign_key
 from django.http import Http404
@@ -55,6 +55,7 @@ from django_veo_admin_api.core.exceptions import (
     NotRegistered,
 )
 from django_veo_admin_api.core.operations import AdminRequestContext
+from django_veo_admin_api.core.operations.autocomplete import AutocompleteOperations
 from django_veo_admin_api.core.operations.changelist import ChangelistOperations
 from django_veo_admin_api.core.operations.discovery import DiscoveryOperations
 from django_veo_admin_api.core.operations.forms import FormOperations, inline_remote_accessor_name
@@ -343,6 +344,10 @@ class NinjaAdminSite:
     @property
     def changelist_operations(self):
         return ChangelistOperations()
+
+    @property
+    def autocomplete_operations(self):
+        return AutocompleteOperations(self)
 
     def get_registered_model_admins(self):
         return self._registry.items()
@@ -1109,58 +1114,15 @@ class NinjaAdminSite:
                 maximum=site.autocomplete_max_per_page,
                 label="page size",
             )
-            try:
-                source_model = apps.get_model(app_label, model_name)
-                source_admin = site.get_model_admin(source_model)
-                source_field = source_model._meta.get_field(field_name)
-                if not isinstance(source_field, (models.ForeignKey, models.ManyToManyField)):
-                    raise Http404
-                remote_field = source_field.remote_field
-                if remote_field is None:
-                    raise Http404
-                remote_model = remote_field.model
-                model_admin = site.get_model_admin(remote_model)
-            except (FieldDoesNotExist, LookupError, NotRegistered) as exc:
-                raise Http404 from exc
-            if field_name not in source_admin.get_autocomplete_fields(request):
-                raise Http404
-            if not source_admin.has_view_or_change_permission(request):
-                raise PermissionDenied
-            if not model_admin.get_search_fields(request):
-                raise MissingSearchFields
-            if hasattr(remote_field, "get_related_field"):
-                to_field_name = remote_field.get_related_field().attname
-            else:
-                to_field_name = remote_model._meta.pk.attname
-            to_field_name = remote_model._meta.get_field(to_field_name).attname
-            if not model_admin.to_field_allowed(request, to_field_name):
-                raise PermissionDenied
-            if not model_admin.has_view_permission(request):
-                raise PermissionDenied
-            qs = model_admin.get_queryset(request).complex_filter(source_field.get_limit_choices_to())
-            qs, use_distinct = model_admin.get_search_results(request, qs, term)
-            if use_distinct:
-                qs = qs.distinct()
-            if not qs.ordered:
-                qs = qs.order_by(remote_model._meta.pk.name)
-            use_visibility_filter = site._model_admin_method_overridden(model_admin, "has_view_permission")
-            paginator = model_admin.get_paginator(request, qs, per_page)
-            try:
-                page_obj = paginator.page(page)
-            except InvalidPage as exc:
-                raise Http404 from exc
-            page_items = list(page_obj.object_list)
-            if use_visibility_filter:
-                page_items = [obj for obj in page_items if model_admin.has_view_permission(request, obj)]
-            pagination = (
-                site.visibility_filtered_pagination_payload(page_obj, page_items)
-                if use_visibility_filter
-                else site.pagination_payload(paginator, page_obj)
-            )
-            return {
-                "results": [{"id": str(getattr(obj, to_field_name)), "text": str(obj)} for obj in page_items],
-                "pagination": pagination,
-            }
+            return site.autocomplete_operations.search(
+                AdminRequestContext(request),
+                app_label=app_label,
+                model_name=model_name,
+                field_name=field_name,
+                term=term,
+                page=page,
+                per_page=per_page,
+            ).data
 
         @router.get(
             "/view-on-site/{content_type_id}/{object_id}",
