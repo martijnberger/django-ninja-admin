@@ -13,6 +13,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
   Pydantic `BaseModel` without changing the reviewed OpenAPI contract.
 - Added the transport-neutral model-field resolver seam and isolated Django
   Ninja's `register_field()` registry adapter under `integrations.ninja`.
+- Replaced core output-model generation through `ninja.orm.create_schema()`
+  with the shared Pydantic contract compiler while preserving field metadata,
+  defaults, validation behavior, and the golden OpenAPI document.
 - Renamed the distribution from `django-ninja-admin` to
   `django-veo-admin-api` and the Python/Django package from
   `django_ninja_admin` to `django_veo_admin_api`, including app labels,

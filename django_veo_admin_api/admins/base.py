@@ -29,6 +29,7 @@ from pydantic import (
 )
 
 from django_veo_admin_api.core.field_types import ModelFieldTypeResolver, resolve_model_field_type
+from django_veo_admin_api.core.schema_compiler import create_contract_model
 from django_veo_admin_api.exceptions import NotRegistered
 from django_veo_admin_api.schemas import (
     AdminBulkRowSchema,
@@ -701,16 +702,12 @@ class BaseAdmin:
         yield from iter_choice_values(choices)
 
     def _output_schema_for_fields(self, fields_key, custom_fields):
-        from ninja.orm import create_schema
-
-        ninja_create_schema = cast(Any, create_schema)
         cache = getattr(self, "_output_schema_cache", {})
         cache_key = (
             fields_key,
             tuple((name, repr(field_type), repr(default)) for name, field_type, default in custom_fields),
         )
         if cache_key not in cache:
-            fields = list(fields_key)
             base_class = type(
                 f"{self.model.__name__}AdminOutBase",
                 (AdminSchema,),
@@ -721,15 +718,36 @@ class BaseAdmin:
                     ),
                 },
             )
-            cache[cache_key] = ninja_create_schema(
-                self.model,
-                name=f"{self.model.__name__}AdminOut",
-                fields=fields,
-                custom_fields=custom_fields,
-                base_class=base_class,
+            field_definitions = {
+                field_name: self._model_output_schema_field_definition(self.model._meta.get_field(field_name))
+                for field_name in fields_key
+            }
+            field_definitions.update({name: (field_type, default) for name, field_type, default in custom_fields})
+            cache[cache_key] = create_contract_model(
+                f"{self.model.__name__}AdminOut",
+                base=base_class,
+                fields=field_definitions,
             )
             self._output_schema_cache = cache
         return cache[cache_key]
+
+    def _model_output_schema_field_definition(self, field):
+        field_type = self.get_pydantic_type_for_model_output_field(field)
+        default = ...
+        if field.primary_key or field.blank or field.null:
+            field_type = field_type | None
+            default = None
+        title = self._model_field_schema_title(field)
+        description = str(field.help_text) if field.help_text else None
+        if field.has_default():
+            if callable(field.default):
+                return field_type, Field(default_factory=field.default, title=title, description=description)
+            default = field.default
+        return field_type, Field(default, title=title, description=description)
+
+    def _model_field_schema_title(self, field):
+        verbose_name = str(field.verbose_name)
+        return verbose_name.title() if verbose_name == verbose_name.lower() else verbose_name
 
     def _output_schema_example(self, fields_key, custom_fields):
         data = {}
