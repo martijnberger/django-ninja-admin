@@ -1,214 +1,450 @@
 # Django Ninja Admin — Plan
 
-## Goal
+## Direction
 
-Build `django-ninja-admin`: a production-ready, reusable package that exposes
-`django.contrib.admin` concepts (site registry, model admins, changelists,
-filters, forms, actions, inlines, history, autocomplete, checks, log entries)
-as a typed HTTP API built on `django-ninja` 1.6+ and Pydantic v2, for teams
-building custom admin frontends.
+Commit to a transport split: `django-ninja-admin` becomes a Django-admin engine
+with optional transport integrations.
 
-The north star has two axes, in this order:
+The package keeps one source of truth for Django admin semantics and one set of
+Pydantic contracts. Django Ninja and MCP translate their protocols to that
+shared core; neither integration reimplements permissions, validation,
+serialization, mutations, or audit behavior.
 
-1. **Django-admin semantic parity where it matters**: permissions (including
-   object-level hooks), `ModelForm`/formset validation authority, admin system
-   checks, changelist query semantics, protected deletes, change logging.
-2. **Client-first contract**: a typed, stable, deterministic OpenAPI document
-   that generated clients can actually consume — every request and response
-   surface modeled with Pydantic, stable operation IDs and component names,
-   honest error schemas.
+The north star remains, in this order:
 
-Feature/wire parity with `daemon-bixia/django-api-admin` 1.3.0 is **no longer
-the release bar**. `docs/parity-matrix.md` remains as a reference checklist of
-admin behaviors worth covering; `scripts/parity_report.py` is advisory, not a
-gate.
+1. **Django-admin semantic parity where it matters**: registry and admin hooks,
+   object permissions, `ModelForm`/formset validation authority, changelist
+   semantics, protected deletes, transactions, and `LogEntry` behavior.
+2. **Client-first contracts**: closed Pydantic v2 models, deterministic schema
+   names and examples, stable error bodies, and outputs that generated clients
+   and MCP clients can validate.
+3. **Replaceable transports**: the core imports neither Django Ninja nor an MCP
+   SDK. A bare install is useful to integrations and does not construct HTTP
+   routes by itself.
+
+## Current Baseline
+
+The earlier security and quality milestones have largely graduated into the
+current tree and are no longer future roadmap items:
+
+- session/CSRF bootstrap, protected docs, safe auth-admin registration, bounded
+  history/autocomplete, object permission checks, and typed delete errors;
+- a split test suite, strict `ty` gate, `py.typed`, 90% coverage floor, installed
+  package/sample-project/generated-client smoke tests;
+- the checked-in `tests/golden/openapi.json` semantic snapshot and a closed
+  Pydantic error contract exercised against mounted runtime responses;
+- typed semantic form metadata, one pagination contract, deterministic OpenAPI
+  operation/component naming, and broad Django-admin parity coverage.
+
+Those are preservation constraints for the split, not work to redo.
 
 ## Non-Goals
 
-- DRF compatibility. `serializer_class` hooks stay unsupported; the
-  replacements are `form_class`, `output_schema`, `schema_field_overrides`,
-  and `form_schema_field_overrides`.
-- Drop-in wire compatibility with `django-api-admin` clients.
-- Rendering HTML or shipping an admin UI.
-- Exposing Django widget/rendering internals over the wire (see Contract
-  Decisions).
+- A plain-Django REST fallback. Removing the Ninja dependency does **not** mean
+  rebuilding Ninja's routing, request parsing, response dispatch, auth,
+  throttling, docs, and OpenAPI generation with Django views.
+- DRF compatibility or a second serializer/form abstraction.
+- Rendering an HTML admin or shipping a frontend.
+- Making Pydantic authoritative for persistence validation. Django forms and
+  formsets remain authoritative.
+- Sharing implementation by making one integration issue internal HTTP requests
+  to another integration.
+- Preserving every pre-beta import path forever. We will provide deliberate
+  compatibility shims and a migration guide, but the dependency boundary wins.
 
-## Architecture Decisions
+## Committed Architecture
 
-1. **Validation layering (kept).** Pydantic parses, coerces, rejects obvious
-   contract errors, and documents OpenAPI; Django `ModelForm`/formsets remain
-   the authoritative persistence validators. Both layers report through one
-   error contract (see Milestone 1).
-2. **Vendoring policy (new).** Delegate to `django.contrib.admin` code
-   wherever the logic is HTML-free (large parts of checks, lookup/`to_field`
-   validation, deletion collection); keep a slim vendored layer only for
-   JSON-emitting behavior (`changelist.py`, `filters.py` output shaping,
-   `LogEntry`). Maintain an inventory of vendored modules and private Django
-   API usage (`_get_foreign_key`, `media._css/_js`, `widget._parse_date_fmt`,
-   `request.parse_file_upload`, `_get_FIELD_display`, `queryset.query.order_by`)
-   and run an upgrade audit against each new Django feature release, since
-   admin security fixes (`to_field`/lookup CVE class) must not silently drift.
-3. **Semantic form metadata (new).** The form-description surface is a typed
-   `FieldDescription` v1 contract: field type, constraints, choices, relation
-   metadata, initial values, help text, readonly/disabled state, and widget
-   *intent* (autocomplete, raw-id, radio, dual-select, date-split, file). It
-   does not carry rendered Django internals (`BoundField` HTML names,
-   generated IDs, ARIA attributes, widget template names, rendered attrs or
-   optgroups). Breaking wire changes are acceptable while pre-beta.
-4. **One pagination shape** shared by changelist, history, and autocomplete.
-5. **Schema strategy (kept, condensed).** Ninja `ModelSchema` /
-   `create_schema()` semantics are the baseline for read schemas with explicit
-   safe field lists (never `__all__`, password-class fields excluded); write
-   schemas are form-derived with `extra="forbid"`; `register_field()` is
-   honored for custom model fields; component names, examples, and operation
-   IDs stay deterministic.
-6. **Typing is part of the product.** Full annotations on the public API, a
-   `py.typed` marker, and a strict type checker in CI.
-7. **Package settings** (if/when any exist beyond `NinjaAdminSite` kwargs) are
-   validated with pydantic-settings, not read raw from `django.conf.settings`.
-8. **The schema machinery is one module.** The form→Pydantic type compiler,
-   constraint extraction, and example generation currently triplicated across
-   `sites.py`, `admins/base.py`, and `utils/forms.py` are extracted into a
-   single shared module.
+```text
+                    django_ninja_admin core
+       Django admin semantics + Pydantic contracts + operations
+                 /                                  \
+ django_ninja_admin.integrations.ninja   django_ninja_admin.integrations.mcp
+ Ninja routes/auth/Status/OpenAPI          MCP tools/auth/protocol results
+```
 
-## Milestone 1 — Securable (blocks any further release)
+### Core
 
-Security and contract defects; nothing else ships until these land.
+Core owns:
 
-- **Safe auth-model registration.** Auto-registered `User`/`Group` admins must
-  not expose `password` (currently written verbatim/unhashed via the generic
-  `ModelForm`) nor freely writable `is_superuser`/`user_permissions`. Ship a
-  proper `UserAdmin` equivalent (hashed password handling or password
-  excluded + dedicated flow), and make `include_auth` registration safe by
-  construction. Also fix the output-side `field.name == "password"` string
-  match, which silently drops unrelated fields named `password`.
-- **Gate `/docs` and `/openapi.json` behind site auth** (`docs_decorator` or
-  equivalent). The schema is a complete data-model map and must not be public.
-- **Bound `/history`.** Filter and paginate at the DB level; no full queryset
-  materialization, no per-row `get_object()` visibility queries, enforce a max
-  page size. Per-object visibility filtering only when an object-level hook is
-  actually overridden.
-- **Bound `/autocomplete`.** Paginate the queryset directly; per-object
-  permission filtering only when the hook is overridden; enforce result-size
-  bounds.
-- **Honest error contract.** `AdminValidationError` payloads (form, inline,
-  bulk-row) must validate against the declared `ErrorResponse` schema —
-  either normalize to the flat list shape or model the nested union honestly
-  in OpenAPI. A client generated from our own schema must parse our own 400s.
-- **Session bootstrap.** Ship login/logout/CSRF-token endpoints (or a
-  documented, tested pattern) so a SPA can authenticate against the default
-  session+CSRF auth without mounting `django.contrib.admin`.
-- **Consistent object-level delete checks.** Pass the object to
-  `has_delete_permission` on the direct delete route, matching update.
+- admin registry, `ModelAdmin`/inline behavior, checks, filters, changelists,
+  forms, formsets, permissions, deletion collection, and audit logging;
+- Pydantic `BaseModel` request/response/metadata/error contracts;
+- the form-to-Pydantic and model-to-Pydantic compilers;
+- JSON-safe, permission-aware object serialization;
+- transport-neutral operation services for context/permissions, list/detail,
+  form description, create/update/delete, list-editable bulk mutation, inlines,
+  actions, history, autocomplete, and delete preview;
+- transaction boundaries and response-hook validation;
+- a typed operation result/error vocabulary that adapters can map to their wire
+  protocols without knowing how the operation was implemented.
 
-Acceptance: an anonymous user can reach nothing (including docs); a staff user
-cannot escalate via the default auth admins; history/autocomplete cost is
-O(page), verified by query-count tests; generated clients parse every
-documented error body; a browser SPA can complete login → CSRF → mutation.
+Core may accept Django `HttpRequest` because Django admin hooks are explicitly
+request-aware. It must not import `ninja`, an MCP SDK, or adapter response
+classes.
 
-## Milestone 2 — Quality Floor
+Target internal layout (exact moves may be incremental):
 
-Tooling and structure debt; mostly mechanical, high leverage.
+```text
+django_ninja_admin/
+  core/
+    admins/
+    contracts/
+    operations/
+    serialization/
+    field_types.py
+  integrations/
+    ninja/
+      site.py
+      routes.py
+      auth.py
+      schemas.py
+      field_types.py
+    mcp/
+      server.py
+      tools.py
+      auth.py
+      results.py
+```
 
-- **Type checking**: mypy strict (with django-stubs) or ty on
-  `django_ninja_admin/`, CI job, `py.typed` marker, public API annotated.
-- **Test suite split**: break `tests/test_admin_api.py` (9,300 lines) into
-  topic modules (`test_checks`, `test_openapi_schema`, `test_changelist_filters`,
-  `test_permissions_auth`, `test_inlines`, `test_actions_bulk`,
-  `test_autocomplete`, …) with a shared `conftest.py` and a
-  `make_site(model, **admin_attrs)` factory; adopt `parametrize` for the
-  repeated one-field-mutation blocks; split multi-behavior mega-tests.
-- **Golden OpenAPI contract**: replace the hand-written exact-fragment OpenAPI
-  mega-asserts with a checked-in golden `openapi.json` diffed semantically by
-  `scripts/openapi_diff.py` in CI. Upstream (pydantic/django-ninja) bumps then
-  produce one reviewable diff instead of dozens of assertion failures.
-- **Lint/format**: enable `B904`; add `SIM`, `C4`, `RUF`, `PT`, `DTZ` rule
-  groups; run `ruff format --check`; add pre-commit; drop `-q` from pytest
-  `addopts` (it makes `pytest -q` double-quiet).
-- **Coverage**: pytest-cov with `fail_under = 90` (currently ~91%) and a CI
-  job.
-- **CI**: keep build + `twine check`, generated-client smoke, concurrency
-  cancellation, PostgreSQL, and installed-wheel smoke gates aligned with the
-  Django/Python matrix; preserve the single checked-wheel artifact flow as the
-  matrix evolves.
-- **Dedup and dead code**: extract the shared schema machinery (Decision 8);
-  remove superseded helpers, never-raised exceptions with registered
-  handlers, and unused schema classes; replace broad `except Exception`
-  blocks with specific exceptions.
-- **Changelog hygiene**: stop cutting a version per work session; curate
-  `CHANGELOG.md` into user-facing Added/Changed/Fixed sections from here on.
+Models, migrations, and small compatibility re-exports can remain at the package
+root where moving them would create needless Django app-label or migration risk.
 
-## Milestone 3 — Contract Freeze (v1 wire contract)
+### Operation boundary
 
-Everything a generated client touches becomes typed, then frozen.
+Each externally callable behavior gets one operation service with a typed input
+and result. An adapter is limited to:
 
-- `FieldDescription` v1 per Decision 3: retire the `attrs: dict[str, Any]`
-  bag and `fieldsets: list[Any]`; type the whole form-description and
-  changelist-metadata surface.
-- **Typed changelist parameters**: declare `q`, `o`, `p`, `pp`, `all`,
-  `_facets`, `_to_field` as Ninja `Query` params; document the field-lookup
-  filter convention (`field__in`, `field__isnull`, date-hierarchy params) in
-  OpenAPI route descriptions.
-- **One pagination schema** (Decision 4) across changelist/history/autocomplete.
-- **Tighten response typing**: remove `dict[str, Any]` unions from mutation
-  and action responses where possible; document the constraints
-  `response_add`/`response_change` overrides must satisfy.
-- **Naming and shape cleanups**: `Column.headerName` → snake_case,
-  `ordering_index` as int, `HistoryItem.action_time` as `datetime`.
-- **Versioning policy**: document API versioning/deprecation rules; the golden
-  OpenAPI diff is reviewed for every release, and any removed field, renamed
-  component, or changed status map is a release decision.
+1. authenticate and build the request context;
+2. parse path/query/body/file input into the operation's input model;
+3. call the operation exactly once;
+4. map the typed result or error to its protocol;
+5. validate/serialize the declared output.
 
-Acceptance: the OpenAPI document round-trips through a generated client for
-list/detail/create/update/delete/action/inline/bulk flows with no hand-built
-query strings and no untyped `object` schemas on documented surfaces.
+Operations, not routes, own permission sequencing, form/formset construction,
+transactions, save hooks, inline rollback, delete collection, log entries, and
+the canonical error payload. This is the seam that makes Ninja optional and MCP
+possible without two implementations of the admin.
 
-## Milestone 4 — Feature Backlog (re-scoped)
+### Field-type resolver boundary
 
-Ordered by user value, drawing on `docs/parity-matrix.md` as a reference:
+Replace `BaseAdmin`'s direct `ninja.orm.fields.TYPES` lookup with an explicit
+resolver protocol.
 
-- Vendoring audit execution per Decision 2 (delegate HTML-free logic back to
-  `django.contrib.admin`, shrink `checks.py`).
-- i18n: translated labels, messages, and error text (`gettext` throughout).
-- Throttling hooks (Ninja throttling) for autocomplete/search endpoints.
-- Async view support where django-ninja makes it beneficial.
-- Remaining Django-admin semantic gaps: deeper filter/date-hierarchy edge
-  cases, check IDs aligned with Django's, richer extensibility hooks.
-- A documentation site (mkdocs) before beta: setup, auth patterns, hook
-  reference, frontend integration guide, contract reference.
+Resolution order:
 
-## Verification (condensed)
+1. core mappings for Django's built-in model/form fields;
+2. explicit core/user registrations;
+3. adapter-provided resolvers;
+4. the documented string/JSON fallback where one already exists.
 
-The detailed testing doctrine that used to live here mostly graduated into
-practice; what remains normative:
+The Ninja adapter owns a resolver that honors Ninja `register_field()` mappings.
+Any necessary access to Ninja's registry is isolated and version-tested there.
+MCP and future adapters can use the core registry without installing Ninja.
 
-- **Default gate** (`just check`, also the PR gate): lint + format check,
-  typecheck, tests with coverage floor, package smoke, sample-project smoke.
-- **Contract gate**: golden OpenAPI semantic diff + generated-client smoke, in
-  CI on every PR.
-- **DB gate**: `just postgres-test` in CI (ORM-sensitive behavior: lookups,
-  ordering, facets, transactions, JSON fields, date bucketing).
-- **Test principles that stay**: behavior through mounted routes whenever
-  auth/parsing/serialization/transactions are involved; direct
-  `model_validate()`/`model_json_schema()` tests for generated schemas (one
-  valid + one invalid payload per shape change); DB side-effect and rollback
-  assertions for every mutation path; allowed *and* denied users for every
-  permission-sensitive behavior; advertised examples must validate against
-  their own schemas; query-count guards for changelist/history/autocomplete.
-- **Release checklist**: `docs/release-checklist.md`, updated as milestones
-  land. Beta requires Milestones 1–3 complete, the CI matrix green, and a
-  reviewed golden-OpenAPI diff from an installed wheel.
+### Pydantic contract base
+
+`AdminSchema` and all shared schemas inherit from Pydantic `BaseModel`, not
+`ninja.Schema`. Preserve the current `ConfigDict`, validators, serializers,
+aliases, examples, titles, closed-object policy, and lazy-string handling.
+
+The core eventually generates model schemas with Pydantic `create_model()` and
+the explicit field resolver. `ninja.orm.create_schema()` may remain temporarily
+during the compatibility spike, but cannot remain in the final core because it
+would keep Ninja as a runtime dependency.
+
+## Packaging And Public API
+
+Runtime dependencies of the base distribution:
+
+- Django;
+- Pydantic v2 (direct core dependency).
+
+Optional dependency profiles:
+
+- `django-ninja-admin[ninja]` — Django Ninja and the Ninja integration;
+- `django-ninja-admin[mcp]` — the supported MCP SDK and MCP integration;
+- `django-ninja-admin[all]` — both integrations, primarily for evaluation and
+  CI rather than as a requirement for normal consumers.
+
+The canonical Ninja import becomes:
+
+```python
+from django_ninja_admin.integrations.ninja import NinjaAdminSite
+```
+
+The top-level `NinjaAdminSite` and `site` imports get lazy compatibility shims
+during the pre-beta migration window. Access without the `ninja` extra must
+raise one clear optional-dependency error with the exact install command; merely
+importing core APIs must not import Ninja.
+
+The bare-install contract is explicit: it provides the admin engine and
+operation APIs, but no REST URL configuration. Existing users migrate from
+`pip install django-ninja-admin` to `pip install django-ninja-admin[ninja]`.
+
+## Architectural Decisions
+
+1. **Django validation remains authoritative.** Pydantic parses and documents;
+   the real request-aware `ModelForm`/formset performs persistence validation.
+2. **One operation implementation.** Ninja routes and MCP tools call the same
+   services and receive the same canonical payload/error models.
+3. **No HTTP loopback.** MCP does not resolve and invoke Ninja/Django routes in
+   process, create synthetic requests, or copy a hand-picked subset of
+   middleware attributes. It calls operations directly with the authenticated
+   Django request context.
+4. **No Django REST substitute.** Ninja remains the sole REST/OpenAPI transport.
+5. **Schema behavior is an executable contract.** The golden OpenAPI document,
+   mounted mutation suite, and generated client decide compatibility—not an
+   assumption about BaseModel support.
+6. **Adapter-owned extensions.** Ninja auth, `Status`, `NOT_SET`, throttles,
+   async route handling, docs, OpenAPI normalization, and `register_field()`
+   compatibility stay under `integrations.ninja`.
+7. **Core-owned errors.** Form, inline, bulk-row, permission, not-found,
+   request-validation, conflict, and protected-delete errors share the current
+   Pydantic error models. Adapters only map protocol/status representation.
+8. **Closed schemas by default.** Request, response, OpenAPI, and MCP tool
+   schemas keep `extra="forbid"`/`additionalProperties: false` unless a field is
+   intentionally a typed map.
+9. **Permission checks happen on every call.** Discovery filtering is useful
+   UX, never an authorization boundary.
+10. **Vendoring stays narrow and audited.** Delegate HTML-free admin behavior to
+    Django where possible; retain the private-Django-API inventory and upgrade
+    audit.
+11. **Wire contracts remain reviewed artifacts.** Ninja OpenAPI and MCP tool
+    manifests receive checked-in semantic snapshots and generated-client
+    tests.
+12. **Pre-beta breakage is deliberate.** Dependency/import changes ship with a
+    migration guide and changelog; wire changes still require explicit golden
+    review.
+
+## Research Conclusions
+
+### Django Ninja compatibility finding
+
+A disposable probe against the currently pinned Django Ninja 1.6.2 established
+that a plain Pydantic `BaseModel` works as both a request body and a response
+schema, produces the expected OpenAPI component reference, returns the expected
+422 validation shape, and is accepted as `ninja.orm.create_schema()`'s
+`base_class`.
+
+That is encouraging but intentionally not the release proof: Django Ninja's
+current request-body guide still teaches `ninja.Schema`, so the supported seam
+must be pinned by our full golden and mounted behavior tests.
+
+### Lessons adopted from `django-admin-rest-api`
+
+- Keep the library a wrapper over existing `ModelAdmin` behavior: resolve
+  registered admins, start from `get_queryset()`, call the matching permission
+  hook, use request-aware forms, and write the normal admin audit log.
+- Use real inline formsets as a unit and raise out of `transaction.atomic()` on
+  inline validation/permission failures so parent mutations roll back.
+- Maintain a written wire contract, threat model, security invariants, and
+  startup system checks rather than leaving those rules implicit in views.
+- Keep endpoint/operation modules narrow and give every write path the same
+  parsing, forbidden-field, error-envelope, and transaction helpers.
+- Treat sensitive-field filtering, deny-by-default lookup, bounded pagination,
+  no-store responses, and structured security logging as defense in depth.
+
+### Lessons adapted rather than copied
+
+- Its MCP package is correctly thin, but forwards tools into REST views through
+  synthetic in-process HTTP requests. Our operation layer removes the need for
+  that coupling and avoids losing locale or custom middleware request state.
+- Its MCP server targets the older `2024-11-05` handshake/session protocol and
+  hand-builds JSON-RPC/tool schemas. New work targets the current MCP
+  `2026-07-28` stateless protocol through a supported SDK and the official
+  conformance suite.
+- Its generic static tools are easy to audit, but mutation `data` schemas cannot
+  be model-specific at discovery time. We will generate permission-filtered,
+  deterministic model-scoped tools from the same Pydantic contracts, with a
+  documented cap/pagination strategy for large registries.
+- We retain our typed serializer and Pydantic response models rather than
+  replacing them with a broad `str()`-fallback REST contract.
+
+## Execution Plan
+
+### Phase 0 — Contained Compatibility Spike
+
+Land this as a small, reviewable change before moving modules.
+
+1. Change the shared schema base from `ninja.Schema` to Pydantic `BaseModel`.
+2. Add the resolver protocol and a Ninja-owned resolver; remove the direct
+   `TYPES` import from core admin code while preserving `register_field()`
+   behavior.
+3. Keep routing and operation code otherwise unchanged.
+4. Run the exact golden OpenAPI comparison, mounted CRUD/multipart/bulk/
+   inline/action tests, error-contract suite, response-hook rollback tests,
+   generated-client smoke, sample-project smoke, and installed-wheel smoke.
+5. Add focused tests for Ninja parsing/serialization context, aliases,
+   `RootModel`, dynamic `create_model()` schemas, custom registered fields,
+   multipart validation, and the 422 error translation.
+
+Exit gate: zero unreviewed OpenAPI diff and no mutation/error behavior change.
+If a diff is caused only by the base-class switch, document and review it rather
+than normalizing it away.
+
+### Phase 1 — Extract The Core
+
+1. Define `OperationResult`, the canonical operation exceptions, request
+   context, and resolver interfaces.
+2. Extract shared schema construction and replace
+   `ninja.orm.create_schema()` with the core Pydantic compiler.
+3. Extract serialization and form/formset mutation helpers from `sites.py`.
+4. Move one vertical slice at a time behind services:
+   - context/permissions and form descriptions;
+   - list/detail/history/autocomplete;
+   - create/update and inline writes;
+   - bulk/action/delete and protected-delete preview.
+5. For every slice, keep the existing mounted Ninja tests and add direct service
+   tests proving permission ordering, form authority, transactions, output
+   validation, and the canonical error payload.
+6. Reduce `sites.py` to registration/cache orchestration or replace it with a
+   core site plus adapter subclass once all behavior is covered.
+
+Exit gate: core tests can run in an environment where `django-ninja` is not
+installed, and an import scan finds no Ninja import outside
+`integrations.ninja` and compatibility shims.
+
+### Phase 2 — Make Ninja Optional
+
+1. Move `NinjaAdminSite`, `NinjaAdminAPI`, routers, routes, auth, throttles,
+   `Status` mapping, `NOT_SET`, async helpers, docs/OpenAPI normalization, and
+   the Ninja field resolver under `django_ninja_admin.integrations.ninja`.
+2. Keep Ninja request parsing and response serialization at the mounted-route
+   boundary; do not move those concerns into core.
+3. Update package metadata to base + `ninja`/`mcp`/`all` extras and regenerate
+   the lock file.
+4. Add isolated wheel-profile tests:
+   - **base**: Django + Pydantic only; core import/schema/service smoke;
+   - **ninja**: the full current suite, golden OpenAPI, generated client, docs,
+     multipart, auth, throttle, and sample project;
+   - **all**: Ninja and MCP installed together with no route/registry conflicts.
+5. Add a subprocess guard proving `import django_ninja_admin` and core public
+   imports do not add `ninja` to `sys.modules`.
+6. Publish the install/import migration guide and clear missing-extra errors.
+
+Exit gate: the base wheel has no Django Ninja requirement, while the Ninja
+profile preserves the reviewed current wire contract.
+
+### Phase 3 — Add The MCP Integration
+
+#### Protocol/hosting spike
+
+Before committing a public server API, prove the supported MCP SDK can be
+hosted alongside Django while preserving the real authenticated request/user,
+locale, and other required context. Prefer the SDK's stateless Streamable HTTP
+implementation; do not hand-roll the superseded SSE transport or the old
+initialize/session lifecycle.
+
+The spike must decide and document:
+
+- the Django session + CSRF profile for trusted first-party/browser clients;
+- the standards-compliant authorization profile for remote MCP clients and how
+  a verified principal maps to a Django user;
+- ASGI/WSGI support boundaries and deployment topology;
+- request-size, timeout, rate-limit, origin/host, and DNS-rebinding controls;
+- how current `2026-07-28` requests and any SDK-provided legacy compatibility
+  are tested.
+
+#### Tool projection
+
+1. Generate tools from operation descriptors and Pydantic input/output models;
+   do not maintain parallel hand-written JSON Schemas.
+2. Prefer deterministic model-scoped names such as
+   `admin.shop.product.create`, filtered by the authenticated request and
+   paginated/capped for large registries. Every call repeats the core permission
+   check.
+3. Expose discovery/list/detail/form/history/autocomplete tools first, followed
+   by create/update/bulk/action/delete only after read-only behavior is stable.
+4. Return `structuredContent` validated against `outputSchema`, plus the
+   backwards-compatible text content required by the MCP guidance.
+5. Mark tools accurately with `readOnlyHint`, `destructiveHint`,
+   `idempotentHint`, and `openWorldHint`. Actions default to the conservative
+   risk classification unless explicitly declared.
+6. Offer adapter-level tool allow/deny policy. For destructive calls, document
+   client confirmation expectations and evaluate the current multi-round-trip
+   input-required mechanism without weakening the core permission path.
+7. Map malformed protocol/tool arguments to protocol errors; map form,
+   permission, conflict, and business failures to actionable tool execution
+   errors using the same core `ErrorResponse` data.
+8. Add structured security/audit logs without logging bodies, credentials,
+   session IDs, CSRF values, or sensitive field contents.
+
+#### MCP verification
+
+- checked-in deterministic tool-manifest snapshot;
+- direct operation-vs-MCP parity tests for every exposed service;
+- allowed and denied users, object-level permissions, session expiry, malformed
+  arguments, extra keys, large payloads, rollback, and sensitive-output tests;
+- official Python SDK client smoke tests;
+- official MCP conformance suite for the supported protocol revision;
+- installed `django-ninja-admin[mcp]` wheel smoke with Django Ninja absent;
+- an `all` profile proving Ninja OpenAPI and MCP schemas are projections of the
+  same Pydantic contracts.
+
+Exit gate: MCP contains no admin/query/form/save logic, passes conformance, and
+cannot perform an operation that the same request context would be denied by
+core/Ninja.
+
+### Phase 4 — Contract And Release Hardening
+
+1. Document core, Ninja, and MCP public APIs separately.
+2. Add architecture-boundary tests and a dependency diagram to the docs.
+3. Review both golden artifacts on dependency upgrades: Ninja OpenAPI and MCP
+   tool manifest/output schemas.
+4. Update `docs/release-checklist.md`, security/threat-model docs, vendored code
+   inventory, copyright attribution, and changelog.
+5. Cut the optional-dependency change as a deliberate pre-beta release with
+   before/after install and import examples.
+
+Beta requires the base, Ninja, MCP, and all-profile gates green; reviewed golden
+diffs; the Django/Python/PostgreSQL matrix; generated-client and MCP conformance
+smokes; and no undocumented public compatibility shim.
+
+## Verification Matrix
+
+| Concern | Core | Ninja | MCP |
+| --- | --- | --- | --- |
+| Pydantic schema validation | direct model tests | OpenAPI + mounted parsing | input/output schema + structured content |
+| Django forms/formsets | direct service tests | JSON/multipart mounted routes | tool calls through the same service |
+| Permissions | service-level global/object hooks | auth + HTTP status | authenticated discovery + per-call denial |
+| Transactions/audit | DB rollback and `LogEntry` | response-hook/mounted behavior | identical side effects and errors |
+| Contract artifact | Pydantic JSON Schema | golden OpenAPI | golden tool manifest |
+| Packaging | base wheel without Ninja/MCP | `[ninja]` wheel profile | `[mcp]` wheel profile |
+
+Normative commands remain `just check` plus PostgreSQL and installed-profile
+jobs. The split adds base/no-Ninja and MCP/conformance jobs; it does not weaken
+the existing default gate.
+
+## Remaining Product Backlog
+
+After the split is stable:
+
+- continue the Django private-API/vendoring audit and semantic parity work;
+- complete translated package strings/catalog guidance;
+- expand async support only where an adapter and Django ORM path benefit;
+- continue lookup/filter/date-hierarchy edge-case parity;
+- finish the documentation site and frontend/integration guides;
+- define post-beta API and wire deprecation/versioning policy for both OpenAPI
+  and MCP.
+
+## Research Sources
+
+Research snapshot: 2026-08-09.
+
+- [`django-admin-rest-api`](https://github.com/MartinCastroAlvarez/django-admin-rest-api)
+- [`django-admin-mcp-api` architecture](https://github.com/MartinCastroAlvarez/django-admin-mcp-api/blob/main/ARCHITECTURE.md)
+- [Django Ninja request bodies](https://django-ninja.dev/guides/input/body/)
+- [Django Ninja model schema/custom field mapping](https://django-ninja.dev/guides/response/django-pydantic/)
+- [MCP 2026-07-28 tools](https://modelcontextprotocol.io/specification/2026-07-28/server/tools)
+- [MCP 2026-07-28 transports](https://modelcontextprotocol.io/specification/2026-07-28/basic/transports)
+- [MCP 2026-07-28 authorization](https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization)
+- [Official MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)
+- [Official MCP conformance suite](https://github.com/modelcontextprotocol/conformance)
 
 ## Status And History
 
-- Curated per-release notes: `CHANGELOG.md`.
-- Historical accreted status log (extracted from this file): `CHANGELOG_OLD.md`.
-- Admin-behavior reference checklist: `docs/parity-matrix.md` (advisory).
+- Curated release notes: `CHANGELOG.md`.
+- Historical accreted status log: `CHANGELOG_OLD.md`.
+- Admin-behavior checklist: `docs/parity-matrix.md` (advisory).
+- The golden Ninja contract: `tests/golden/openapi.json`.
 
-## Assumptions
-
-- This is a v2 package, not a drop-in replacement for existing DRF clients.
-- Wire contracts may break while pre-beta; after Milestone 3 they may not
-  break without a versioning decision.
-- Django-derived logic keeps BSD attribution (`LICENSE-DJANGO`,
-  `docs/copyright-audit.md`); upstream-inspired logic keeps MIT attribution.
