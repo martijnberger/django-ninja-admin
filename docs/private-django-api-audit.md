@@ -12,7 +12,7 @@ feature-version upgrade.
 
 | Private API | Locations | Reason | Upgrade Check |
 | --- | --- | --- | --- |
-| `_get_foreign_key` | `django_veo_admin_api/admins/inline.py`, `django_veo_admin_api/checks.py`, `django_veo_admin_api/core/operations/forms.py`, `django_veo_admin_api/sites.py` | Match Django inline parent foreign-key resolution for formsets and system checks. | Compare with `django.forms.models._get_foreign_key` when upgrading Django. |
+| `_get_foreign_key` | `django_veo_admin_api/admins/inline.py`, `django_veo_admin_api/checks.py`, `django_veo_admin_api/core/operations/forms.py`, `django_veo_admin_api/core/operations/inlines.py` | Match Django inline parent foreign-key resolution for formsets and system checks. | Compare with `django.forms.models._get_foreign_key` when upgrading Django. |
 | `request.parse_file_upload` | `django_veo_admin_api/sites.py` | Parse multipart JSON+file requests through Django's request upload parser. | Verify Django request upload parsing still accepts the same `META`/request arguments. |
 | `queryset.query.order_by` | `django_veo_admin_api/changelist.py` | Detect explicit queryset ordering before applying deterministic changelist fallback ordering. | Confirm `Query.order_by` remains the correct low-level source for explicit ordering. |
 | `_get_FIELD_display` | `django_veo_admin_api/utils/lookup.py` | Reuse Django's choice-label conversion while serializing list/detail display values. | Compare with `Model._get_FIELD_display` and public `get_FOO_display()` behavior. |

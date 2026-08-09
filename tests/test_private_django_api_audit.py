@@ -60,4 +60,4 @@ def test_private_django_api_report_includes_expected_paths():
     payload = report_to_dict()
 
     paths_by_symbol = {entry["symbol"]: entry["paths"] for entry in payload["private_apis"]}
-    assert "django_veo_admin_api/sites.py" in paths_by_symbol["_get_foreign_key"]
+    assert "django_veo_admin_api/core/operations/inlines.py" in paths_by_symbol["_get_foreign_key"]

@@ -28,7 +28,7 @@ PRIVATE_API_INVENTORY = (
             "django_veo_admin_api/admins/inline.py",
             "django_veo_admin_api/checks.py",
             "django_veo_admin_api/core/operations/forms.py",
-            "django_veo_admin_api/sites.py",
+            "django_veo_admin_api/core/operations/inlines.py",
         ),
         reason="Match Django inline parent foreign-key resolution for formsets and system checks.",
         upgrade_check="Compare with django.forms.models._get_foreign_key when upgrading Django.",

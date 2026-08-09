@@ -16,7 +16,6 @@ from django.contrib.auth.models import AnonymousUser, Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import (
-    FieldDoesNotExist,
     ImproperlyConfigured,
     ObjectDoesNotExist,
     PermissionDenied,
@@ -25,7 +24,6 @@ from django.core.exceptions import (
 from django.core.paginator import InvalidPage, Paginator
 from django.db import router, transaction
 from django.db.models.base import ModelBase
-from django.forms.models import _get_foreign_key
 from django.http import Http404
 from django.http.multipartparser import MultiPartParserError
 from django.middleware.csrf import get_token
@@ -58,8 +56,17 @@ from django_veo_admin_api.core.operations import AdminRequestContext
 from django_veo_admin_api.core.operations.autocomplete import AutocompleteOperations
 from django_veo_admin_api.core.operations.changelist import ChangelistOperations
 from django_veo_admin_api.core.operations.discovery import DiscoveryOperations
-from django_veo_admin_api.core.operations.forms import FormOperations, inline_remote_accessor_name
+from django_veo_admin_api.core.operations.form_data import (
+    copy_form_row,
+    expand_multivalue_form_data,
+    normalize_form_data,
+    normalize_form_value,
+    payload_data,
+    payload_inlines,
+)
+from django_veo_admin_api.core.operations.forms import FormOperations
 from django_veo_admin_api.core.operations.history import HistoryOperations
+from django_veo_admin_api.core.operations.inlines import InlineMutationProcessor
 from django_veo_admin_api.core.operations.objects import ObjectOperations
 from django_veo_admin_api.integrations.ninja.field_types import NinjaModelFieldTypeResolver
 from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
@@ -82,11 +89,7 @@ from django_veo_admin_api.schemas import (
 )
 from django_veo_admin_api.utils.deletion import deletion_error_payload
 from django_veo_admin_api.utils.format_error import format_error
-from django_veo_admin_api.utils.forms import (
-    form_errors,
-    formset_errors,
-    model_data_for_form,
-)
+from django_veo_admin_api.utils.forms import form_errors, model_data_for_form
 from django_veo_admin_api.utils.quote import unquote
 from django_veo_admin_api.utils.schema_examples import (
     form_data_example,
@@ -1442,56 +1445,19 @@ class NinjaAdminSite:
         return model_admin.get_changelist_instance(request).queryset
 
     def _payload_data(self, payload, *, exclude_unset=True):
-        data = cast(Any, getattr(payload, "data", {}))
-        if hasattr(data, "model_dump"):
-            return data.model_dump(mode="python", exclude_unset=exclude_unset)
-        return data
+        return payload_data(payload, exclude_unset=exclude_unset)
 
     def _payload_inlines(self, payload):
-        inlines = cast(Any, getattr(payload, "inlines", None))
-        if hasattr(inlines, "model_dump"):
-            return inlines.model_dump(mode="json", by_alias=True, exclude_none=True, exclude_unset=True)
-        return inlines
+        return payload_inlines(payload)
 
     def _normalize_form_data(self, form_class, data):
-        normalized = dict(data)
-        for field_name, field in form_class.base_fields.items():
-            if field_name in normalized:
-                normalized[field_name] = self._normalize_form_value(field, normalized[field_name])
-            if isinstance(field, forms.FileField) and field_name in normalized and normalized[field_name] is None:
-                normalized.pop(field_name)
-                normalized[f"{field_name}-clear"] = "on"
-            if isinstance(field, forms.MultiValueField) and field_name in normalized:
-                self._expand_multivalue_form_data(normalized, field_name, field)
-        return normalized
+        return normalize_form_data(form_class, data)
 
     def _normalize_form_value(self, field, value):
-        if value is None:
-            return value
-        if isinstance(field, (forms.URLField, forms.GenericIPAddressField, forms.UUIDField)) and not isinstance(
-            value,
-            str,
-        ):
-            return str(value)
-        return value
+        return normalize_form_value(field, value)
 
     def _expand_multivalue_form_data(self, data, field_name, field):
-        value = data[field_name]
-        values = None
-        if value is None:
-            values = [""] * len(field.fields)
-        elif isinstance(value, (list, tuple)):
-            values = value
-        elif hasattr(field.widget, "decompress"):
-            try:
-                values = field.widget.decompress(value)
-            except (AttributeError, TypeError, ValueError):
-                values = None
-        if values is None:
-            return
-        data.pop(field_name, None)
-        for index, item in enumerate(values):
-            data[f"{field_name}_{index}"] = item
+        return expand_multivalue_form_data(data, field_name, field)
 
     def _create_object(self, request, model_admin, payload, *, files=None):
         if not model_admin.has_add_permission(request):
@@ -1857,257 +1823,10 @@ class NinjaAdminSite:
             )
 
     def _process_inlines(self, request, model_admin, obj, inline_payload, *, change):
-        if not inline_payload:
-            return {}
-        results = {}
-        inline_by_id = {
-            f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": inline
-            for inline in model_admin.get_inline_instances(request, obj, check_permissions=False)
-        }
-        for inline_id, operations in inline_payload.items():
-            if inline_id not in inline_by_id:
-                raise AdminValidationError(
-                    {inline_id: [{"message": _("Unknown inline."), "param": "non_field_errors"}]}
-                )
-            inline = inline_by_id[inline_id]
-            fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
-            related_name = inline_remote_accessor_name(fk)
-            related_manager = getattr(obj, related_name, None)
-            results[inline_id] = self._process_inline_formset(
-                request,
-                inline,
-                obj,
-                operations,
-                related_manager,
-                change=change,
-            )
-        return results
-
-    def _process_inline_formset(self, request, inline, obj, operations, related_manager, *, change):
-        allowed_operations = {"add", "change", "delete"}
-        unknown_operations = set(operations) - allowed_operations
-        if unknown_operations:
-            raise AdminValidationError(
-                {
-                    f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": [
-                        {
-                            "message": _("Unknown inline operation: %(operations)s.")
-                            % {"operations": ", ".join(sorted(unknown_operations))},
-                            "param": "non_field_errors",
-                        }
-                    ]
-                }
-            )
-
-        add_rows = list(operations.get("add", []))
-        change_rows = list(operations.get("change", []))
-        delete_values = [str(pk) for pk in operations.get("delete", [])]
-        delete_pks = set(delete_values)
-        if add_rows and not inline.has_add_permission(request, obj):
-            raise PermissionDenied
-        if change_rows and not inline.has_change_permission(request, obj):
-            raise PermissionDenied
-        if delete_pks and not inline.has_delete_permission(request, obj):
-            raise PermissionDenied
-        if delete_pks and not inline.can_delete:
-            raise AdminValidationError(
-                {
-                    f"{inline.model._meta.app_label}.{inline.model._meta.model_name}": {
-                        "delete": [{"message": _("Inline deletion is not allowed."), "param": "delete"}]
-                    }
-                }
-            )
-
-        formset_class = inline.get_formset(request, obj, change=change)
-        form_fields = formset_class.form.base_fields
-        editable_fields = set(form_fields)
-        pk_name = inline.model._meta.pk.name
-        inline_id = f"{inline.model._meta.app_label}.{inline.model._meta.model_name}"
-        inline_errors = {}
-        duplicate_delete_pks = {pk for pk in delete_values if delete_values.count(pk) > 1}
-        for index, pk in enumerate(delete_values):
-            if pk in duplicate_delete_pks:
-                self._add_inline_row_error(
-                    inline_errors,
-                    "delete",
-                    index,
-                    message=_("Duplicate inline delete pk."),
-                    param="pk",
-                )
-        self._collect_inline_row_field_errors(inline_errors, add_rows, editable_fields, operation="add")
-        self._collect_inline_row_field_errors(
-            inline_errors,
-            change_rows,
-            editable_fields | {"pk", "id", pk_name},
-            operation="change",
-        )
-
-        queryset = related_manager.all() if related_manager is not None else inline.model.objects.none()
-        existing_instances = list(queryset)
-        existing_by_pk = {str(instance.pk): instance for instance in existing_instances}
-        changes_by_pk = {}
-        seen_change_pks = set()
-        for index, row in enumerate(change_rows):
-            pk = row.get("pk") or row.get(inline.model._meta.pk.name)
-            has_row_error = False
-            if pk is None:
-                self._add_inline_row_error(
-                    inline_errors,
-                    "change",
-                    index,
-                    message=_("Missing pk."),
-                    param="pk",
-                )
-                continue
-            pk = str(pk)
-            if pk in seen_change_pks:
-                self._add_inline_row_error(
-                    inline_errors,
-                    "change",
-                    index,
-                    message=_("Duplicate inline change pk."),
-                    param="pk",
-                )
-                has_row_error = True
-            seen_change_pks.add(pk)
-            if pk not in existing_by_pk:
-                self._add_inline_row_error(
-                    inline_errors,
-                    "change",
-                    index,
-                    message=_("Unknown inline object."),
-                    param="pk",
-                )
-                has_row_error = True
-            if pk in delete_pks and pk in existing_by_pk:
-                self._add_inline_row_error(
-                    inline_errors,
-                    "change",
-                    index,
-                    message=_("Inline object cannot be changed and deleted in the same request."),
-                    param="pk",
-                )
-                has_row_error = True
-            if not has_row_error:
-                changes_by_pk[pk] = row
-        for index, pk in enumerate(delete_values):
-            if pk not in existing_by_pk:
-                self._add_inline_row_error(
-                    inline_errors,
-                    "delete",
-                    index,
-                    message=_("Unknown inline object."),
-                    param="pk",
-                )
-        if inline_errors:
-            raise AdminValidationError({inline_id: inline_errors})
-
-        formset_data = self._inline_formset_data(
-            request,
-            inline,
-            obj,
-            formset_class,
-            existing_instances,
-            changes_by_pk,
-            add_rows,
-            delete_pks,
-        )
-        formset = formset_class(data=formset_data, instance=obj, queryset=queryset)
-        if not formset.is_valid():
-            raise AdminValidationError({inline_id: {"formset": formset_errors(formset)}})
-        deleted_objects = [
-            {"id": existing_by_pk[pk].pk, "_object_repr": str(existing_by_pk[pk])} for pk in delete_values
-        ]
-        formset.save()
-        changed_objects = []
-        for instance, fields in formset.changed_objects:
-            item = inline.serialize_object(instance, request)
-            item["_changed_fields"] = [self._inline_field_label(inline, field_name) for field_name in fields]
-            changed_objects.append(item)
-        return {
-            "add": [inline.serialize_object(instance, request) for instance in formset.new_objects],
-            "change": changed_objects,
-            "delete": [item["id"] for item in deleted_objects],
-            "_delete_objects": deleted_objects,
-        }
-
-    def _collect_inline_row_field_errors(self, inline_errors, rows, allowed_fields, *, operation):
-        for index, row in enumerate(rows):
-            unknown_fields = sorted(set(row) - allowed_fields)
-            for field in unknown_fields:
-                self._add_inline_row_error(
-                    inline_errors,
-                    operation,
-                    index,
-                    message=_("Unknown or readonly inline field."),
-                    param=field,
-                )
-
-    def _add_inline_row_error(self, inline_errors, operation, index, *, message, param):
-        row_errors = inline_errors.setdefault(operation, {}).setdefault(index, [])
-        row_errors.append({"message": message, "param": param})
-
-    def _inline_field_label(self, inline, field_name):
-        try:
-            return str(inline.model._meta.get_field(field_name).verbose_name)
-        except FieldDoesNotExist:
-            return field_name.replace("_", " ")
-
-    def _inline_formset_data(
-        self,
-        request,
-        inline,
-        obj,
-        formset_class,
-        existing_instances,
-        changes_by_pk,
-        add_rows,
-        delete_pks,
-    ):
-        prefix = formset_class.get_default_prefix()
-        min_num = inline.get_min_num(request, obj) or 0
-        max_num = inline.get_max_num(request, obj)
-        total_forms = len(existing_instances) + len(add_rows)
-        formset_data = {
-            f"{prefix}-TOTAL_FORMS": str(total_forms),
-            f"{prefix}-INITIAL_FORMS": str(len(existing_instances)),
-            f"{prefix}-MIN_NUM_FORMS": str(min_num),
-            f"{prefix}-MAX_NUM_FORMS": "" if max_num is None else str(max_num),
-        }
-        form_fields = formset_class.form.base_fields
-        editable_fields = set(form_fields)
-        pk_name = inline.model._meta.pk.name
-        fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
-        for index, instance in enumerate(existing_instances):
-            pk = str(instance.pk)
-            row = model_data_for_form(instance, list(editable_fields))
-            row.update(changes_by_pk.get(pk, {}))
-            self._copy_inline_form_row(formset_data, prefix, index, row, form_fields)
-            formset_data[f"{prefix}-{index}-{pk_name}"] = pk
-            formset_data[f"{prefix}-{index}-{fk.name}"] = str(obj.pk)
-            if pk in delete_pks:
-                formset_data[f"{prefix}-{index}-DELETE"] = "on"
-        for offset, row in enumerate(add_rows, start=len(existing_instances)):
-            self._copy_inline_form_row(formset_data, prefix, offset, row, form_fields)
-            formset_data[f"{prefix}-{offset}-{fk.name}"] = str(obj.pk)
-        return formset_data
+        return InlineMutationProcessor().process(request, model_admin, obj, inline_payload, change=change)
 
     def _copy_inline_form_row(self, formset_data, prefix, index, row, form_fields):
-        for name, value in row.items():
-            if name in {"pk", "id"} or name not in form_fields:
-                continue
-            field = form_fields[name]
-            value = self._normalize_form_value(field, value)
-            if isinstance(field, forms.FileField) and value is None:
-                formset_data[f"{prefix}-{index}-{name}-clear"] = "on"
-                continue
-            if isinstance(field, forms.MultiValueField):
-                expanded = {name: value}
-                self._expand_multivalue_form_data(expanded, name, field)
-                for expanded_name, expanded_value in expanded.items():
-                    formset_data[f"{prefix}-{index}-{expanded_name}"] = expanded_value
-                continue
-            formset_data[f"{prefix}-{index}-{name}"] = value
+        return copy_form_row(formset_data, prefix, index, row, form_fields)
 
     def _bulk_update(self, request, model_admin, payload, *, queryset=None, object_id_field=None):
         payload_data = [
