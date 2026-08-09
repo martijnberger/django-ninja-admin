@@ -22,7 +22,6 @@ from django.core.exceptions import (
     ValidationError,
 )
 from django.core.paginator import InvalidPage, Paginator
-from django.db import router, transaction
 from django.db.models.base import ModelBase
 from django.http import Http404
 from django.http.multipartparser import MultiPartParserError
@@ -56,12 +55,12 @@ from django_veo_admin_api.core.operations.actions import ActionOperations
 from django_veo_admin_api.core.operations.autocomplete import AutocompleteOperations
 from django_veo_admin_api.core.operations.bulk import BulkMutationOperations
 from django_veo_admin_api.core.operations.changelist import ChangelistOperations
+from django_veo_admin_api.core.operations.deletion import DeletionOperations
 from django_veo_admin_api.core.operations.discovery import DiscoveryOperations
 from django_veo_admin_api.core.operations.forms import FormOperations
 from django_veo_admin_api.core.operations.history import HistoryOperations
 from django_veo_admin_api.core.operations.mutations import MutationOperations
 from django_veo_admin_api.core.operations.objects import ObjectOperations
-from django_veo_admin_api.core.operations.responses import validate_mutation_response
 from django_veo_admin_api.integrations.ninja.field_types import NinjaModelFieldTypeResolver
 from django_veo_admin_api.integrations.ninja.responses import ninja_operation_response, resolve_ninja_status
 from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
@@ -82,7 +81,6 @@ from django_veo_admin_api.schemas import (
     SiteContext,
     ViewOnSiteResponse,
 )
-from django_veo_admin_api.utils.deletion import deletion_error_payload
 from django_veo_admin_api.utils.format_error import format_error
 from django_veo_admin_api.utils.quote import unquote
 from django_veo_admin_api.utils.schema_examples import (
@@ -361,6 +359,10 @@ class NinjaAdminSite:
     def action_operations(self):
         return ActionOperations(status_resolver=resolve_ninja_status)
 
+    @property
+    def deletion_operations(self):
+        return DeletionOperations(status_resolver=resolve_ninja_status)
+
     def get_registered_model_admins(self):
         return self._registry.items()
 
@@ -532,27 +534,6 @@ class NinjaAdminSite:
         if isinstance(schema, dict):
             return schema
         return dict.fromkeys(statuses, schema)
-
-    def _validated_mutation_hook_response(
-        self,
-        response,
-        *,
-        default_status,
-        default_schema,
-        hook_schema,
-        hook_name,
-        plain_status=None,
-    ):
-        result = validate_mutation_response(
-            response,
-            default_status=default_status,
-            default_schema=default_schema,
-            hook_schema=hook_schema,
-            hook_name=hook_name,
-            plain_status=plain_status,
-            status_resolver=resolve_ninja_status,
-        )
-        return ninja_operation_response(result)
 
     def _auth_error_responses(self, *, include_forbidden=False):
         if self.auth is None:
@@ -1349,58 +1330,14 @@ class NinjaAdminSite:
             object_id: str,
             to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
         ):
-            obj = site._get_object_or_404(request, model_admin, object_id, to_field)
-            if not model_admin.has_delete_permission(request, obj):
-                if model_admin.has_delete_permission(request):
-                    deleted_objects, model_count, perms_needed, protected = model_admin.get_deleted_objects(
-                        [obj], request
-                    )
-                    return Status(
-                        403,
-                        deletion_error_payload(
-                            _("Permission denied."),
-                            deleted_objects=deleted_objects,
-                            perms_needed=perms_needed,
-                            protected=protected,
-                            model_count=model_count,
-                        ),
-                    )
-                raise PermissionDenied
-            deleted_objects, model_count, perms_needed, protected = model_admin.get_deleted_objects([obj], request)
-            if protected:
-                return Status(
-                    409,
-                    deletion_error_payload(
-                        _("Cannot delete protected objects."),
-                        deleted_objects=deleted_objects,
-                        protected=protected,
-                        model_count=model_count,
-                    ),
-                )
-            if perms_needed:
-                return Status(
-                    403,
-                    deletion_error_payload(
-                        _("Permission denied."),
-                        deleted_objects=deleted_objects,
-                        perms_needed=perms_needed,
-                        model_count=model_count,
-                    ),
-                )
-            obj_display = str(obj)
-            obj_id = str(obj.pk)
-            with transaction.atomic(using=router_db_for_write(model_admin.model)):
-                model_admin.log_deletion(request, [obj])
-                model_admin.delete_model(request, obj)
-                response = model_admin.response_delete(request, obj_display, obj_id)
-                return site._validated_mutation_hook_response(
-                    response,
-                    default_status=204,
-                    default_schema=None,
-                    hook_schema=model_admin.get_response_delete_schema(request),
-                    hook_name="response_delete",
-                    plain_status=200,
-                )
+            site._validate_repeated_to_field_query_param(request, model_admin)
+            result = site.deletion_operations.delete(
+                AdminRequestContext(request),
+                model_admin,
+                object_id,
+                to_field,
+            )
+            return ninja_operation_response(result)
 
     def _get_object_or_404(self, request, model_admin, object_id, to_field=None):
         self._validate_repeated_to_field_query_param(request, model_admin)
@@ -1685,10 +1622,6 @@ class NinjaAdminSite:
                 if file_part is not None:
                     form_files[name] = file_part
         return form_files
-
-
-def router_db_for_write(model):
-    return router.db_for_write(model)
 
 
 class DefaultAdminSite(LazyObject):

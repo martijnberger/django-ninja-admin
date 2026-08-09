@@ -89,6 +89,14 @@ class ErrorResponse(AdminSchema):
     model_count: dict[str, NonNegativeCount] | None = None
 
 
+class DeletionPreview(AdminSchema):
+    can_delete: bool
+    deleted_objects: list[DeletedObject]
+    protected: list[str] = Field(default_factory=list)
+    perms_needed: list[str] = Field(default_factory=list)
+    model_count: dict[str, NonNegativeCount] = Field(default_factory=dict)
+
+
 class CsrfTokenResponse(AdminSchema):
     csrf_token: str
 

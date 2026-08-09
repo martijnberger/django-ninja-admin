@@ -14,6 +14,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Extracted transactional create/update behavior and mutation-hook validation into typed core operations with an adapter-owned Ninja status resolver.
 - Extracted list-editable bulk formset validation, permissions, persistence, and audit logging into a typed core operation.
 - Extracted filtered admin-action dispatch, transaction handling, and response validation into a typed core operation.
+- Extracted typed delete preview plus protected-object, permission, audit-log, and delete-hook execution into core.
 
 ### Changed
 
