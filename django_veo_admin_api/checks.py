@@ -13,17 +13,17 @@ from django.db.models.base import ModelBase
 from django.db.models.expressions import Combinable
 from django.forms.models import BaseInlineFormSet, BaseModelForm, _get_foreign_key
 
-from django_ninja_admin.exceptions import NotRegistered
-from django_ninja_admin.filters import FieldListFilter, ListFilter, SimpleListFilter
-from django_ninja_admin.utils.flatten import flatten
-from django_ninja_admin.utils.lookup import (
+from django_veo_admin_api.exceptions import NotRegistered
+from django_veo_admin_api.filters import FieldListFilter, ListFilter, SimpleListFilter
+from django_veo_admin_api.utils.flatten import flatten
+from django_veo_admin_api.utils.lookup import (
     field_name_for_display,
     model_field_from_path,
     single_valued_model_field_from_path,
 )
-from django_ninja_admin.utils.schema_contracts import iter_contract_schemas, open_object_schema_paths
+from django_veo_admin_api.utils.schema_contracts import iter_contract_schemas, open_object_schema_paths
 
-ERROR_PREFIX = "django_ninja_admin"
+ERROR_PREFIX = "django_veo_admin_api"
 
 DJANGO_SEQUENCE_OPTION_CODES = {
     "fields": "E004",
@@ -567,7 +567,7 @@ def _check_boolean_options(model_admin):
 
 
 def _check_show_facets(model_admin):
-    from django_ninja_admin.constants import ShowFacets
+    from django_veo_admin_api.constants import ShowFacets
 
     if not isinstance(getattr(model_admin, "show_facets", ShowFacets.ALLOW), ShowFacets):
         return [
@@ -1451,7 +1451,7 @@ def _check_date_hierarchy(model_admin):
 
 
 def _check_radio_fields(model_admin):
-    from django_ninja_admin.admins.model import HORIZONTAL, VERTICAL
+    from django_veo_admin_api.admins.model import HORIZONTAL, VERTICAL
 
     value = getattr(model_admin, "radio_fields", {}) or {}
     if not isinstance(value, dict):
@@ -1585,7 +1585,7 @@ def _check_actions(model_admin):
 
 
 def _check_inlines(model_admin):
-    from django_ninja_admin.admins.inline import InlineModelAdmin
+    from django_veo_admin_api.admins.inline import InlineModelAdmin
 
     errors = []
     inlines = model_admin.inlines or ()

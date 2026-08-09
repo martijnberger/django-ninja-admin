@@ -21,7 +21,7 @@ def main() -> None:
     if uv is None:
         raise SystemExit("uv is required to run the package smoke check.")
 
-    with tempfile.TemporaryDirectory(prefix="django-ninja-admin-smoke-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="django-veo-admin-api-smoke-") as tmp:
         tmp_path = Path(tmp)
         dist_dir = tmp_path / "dist"
         install_dir = tmp_path / "install"
@@ -59,7 +59,7 @@ if not settings.configured:
         INSTALLED_APPS=[
             "django.contrib.auth",
             "django.contrib.contenttypes",
-            "django_ninja_admin",
+            "django_veo_admin_api",
         ],
         DATABASES={{"default": {{"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}}},
         ROOT_URLCONF=__name__,
@@ -70,8 +70,8 @@ if not settings.configured:
     )
 django.setup()
 
-import django_ninja_admin
-from django_ninja_admin import (
+import django_veo_admin_api
+from django_veo_admin_api import (
     ModelAdmin,
     NinjaAdminSite,
     ShowFacets,
@@ -81,11 +81,11 @@ from django_ninja_admin import (
     site,
 )
 
-package_file = Path(django_ninja_admin.__file__).resolve()
+package_file = Path(django_veo_admin_api.__file__).resolve()
 install_root = Path({str(install_dir)!r}).resolve()
 assert str(package_file).startswith(str(install_root)), package_file
 assert (package_file.parent / "py.typed").is_file()
-assert django_ninja_admin.site is site
+assert django_veo_admin_api.site is site
 assert NinjaAdminSite is not None
 assert ModelAdmin is not None
 assert ShowFacets.ALLOW.value == "ALLOW"
@@ -93,7 +93,7 @@ assert TabularInline is not None
 assert callable(action)
 assert callable(display)
 
-metadata = importlib.metadata.metadata("django-ninja-admin")
+metadata = importlib.metadata.metadata("django-veo-admin-api")
 requires = metadata.get_all("Requires-Dist") or []
 for dependency in requires:
     lowered = dependency.lower()

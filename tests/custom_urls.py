@@ -4,8 +4,8 @@ from ninja.security import APIKeyHeader
 from ninja.throttling import BaseThrottle
 from pydantic import ConfigDict
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, action
-from django_ninja_admin.schemas import ErrorResponse
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite, action
+from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Category, CategoryLimitedLink, CategorySlugLink, Product, ProductFeature, ProductReview
 
 

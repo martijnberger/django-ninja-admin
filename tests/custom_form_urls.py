@@ -6,7 +6,7 @@ from django.urls import path
 from ninja import Schema, Status
 from pydantic import ConfigDict
 
-from django_ninja_admin import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline
+from django_veo_admin_api import VERTICAL, ModelAdmin, NinjaAdminSite, TabularInline
 from tests.testapp.models import Article, ArticleLabel, Category, Label, Product, ProductImage, Tag
 
 

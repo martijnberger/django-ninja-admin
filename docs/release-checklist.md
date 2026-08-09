@@ -25,7 +25,7 @@ just check
   import the public API, and confirm wheel metadata does not depend on DRF or
   drf-spectacular.
 - CI builds and checks the distribution once, uploads the checked wheel, and
-  passes it to smoke jobs with `DJANGO_NINJA_ADMIN_WHEEL`; local smoke commands
+  passes it to smoke jobs with `DJANGO_VEO_ADMIN_API_WHEEL`; local smoke commands
   still build their own wheel unless that variable points at a wheel file or
   directory.
 - `just sample-project-smoke` to install the built wheel into a temporary
@@ -39,7 +39,7 @@ just check
   directory.
 - `just openapi-snapshot-check` and `just generated-client-smoke` to preserve
   and exercise the reviewed OpenAPI contract from an installed wheel.
-- Set `DJANGO_NINJA_ADMIN_SMOKE_DJANGO` to a concrete requirement such as
+- Set `DJANGO_VEO_ADMIN_API_SMOKE_DJANGO` to a concrete requirement such as
   `django>=5.2,<5.3` when the installed-project smoke should use the same
   Django lane as a compatibility matrix job.
 - `just sample-project-full` is available as the broader installed-wheel sample
@@ -48,7 +48,7 @@ just check
   updates, inlines, actions, multipart file upload, history, custom routes, and
   view-on-site URLs.
 - CI also runs `just postgres-test` against PostgreSQL; local use requires
-  `DJANGO_NINJA_ADMIN_TEST_DATABASE=postgres` and the `POSTGRES_*` connection
+  `DJANGO_VEO_ADMIN_API_TEST_DATABASE=postgres` and the `POSTGRES_*` connection
   environment variables.
 
 ## Extended Verification
@@ -113,8 +113,8 @@ behavior, or permission boundaries.
 ## Alpha Criteria
 
 - The package installs from a built wheel.
-- `django_ninja_admin` imports without importing DRF or drf-spectacular.
-- A clean Django project can add `django_ninja_admin` to `INSTALLED_APPS`,
+- `django_veo_admin_api` imports without importing DRF or drf-spectacular.
+- A clean Django project can add `django_veo_admin_api` to `INSTALLED_APPS`,
   register a model, mount `site.urls`, and open Ninja docs.
 - Milestone 1 security and contract defects are either complete or explicitly
   blocking the next release.

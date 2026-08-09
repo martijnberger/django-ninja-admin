@@ -7,17 +7,17 @@ from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 from pydantic import ConfigDict, Field, create_model
 
-from django_ninja_admin.admins.base import BaseAdmin
-from django_ninja_admin.exceptions import AdminValidationError
-from django_ninja_admin.schemas import (
+from django_veo_admin_api.admins.base import BaseAdmin
+from django_veo_admin_api.exceptions import AdminValidationError
+from django_veo_admin_api.schemas import (
     AdminInlineOperationResultsSchema,
     AdminInlineOperationsSchema,
     AdminInlineRowSchema,
     ObjectIdentifier,
 )
-from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
-from django_ninja_admin.utils.form_schemas import create_form_schema, form_schema_field_definitions
-from django_ninja_admin.utils.schema_examples import schema_example, schema_override_cache_key
+from django_veo_admin_api.utils.flatten_fieldsets import flatten_fieldsets
+from django_veo_admin_api.utils.form_schemas import create_form_schema, form_schema_field_definitions
+from django_veo_admin_api.utils.schema_examples import schema_example, schema_override_cache_key
 
 PydanticCreateModel = cast(Any, create_model)
 

@@ -9,7 +9,7 @@ from django.core.validators import (
 )
 from django.db import models
 
-from django_ninja_admin.utils.schema_constraints import (
+from django_veo_admin_api.utils.schema_constraints import (
     normalize_pydantic_pattern,
     pydantic_numeric_bounds_for_model_field,
     pydantic_numeric_validator_constraints,

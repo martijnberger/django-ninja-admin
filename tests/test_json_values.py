@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.db import models
 from django.utils.translation import gettext_lazy
 
-from django_ninja_admin.utils.json_values import jsonish_value
+from django_veo_admin_api.utils.json_values import jsonish_value
 
 
 class ObjectWithPk:

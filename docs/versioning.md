@@ -1,6 +1,6 @@
 # API Versioning And Deprecation
 
-`django-ninja-admin` is still pre-beta. Wire contracts may change while
+`django-veo-admin-api` is still pre-beta. Wire contracts may change while
 Milestones 1-3 are being completed, but every release reviews the generated
 OpenAPI diff before publication.
 

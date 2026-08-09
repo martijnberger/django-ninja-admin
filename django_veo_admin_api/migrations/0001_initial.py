@@ -44,7 +44,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         null=True,
                         on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="django_ninja_admin_logentry_logentries",
+                        related_name="django_veo_admin_api_logentry_logentries",
                         to="contenttypes.contenttype",
                         verbose_name="content type",
                     ),
@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
                     "user",
                     models.ForeignKey(
                         on_delete=django.db.models.deletion.CASCADE,
-                        related_name="django_ninja_admin_logentry_user",
+                        related_name="django_veo_admin_api_logentry_user",
                         to=settings.AUTH_USER_MODEL,
                         verbose_name="user",
                     ),
@@ -62,7 +62,7 @@ class Migration(migrations.Migration):
             options={
                 "verbose_name": "log entry",
                 "verbose_name_plural": "log entries",
-                "db_table": "django_ninja_admin_log",
+                "db_table": "django_veo_admin_api_log",
                 "ordering": ["-action_time"],
             },
         ),

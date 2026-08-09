@@ -6,7 +6,7 @@ from uuid import UUID
 from django import forms
 from pydantic import BaseModel, Field, TypeAdapter
 
-from django_ninja_admin.utils.schema_examples import (
+from django_veo_admin_api.utils.schema_examples import (
     choice_example_value,
     coerce_choice_example,
     form_data_example,

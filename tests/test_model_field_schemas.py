@@ -15,7 +15,7 @@ from django.test import RequestFactory
 from django.test.utils import isolate_apps
 from pydantic import ValidationError as PydanticValidationError
 
-from django_ninja_admin import NinjaAdminSite
+from django_veo_admin_api import NinjaAdminSite
 
 
 def _integer_validator_bounds(field):

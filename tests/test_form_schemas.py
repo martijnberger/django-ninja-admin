@@ -2,8 +2,8 @@ import pytest
 from django import forms
 from pydantic import ValidationError
 
-from django_ninja_admin.schemas import AdminWriteSchema
-from django_ninja_admin.utils.form_schemas import create_form_schema, form_schema_field_definitions
+from django_veo_admin_api.schemas import AdminWriteSchema
+from django_veo_admin_api.utils.form_schemas import create_form_schema, form_schema_field_definitions
 
 
 def test_form_schema_compiler_preserves_required_disabled_and_partial_fields():

@@ -14,10 +14,10 @@ from django.http import Http404, QueryDict
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from django_ninja_admin.constants import ShowFacets
-from django_ninja_admin.exceptions import AdminValidationError, DisallowedModelAdminLookup
-from django_ninja_admin.filters import build_filter_spec
-from django_ninja_admin.utils.lookup import (
+from django_veo_admin_api.constants import ShowFacets
+from django_veo_admin_api.exceptions import AdminValidationError, DisallowedModelAdminLookup
+from django_veo_admin_api.filters import build_filter_spec
+from django_veo_admin_api.utils.lookup import (
     field_name_for_display,
     model_field_from_path,
     single_valued_model_field_from_path,

@@ -28,8 +28,8 @@ from pydantic import (
     create_model,
 )
 
-from django_ninja_admin.exceptions import NotRegistered
-from django_ninja_admin.schemas import (
+from django_veo_admin_api.exceptions import NotRegistered
+from django_veo_admin_api.schemas import (
     AdminBulkRowSchema,
     AdminSchema,
     AdminWriteSchema,
@@ -38,26 +38,26 @@ from django_ninja_admin.schemas import (
     ImageFieldValue,
     ObjectIdentifier,
 )
-from django_ninja_admin.utils.flatten_fieldsets import flatten_fieldsets
-from django_ninja_admin.utils.form_schemas import create_form_schema, form_schema_field_definitions
-from django_ninja_admin.utils.forms import (
+from django_veo_admin_api.utils.flatten_fieldsets import flatten_fieldsets
+from django_veo_admin_api.utils.form_schemas import create_form_schema, form_schema_field_definitions
+from django_veo_admin_api.utils.forms import (
     fieldset_layout_description,
     file_value_metadata,
     form_field_descriptions,
     form_media_description,
     image_value_metadata,
 )
-from django_ninja_admin.utils.lookup import field_name_for_display
-from django_ninja_admin.utils.schema_constraints import (
+from django_veo_admin_api.utils.lookup import field_name_for_display
+from django_veo_admin_api.utils.schema_constraints import (
     get_step_value_validator as schema_step_value_validator,
 )
-from django_ninja_admin.utils.schema_constraints import (
+from django_veo_admin_api.utils.schema_constraints import (
     normalize_pydantic_pattern as schema_normalize_pydantic_pattern,
 )
-from django_ninja_admin.utils.schema_constraints import (
+from django_veo_admin_api.utils.schema_constraints import (
     pydantic_numeric_bound_value as schema_pydantic_numeric_bound_value,
 )
-from django_ninja_admin.utils.schema_constraints import (
+from django_veo_admin_api.utils.schema_constraints import (
     pydantic_numeric_bounds_for_model_field,
     pydantic_numeric_validator_constraints,
     pydantic_pattern_for_form_field,
@@ -65,16 +65,16 @@ from django_ninja_admin.utils.schema_constraints import (
     pydantic_step_constraint_for_field,
     pydantic_string_validator_constraints,
 )
-from django_ninja_admin.utils.schema_constraints import (
+from django_veo_admin_api.utils.schema_constraints import (
     pydantic_pattern_is_supported as schema_pydantic_pattern_is_supported,
 )
-from django_ninja_admin.utils.schema_constraints import (
+from django_veo_admin_api.utils.schema_constraints import (
     pydantic_step_value as schema_pydantic_step_value,
 )
-from django_ninja_admin.utils.schema_constraints import (
+from django_veo_admin_api.utils.schema_constraints import (
     step_validator_has_zero_offset as schema_step_validator_has_zero_offset,
 )
-from django_ninja_admin.utils.schema_examples import (
+from django_veo_admin_api.utils.schema_examples import (
     choice_example_value,
     form_data_example,
     form_field_example_value,
@@ -181,7 +181,7 @@ class BaseAdmin:
     empty_value_display = "-"
 
     def check(self, **kwargs):
-        from django_ninja_admin.checks import check_model_admin
+        from django_veo_admin_api.checks import check_model_admin
 
         return check_model_admin(self)
 
@@ -1183,7 +1183,7 @@ class BaseAdmin:
     def lookup_allowed(self, lookup, value, request):
         from django.contrib.admin.widgets import url_params_from_lookup_dict
 
-        from django_ninja_admin.filters import SimpleListFilter
+        from django_veo_admin_api.filters import SimpleListFilter
 
         model = self.model
         for fk_lookup in model._meta.related_fkey_lookups:

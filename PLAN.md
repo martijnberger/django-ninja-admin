@@ -1,8 +1,8 @@
-# Django Ninja Admin — Plan
+# Django Veo Admin API — Plan
 
 ## Direction
 
-Commit to a transport split: `django-ninja-admin` becomes a Django-admin engine
+Commit to a transport split: `django-veo-admin-api` becomes a Django-admin engine
 with optional transport integrations.
 
 The package keeps one source of truth for Django admin semantics and one set of
@@ -55,10 +55,10 @@ Those are preservation constraints for the split, not work to redo.
 ## Committed Architecture
 
 ```text
-                    django_ninja_admin core
+                    django_veo_admin_api core
        Django admin semantics + Pydantic contracts + operations
                  /                                  \
- django_ninja_admin.integrations.ninja   django_ninja_admin.integrations.mcp
+ django_veo_admin_api.integrations.ninja   django_veo_admin_api.integrations.mcp
  Ninja routes/auth/Status/OpenAPI          MCP tools/auth/protocol results
 ```
 
@@ -85,7 +85,7 @@ classes.
 Target internal layout (exact moves may be incremental):
 
 ```text
-django_ninja_admin/
+django_veo_admin_api/
   core/
     admins/
     contracts/
@@ -161,15 +161,15 @@ Runtime dependencies of the base distribution:
 
 Optional dependency profiles:
 
-- `django-ninja-admin[ninja]` — Django Ninja and the Ninja integration;
-- `django-ninja-admin[mcp]` — the supported MCP SDK and MCP integration;
-- `django-ninja-admin[all]` — both integrations, primarily for evaluation and
+- `django-veo-admin-api[ninja]` — Django Ninja and the Ninja integration;
+- `django-veo-admin-api[mcp]` — the supported MCP SDK and MCP integration;
+- `django-veo-admin-api[all]` — both integrations, primarily for evaluation and
   CI rather than as a requirement for normal consumers.
 
 The canonical Ninja import becomes:
 
 ```python
-from django_ninja_admin.integrations.ninja import NinjaAdminSite
+from django_veo_admin_api.integrations.ninja import NinjaAdminSite
 ```
 
 The top-level `NinjaAdminSite` and `site` imports get lazy compatibility shims
@@ -179,7 +179,7 @@ importing core APIs must not import Ninja.
 
 The bare-install contract is explicit: it provides the admin engine and
 operation APIs, but no REST URL configuration. Existing users migrate from
-`pip install django-ninja-admin` to `pip install django-ninja-admin[ninja]`.
+`pip install django-veo-admin-api` to `pip install django-veo-admin-api[ninja]`.
 
 ## Architectural Decisions
 
@@ -308,7 +308,7 @@ installed, and an import scan finds no Ninja import outside
 
 1. Move `NinjaAdminSite`, `NinjaAdminAPI`, routers, routes, auth, throttles,
    `Status` mapping, `NOT_SET`, async helpers, docs/OpenAPI normalization, and
-   the Ninja field resolver under `django_ninja_admin.integrations.ninja`.
+   the Ninja field resolver under `django_veo_admin_api.integrations.ninja`.
 2. Keep Ninja request parsing and response serialization at the mounted-route
    boundary; do not move those concerns into core.
 3. Update package metadata to base + `ninja`/`mcp`/`all` extras and regenerate
@@ -318,7 +318,7 @@ installed, and an import scan finds no Ninja import outside
    - **ninja**: the full current suite, golden OpenAPI, generated client, docs,
      multipart, auth, throttle, and sample project;
    - **all**: Ninja and MCP installed together with no route/registry conflicts.
-5. Add a subprocess guard proving `import django_ninja_admin` and core public
+5. Add a subprocess guard proving `import django_veo_admin_api` and core public
    imports do not add `ninja` to `sys.modules`.
 6. Publish the install/import migration guide and clear missing-extra errors.
 
@@ -377,7 +377,7 @@ The spike must decide and document:
   arguments, extra keys, large payloads, rollback, and sensitive-output tests;
 - official Python SDK client smoke tests;
 - official MCP conformance suite for the supported protocol revision;
-- installed `django-ninja-admin[mcp]` wheel smoke with Django Ninja absent;
+- installed `django-veo-admin-api[mcp]` wheel smoke with Django Ninja absent;
 - an `all` profile proving Ninja OpenAPI and MCP schemas are projections of the
   same Pydantic contracts.
 

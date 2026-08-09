@@ -31,7 +31,7 @@ def venv_python(venv_dir: Path) -> Path:
 
 
 def smoke_django_requirements() -> list[str]:
-    requirement = os.environ.get("DJANGO_NINJA_ADMIN_SMOKE_DJANGO")
+    requirement = os.environ.get("DJANGO_VEO_ADMIN_API_SMOKE_DJANGO")
     return [requirement] if requirement else []
 
 
@@ -85,7 +85,7 @@ def main(argv: list[str] | None = None) -> None:
         run_sample_project(
             write_full_sample_project,
             smoke_script_name="sample_full.py",
-            temp_prefix="django-ninja-admin-full-sample-",
+            temp_prefix="django-veo-admin-api-full-sample-",
             check_name="full sample project check",
         )
         return
@@ -93,7 +93,7 @@ def main(argv: list[str] | None = None) -> None:
     run_sample_project(
         write_sample_project,
         smoke_script_name="sample_smoke.py",
-        temp_prefix="django-ninja-admin-sample-",
+        temp_prefix="django-veo-admin-api-sample-",
         check_name="sample project smoke check",
     )
 
@@ -129,7 +129,7 @@ def write_sample_project(project_dir: Path) -> None:
     write_file(
         project_dir / "sample_app" / "admin.py",
         """
-        from django_ninja_admin import ModelAdmin, site
+        from django_veo_admin_api import ModelAdmin, site
 
         from .models import Product
 
@@ -164,7 +164,7 @@ def write_sample_project(project_dir: Path) -> None:
             "django.contrib.sessions",
             "django.contrib.messages",
             "django.contrib.staticfiles",
-            "django_ninja_admin",
+            "django_veo_admin_api",
             "sample_app.apps.SampleAppConfig",
         ]
         MIDDLEWARE = [
@@ -192,7 +192,7 @@ def write_sample_project(project_dir: Path) -> None:
         project_dir / "sample_project" / "urls.py",
         """
         from django.urls import path
-        from django_ninja_admin import autodiscover, site
+        from django_veo_admin_api import autodiscover, site
 
         autodiscover()
 
@@ -316,7 +316,7 @@ def write_full_sample_project(project_dir: Path) -> None:
         from ninja import Schema
         from pydantic import ConfigDict
 
-        from django_ninja_admin import ModelAdmin, TabularInline, action, site
+        from django_veo_admin_api import ModelAdmin, TabularInline, action, site
 
         from .models import Category, Product, ProductImage, Tag
 
@@ -420,7 +420,7 @@ def write_full_sample_project(project_dir: Path) -> None:
             "django.contrib.messages",
             "django.contrib.sites",
             "django.contrib.staticfiles",
-            "django_ninja_admin",
+            "django_veo_admin_api",
             "sample_app.apps.SampleAppConfig",
         ]
         MIDDLEWARE = [
@@ -449,7 +449,7 @@ def write_full_sample_project(project_dir: Path) -> None:
         """
         from django.http import HttpResponse
         from django.urls import path
-        from django_ninja_admin import autodiscover, site
+        from django_veo_admin_api import autodiscover, site
 
         autodiscover()
 

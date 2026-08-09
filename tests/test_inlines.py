@@ -3,8 +3,8 @@ import json
 from django import forms
 from django.test import RequestFactory, override_settings
 
-from django_ninja_admin import NinjaAdminSite, TabularInline
-from django_ninja_admin.models import CHANGE, LogEntry
+from django_veo_admin_api import NinjaAdminSite, TabularInline
+from django_veo_admin_api.models import CHANGE, LogEntry
 from tests.testapp.models import Article, ArticleLabel, Label, Product, ProductImage
 
 RENDERED_FIELD_ATTR_KEYS = {

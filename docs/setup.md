@@ -3,10 +3,14 @@
 Install the package into a Django 5.0+ project and add the app so the admin log
 model migration is available:
 
+```bash
+python -m pip install django-veo-admin-api
+```
+
 ```python
 INSTALLED_APPS = [
     # ...
-    "django_ninja_admin",
+    "django_veo_admin_api",
 ]
 ```
 
@@ -20,7 +24,7 @@ Register models with the default site and mount the generated Ninja API:
 
 ```python
 from django.urls import path
-from django_ninja_admin import ModelAdmin, site
+from django_veo_admin_api import ModelAdmin, site
 
 from shop.models import Product
 

@@ -18,14 +18,14 @@ def run(command: list[str], *, env: dict[str, str] | None = None) -> None:
 
 @contextmanager
 def dist_dir_context() -> Iterator[Path]:
-    configured_dir = os.environ.get("DJANGO_NINJA_ADMIN_DIST_DIR")
+    configured_dir = os.environ.get("DJANGO_VEO_ADMIN_API_DIST_DIR")
     if configured_dir:
         dist_dir = Path(configured_dir)
         dist_dir.mkdir(parents=True, exist_ok=True)
         yield dist_dir
         return
 
-    with tempfile.TemporaryDirectory(prefix="django-ninja-admin-dist-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="django-veo-admin-api-dist-") as tmp:
         yield Path(tmp) / "dist"
 
 
@@ -50,9 +50,9 @@ def main() -> None:
 
     with dist_dir_context() as dist_dir:
         uv_env = os.environ.copy()
-        fallback_cache_dir = Path(tempfile.gettempdir()) / "django-ninja-admin-uv-cache"
+        fallback_cache_dir = Path(tempfile.gettempdir()) / "django-veo-admin-api-uv-cache"
         uv_env["UV_CACHE_DIR"] = os.environ.get(
-            "DJANGO_NINJA_ADMIN_DIST_UV_CACHE",
+            "DJANGO_VEO_ADMIN_API_DIST_UV_CACHE",
             os.environ.get("UV_CACHE_DIR", str(fallback_cache_dir)),
         )
         check_distribution(dist_dir, uv=uv, env=uv_env)

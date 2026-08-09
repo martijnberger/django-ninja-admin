@@ -5,7 +5,7 @@ from django.db import router, transaction
 from django.utils.translation import gettext_lazy as _
 from ninja import Status
 
-from django_ninja_admin.utils.deletion import deletion_error_payload
+from django_veo_admin_api.utils.deletion import deletion_error_payload
 
 
 def delete_selected(model_admin, request, queryset):

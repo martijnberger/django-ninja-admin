@@ -1,6 +1,6 @@
 from typing import override
 
-from django_ninja_admin.admins.model import ModelAdmin
+from django_veo_admin_api.admins.model import ModelAdmin
 
 
 def _existing_model_fields(model, field_names):

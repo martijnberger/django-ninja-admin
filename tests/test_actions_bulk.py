@@ -1,9 +1,9 @@
 from django.test import override_settings
 from ninja import Status
 
-from django_ninja_admin import action, site
-from django_ninja_admin.models import CHANGE, LogEntry
-from django_ninja_admin.schemas import ErrorResponse
+from django_veo_admin_api import action, site
+from django_veo_admin_api.models import CHANGE, LogEntry
+from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Category, Product, ProductReview
 
 

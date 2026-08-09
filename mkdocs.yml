@@ -1,6 +1,6 @@
-site_name: Django Ninja Admin
+site_name: Django Veo Admin API
 site_description: A Ninja-native API implementation of Django admin for custom frontends.
-repo_url: https://github.com/martijnberger/django-ninja-admin
+repo_url: https://github.com/martijnberger/django-veo-admin-api
 docs_dir: docs
 strict: true
 

@@ -215,8 +215,8 @@ class SiteContext(AdminSchema):
         json_schema_extra={
             "examples": [
                 {
-                    "site_title": "Django Ninja Admin",
-                    "site_header": "Django Ninja Administration",
+                    "site_title": "Django Veo Admin API",
+                    "site_header": "Django Veo administration",
                     "site_url": "/",
                     "has_permission": True,
                     "available_apps": [

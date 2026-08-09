@@ -29,7 +29,7 @@ def venv_python(venv_dir: Path) -> Path:
 
 
 def smoke_django_requirements() -> list[str]:
-    requirement = os.environ.get("DJANGO_NINJA_ADMIN_SMOKE_DJANGO")
+    requirement = os.environ.get("DJANGO_VEO_ADMIN_API_SMOKE_DJANGO")
     return [requirement] if requirement else []
 
 
@@ -38,7 +38,7 @@ def main() -> None:
     if uv is None:
         raise SystemExit("uv is required to run the generated-client smoke check.")
 
-    with tempfile.TemporaryDirectory(prefix="django-ninja-admin-client-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="django-veo-admin-api-client-") as tmp:
         tmp_path = Path(tmp)
         dist_dir = tmp_path / "dist"
         project_dir = tmp_path / "project"
@@ -136,7 +136,7 @@ def write_sample_project(project_dir: Path) -> None:
         from ninja import Schema, Status
         from pydantic import ConfigDict
 
-        from django_ninja_admin import ModelAdmin, TabularInline, action, site
+        from django_veo_admin_api import ModelAdmin, TabularInline, action, site
 
         from .models import Category, Product, ProductImage, Tag
 
@@ -272,7 +272,7 @@ def write_sample_project(project_dir: Path) -> None:
             "django.contrib.sessions",
             "django.contrib.messages",
             "django.contrib.staticfiles",
-            "django_ninja_admin",
+            "django_veo_admin_api",
             "sample_app.apps.SampleAppConfig",
         ]
         MIDDLEWARE = [
@@ -301,7 +301,7 @@ def write_sample_project(project_dir: Path) -> None:
         project_dir / "sample_project" / "urls.py",
         """
         from django.urls import path
-        from django_ninja_admin import autodiscover, site
+        from django_veo_admin_api import autodiscover, site
 
         autodiscover()
 

@@ -25,9 +25,9 @@ PRIVATE_API_INVENTORY = (
         symbol="_get_foreign_key",
         pattern=r"\b_get_foreign_key\b",
         expected_paths=(
-            "django_ninja_admin/admins/inline.py",
-            "django_ninja_admin/checks.py",
-            "django_ninja_admin/sites.py",
+            "django_veo_admin_api/admins/inline.py",
+            "django_veo_admin_api/checks.py",
+            "django_veo_admin_api/sites.py",
         ),
         reason="Match Django inline parent foreign-key resolution for formsets and system checks.",
         upgrade_check="Compare with django.forms.models._get_foreign_key when upgrading Django.",
@@ -35,35 +35,35 @@ PRIVATE_API_INVENTORY = (
     PrivateApiUse(
         symbol="request.parse_file_upload",
         pattern=r"\.parse_file_upload\(",
-        expected_paths=("django_ninja_admin/sites.py",),
+        expected_paths=("django_veo_admin_api/sites.py",),
         reason="Parse multipart JSON+file requests through Django's request upload parser.",
         upgrade_check="Verify Django request upload parsing still accepts the same META/request arguments.",
     ),
     PrivateApiUse(
         symbol="queryset.query.order_by",
         pattern=r"\.query\.order_by\b",
-        expected_paths=("django_ninja_admin/changelist.py",),
+        expected_paths=("django_veo_admin_api/changelist.py",),
         reason="Detect explicit queryset ordering before applying deterministic changelist fallback ordering.",
         upgrade_check="Confirm Query.order_by remains the correct low-level source for explicit ordering.",
     ),
     PrivateApiUse(
         symbol="_get_FIELD_display",
         pattern=r"\._get_FIELD_display\(",
-        expected_paths=("django_ninja_admin/utils/lookup.py",),
+        expected_paths=("django_veo_admin_api/utils/lookup.py",),
         reason="Reuse Django's choice-label conversion while serializing list/detail display values.",
         upgrade_check="Compare with Model._get_FIELD_display and public get_FOO_display behavior.",
     ),
     PrivateApiUse(
         symbol="media._css/_js",
         pattern=r"\bmedia\._(?:css|js)\b",
-        expected_paths=("django_ninja_admin/utils/forms.py",),
+        expected_paths=("django_veo_admin_api/utils/forms.py",),
         reason="Expose form/widget media assets as structured JSON for frontend clients.",
         upgrade_check="Verify django.forms.Media still stores CSS/JS assets on _css and _js.",
     ),
     PrivateApiUse(
         symbol="widget._parse_date_fmt",
         pattern=r"\._parse_date_fmt\(",
-        expected_paths=("django_ninja_admin/utils/forms.py",),
+        expected_paths=("django_veo_admin_api/utils/forms.py",),
         reason="Expose SelectDateWidget ordering metadata without rendering HTML.",
         upgrade_check="Check SelectDateWidget date-format parsing on each Django feature release.",
     ),
@@ -71,7 +71,7 @@ PRIVATE_API_INVENTORY = (
 
 
 def source_files(repo_root: Path) -> list[Path]:
-    package_root = repo_root / "django_ninja_admin"
+    package_root = repo_root / "django_veo_admin_api"
     return sorted(path for path in package_root.rglob("*.py") if path.is_file())
 
 

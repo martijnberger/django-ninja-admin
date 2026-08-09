@@ -29,7 +29,7 @@ def test_private_django_api_audit_json_output_is_serializable(capsys):
 
 
 def test_private_django_api_audit_reports_source_and_doc_drift(tmp_path):
-    package_root = tmp_path / "django_ninja_admin"
+    package_root = tmp_path / "django_veo_admin_api"
     package_root.mkdir()
     (package_root / "module.py").write_text(
         "request.parse_file_upload(request.META, request)\n",
@@ -41,7 +41,7 @@ def test_private_django_api_audit_reports_source_and_doc_drift(tmp_path):
         PrivateApiUse(
             symbol="request.parse_file_upload",
             pattern=r"\.parse_file_upload\(",
-            expected_paths=("django_ninja_admin/expected.py",),
+            expected_paths=("django_veo_admin_api/expected.py",),
             reason="test",
             upgrade_check="test",
         ),
@@ -49,15 +49,15 @@ def test_private_django_api_audit_reports_source_and_doc_drift(tmp_path):
 
     errors = validate_private_api_audit(tmp_path, doc, inventory)
 
-    expected = (
-        "request.parse_file_upload: expected ['django_ninja_admin/expected.py'], found ['django_ninja_admin/module.py']"
+    expected = "request.parse_file_upload: expected " + (
+        "['django_veo_admin_api/expected.py'], found ['django_veo_admin_api/module.py']"
     )
     assert expected in errors
-    assert "request.parse_file_upload: django_ninja_admin/expected.py missing from" in "\n".join(errors)
+    assert "request.parse_file_upload: django_veo_admin_api/expected.py missing from" in "\n".join(errors)
 
 
 def test_private_django_api_report_includes_expected_paths():
     payload = report_to_dict()
 
     paths_by_symbol = {entry["symbol"]: entry["paths"] for entry in payload["private_apis"]}
-    assert "django_ninja_admin/sites.py" in paths_by_symbol["_get_foreign_key"]
+    assert "django_veo_admin_api/sites.py" in paths_by_symbol["_get_foreign_key"]

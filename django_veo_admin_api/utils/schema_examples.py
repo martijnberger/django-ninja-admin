@@ -12,7 +12,7 @@ from django.db import models
 from pydantic import AnyUrl, IPvAnyAddress, TypeAdapter
 from pydantic_core import ValidationError as PydanticCoreValidationError
 
-from django_ninja_admin.schemas import FileFieldValue, ImageFieldValue
+from django_veo_admin_api.schemas import FileFieldValue, ImageFieldValue
 
 RelationField = forms.ModelChoiceField | forms.ModelMultipleChoiceField
 FormFieldExample = Callable[[str, forms.Field, Any], Any]

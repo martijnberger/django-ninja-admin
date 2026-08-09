@@ -6,13 +6,13 @@ from django.test.utils import isolate_apps
 from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 
-import django_ninja_admin.admins.base as base_module
-import django_ninja_admin.admins.inline as inline_module
-import django_ninja_admin.admins.model as model_module
-import django_ninja_admin.changelist as changelist_module
-import django_ninja_admin.sites as sites_module
-from django_ninja_admin import ModelAdmin, NinjaAdminSite
-from django_ninja_admin.schemas import ErrorResponse
+import django_veo_admin_api.admins.base as base_module
+import django_veo_admin_api.admins.inline as inline_module
+import django_veo_admin_api.admins.model as model_module
+import django_veo_admin_api.changelist as changelist_module
+import django_veo_admin_api.sites as sites_module
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite
+from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Category
 
 
@@ -50,9 +50,9 @@ def test_default_site_labels_use_gettext(monkeypatch, admin_client):
     fresh_site = NinjaAdminSite(name="translated_labels", auth=None, include_auth=False)
 
     assert response.status_code == 200
-    assert response.json()["site_title"] == "translated:Django Ninja site admin"
-    assert response.json()["site_header"] == "translated:Django Ninja administration"
-    assert fresh_site.api.title == "translated:Django Ninja administration"
+    assert response.json()["site_title"] == "translated:Django Veo Admin API"
+    assert response.json()["site_header"] == "translated:Django Veo administration"
+    assert fresh_site.api.title == "translated:Django Veo administration"
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")

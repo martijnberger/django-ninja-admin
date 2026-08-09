@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.utils.text import capfirst
 from django.utils.translation import gettext_lazy as _
 
-from django_ninja_admin.exceptions import NotRegistered
+from django_veo_admin_api.exceptions import NotRegistered
 
 NULL_BOOLEAN_FIELD = getattr(models, "NullBooleanField", None)
 BOOLEAN_FIELD_TYPES = (

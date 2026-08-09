@@ -7,8 +7,8 @@ from django.test import override_settings
 from django.test.client import BOUNDARY, MULTIPART_CONTENT, encode_multipart
 from PIL import Image
 
-from django_ninja_admin.models import CHANGE, LogEntry
-from django_ninja_admin.schemas import ErrorResponse
+from django_veo_admin_api.models import CHANGE, LogEntry
+from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Product
 
 RENDERED_FIELD_ATTR_KEYS = {

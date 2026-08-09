@@ -14,7 +14,7 @@ from django.core.validators import (
 from django.test import RequestFactory
 from pydantic import ValidationError as PydanticValidationError
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, TabularInline
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite, TabularInline
 from tests.testapp.models import Product, ProductImage
 
 RENDERED_FIELD_ATTR_KEYS = {

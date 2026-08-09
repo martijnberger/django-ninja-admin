@@ -1,15 +1,15 @@
-from django_ninja_admin.models import LogEntry
+from django_veo_admin_api.models import LogEntry
 
 
 def test_no_drf_imports():
-    import django_ninja_admin
+    import django_veo_admin_api
 
-    assert django_ninja_admin.site is not None
-    assert LogEntry._meta.db_table == "django_ninja_admin_log"
+    assert django_veo_admin_api.site is not None
+    assert LogEntry._meta.db_table == "django_veo_admin_api_log"
 
 
 def test_public_api_exports_are_curated():
-    import django_ninja_admin
+    import django_veo_admin_api
 
     expected_exports = {
         "HORIZONTAL",
@@ -36,5 +36,5 @@ def test_public_api_exports_are_curated():
         "register",
         "site",
     }
-    assert set(django_ninja_admin.__all__) == expected_exports
-    assert {name for name in expected_exports if getattr(django_ninja_admin, name, None) is None} == set()
+    assert set(django_veo_admin_api.__all__) == expected_exports
+    assert {name for name in expected_exports if getattr(django_veo_admin_api, name, None) is None} == set()

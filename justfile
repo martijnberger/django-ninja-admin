@@ -4,10 +4,10 @@ test *args:
     UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
 
 coverage-test *args:
-    UV_CACHE_DIR=.uv-cache uv run pytest --cov=django_ninja_admin --cov-report=term-missing --cov-report=xml {{args}}
+    UV_CACHE_DIR=.uv-cache uv run pytest --cov=django_veo_admin_api --cov-report=term-missing --cov-report=xml {{args}}
 
 postgres-test *args:
-    DJANGO_NINJA_ADMIN_TEST_DATABASE=postgres UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
+    DJANGO_VEO_ADMIN_API_TEST_DATABASE=postgres UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
 
 lint:
     UV_CACHE_DIR=.uv-cache uv run ruff check .
@@ -19,7 +19,7 @@ format-check:
     UV_CACHE_DIR=.uv-cache uv run ruff format --check .
 
 typecheck-package:
-    UV_CACHE_DIR=.uv-cache uv run ty check --error all django_ninja_admin
+    UV_CACHE_DIR=.uv-cache uv run ty check --error all django_veo_admin_api
 
 typecheck-scripts:
     UV_CACHE_DIR=.uv-cache uv run ty check --error all scripts/dist_check.py scripts/docs_check.py scripts/generated_client_smoke.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/private_django_api_audit.py scripts/sample_project_smoke.py scripts/smoke_utils.py
@@ -54,7 +54,7 @@ docs-check:
     UV_CACHE_DIR=.uv-cache uv run python scripts/docs_check.py
 
 docs-build:
-    UV_CACHE_DIR=.uv-cache uv run mkdocs build --strict --site-dir /tmp/django-ninja-admin-mkdocs-site
+    UV_CACHE_DIR=.uv-cache uv run mkdocs build --strict --site-dir /tmp/django-veo-admin-api-mkdocs-site
 
 openapi-diff *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_diff.py {{args}}

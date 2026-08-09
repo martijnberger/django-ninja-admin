@@ -9,6 +9,11 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Renamed the distribution from `django-ninja-admin` to
+  `django-veo-admin-api` and the Python/Django package from
+  `django_ninja_admin` to `django_veo_admin_api`, including app labels,
+  settings, check identifiers, environment variables, build artifacts, source
+  imports, and documentation references.
 - Promoted every `ty` diagnostic to an error in the required type-check gate
   and made override relationships explicit across the package.
 - Centralized Django-form to Pydantic request-schema construction for parent
@@ -91,7 +96,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 ### Changed
 
 - Extracted shared JSON-compatible admin metadata normalization into
-  `django_ninja_admin.utils.json_values` with direct coverage for Django lazy
+  `django_veo_admin_api.utils.json_values` with direct coverage for Django lazy
   strings, `Q` objects, Decimals, model identifiers, and nested containers.
 - Removed remaining internal BaseAdmin schema-override shim methods so admin
   schema generation calls the extracted schema example helpers directly.
@@ -501,7 +506,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   numbering, moved package-only tuple-shape and missing-parameter checks into
   package-specific IDs, and allowed direct `ListFilter` subclasses at runtime.
 - Added Django-aligned duplicate action-name system checks using
-  `django_ninja_admin.E130`.
+  `django_veo_admin_api.E130`.
 - Moved package-owned `sortable_by` system checks into package-specific IDs.
 - Moved package-owned `schema_field_overrides` system checks into
   package-specific IDs.
@@ -511,7 +516,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 ### Changed
 
 - Aligned common `ModelAdmin` sequence-option check IDs with Django admin's
-  numbering while keeping the `django_ninja_admin` check namespace.
+  numbering while keeping the `django_veo_admin_api` check namespace.
 - Aligned `save_as`, `save_on_top`, `list_per_page`, and
   `list_max_show_all` check IDs with Django admin's numbering, and moved
   package-specific prefetch/form-schema checks out of that native range.
@@ -643,7 +648,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 ### Changed
 
 - Reused a single prebuilt wheel artifact across CI smoke jobs via
-  `DJANGO_NINJA_ADMIN_WHEEL`, while keeping local smoke commands able to build
+  `DJANGO_VEO_ADMIN_API_WHEEL`, while keeping local smoke commands able to build
   their own wheel.
 - Folded the full installed-project smoke writer into `sample_project_smoke.py`
   behind `--full`.
@@ -658,10 +663,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 ### Changed
 
 - Extracted shared schema/example helpers into
-  `django_ninja_admin.utils.schema_examples` for generated OpenAPI examples
+  `django_veo_admin_api.utils.schema_examples` for generated OpenAPI examples
   and choice-field schema/example handling.
 - Extracted shared Pydantic constraint helpers into
-  `django_ninja_admin.utils.schema_constraints`.
+  `django_veo_admin_api.utils.schema_constraints`.
 - Routed site pagination payload helpers through the shared `Pagination`
   schema used by changelist, history, and autocomplete responses.
 - Removed unused generic payload/response schema classes in favor of the
@@ -787,7 +792,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Expanded the package typecheck gate to cover the base admin schema/form
   machinery, including subclass-provided admin attributes, dynamic Pydantic
   schemas, list-valued relation/choice types, and validator-derived bounds.
-- Simplified the package typecheck gate to run `ty check django_ninja_admin`
+- Simplified the package typecheck gate to run `ty check django_veo_admin_api`
   now that the full package passes.
 - Started the test-suite split by extracting admin-check coverage into
   `tests/test_checks.py` with a shared `make_site` fixture.
@@ -922,7 +927,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   relations.
 - Expanded CI release-hardening coverage to include Python 3.13 and 3.14 lanes,
   non-experimental Django 6.0 checks, and matrix-pinned installed-project
-  sample smoke via `DJANGO_NINJA_ADMIN_SMOKE_DJANGO`.
+  sample smoke via `DJANGO_VEO_ADMIN_API_SMOKE_DJANGO`.
 - Added JSON-safe `deleted_objects` tree details to protected-delete and
   permission-needed delete error bodies for direct deletes and
   `delete_selected`.

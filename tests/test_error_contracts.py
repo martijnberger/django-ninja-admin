@@ -1,6 +1,6 @@
 from django.test import Client
 
-from django_ninja_admin.schemas import ErrorResponse
+from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import ProductReview
 
 

@@ -1,4 +1,4 @@
-from django_ninja_admin.utils.flatten import flatten
+from django_veo_admin_api.utils.flatten import flatten
 
 
 def flatten_fieldsets(fieldsets):

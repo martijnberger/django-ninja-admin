@@ -1,5 +1,5 @@
 [project]
-name = "django-ninja-admin"
+name = "django-veo-admin-api"
 version = "0.1.76"
 description = "A Ninja-native API implementation of Django admin for custom frontends."
 readme = "README.md"
@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/martijnberger/django-ninja-admin"
+Repository = "https://github.com/martijnberger/django-veo-admin-api"
 
 [dependency-groups]
 dev = [
@@ -48,14 +48,14 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["django_ninja_admin"]
+packages = ["django_veo_admin_api"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
 python_files = ["test_*.py", "*_tests.py"]
 
 [tool.coverage.run]
-source = ["django_ninja_admin"]
+source = ["django_veo_admin_api"]
 
 [tool.coverage.report]
 fail_under = 90
@@ -70,5 +70,5 @@ line-length = 120
 select = ["E", "F", "I", "UP", "B", "C4", "SIM", "PT", "DTZ", "RUF"]
 
 [tool.ruff.lint.per-file-ignores]
-"django_ninja_admin/migrations/*.py" = ["RUF012"]
+"django_veo_admin_api/migrations/*.py" = ["RUF012"]
 "tests/**/*.py" = ["RUF012"]

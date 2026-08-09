@@ -19,12 +19,12 @@ from ninja.utils import is_async_callable
 from pydantic import BaseModel, ConfigDict, Field, RootModel, TypeAdapter, create_model
 from pydantic import ValidationError as PydanticValidationError
 
-from django_ninja_admin.admins.base import BaseAdmin
-from django_ninja_admin.constants import ShowFacets
-from django_ninja_admin.exceptions import AdminPermissionError, AdminValidationError
-from django_ninja_admin.models import ADDITION, CHANGE, DELETION, LogEntry
-from django_ninja_admin.routes import AdminRoute, normalize_route_methods
-from django_ninja_admin.schemas import (
+from django_veo_admin_api.admins.base import BaseAdmin
+from django_veo_admin_api.constants import ShowFacets
+from django_veo_admin_api.exceptions import AdminPermissionError, AdminValidationError
+from django_veo_admin_api.models import ADDITION, CHANGE, DELETION, LogEntry
+from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
+from django_veo_admin_api.schemas import (
     ActionResponse,
     AdminInlinePayloadSchema,
     AdminSchema,
@@ -32,8 +32,8 @@ from django_ninja_admin.schemas import (
     JsonObjectResponse,
     ObjectIdentifier,
 )
-from django_ninja_admin.utils.deletion import get_deleted_objects
-from django_ninja_admin.utils.schema_examples import schema_example
+from django_veo_admin_api.utils.deletion import get_deleted_objects
+from django_veo_admin_api.utils.schema_examples import schema_example
 
 HORIZONTAL, VERTICAL = 1, 2
 DEFAULT_ROUTE_AUTH = object()
@@ -353,7 +353,7 @@ class ModelAdmin(BaseAdmin):
         return self.list_prefetch_related
 
     def get_changelist(self, request, **kwargs):
-        from django_ninja_admin.changelist import ChangeList
+        from django_veo_admin_api.changelist import ChangeList
 
         return ChangeList
 

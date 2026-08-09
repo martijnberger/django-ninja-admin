@@ -9,7 +9,7 @@ serializers, viewsets, and response envelopes.
 
 ```python
 from django.urls import path
-from django_ninja_admin import ModelAdmin, site
+from django_veo_admin_api import ModelAdmin, site
 
 from shop.models import Product
 
@@ -64,7 +64,7 @@ fields, then the form remains the authoritative persistence validator.
 
 ```python
 from django import forms
-from django_ninja_admin import ModelAdmin
+from django_veo_admin_api import ModelAdmin
 
 from shop.models import Product
 
@@ -95,7 +95,7 @@ frontends can render the same input contract that OpenAPI advertises.
 
 ```python
 from django import forms
-from django_ninja_admin import ModelAdmin
+from django_veo_admin_api import ModelAdmin
 
 from shop.models import Product
 
@@ -136,7 +136,7 @@ Use a Pydantic/Ninja schema when you want to own the whole response shape.
 
 ```python
 from ninja import Schema
-from django_ninja_admin import ModelAdmin
+from django_veo_admin_api import ModelAdmin
 
 
 class ProductOut(Schema):
@@ -155,7 +155,7 @@ Use `schema_field_overrides` for computed fields or fields that need an explicit
 Pydantic type.
 
 ```python
-from django_ninja_admin import ModelAdmin, display
+from django_veo_admin_api import ModelAdmin, display
 
 
 class ProductAdmin(ModelAdmin):
@@ -206,7 +206,7 @@ from typing import Literal
 
 from ninja import Schema
 
-from django_ninja_admin import ModelAdmin, action
+from django_veo_admin_api import ModelAdmin, action
 
 
 class StockStatusActionData(Schema):
@@ -362,7 +362,7 @@ The default auth is `ninja.security.SessionAuthIsStaff`. It accepts active staff
 users authenticated through Django sessions.
 
 ```python
-from django_ninja_admin import NinjaAdminSite
+from django_veo_admin_api import NinjaAdminSite
 
 admin_site = NinjaAdminSite()
 ```
@@ -384,7 +384,7 @@ authentication:
 
 ```python
 from ninja.security import APIKeyHeader
-from django_ninja_admin import NinjaAdminSite
+from django_veo_admin_api import NinjaAdminSite
 
 
 class InternalTokenAuth(APIKeyHeader):
@@ -404,7 +404,7 @@ admin API:
 
 ```python
 from ninja.security import APIKeyHeader
-from django_ninja_admin import NinjaAdminSite
+from django_veo_admin_api import NinjaAdminSite
 
 
 class PrimaryTokenAuth(APIKeyHeader):
@@ -432,7 +432,7 @@ Use `auth=None` only for deliberately unauthenticated APIs, such as local tests
 or a separately protected internal mount:
 
 ```python
-from django_ninja_admin import NinjaAdminSite
+from django_veo_admin_api import NinjaAdminSite
 
 admin_site = NinjaAdminSite(auth=None)
 ```
@@ -442,7 +442,7 @@ override, or explicitly disable auth. Wrap views with `admin_view()` when they
 should also enforce admin permissions:
 
 ```python
-from django_ninja_admin import ModelAdmin
+from django_veo_admin_api import ModelAdmin
 
 
 class ProductAdmin(ModelAdmin):
@@ -475,7 +475,7 @@ provides a wait time, a `Retry-After` header.
 
 ```python
 from ninja.throttling import AuthRateThrottle
-from django_ninja_admin import ModelAdmin, NinjaAdminSite
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite
 
 
 class ProductAdmin(ModelAdmin):
@@ -502,7 +502,7 @@ Custom site and model routes accept the same route-level `throttle` keyword:
 
 ```python
 from ninja.throttling import AuthRateThrottle
-from django_ninja_admin import ModelAdmin
+from django_veo_admin_api import ModelAdmin
 
 
 class ProductAdmin(ModelAdmin):

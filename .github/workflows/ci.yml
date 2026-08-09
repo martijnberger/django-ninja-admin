@@ -63,14 +63,14 @@ jobs:
 
       - name: Build and check distribution
         env:
-          DJANGO_NINJA_ADMIN_DIST_DIR: dist
-          DJANGO_NINJA_ADMIN_DIST_UV_CACHE: /tmp/django-ninja-admin-uv-cache
+          DJANGO_VEO_ADMIN_API_DIST_DIR: dist
+          DJANGO_VEO_ADMIN_API_DIST_UV_CACHE: /tmp/django-veo-admin-api-uv-cache
         run: just dist-check
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: django-ninja-admin-wheel
+          name: django-veo-admin-api-wheel
           path: dist/*.whl
           if-no-files-found: error
 
@@ -137,7 +137,7 @@ jobs:
       - name: Download wheel artifact
         uses: actions/download-artifact@v4
         with:
-          name: django-ninja-admin-wheel
+          name: django-veo-admin-api-wheel
           path: dist
 
       - name: Select Django version
@@ -157,18 +157,18 @@ jobs:
 
       - name: Package smoke
         env:
-          DJANGO_NINJA_ADMIN_WHEEL: dist
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
         run: just package-smoke
 
       - name: Sample project smoke
         env:
-          DJANGO_NINJA_ADMIN_WHEEL: dist
-          DJANGO_NINJA_ADMIN_SMOKE_DJANGO: django${{ matrix.django }}
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
+          DJANGO_VEO_ADMIN_API_SMOKE_DJANGO: django${{ matrix.django }}
         run: just sample-project-smoke
 
       - name: Generated client smoke
         env:
-          DJANGO_NINJA_ADMIN_WHEEL: dist
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
         run: just generated-client-smoke
 
   postgres:
@@ -178,20 +178,20 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: django_ninja_admin
+          POSTGRES_DB: django_veo_admin_api
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
           - "5432:5432"
         options: >-
-          --health-cmd "pg_isready -U postgres -d django_ninja_admin"
+          --health-cmd "pg_isready -U postgres -d django_veo_admin_api"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      DJANGO_NINJA_ADMIN_TEST_DATABASE: postgres
+      DJANGO_VEO_ADMIN_API_TEST_DATABASE: postgres
       UV_NO_SYNC: "1"
-      POSTGRES_DB: django_ninja_admin
+      POSTGRES_DB: django_veo_admin_api
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_HOST: 127.0.0.1

@@ -1,12 +1,12 @@
-# Django Ninja Admin
+# Django Veo Admin API
 
-`django-ninja-admin` is a Ninja-native API surface for Django admin concepts.
+`django-veo-admin-api` is a Ninja-native API surface for Django admin concepts.
 It exposes registered models, changelists, forms, actions, inlines, history,
 autocomplete, and view-on-site metadata for custom admin frontends.
 
 ```python
 from django.urls import path
-from django_ninja_admin import ModelAdmin, site
+from django_veo_admin_api import ModelAdmin, site
 
 from shop.models import Product
 

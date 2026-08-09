@@ -26,8 +26,8 @@ __all__ = [
 
 
 def autodiscover() -> None:
-    from django_ninja_admin.sites import site
-    from django_ninja_admin.utils.module_loading import autodiscover_modules
+    from django_veo_admin_api.sites import site
+    from django_veo_admin_api.utils.module_loading import autodiscover_modules
 
     autodiscover_modules("admin", register_to=site)
 
@@ -45,27 +45,27 @@ def __getattr__(name):
         "RelatedOnlyFieldListFilter",
         "SimpleListFilter",
     }:
-        from django_ninja_admin import filters
+        from django_veo_admin_api import filters
 
         return getattr(filters, name)
     if name in {"InlineModelAdmin", "StackedInline", "TabularInline"}:
-        from django_ninja_admin.admins import inline
+        from django_veo_admin_api.admins import inline
 
         return getattr(inline, name)
     if name == "ShowFacets":
-        from django_ninja_admin.constants import ShowFacets
+        from django_veo_admin_api.constants import ShowFacets
 
         return ShowFacets
     if name in {"HORIZONTAL", "VERTICAL", "ModelAdmin"}:
-        from django_ninja_admin.admins import model
+        from django_veo_admin_api.admins import model
 
         return getattr(model, name)
     if name in {"action", "display", "register"}:
-        from django_ninja_admin import decorators
+        from django_veo_admin_api import decorators
 
         return getattr(decorators, name)
     if name in {"NinjaAdminSite", "site"}:
-        from django_ninja_admin import sites
+        from django_veo_admin_api import sites
 
         return getattr(sites, name)
-    raise AttributeError(f"module 'django_ninja_admin' has no attribute {name!r}")
+    raise AttributeError(f"module 'django_veo_admin_api' has no attribute {name!r}")

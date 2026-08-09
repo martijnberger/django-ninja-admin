@@ -1,6 +1,6 @@
-# Django Ninja Admin
+# Django Veo Admin API
 
-`django-ninja-admin` exposes Django admin concepts as a typed HTTP API for
+`django-veo-admin-api` exposes Django admin concepts as a typed HTTP API for
 custom admin frontends. It keeps Django's registry, model-admin hooks,
 `ModelForm` validation, changelists, actions, inlines, history, autocomplete,
 permission checks, protected deletes, and admin log entries, while publishing

@@ -1,7 +1,7 @@
 from django.test import Client, override_settings
 
-from django_ninja_admin import NinjaAdminSite
-from django_ninja_admin.schemas import ErrorResponse
+from django_veo_admin_api import NinjaAdminSite
+from django_veo_admin_api.schemas import ErrorResponse
 
 
 class _ClassAttrThrottleSite(NinjaAdminSite):

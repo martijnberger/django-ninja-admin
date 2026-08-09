@@ -42,10 +42,10 @@ from ninja.utils import is_async_callable
 from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 
-from django_ninja_admin import actions
-from django_ninja_admin.admins.model import ModelAdmin
-from django_ninja_admin.changelist import CHANGE_LIST_ORDERING_QUERY_PATTERN, PAGE_QUERY_PATTERN
-from django_ninja_admin.exceptions import (
+from django_veo_admin_api import actions
+from django_veo_admin_api.admins.model import ModelAdmin
+from django_veo_admin_api.changelist import CHANGE_LIST_ORDERING_QUERY_PATTERN, PAGE_QUERY_PATTERN
+from django_veo_admin_api.exceptions import (
     AdminPermissionError,
     AdminValidationError,
     AlreadyRegistered,
@@ -54,8 +54,8 @@ from django_ninja_admin.exceptions import (
     MissingSearchFields,
     NotRegistered,
 )
-from django_ninja_admin.routes import AdminRoute, normalize_route_methods
-from django_ninja_admin.schemas import (
+from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
+from django_veo_admin_api.schemas import (
     AppSummary,
     AutocompleteResponse,
     ChangelistResponse,
@@ -72,9 +72,9 @@ from django_ninja_admin.schemas import (
     SiteContext,
     ViewOnSiteResponse,
 )
-from django_ninja_admin.utils.deletion import deletion_error_payload
-from django_ninja_admin.utils.format_error import format_error
-from django_ninja_admin.utils.forms import (
+from django_veo_admin_api.utils.deletion import deletion_error_payload
+from django_veo_admin_api.utils.format_error import format_error
+from django_veo_admin_api.utils.forms import (
     fieldset_layout_description,
     form_errors,
     form_field_descriptions,
@@ -82,15 +82,15 @@ from django_ninja_admin.utils.forms import (
     formset_errors,
     model_data_for_form,
 )
-from django_ninja_admin.utils.json_values import jsonish_value
-from django_ninja_admin.utils.lookup import (
+from django_veo_admin_api.utils.json_values import jsonish_value
+from django_veo_admin_api.utils.lookup import (
     display_metadata_for_field,
     field_name_for_display,
     label_for_field,
     lookup_field,
 )
-from django_ninja_admin.utils.quote import quote, unquote
-from django_ninja_admin.utils.schema_examples import (
+from django_veo_admin_api.utils.quote import quote, unquote
+from django_veo_admin_api.utils.schema_examples import (
     form_data_example,
     form_field_example_value,
     json_request_examples_extra,
@@ -103,8 +103,8 @@ from django_ninja_admin.utils.schema_examples import (
 all_sites = WeakSet()
 DEFAULT_AUTH = object()
 DEFAULT_THROTTLE = object()
-DEFAULT_SITE_TITLE = "Django Ninja site admin"
-DEFAULT_SITE_HEADER = "Django Ninja administration"
+DEFAULT_SITE_TITLE = "Django Veo Admin API"
+DEFAULT_SITE_HEADER = "Django Veo administration"
 DEFAULT_INDEX_TITLE = "Site administration"
 CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
 _UNSET = object()
@@ -168,7 +168,7 @@ class NinjaAdminSite:
     def __init__(
         self,
         *,
-        name="ninja_admin",
+        name="veo_admin_api",
         auth=DEFAULT_AUTH,
         include_auth=True,
         history_throttle=DEFAULT_THROTTLE,
@@ -189,7 +189,7 @@ class NinjaAdminSite:
         self._api = None
         all_sites.add(self)
         if include_auth:
-            from django_ninja_admin.admins.auth import AuthGroupAdmin, AuthUserAdmin
+            from django_veo_admin_api.admins.auth import AuthGroupAdmin, AuthUserAdmin
 
             self.register(get_user_model(), AuthUserAdmin)
             self.register(Group, AuthGroupAdmin)
@@ -1014,7 +1014,7 @@ class NinjaAdminSite:
                 description=f"Page size from 1 to {site.history_max_per_page}.",
             ),
         ):
-            from django_ninja_admin.models import LogEntry
+            from django_veo_admin_api.models import LogEntry
 
             site._validate_repeated_choice_query_param(request, "o", ("action_time", "-action_time"), label="ordering")
             site._validate_repeated_int_query_param(request, "page", minimum=1, label="page")
@@ -2372,7 +2372,7 @@ class NinjaAdminSite:
         raise NinjaValidationError(errors)
 
     def _multipart_request_parts(self, request):
-        cache_name = "_django_ninja_admin_multipart_parts"
+        cache_name = "_django_veo_admin_api_multipart_parts"
         if hasattr(request, cache_name):
             return getattr(request, cache_name)
         if request.method == "POST":
@@ -2819,8 +2819,8 @@ def router_db_for_write(model):
 class DefaultAdminSite(LazyObject):
     @override
     def _setup(self):
-        AdminSiteClass = import_string(apps.get_app_config("django_ninja_admin").default_site)
-        self._wrapped = AdminSiteClass(name="ninja_admin")
+        AdminSiteClass = import_string(apps.get_app_config("django_veo_admin_api").default_site)
+        self._wrapped = AdminSiteClass(name="veo_admin_api")
 
     @override
     def __repr__(self):

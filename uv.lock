@@ -305,7 +305,7 @@ wheels = [
 ]
 
 [[package]]
-name = "django-ninja-admin"
+name = "django-veo-admin-api"
 version = "0.1.76"
 source = { editable = "." }
 dependencies = [

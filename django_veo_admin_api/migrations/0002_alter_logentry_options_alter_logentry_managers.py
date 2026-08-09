@@ -2,12 +2,12 @@
 
 from django.db import migrations
 
-import django_ninja_admin.models
+import django_veo_admin_api.models
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("django_ninja_admin", "0001_initial"),
+        ("django_veo_admin_api", "0001_initial"),
     ]
 
     operations = [
@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
         migrations.AlterModelManagers(
             name="logentry",
             managers=[
-                ("objects", django_ninja_admin.models.LogEntryManager()),
+                ("objects", django_veo_admin_api.models.LogEntryManager()),
             ],
         ),
     ]

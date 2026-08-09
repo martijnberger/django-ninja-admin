@@ -7478,8 +7478,8 @@
             ],
             "has_permission": true,
             "is_nav_sidebar_enabled": true,
-            "site_header": "Django Ninja Administration",
-            "site_title": "Django Ninja Admin",
+            "site_header": "Django Veo administration",
+            "site_title": "Django Veo Admin API",
             "site_url": "/"
           }
         ],
@@ -8997,7 +8997,7 @@
   },
   "info": {
     "description": "",
-    "title": "Django Ninja administration",
+    "title": "Django Veo administration",
     "version": "2.0.0"
   },
   "openapi": "3.1.0",

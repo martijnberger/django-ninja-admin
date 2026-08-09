@@ -15,16 +15,16 @@ from django.core.validators import (
 from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 
-from django_ninja_admin.exceptions import NotRegistered
-from django_ninja_admin.utils.format_error import format_error
-from django_ninja_admin.utils.json_values import jsonish_value
-from django_ninja_admin.utils.lookup import (
+from django_veo_admin_api.exceptions import NotRegistered
+from django_veo_admin_api.utils.format_error import format_error
+from django_veo_admin_api.utils.json_values import jsonish_value
+from django_veo_admin_api.utils.lookup import (
     display_metadata_for_field,
     field_name_for_display,
     label_for_field,
     lookup_field,
 )
-from django_ninja_admin.utils.quote import quote
+from django_veo_admin_api.utils.quote import quote
 
 FILTERED_SELECT_OPTION_LIMIT = 200
 

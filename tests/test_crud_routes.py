@@ -1,7 +1,7 @@
 import json
 
-from django_ninja_admin import VERTICAL, site
-from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
+from django_veo_admin_api import VERTICAL, site
+from django_veo_admin_api.models import ADDITION, CHANGE, LogEntry
 from tests.testapp.models import Product, ProductImage, Tag
 
 RENDERED_FIELD_ATTR_KEYS = {
