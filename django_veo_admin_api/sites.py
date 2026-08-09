@@ -54,12 +54,9 @@ from django_veo_admin_api.core.exceptions import (
 )
 from django_veo_admin_api.core.operations import AdminRequestContext
 from django_veo_admin_api.core.operations.autocomplete import AutocompleteOperations
+from django_veo_admin_api.core.operations.bulk import BulkMutationOperations
 from django_veo_admin_api.core.operations.changelist import ChangelistOperations
 from django_veo_admin_api.core.operations.discovery import DiscoveryOperations
-from django_veo_admin_api.core.operations.form_data import (
-    copy_form_row,
-    normalize_form_data,
-)
 from django_veo_admin_api.core.operations.forms import FormOperations
 from django_veo_admin_api.core.operations.history import HistoryOperations
 from django_veo_admin_api.core.operations.mutations import MutationOperations
@@ -87,7 +84,6 @@ from django_veo_admin_api.schemas import (
 )
 from django_veo_admin_api.utils.deletion import deletion_error_payload
 from django_veo_admin_api.utils.format_error import format_error
-from django_veo_admin_api.utils.forms import model_data_for_form
 from django_veo_admin_api.utils.quote import unquote
 from django_veo_admin_api.utils.schema_examples import (
     form_data_example,
@@ -356,6 +352,10 @@ class NinjaAdminSite:
     @property
     def mutation_operations(self):
         return MutationOperations(status_resolver=resolve_ninja_status)
+
+    @property
+    def bulk_mutation_operations(self):
+        return BulkMutationOperations()
 
     def get_registered_model_admins(self):
         return self._registry.items()
@@ -1170,16 +1170,7 @@ class NinjaAdminSite:
             ),
         )
         def bulk_update(request, payload: bulk_payload_schema):
-            if not model_admin.has_change_permission(request):
-                raise PermissionDenied
-            changelist = model_admin.get_changelist_instance(request)
-            return site._bulk_update(
-                request,
-                model_admin,
-                payload,
-                queryset=changelist.queryset,
-                object_id_field=changelist.object_id_field,
-            )
+            return site.bulk_mutation_operations.update(AdminRequestContext(request), model_admin, payload).data
 
         self._register_custom_routes(
             router,
@@ -1420,9 +1411,6 @@ class NinjaAdminSite:
 
     def _filtered_queryset(self, request, model_admin):
         return model_admin.get_changelist_instance(request).queryset
-
-    def _normalize_form_data(self, form_class, data):
-        return normalize_form_data(form_class, data)
 
     def _file_form_field_names(self, model_admin, request=None, obj=None, *, change):
         form_class = model_admin.get_form_class(request, obj, change=change)
@@ -1719,127 +1707,6 @@ class NinjaAdminSite:
                 if file_part is not None:
                     form_files[name] = file_part
         return form_files
-
-    def _copy_inline_form_row(self, formset_data, prefix, index, row, form_fields):
-        return copy_form_row(formset_data, prefix, index, row, form_fields)
-
-    def _bulk_update(self, request, model_admin, payload, *, queryset=None, object_id_field=None):
-        payload_data = [
-            item.model_dump(mode="python", exclude_unset=True) if hasattr(item, "model_dump") else item
-            for item in payload.data
-        ]
-        if not payload_data:
-            raise AdminValidationError([{"message": _("Change data cannot be empty."), "param": "data"}])
-        queryset = queryset if queryset is not None else model_admin.get_queryset(request)
-        formset_class = model_admin.get_changelist_formset(request)
-        form_class = formset_class.form
-        form_fields = form_class.base_fields
-        editable_fields = set(form_fields)
-        validatable_rows = []
-        validated_rows = []
-        row_errors = {}
-        has_permission_errors = False
-        seen_pks = set()
-        allowed = set(model_admin.list_editable) | {"pk", model_admin.model._meta.pk.name}
-        for idx, data in enumerate(payload_data):
-            pk = data.get("pk") or data.get(model_admin.model._meta.pk.name)
-            if pk is None:
-                row_errors[idx] = [{"message": _("This field is required."), "param": "pk"}]
-                continue
-            pk_key = str(pk)
-            if pk_key in seen_pks:
-                row_errors[idx] = [{"message": _("Duplicate object in bulk update."), "param": "pk"}]
-                continue
-            seen_pks.add(pk_key)
-            unknown_fields = sorted(set(data) - allowed)
-            if unknown_fields:
-                row_errors[idx] = [
-                    {
-                        "message": _("Field is not list editable: %(fields)s.") % {"fields": ", ".join(unknown_fields)},
-                        "param": unknown_fields[0],
-                    }
-                ]
-                continue
-            obj = self._bulk_object_from_queryset(queryset, pk, object_id_field=object_id_field)
-            if obj is None:
-                row_errors[idx] = [{"message": _("Object not found."), "param": "pk"}]
-                continue
-            if not model_admin.has_change_permission(request, obj):
-                row_errors[idx] = [{"message": _("Permission denied."), "param": "pk"}]
-                has_permission_errors = True
-                continue
-            current = model_data_for_form(obj, list(editable_fields))
-            current.update({key: value for key, value in data.items() if key in allowed})
-            current = self._normalize_form_data(form_class, current)
-            validatable_rows.append((idx, obj, current))
-        if validatable_rows:
-            formset_data = self._bulk_formset_data(formset_class, validatable_rows, form_fields)
-            formset_queryset = queryset.filter(pk__in=[obj.pk for _idx, obj, _row in validatable_rows])
-            formset = formset_class(data=formset_data, queryset=formset_queryset)
-            if formset.is_valid():
-                validated_rows = [
-                    (idx, form.instance, form)
-                    for (idx, _obj, _row), form in zip(validatable_rows, formset.forms, strict=True)
-                ]
-            else:
-                for (idx, _obj, _row), errors in zip(validatable_rows, formset.errors, strict=True):
-                    formatted_errors = format_error(errors)
-                    if formatted_errors:
-                        row_errors[idx] = formatted_errors
-                non_form_errors = format_error(formset.non_form_errors())
-                if non_form_errors:
-                    row_errors["data"] = non_form_errors
-        if row_errors:
-            row_errors = self._ordered_bulk_errors(row_errors)
-            if has_permission_errors:
-                raise AdminPermissionError(row_errors)
-            raise AdminValidationError(row_errors)
-
-        results = {}
-        with transaction.atomic(using=router_db_for_write(model_admin.model)):
-            for idx, obj, form in validated_rows:
-                if form.has_changed():
-                    updated = model_admin.save_form(request, form, change=True)
-                    model_admin.save_model(request, updated, form, change=True)
-                    model_admin.save_related(request, form, {}, change=True)
-                    change_message = model_admin.construct_change_message(request, form)
-                    if change_message:
-                        model_admin.log_change(request, updated, change_message)
-                    obj = updated
-                results[str(idx)] = model_admin.serialize_object(obj, request)
-        return {"data": results}
-
-    def _bulk_formset_data(self, formset_class, rows, form_fields):
-        prefix = formset_class.get_default_prefix()
-        total_forms = len(rows)
-        formset_data = {
-            f"{prefix}-TOTAL_FORMS": str(total_forms),
-            f"{prefix}-INITIAL_FORMS": str(total_forms),
-            f"{prefix}-MIN_NUM_FORMS": "0",
-            f"{prefix}-MAX_NUM_FORMS": "",
-        }
-        for form_index, (_payload_index, obj, row) in enumerate(rows):
-            self._copy_inline_form_row(formset_data, prefix, form_index, row, form_fields)
-            formset_data[f"{prefix}-{form_index}-{obj._meta.pk.name}"] = str(obj.pk)
-        return formset_data
-
-    def _ordered_bulk_errors(self, row_errors):
-        return {key: row_errors[key] for key in sorted(row_errors, key=self._bulk_error_sort_key)}
-
-    def _bulk_error_sort_key(self, key):
-        if isinstance(key, int):
-            return (0, key)
-        if isinstance(key, str) and key.isdigit():
-            return (0, int(key))
-        return (1, str(key))
-
-    def _bulk_object_from_queryset(self, queryset, pk, *, object_id_field=None):
-        field = queryset.model._meta.pk if object_id_field is None else queryset.model._meta.get_field(object_id_field)
-        try:
-            object_id = field.to_python(pk)
-            return queryset.get(**{field.name: object_id})
-        except (queryset.model.DoesNotExist, ValidationError, ValueError):
-            return None
 
 
 def router_db_for_write(model):

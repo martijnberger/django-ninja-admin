@@ -12,6 +12,7 @@ import django_veo_admin_api.admins.model as model_module
 import django_veo_admin_api.changelist as changelist_module
 import django_veo_admin_api.sites as sites_module
 from django_veo_admin_api import ModelAdmin, NinjaAdminSite
+from django_veo_admin_api.core.operations import bulk as bulk_operations_module
 from django_veo_admin_api.core.operations import changelist as changelist_operations_module
 from django_veo_admin_api.core.operations import history as history_operations_module
 from django_veo_admin_api.core.operations import inlines as inline_operations_module
@@ -84,6 +85,7 @@ def test_changelist_error_messages_use_gettext(monkeypatch, admin_client):
 
 def test_mutation_helper_error_messages_use_gettext(monkeypatch, admin_client, sample):
     monkeypatch.setattr(sites_module, "_", _translate)
+    monkeypatch.setattr(bulk_operations_module, "_", _translate)
     monkeypatch.setattr(inline_operations_module, "_", _translate)
 
     inline_response = admin_client.patch(
