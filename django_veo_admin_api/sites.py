@@ -59,6 +59,7 @@ from django_veo_admin_api.core.operations.autocomplete import AutocompleteOperat
 from django_veo_admin_api.core.operations.changelist import ChangelistOperations
 from django_veo_admin_api.core.operations.discovery import DiscoveryOperations
 from django_veo_admin_api.core.operations.forms import FormOperations, inline_remote_accessor_name
+from django_veo_admin_api.core.operations.history import HistoryOperations
 from django_veo_admin_api.core.operations.objects import ObjectOperations
 from django_veo_admin_api.integrations.ninja.field_types import NinjaModelFieldTypeResolver
 from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
@@ -86,8 +87,7 @@ from django_veo_admin_api.utils.forms import (
     formset_errors,
     model_data_for_form,
 )
-from django_veo_admin_api.utils.json_values import jsonish_value
-from django_veo_admin_api.utils.quote import quote, unquote
+from django_veo_admin_api.utils.quote import unquote
 from django_veo_admin_api.utils.schema_examples import (
     form_data_example,
     form_field_example_value,
@@ -105,7 +105,6 @@ DEFAULT_SITE_TITLE = "Django Veo Admin API"
 DEFAULT_SITE_HEADER = "Django Veo administration"
 DEFAULT_INDEX_TITLE = "Site administration"
 CUSTOM_OPERATION_ID_CHARS_RE = re.compile(r"[^0-9a-zA-Z]+")
-_UNSET = object()
 
 
 NinjaQuery = cast(Any, Query)
@@ -348,6 +347,10 @@ class NinjaAdminSite:
     @property
     def autocomplete_operations(self):
         return AutocompleteOperations(self)
+
+    @property
+    def history_operations(self):
+        return HistoryOperations(self)
 
     def get_registered_model_admins(self):
         return self._registry.items()
@@ -751,33 +754,6 @@ class NinjaAdminSite:
             location_parts = location_parts[1:]
         return ".".join(location_parts)
 
-    def _model_admin_method_overridden(self, model_admin, method_name):
-        method = getattr(model_admin, method_name)
-        base_method = getattr(ModelAdmin, method_name)
-        return getattr(method, "__func__", method) is not base_method
-
-    def _uses_object_visibility_permissions(self, model_admin):
-        return self._model_admin_method_overridden(
-            model_admin,
-            "has_view_permission",
-        ) or self._model_admin_method_overridden(
-            model_admin,
-            "has_change_permission",
-        )
-
-    def _history_requires_object_visibility_filter(self, content_type_ids):
-        for content_type in ContentType.objects.filter(pk__in=content_type_ids):
-            model_class = content_type.model_class()
-            if model_class is None:
-                continue
-            try:
-                model_admin = self.get_model_admin(model_class)
-            except NotRegistered:
-                continue
-            if self._uses_object_visibility_permissions(model_admin):
-                return True
-        return False
-
     def _session_state(self, request):
         user = request.user
         return {
@@ -788,84 +764,6 @@ class NinjaAdminSite:
             "has_permission": self.has_permission(request),
             "csrf_token": get_token(request),
         }
-
-    def _history_content_type_ids(self, request, *, app_label=None, model_name=None):
-        if model_name and not app_label:
-            raise AdminValidationError(
-                [{"message": _("app_label is required when model is provided."), "param": "app_label"}]
-            )
-        if app_label and model_name:
-            try:
-                model = apps.get_model(app_label, model_name)
-                model_admin = self.get_model_admin(model)
-            except (LookupError, NotRegistered) as exc:
-                raise Http404 from exc
-            if not model_admin.has_view_or_change_permission(request):
-                raise PermissionDenied
-            return [ContentType.objects.get_for_model(model, for_concrete_model=False).pk]
-        registered_models = [
-            model
-            for model, model_admin in self._registry.items()
-            if (app_label is None or model._meta.app_label == app_label)
-            and model_admin.has_view_or_change_permission(request)
-        ]
-        if app_label is not None and not any(model._meta.app_label == app_label for model in self._registry):
-            raise Http404
-        return [
-            content_type.pk
-            for content_type in ContentType.objects.get_for_models(
-                *registered_models,
-                for_concrete_models=False,
-            ).values()
-        ]
-
-    def _history_object_links(self, request, item, model_class, opts, obj=_UNSET):
-        if model_class is None or opts is None or not item.object_id:
-            return {"detail_url": None, "change_form_url": None}
-        try:
-            model_admin = self.get_model_admin(model_class)
-        except NotRegistered:
-            return {"detail_url": None, "change_form_url": None}
-        if not self._uses_object_visibility_permissions(model_admin):
-            if not model_admin.has_view_or_change_permission(request):
-                return {"detail_url": None, "change_form_url": None}
-            return self._history_object_link_urls(request, item, opts)
-        if obj is _UNSET:
-            try:
-                obj = model_admin.get_object(request, item.object_id)
-            except (LookupError, ValidationError, ValueError):
-                return {"detail_url": None, "change_form_url": None}
-        if obj is None:
-            return {"detail_url": None, "change_form_url": None}
-        if not model_admin.has_view_permission(request, obj) and not model_admin.has_change_permission(request, obj):
-            return {"detail_url": None, "change_form_url": None}
-        return self._history_object_link_urls(request, item, opts)
-
-    def _history_object_link_urls(self, request, item, opts):
-        admin_base_path = request.path.rstrip("/")
-        if admin_base_path.endswith("/history"):
-            admin_base_path = admin_base_path[: -len("/history")]
-        object_url = f"{admin_base_path}/{opts.app_label}/{opts.model_name}/{quote(item.object_id)}"
-        return {"detail_url": object_url, "change_form_url": f"{object_url}/form"}
-
-    def _history_item_is_visible(self, request, item):
-        visible, _obj = self._history_item_visibility(request, item)
-        return visible
-
-    def _history_item_visibility(self, request, item):
-        content_type = item.content_type
-        model_class = content_type.model_class() if content_type is not None else None
-        if model_class is None or not item.object_id:
-            return True, None
-        try:
-            model_admin = self.get_model_admin(model_class)
-            obj = model_admin.get_object(request, item.object_id)
-        except (LookupError, NotRegistered, ValidationError, ValueError):
-            return True, None
-        if obj is None:
-            return True, None
-        visible = model_admin.has_view_permission(request, obj) or model_admin.has_change_permission(request, obj)
-        return visible, obj
 
     def _register_site_routes(self, router):
         site = self
@@ -983,8 +881,6 @@ class NinjaAdminSite:
                 description=f"Page size from 1 to {site.history_max_per_page}.",
             ),
         ):
-            from django_veo_admin_api.models import LogEntry
-
             site._validate_repeated_choice_query_param(request, "o", ("action_time", "-action_time"), label="ordering")
             site._validate_repeated_int_query_param(request, "page", minimum=1, label="page")
             site._validate_repeated_int_query_param(
@@ -1001,82 +897,16 @@ class NinjaAdminSite:
                 label="action flag",
             )
 
-            content_type_ids = site._history_content_type_ids(
-                request,
+            return site.history_operations.list(
+                AdminRequestContext(request),
                 app_label=app_label,
                 model_name=model,
-            )
-            qs = (
-                LogEntry.objects.filter(
-                    content_type_id__in=content_type_ids,
-                )
-                .order_by(o)
-                .select_related("content_type")
-            )
-            if object_id is not None:
-                qs = qs.filter(object_id=object_id)
-            if action_flag is not None:
-                qs = qs.filter(action_flag=int(action_flag))
-            use_visibility_filter = site._history_requires_object_visibility_filter(content_type_ids)
-            paginator = site.paginator(qs, per_page)
-            try:
-                page_obj = paginator.page(page)
-            except InvalidPage as exc:
-                raise Http404 from exc
-            page_items = list(page_obj.object_list)
-            visible_objects = {}
-            if use_visibility_filter:
-                visible_items = []
-                for item in page_items:
-                    visible, obj = site._history_item_visibility(request, item)
-                    if visible:
-                        visible_items.append(item)
-                        visible_objects[item.pk] = obj
-                page_items = visible_items
-            results = []
-            for item in page_items:
-                try:
-                    message = json.loads(item.change_message or "[]")
-                except json.JSONDecodeError:
-                    message = item.change_message
-                content_type = item.content_type
-                model_class = content_type.model_class() if content_type is not None else None
-                opts = model_class._meta if model_class is not None else None
-                object_links = site._history_object_links(
-                    request,
-                    item,
-                    model_class,
-                    opts,
-                    obj=visible_objects.get(item.pk, _UNSET),
-                )
-                results.append(
-                    {
-                        "id": jsonish_value(item.pk),
-                        "action_time": item.action_time,
-                        "user_id": jsonish_value(item.user_id),
-                        "content_type_id": jsonish_value(item.content_type_id),
-                        "model": f"{opts.app_label}.{opts.model_name}" if opts is not None else None,
-                        "app_label": opts.app_label if opts is not None else None,
-                        "model_name": opts.model_name if opts is not None else None,
-                        "model_verbose_name": str(opts.verbose_name) if opts is not None else None,
-                        "model_verbose_name_plural": str(opts.verbose_name_plural) if opts is not None else None,
-                        "object_id": item.object_id,
-                        "object_repr": item.object_repr,
-                        **object_links,
-                        "action_flag": item.action_flag,
-                        "change_message": jsonish_value(message),
-                        "change_message_text": item.get_change_message(),
-                    }
-                )
-            pagination = (
-                site.visibility_filtered_pagination_payload(page_obj, page_items)
-                if use_visibility_filter
-                else site.pagination_payload(paginator, page_obj)
-            )
-            return {
-                "pagination": pagination,
-                "results": results,
-            }
+                object_id=object_id,
+                action_flag=action_flag,
+                ordering=o,
+                page=page,
+                per_page=per_page,
+            ).data
 
         @router.get(
             "/autocomplete",

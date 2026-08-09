@@ -9,6 +9,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 - Extracted permission-aware changelist construction and serialization into a typed core operation service.
 - Extracted autocomplete relation resolution, permission checks, search, and pagination into a typed core service.
+- Extracted permission-filtered admin history discovery and serialization into a typed core service.
 
 ### Changed
 

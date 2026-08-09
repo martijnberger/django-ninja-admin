@@ -7,10 +7,10 @@ from django.db import models
 from django.http import Http404
 from django.utils.translation import gettext as _
 
-from django_veo_admin_api.admins.model import ModelAdmin
 from django_veo_admin_api.core.exceptions import AdminPermissionError, MissingSearchFields, NotRegistered
 from django_veo_admin_api.core.operations.base import AdminRequestContext, OperationResult
 from django_veo_admin_api.core.operations.pagination import pagination_result, visibility_filtered_pagination_result
+from django_veo_admin_api.core.operations.permissions import model_admin_method_overridden
 from django_veo_admin_api.schemas import AutocompleteResponse
 
 
@@ -67,7 +67,7 @@ class AutocompleteOperations:
         if not queryset.ordered:
             queryset = queryset.order_by(remote_model._meta.pk.name)
 
-        use_visibility_filter = _model_admin_method_overridden(model_admin, "has_view_permission")
+        use_visibility_filter = model_admin_method_overridden(model_admin, "has_view_permission")
         paginator = model_admin.get_paginator(request, queryset, per_page)
         try:
             page_obj = paginator.page(page)
@@ -93,9 +93,3 @@ class AutocompleteOperations:
     def _require_permission(allowed):
         if not allowed:
             raise AdminPermissionError([{"message": _("Permission denied."), "param": "non_field_errors"}])
-
-
-def _model_admin_method_overridden(model_admin, method_name):
-    method = getattr(model_admin, method_name)
-    base_method = getattr(ModelAdmin, method_name)
-    return getattr(method, "__func__", method) is not base_method
