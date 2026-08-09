@@ -15,7 +15,7 @@ from django.core.validators import (
 from django.db import models
 from django.forms.models import ModelChoiceField, ModelMultipleChoiceField, model_to_dict
 
-from django_veo_admin_api.exceptions import NotRegistered
+from django_veo_admin_api.core.exceptions import NotRegistered
 from django_veo_admin_api.utils.format_error import format_error
 from django_veo_admin_api.utils.json_values import jsonish_value
 from django_veo_admin_api.utils.lookup import (

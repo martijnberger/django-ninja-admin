@@ -13,7 +13,7 @@ from django.db.models.base import ModelBase
 from django.db.models.expressions import Combinable
 from django.forms.models import BaseInlineFormSet, BaseModelForm, _get_foreign_key
 
-from django_veo_admin_api.exceptions import NotRegistered
+from django_veo_admin_api.core.exceptions import NotRegistered
 from django_veo_admin_api.filters import FieldListFilter, ListFilter, SimpleListFilter
 from django_veo_admin_api.utils.flatten import flatten
 from django_veo_admin_api.utils.lookup import (

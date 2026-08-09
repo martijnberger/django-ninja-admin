@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from pydantic import ConfigDict, Field, create_model
 
 from django_veo_admin_api.admins.base import BaseAdmin
-from django_veo_admin_api.exceptions import AdminValidationError
+from django_veo_admin_api.core.exceptions import AdminValidationError
 from django_veo_admin_api.schemas import (
     AdminInlineOperationResultsSchema,
     AdminInlineOperationsSchema,

@@ -1,7 +1,7 @@
 from django.contrib.admin.utils import NestedObjects
 from django.db import router
 
-from django_veo_admin_api.exceptions import NotRegistered
+from django_veo_admin_api.core.exceptions import NotRegistered
 
 
 def get_deleted_objects(objs, request, admin_site):

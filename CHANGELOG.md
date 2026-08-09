@@ -16,6 +16,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Replaced core output-model generation through `ninja.orm.create_schema()`
   with the shared Pydantic contract compiler while preserving field metadata,
   defaults, validation behavior, and the golden OpenAPI document.
+- Added transport-neutral request/result contracts and direct operation
+  services for permission-filtered app discovery, site context, permission
+  summaries, and parent/inline form descriptions.
+- Moved the canonical admin exception vocabulary under `core` with a
+  compatibility re-export at the original module path, and moved form
+  permission checks ahead of form/formset construction inside the operation.
 - Renamed the distribution from `django-ninja-admin` to
   `django-veo-admin-api` and the Python/Django package from
   `django_ninja_admin` to `django_veo_admin_api`, including app labels,

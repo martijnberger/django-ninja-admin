@@ -27,6 +27,7 @@ PRIVATE_API_INVENTORY = (
         expected_paths=(
             "django_veo_admin_api/admins/inline.py",
             "django_veo_admin_api/checks.py",
+            "django_veo_admin_api/core/operations/forms.py",
             "django_veo_admin_api/sites.py",
         ),
         reason="Match Django inline parent foreign-key resolution for formsets and system checks.",

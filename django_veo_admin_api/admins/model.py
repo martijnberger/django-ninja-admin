@@ -21,7 +21,7 @@ from pydantic import ValidationError as PydanticValidationError
 
 from django_veo_admin_api.admins.base import BaseAdmin
 from django_veo_admin_api.constants import ShowFacets
-from django_veo_admin_api.exceptions import AdminPermissionError, AdminValidationError
+from django_veo_admin_api.core.exceptions import AdminPermissionError, AdminValidationError
 from django_veo_admin_api.models import ADDITION, CHANGE, DELETION, LogEntry
 from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
 from django_veo_admin_api.schemas import (

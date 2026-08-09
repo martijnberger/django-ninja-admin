@@ -38,3 +38,10 @@ def test_public_api_exports_are_curated():
     }
     assert set(django_veo_admin_api.__all__) == expected_exports
     assert {name for name in expected_exports if getattr(django_veo_admin_api, name, None) is None} == set()
+
+
+def test_legacy_exception_module_reexports_core_vocabulary():
+    from django_veo_admin_api.core.exceptions import AdminValidationError as CoreAdminValidationError
+    from django_veo_admin_api.exceptions import AdminValidationError
+
+    assert AdminValidationError is CoreAdminValidationError

@@ -28,9 +28,9 @@ from pydantic import (
     create_model,
 )
 
+from django_veo_admin_api.core.exceptions import NotRegistered
 from django_veo_admin_api.core.field_types import ModelFieldTypeResolver, resolve_model_field_type
 from django_veo_admin_api.core.schema_compiler import create_contract_model
-from django_veo_admin_api.exceptions import NotRegistered
 from django_veo_admin_api.schemas import (
     AdminBulkRowSchema,
     AdminSchema,

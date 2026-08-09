@@ -45,7 +45,7 @@ from pydantic import ValidationError as PydanticValidationError
 from django_veo_admin_api import actions
 from django_veo_admin_api.admins.model import ModelAdmin
 from django_veo_admin_api.changelist import CHANGE_LIST_ORDERING_QUERY_PATTERN, PAGE_QUERY_PATTERN
-from django_veo_admin_api.exceptions import (
+from django_veo_admin_api.core.exceptions import (
     AdminPermissionError,
     AdminValidationError,
     AlreadyRegistered,
@@ -54,6 +54,9 @@ from django_veo_admin_api.exceptions import (
     MissingSearchFields,
     NotRegistered,
 )
+from django_veo_admin_api.core.operations import AdminRequestContext
+from django_veo_admin_api.core.operations.discovery import DiscoveryOperations
+from django_veo_admin_api.core.operations.forms import FormOperations, inline_remote_accessor_name
 from django_veo_admin_api.integrations.ninja.field_types import NinjaModelFieldTypeResolver
 from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
 from django_veo_admin_api.schemas import (
@@ -76,10 +79,8 @@ from django_veo_admin_api.schemas import (
 from django_veo_admin_api.utils.deletion import deletion_error_payload
 from django_veo_admin_api.utils.format_error import format_error
 from django_veo_admin_api.utils.forms import (
-    fieldset_layout_description,
     form_errors,
     form_field_descriptions,
-    form_media_description,
     formset_errors,
     model_data_for_form,
 )
@@ -140,13 +141,6 @@ def _normalize_response_descriptions(schema):
     elif isinstance(schema, list):
         for child in schema:
             _normalize_response_descriptions(child)
-
-
-def _inline_remote_accessor_name(foreign_key):
-    remote_field = foreign_key.remote_field
-    if hasattr(remote_field, "get_accessor_name"):
-        return remote_field.get_accessor_name()
-    return remote_field.accessor_name
 
 
 class NinjaAdminSite:
@@ -330,64 +324,35 @@ class NinjaAdminSite:
                 errors.extend(model_admin.check())
         return errors
 
-    def _build_app_dict(self, request, label=None):
-        app_dict: dict[str, dict[str, Any]] = {}
-        models = {
-            model: model_admin
-            for model, model_admin in self._registry.items()
-            if label is None or model._meta.app_label == label
-        }
-        for model, model_admin in models.items():
-            app_label = model._meta.app_label
-            has_module_perms = model_admin.has_module_permission(request)
-            if not has_module_perms:
-                continue
-            perms = model_admin.get_model_perms(request)
-            if True not in perms.values():
-                continue
-            model_dict = {
-                "name": str(capfirst(model._meta.verbose_name_plural)),
-                "object_name": model._meta.object_name,
-                "app_label": app_label,
-                "model_name": model._meta.model_name,
-                "perms": perms,
-            }
-            if app_label in app_dict:
-                app_dict[app_label]["models"].append(model_dict)
-            else:
-                app_dict[app_label] = {
-                    "name": str(apps.get_app_config(app_label).verbose_name),
-                    "app_label": app_label,
-                    "has_module_perms": has_module_perms,
-                    "models": [model_dict],
-                }
-        if label:
-            return app_dict.get(label)
-        return app_dict
-
     def get_app_list(self, request, app_label=None):
-        app_dict = self._build_app_dict(request, app_label)
-        if app_label is not None:
-            if app_dict is None:
-                raise Http404
-            app_dict["models"].sort(key=lambda x: x["name"])
-            return app_dict
-        app_list = sorted(app_dict.values(), key=lambda x: x["name"].lower())
-        for app in app_list:
-            app["models"].sort(key=lambda x: x["name"])
-        return app_list
+        data = self.discovery_operations.list_apps(AdminRequestContext(request), app_label).data
+        if isinstance(data, list):
+            return [app.model_dump(mode="json") for app in data]
+        return data.model_dump(mode="json")
 
     def each_context(self, request):
+        return self.discovery_operations.site_context(AdminRequestContext(request)).data.model_dump(mode="json")
+
+    @property
+    def discovery_operations(self):
+        return DiscoveryOperations(self)
+
+    @property
+    def form_operations(self):
+        return FormOperations(self)
+
+    def get_registered_model_admins(self):
+        return self._registry.items()
+
+    def get_site_title(self):
+        return self._site_label("site_title", DEFAULT_SITE_TITLE)
+
+    def get_site_header(self):
+        return self._site_label("site_header", DEFAULT_SITE_HEADER)
+
+    def get_site_url(self, request):
         script_name = request.META.get("SCRIPT_NAME", "")
-        site_url = script_name if self.site_url == "/" and script_name else self.site_url
-        return {
-            "site_title": self._site_label("site_title", DEFAULT_SITE_TITLE),
-            "site_header": self._site_label("site_header", DEFAULT_SITE_HEADER),
-            "site_url": site_url,
-            "has_permission": self.has_permission(request),
-            "available_apps": self.get_app_list(request),
-            "is_nav_sidebar_enabled": self.enable_nav_sidebar,
-        }
+        return script_name if self.site_url == "/" and script_name else self.site_url
 
     def _site_label(self, attr, default):
         value = getattr(self, attr)
@@ -951,7 +916,7 @@ class NinjaAdminSite:
             operation_id="admin_list_apps",
         )
         def list_apps(request):
-            return site.get_app_list(request)
+            return site.discovery_operations.list_apps(AdminRequestContext(request)).data
 
         @router.get(
             "/apps/{app_label}",
@@ -959,7 +924,7 @@ class NinjaAdminSite:
             operation_id="admin_get_app",
         )
         def get_app(request, app_label: str):
-            return site.get_app_list(request, app_label)
+            return site.discovery_operations.list_apps(AdminRequestContext(request), app_label).data
 
         @router.get(
             "/context",
@@ -967,7 +932,7 @@ class NinjaAdminSite:
             operation_id="admin_context",
         )
         def context(request):
-            return site.each_context(request)
+            return site.discovery_operations.site_context(AdminRequestContext(request)).data
 
         @router.get(
             "/permissions",
@@ -975,16 +940,7 @@ class NinjaAdminSite:
             operation_id="admin_permissions",
         )
         def permissions(request):
-            user = request.user
-            model_permissions = [model for app in site.get_app_list(request) for model in app["models"]]
-            return {
-                "is_authenticated": user.is_authenticated,
-                "is_active": user.is_active,
-                "is_staff": user.is_staff,
-                "is_superuser": user.is_superuser,
-                "has_permission": site.has_permission(request),
-                "models": model_permissions,
-            }
+            return site.discovery_operations.permissions(AdminRequestContext(request)).data
 
         @router.get(
             "/history",
@@ -1369,9 +1325,7 @@ class NinjaAdminSite:
             operation_id=f"{app_label}_{model_name}_add_form",
         )
         def add_form(request):
-            if not model_admin.has_add_permission(request):
-                raise PermissionDenied
-            return site._form_response(request, model_admin, None)
+            return site.form_operations.describe(AdminRequestContext(request), model_admin, None).data
 
         @router.post(
             prefix,
@@ -1509,9 +1463,7 @@ class NinjaAdminSite:
             to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
         ):
             obj = site._get_object_or_404(request, model_admin, object_id, to_field)
-            if not model_admin.has_view_or_change_permission(request, obj):
-                raise PermissionDenied
-            return site._form_response(request, model_admin, obj)
+            return site.form_operations.describe(AdminRequestContext(request), model_admin, obj).data
 
         @router.patch(
             f"{prefix}/{{object_id}}",
@@ -1933,102 +1885,6 @@ class NinjaAdminSite:
                 )
             filters.append({"title": str(field.verbose_name), "choices": choices})
         return filters
-
-    def _form_response(self, request, model_admin, obj):
-        data = model_admin.get_form_description(request, obj)
-        inlines = []
-        for inline in model_admin.get_inline_instances(request, obj):
-            count_options = inline.get_formset_count_options(request, obj)
-            formset_class = inline.get_formset(request, obj, change=obj is not None, count_options=count_options)
-            queryset = inline.model.objects.none()
-            if obj is not None:
-                fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
-                related_name = _inline_remote_accessor_name(fk)
-                try:
-                    queryset = getattr(obj, related_name).all()
-                except AttributeError:
-                    queryset = inline.model.objects.none()
-            formset = formset_class(instance=obj, queryset=queryset)
-            initial_form_count = formset.initial_form_count()
-            fieldsets = inline.get_fieldsets(request, obj)
-            inline_desc = {
-                "model": f"{inline.model._meta.app_label}.{inline.model._meta.model_name}",
-                "readonly_fields": list(inline.get_readonly_fields(request, obj)),
-                "fieldset_layout": fieldset_layout_description(fieldsets),
-                "prepopulated": dict(inline.get_prepopulated_fields(request, obj)),
-                "media": form_media_description(formset_class.form()),
-                "permissions": {
-                    "has_add_permission": inline.has_add_permission(request, obj),
-                    "has_change_permission": inline.has_change_permission(request, obj),
-                    "has_delete_permission": inline.has_delete_permission(request, obj),
-                    "has_view_permission": inline.has_view_permission(request, obj),
-                },
-                "formset_prefix": formset.prefix,
-                "management_form": form_field_descriptions(
-                    formset.management_form.__class__,
-                    request=request,
-                    form=formset.management_form,
-                ),
-                "total_form_count": formset.total_form_count(),
-                "initial_form_count": initial_form_count,
-                "empty_form_prefix": formset.empty_form.prefix,
-                "empty_form": inline.get_form_fields_description(request, None, form=formset.empty_form),
-                "formset_row_metadata": [],
-                "extra": count_options["extra"],
-                "min_num": count_options["min_num"],
-                "max_num": count_options["max_num"],
-                "verbose_name": str(inline.verbose_name),
-                "verbose_name_plural": str(inline.verbose_name_plural),
-                "can_delete": inline.can_delete,
-                "show_change_link": inline.show_change_link,
-                "admin_style": inline.admin_style,
-                "formset": [],
-            }
-            for index, form in enumerate(formset.forms):
-                form_obj = form.instance if getattr(form.instance, "pk", None) else None
-                inline_desc["formset"].append(inline.get_form_fields_description(request, form_obj, form=form))
-                row_metadata = {
-                    "index": index,
-                    "prefix": form.prefix,
-                    "is_initial": index < initial_form_count,
-                    "empty_permitted": form.empty_permitted,
-                }
-                if form_obj is not None:
-                    row_metadata["object_id"] = str(form_obj.pk)
-                    row_metadata.update(self._inline_row_object_links(request, inline, form_obj))
-                inline_desc["formset_row_metadata"].append(row_metadata)
-            inlines.append(inline_desc)
-        data["inlines"] = inlines
-        return FormResponse.model_validate(data).model_dump(mode="json")
-
-    def _inline_row_object_links(self, request, inline, obj):
-        if not inline.show_change_link:
-            return {}
-        try:
-            model_admin = self.get_model_admin(inline.model)
-        except NotRegistered:
-            return {}
-        has_view_permission = model_admin.has_view_permission(request, obj)
-        has_change_permission = model_admin.has_change_permission(request, obj)
-        if not has_view_permission and not has_change_permission:
-            return {}
-        base_path = self._admin_base_path_from_model_route(request, inline.parent_model)
-        if base_path is None:
-            return {}
-        object_url = f"{base_path}/{inline.model._meta.app_label}/{inline.model._meta.model_name}/{quote(str(obj.pk))}"
-        return {
-            "detail_url": object_url,
-            "change_form_url": f"{object_url}/form" if has_change_permission else None,
-        }
-
-    @staticmethod
-    def _admin_base_path_from_model_route(request, model):
-        path = getattr(request, "path", None) or getattr(request, "path_info", None) or ""
-        marker = f"/{model._meta.app_label}/{model._meta.model_name}"
-        index = path.find(marker)
-        if index < 0:
-            return None
-        return path[:index].rstrip("/")
 
     def _payload_data(self, payload, *, exclude_unset=True):
         data = cast(Any, getattr(payload, "data", {}))
@@ -2460,7 +2316,7 @@ class NinjaAdminSite:
                 )
             inline = inline_by_id[inline_id]
             fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
-            related_name = _inline_remote_accessor_name(fk)
+            related_name = inline_remote_accessor_name(fk)
             related_manager = getattr(obj, related_name, None)
             results[inline_id] = self._process_inline_formset(
                 request,
