@@ -85,3 +85,31 @@ else:
     raise AssertionError("NinjaAdminSite unexpectedly imported without Django Ninja")
 """
     )
+
+
+def test_missing_mcp_extra_has_an_actionable_error():
+    run_isolated(
+        """
+import sys
+
+
+class BlockMCPImports:
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "mcp" or fullname.startswith("mcp."):
+            raise ModuleNotFoundError(f"blocked import: {fullname}", name=fullname)
+        return None
+
+
+sys.meta_path.insert(0, BlockMCPImports())
+
+try:
+    from django_veo_admin_api.integrations.mcp import MCPAdminServer
+except ImportError as exc:
+    assert str(exc) == (
+        "The MCP SDK is required for django_veo_admin_api.integrations.mcp; "
+        "install it with `pip install 'django-veo-admin-api[mcp]'`."
+    )
+else:
+    raise AssertionError(f"MCPAdminServer unexpectedly imported without the MCP SDK: {MCPAdminServer}")
+"""
+    )

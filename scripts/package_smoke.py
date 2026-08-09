@@ -57,6 +57,7 @@ import django
 from django.conf import settings
 
 assert importlib.util.find_spec("ninja") is None
+assert importlib.util.find_spec("mcp") is None
 
 if not settings.configured:
     settings.configure(
@@ -106,14 +107,35 @@ except ImportError as exc:
 else:
     raise AssertionError("NinjaAdminSite unexpectedly imported without the ninja extra")
 
+try:
+    from django_veo_admin_api.integrations.mcp import MCPAdminServer
+except ImportError as exc:
+    assert str(exc) == (
+        "The MCP SDK is required for django_veo_admin_api.integrations.mcp; "
+        "install it with `pip install 'django-veo-admin-api[mcp]'`."
+    )
+else:
+    raise AssertionError(f"MCPAdminServer unexpectedly imported without the mcp extra: {MCPAdminServer}")
+
 metadata = importlib.metadata.metadata("django-veo-admin-api")
 requires = metadata.get_all("Requires-Dist") or []
 assert any(requirement.lower().startswith("django") for requirement in requires)
 assert any(requirement.lower().startswith("pydantic") for requirement in requires)
 assert all(
-    "extra == 'ninja'" in requirement.lower() or 'extra == "ninja"' in requirement.lower()
+    "extra == 'ninja'" in requirement.lower()
+    or 'extra == "ninja"' in requirement.lower()
+    or "extra == 'all'" in requirement.lower()
+    or 'extra == "all"' in requirement.lower()
     for requirement in requires
     if requirement.lower().startswith("django-ninja")
+)
+assert all(
+    "extra == 'mcp'" in requirement.lower()
+    or 'extra == "mcp"' in requirement.lower()
+    or "extra == 'all'" in requirement.lower()
+    or 'extra == "all"' in requirement.lower()
+    for requirement in requires
+    if requirement.lower().startswith("mcp")
 )
 for dependency in requires:
     lowered = dependency.lower()

@@ -20,6 +20,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Made Django Ninja optional behind the `django-veo-admin-api[ninja]` extra;
   the base wheel now depends only on Django and Pydantic and has a clean
   installed-profile smoke test.
+- Added the official MCP 2.x SDK behind `django-veo-admin-api[mcp]`, plus
+  permission-filtered discovery and read-only app, context, permission,
+  history, changelist, detail, form, and autocomplete tools that call the
+  shared core operations directly.
+- Added clean `[mcp]` and `[all]` installed-wheel profiles; the MCP-only profile
+  verifies that Django Ninja remains absent.
 
 ### Changed
 

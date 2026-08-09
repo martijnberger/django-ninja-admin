@@ -310,10 +310,11 @@ installed, and an import scan finds no Ninja import outside
 
 ### Phase 2 — Make Ninja Optional
 
-Status: in progress. The Ninja transport relocation, lazy compatibility
-imports, base/`ninja` dependency split, clean installed-wheel profiles, and
-migration guide were verified on 2026-08-09. The `mcp`/`all` profiles land with
-the Phase 3 integration so they never advertise an empty capability.
+Status: implemented and verified on 2026-08-09. The Ninja transport relocation,
+lazy compatibility imports, base/`ninja` dependency split, clean base,
+`ninja`, `mcp`, and `all` installed-wheel profiles, and migration guide are in
+place. The MCP profiles landed with a real Phase 3 adapter rather than
+advertising an empty capability.
 
 1. Move `NinjaAdminSite`, `NinjaAdminAPI`, routers, routes, auth, throttles,
    `Status` mapping, `NOT_SET`, async helpers, docs/OpenAPI normalization, and
@@ -335,6 +336,11 @@ Exit gate: the base wheel has no Django Ninja requirement, while the Ninja
 profile preserves the reviewed current wire contract.
 
 ### Phase 3 — Add The MCP Integration
+
+Status: in progress. The official MCP 2.0 SDK, stateless Streamable HTTP app,
+explicit authenticated Django-request boundary, tool policy, permission-filtered
+discovery, structured result/error envelope, and read-only operation projection
+were implemented and verified on 2026-08-09.
 
 #### Protocol/hosting spike
 
