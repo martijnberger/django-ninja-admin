@@ -16,11 +16,12 @@ from django_veo_admin_api.core.site import CoreAdminSite
 from django_veo_admin_api.integrations.mcp.context import DjangoRequestFactory, MCPRequestInfo, request_info
 from django_veo_admin_api.integrations.mcp.policy import MCPToolPolicy
 from django_veo_admin_api.integrations.mcp.results import operation_error_result, operation_result_error
-from django_veo_admin_api.integrations.mcp.schemas import MCPToolResponse
+from django_veo_admin_api.integrations.mcp.schemas import MCPDeleteResult, MCPToolResponse
 from django_veo_admin_api.schemas import (
     AppSummary,
     AutocompleteResponse,
     ChangelistResponse,
+    DeletionPreview,
     ErrorResponse,
     FormResponse,
     HistoryActionFlag,
@@ -37,6 +38,13 @@ READ_ONLY = ToolAnnotations(
     read_only_hint=True,
     destructive_hint=False,
     idempotent_hint=True,
+    open_world_hint=False,
+)
+
+MUTATING = ToolAnnotations(
+    read_only_hint=False,
+    destructive_hint=True,
+    idempotent_hint=False,
     open_world_hint=False,
 )
 
@@ -71,6 +79,7 @@ class MCPAdminServer:
             middleware=[self._filter_tools],
         )
         self._register_read_tools()
+        self._register_mutation_tools()
 
     def streamable_http_app(
         self,
@@ -230,6 +239,169 @@ class MCPAdminServer:
                 permission=visible,
             )
 
+    def _register_mutation_tools(self):
+        for model, model_admin in self.admin_site.get_registered_model_admins():
+            self._register_model_mutation_tools(model, model_admin)
+
+    def _register_model_mutation_tools(self, model, model_admin):
+        prefix = f"admin.{model._meta.app_label}.{model._meta.model_name}"
+        can_add = model_admin.has_add_permission
+        can_change = model_admin.has_change_permission
+        can_view_or_change = model_admin.has_view_or_change_permission
+        can_delete = model_admin.has_delete_permission
+        create_payload_schema = model_admin.get_mutation_payload_schema(None, change=False, partial=False)
+        update_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=True)
+        mutation_response_schema = model_admin.get_mutation_response_schema(None)
+
+        async def create(payload, ctx: Context):
+            def operation(context):
+                self._prepare_model_request(context.request, model, method="POST")
+                return self.admin_site.mutation_operations.create(context, model_admin, payload)
+
+            return await self._invoke(ctx, f"{prefix}.create", can_add, operation)
+
+        create.__annotations__["payload"] = create_payload_schema
+        create.__annotations__["return"] = MCPToolResponse[mutation_response_schema]
+        self._add_tool(
+            create,
+            name=f"{prefix}.create",
+            description=f"Create one {model._meta.verbose_name} through its Django admin form and inlines.",
+            permission=can_add,
+            annotations=MUTATING,
+        )
+
+        async def update(object_id: str, payload, ctx: Context, to_field: str | None = None):
+            def operation(context):
+                self._prepare_model_request(context.request, model, object_id=object_id, method="PATCH")
+                return self.admin_site.mutation_operations.update(
+                    context,
+                    model_admin,
+                    object_id,
+                    payload,
+                    partial=True,
+                    to_field=to_field,
+                )
+
+            return await self._invoke(ctx, f"{prefix}.update", can_change, operation)
+
+        update.__annotations__["payload"] = update_payload_schema
+        update.__annotations__["return"] = MCPToolResponse[mutation_response_schema]
+        self._add_tool(
+            update,
+            name=f"{prefix}.update",
+            description=f"Partially update one {model._meta.verbose_name} through its Django admin form.",
+            permission=can_change,
+            annotations=MUTATING,
+        )
+
+        bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
+        bulk_response_schema = model_admin.get_bulk_response_schema(None)
+
+        async def bulk_update(payload, ctx: Context):
+            def operation(context):
+                self._prepare_model_request(context.request, model, suffix="bulk", method="PUT")
+                return self.admin_site.bulk_mutation_operations.update(context, model_admin, payload)
+
+            return await self._invoke(ctx, f"{prefix}.bulk_update", can_change, operation)
+
+        bulk_update.__annotations__["payload"] = bulk_payload_schema
+        bulk_update.__annotations__["return"] = MCPToolResponse[bulk_response_schema]
+        self._add_tool(
+            bulk_update,
+            name=f"{prefix}.bulk_update",
+            description=f"Apply Django list-editable formset updates to {model._meta.verbose_name_plural}.",
+            permission=can_change,
+            annotations=MUTATING,
+        )
+
+        if model_admin.has_registered_actions():
+            action_payload_schema = model_admin.get_action_payload_schema(None)
+            action_response_schema = model_admin.get_action_response_schema(None)
+
+            async def actions(payload, ctx: Context, to_field: str | None = None):
+                def operation(context):
+                    self._prepare_model_request(context.request, model, suffix="actions", method="POST")
+                    return self.admin_site.action_operations.execute(
+                        context,
+                        model_admin,
+                        payload,
+                        to_field=to_field,
+                    )
+
+                return await self._invoke(ctx, f"{prefix}.actions", can_view_or_change, operation)
+
+            actions.__annotations__["payload"] = action_payload_schema
+            actions.__annotations__["return"] = MCPToolResponse[action_response_schema]
+            self._add_tool(
+                actions,
+                name=f"{prefix}.actions",
+                description=f"Execute one registered Django admin action for {model._meta.verbose_name_plural}.",
+                permission=can_view_or_change,
+                annotations=MUTATING,
+            )
+
+        async def delete_preview(
+            object_id: str,
+            ctx: Context,
+            to_field: str | None = None,
+        ) -> MCPToolResponse[DeletionPreview]:
+            def operation(context):
+                self._prepare_model_request(
+                    context.request,
+                    model,
+                    object_id=object_id,
+                    suffix="delete-preview",
+                )
+                return self.admin_site.deletion_operations.preview(
+                    context,
+                    model_admin,
+                    object_id,
+                    to_field,
+                )
+
+            return await self._invoke(ctx, f"{prefix}.delete_preview", can_delete, operation)
+
+        self._add_tool(
+            delete_preview,
+            name=f"{prefix}.delete_preview",
+            description=(
+                f"Preview cascades, protection, and permissions before deleting one {model._meta.verbose_name}."
+            ),
+            permission=can_delete,
+        )
+
+        async def delete(
+            object_id: str,
+            ctx: Context,
+            to_field: str | None = None,
+        ) -> MCPToolResponse[MCPDeleteResult]:
+            def operation(context):
+                self._prepare_model_request(context.request, model, object_id=object_id, method="DELETE")
+                result = self.admin_site.deletion_operations.delete(
+                    context,
+                    model_admin,
+                    object_id,
+                    to_field,
+                )
+                if result.status_code >= 400:
+                    return result
+                return OperationResult(
+                    MCPDeleteResult(
+                        status_code=result.status_code,
+                        response=result.data,
+                    )
+                )
+
+            return await self._invoke(ctx, f"{prefix}.delete", can_delete, operation)
+
+        self._add_tool(
+            delete,
+            name=f"{prefix}.delete",
+            description=f"Delete one {model._meta.verbose_name} after Django admin cascade and permission checks.",
+            permission=can_delete,
+            annotations=MUTATING,
+        )
+
     async def _apps(self, ctx: Context) -> MCPToolResponse[list[AppSummary]]:
         return await self._invoke(
             ctx,
@@ -281,13 +453,21 @@ class MCPAdminServer:
             ),
         )
 
-    def _add_tool(self, function, *, name: str, description: str, permission: ToolPermission | None = None):
+    def _add_tool(
+        self,
+        function,
+        *,
+        name: str,
+        description: str,
+        permission: ToolPermission | None = None,
+        annotations: ToolAnnotations = READ_ONLY,
+    ):
         self._tool_permissions[name] = permission
         self.server.add_tool(
             function,
             name=name,
             description=description,
-            annotations=READ_ONLY,
+            annotations=annotations,
             meta={"django_veo_admin_api": {"operation": name}},
             structured_output=True,
         )
@@ -333,7 +513,16 @@ class MCPAdminServer:
             raise TypeError("request_factory must attach an authenticated Django user.")
         return request
 
-    def _prepare_model_request(self, request, model, *, object_id=None, suffix=None, query=None):
+    def _prepare_model_request(
+        self,
+        request,
+        model,
+        *,
+        object_id=None,
+        suffix=None,
+        query=None,
+        method="GET",
+    ):
         parts = [self.admin_url_prefix, model._meta.app_label, model._meta.model_name]
         if object_id is not None:
             parts.append(str(object_id))
@@ -342,6 +531,7 @@ class MCPAdminServer:
         path = "/".join(part.strip("/") for part in parts if part)
         request.path = f"/{path}"
         request.path_info = request.path
+        request.method = method
         request.GET = self._query_dict(query)
 
     @staticmethod
