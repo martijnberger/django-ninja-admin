@@ -11,6 +11,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Extracted autocomplete relation resolution, permission checks, search, and pagination into a typed core service.
 - Extracted permission-filtered admin history discovery and serialization into a typed core service.
 - Extracted shared form-data normalization and authoritative inline-formset mutation processing into core services.
+- Extracted transactional create/update behavior and mutation-hook validation into typed core operations with an adapter-owned Ninja status resolver.
 
 ### Changed
 

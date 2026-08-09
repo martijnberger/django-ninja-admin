@@ -58,17 +58,15 @@ from django_veo_admin_api.core.operations.changelist import ChangelistOperations
 from django_veo_admin_api.core.operations.discovery import DiscoveryOperations
 from django_veo_admin_api.core.operations.form_data import (
     copy_form_row,
-    expand_multivalue_form_data,
     normalize_form_data,
-    normalize_form_value,
-    payload_data,
-    payload_inlines,
 )
 from django_veo_admin_api.core.operations.forms import FormOperations
 from django_veo_admin_api.core.operations.history import HistoryOperations
-from django_veo_admin_api.core.operations.inlines import InlineMutationProcessor
+from django_veo_admin_api.core.operations.mutations import MutationOperations
 from django_veo_admin_api.core.operations.objects import ObjectOperations
+from django_veo_admin_api.core.operations.responses import validate_mutation_response
 from django_veo_admin_api.integrations.ninja.field_types import NinjaModelFieldTypeResolver
+from django_veo_admin_api.integrations.ninja.responses import ninja_operation_response, resolve_ninja_status
 from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
 from django_veo_admin_api.schemas import (
     AppSummary,
@@ -89,7 +87,7 @@ from django_veo_admin_api.schemas import (
 )
 from django_veo_admin_api.utils.deletion import deletion_error_payload
 from django_veo_admin_api.utils.format_error import format_error
-from django_veo_admin_api.utils.forms import form_errors, model_data_for_form
+from django_veo_admin_api.utils.forms import model_data_for_form
 from django_veo_admin_api.utils.quote import unquote
 from django_veo_admin_api.utils.schema_examples import (
     form_data_example,
@@ -355,6 +353,10 @@ class NinjaAdminSite:
     def history_operations(self):
         return HistoryOperations(self)
 
+    @property
+    def mutation_operations(self):
+        return MutationOperations(status_resolver=resolve_ninja_status)
+
     def get_registered_model_admins(self):
         return self._registry.items()
 
@@ -537,53 +539,16 @@ class NinjaAdminSite:
         hook_name,
         plain_status=None,
     ):
-        if isinstance(response, Status):
-            status_code = response.status_code
-            value = response.value
-            explicit_status = True
-        elif plain_status is not None and response is not None:
-            status_code = plain_status
-            value = response
-            explicit_status = True
-        else:
-            status_code = default_status
-            value = response
-            explicit_status = False
-        response_schema = self._mutation_hook_response_schema(
-            status_code,
+        result = validate_mutation_response(
+            response,
             default_status=default_status,
             default_schema=default_schema,
             hook_schema=hook_schema,
             hook_name=hook_name,
-            explicit_status=explicit_status,
+            plain_status=plain_status,
+            status_resolver=resolve_ninja_status,
         )
-        if response_schema is None:
-            if value is not None:
-                raise AdminValidationError(
-                    [{"message": _("Response status does not allow a body."), "param": hook_name}]
-                )
-        else:
-            TypeAdapter(response_schema).validate_python(value)
-        return Status(status_code, value)
-
-    def _mutation_hook_response_schema(
-        self,
-        status_code,
-        *,
-        default_status,
-        default_schema,
-        hook_schema,
-        hook_name,
-        explicit_status,
-    ):
-        if status_code == 204:
-            return None
-        custom_responses = self._custom_hook_responses(hook_schema, (200, 202))
-        if status_code == default_status and not (explicit_status and status_code in custom_responses):
-            return default_schema
-        if status_code in custom_responses:
-            return custom_responses[status_code]
-        raise AdminValidationError([{"message": _("Unsupported response status."), "param": hook_name}])
+        return ninja_operation_response(result)
 
     def _auth_error_responses(self, *, include_forbidden=False):
         if self.auth is None:
@@ -1135,7 +1100,8 @@ class NinjaAdminSite:
             ),
         )
         def create(request, payload: create_payload_schema):
-            return site._create_object(request, model_admin, payload)
+            result = site.mutation_operations.create(AdminRequestContext(request), model_admin, payload)
+            return ninja_operation_response(result)
 
         if create_file_fields:
 
@@ -1154,12 +1120,13 @@ class NinjaAdminSite:
             def create_multipart(request):
                 payload = site._multipart_mutation_payload(request, create_payload_schema, create_file_fields)
                 form_class = model_admin.get_form_class(request, None, change=False)
-                return site._create_object(
-                    request,
+                result = site.mutation_operations.create(
+                    AdminRequestContext(request),
                     model_admin,
                     payload,
                     files=site._multipart_form_files(request, form_class),
                 )
+                return ninja_operation_response(result)
 
         if has_registered_actions:
 
@@ -1281,7 +1248,11 @@ class NinjaAdminSite:
             payload: update_payload_schema,
             to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
         ):
-            return site._update_object(request, model_admin, object_id, payload, partial=True, to_field=to_field)
+            site._validate_repeated_to_field_query_param(request, model_admin)
+            result = site.mutation_operations.update(
+                AdminRequestContext(request), model_admin, object_id, payload, partial=True, to_field=to_field
+            )
+            return ninja_operation_response(result)
 
         @router.put(
             f"{prefix}/{{object_id}}",
@@ -1298,7 +1269,11 @@ class NinjaAdminSite:
             payload: replace_payload_schema,
             to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
         ):
-            return site._update_object(request, model_admin, object_id, payload, partial=False, to_field=to_field)
+            site._validate_repeated_to_field_query_param(request, model_admin)
+            result = site.mutation_operations.update(
+                AdminRequestContext(request), model_admin, object_id, payload, partial=False, to_field=to_field
+            )
+            return ninja_operation_response(result)
 
         if change_file_fields:
 
@@ -1321,8 +1296,8 @@ class NinjaAdminSite:
                 obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
                 payload = site._multipart_mutation_payload(request, update_payload_schema, change_file_fields)
-                return site._update_object(
-                    request,
+                result = site.mutation_operations.update(
+                    AdminRequestContext(request),
                     model_admin,
                     object_id,
                     payload,
@@ -1330,6 +1305,7 @@ class NinjaAdminSite:
                     files=site._multipart_form_files(request, form_class),
                     obj=obj,
                 )
+                return ninja_operation_response(result)
 
             @router.put(
                 f"{prefix}/{{object_id}}/multipart",
@@ -1350,8 +1326,8 @@ class NinjaAdminSite:
                 obj = site._get_object_or_404(request, model_admin, object_id, to_field)
                 form_class = model_admin.get_form_class(request, obj, change=True)
                 payload = site._multipart_mutation_payload(request, replace_payload_schema, change_file_fields)
-                return site._update_object(
-                    request,
+                result = site.mutation_operations.update(
+                    AdminRequestContext(request),
                     model_admin,
                     object_id,
                     payload,
@@ -1359,6 +1335,7 @@ class NinjaAdminSite:
                     files=site._multipart_form_files(request, form_class),
                     obj=obj,
                 )
+                return ninja_operation_response(result)
 
         @router.delete(
             f"{prefix}/{{object_id}}",
@@ -1444,50 +1421,8 @@ class NinjaAdminSite:
     def _filtered_queryset(self, request, model_admin):
         return model_admin.get_changelist_instance(request).queryset
 
-    def _payload_data(self, payload, *, exclude_unset=True):
-        return payload_data(payload, exclude_unset=exclude_unset)
-
-    def _payload_inlines(self, payload):
-        return payload_inlines(payload)
-
     def _normalize_form_data(self, form_class, data):
         return normalize_form_data(form_class, data)
-
-    def _normalize_form_value(self, field, value):
-        return normalize_form_value(field, value)
-
-    def _expand_multivalue_form_data(self, data, field_name, field):
-        return expand_multivalue_form_data(data, field_name, field)
-
-    def _create_object(self, request, model_admin, payload, *, files=None):
-        if not model_admin.has_add_permission(request):
-            raise PermissionDenied
-        with transaction.atomic(using=router_db_for_write(model_admin.model)):
-            form_class = model_admin.get_form_class(request, None, change=False)
-            form_data = self._normalize_form_data(form_class, self._payload_data(payload))
-            form = form_class(data=form_data, files=files or None)
-            if not form.is_valid():
-                raise AdminValidationError({"form": form_errors(form)})
-            obj = model_admin.save_form(request, form, change=False)
-            model_admin.save_model(request, obj, form, change=False)
-            inline_results = self._process_inlines(
-                request,
-                model_admin,
-                obj,
-                self._payload_inlines(payload) or {},
-                change=False,
-            )
-            model_admin.save_related(request, form, inline_results, change=False)
-            change_message = model_admin.construct_change_message(request, form, inline_results, add=True)
-            model_admin.log_addition(request, obj, change_message)
-            response = model_admin.response_add(request, obj, form, inline_results)
-            return self._validated_mutation_hook_response(
-                response,
-                default_status=201,
-                default_schema=model_admin.get_mutation_response_schema(request),
-                hook_schema=model_admin.get_response_add_schema(request),
-                hook_name="response_add",
-            )
 
     def _file_form_field_names(self, model_admin, request=None, obj=None, *, change):
         form_class = model_admin.get_form_class(request, obj, change=change)
@@ -1784,46 +1719,6 @@ class NinjaAdminSite:
                 if file_part is not None:
                     form_files[name] = file_part
         return form_files
-
-    def _update_object(self, request, model_admin, object_id, payload, *, partial, files=None, obj=None, to_field=None):
-        obj = obj or self._get_object_or_404(request, model_admin, object_id, to_field)
-        if not model_admin.has_change_permission(request, obj):
-            raise PermissionDenied
-        with transaction.atomic(using=router_db_for_write(model_admin.model)):
-            form_class = model_admin.get_form_class(request, obj, change=True)
-            form_data = self._payload_data(payload, exclude_unset=partial)
-            if partial:
-                current = model_data_for_form(obj, list(form_class.base_fields.keys()))
-                current.update(form_data)
-                form_data = current
-            form_data = self._normalize_form_data(form_class, form_data)
-            form = form_class(data=form_data, files=files or None, instance=obj)
-            if not form.is_valid():
-                raise AdminValidationError({"form": form_errors(form)})
-            updated_object = model_admin.save_form(request, form, change=True)
-            model_admin.save_model(request, updated_object, form, change=True)
-            inline_results = self._process_inlines(
-                request,
-                model_admin,
-                updated_object,
-                self._payload_inlines(payload) or {},
-                change=True,
-            )
-            model_admin.save_related(request, form, inline_results, change=True)
-            change_message = model_admin.construct_change_message(request, form, inline_results)
-            if change_message:
-                model_admin.log_change(request, updated_object, change_message)
-            response = model_admin.response_change(request, updated_object, form, inline_results)
-            return self._validated_mutation_hook_response(
-                response,
-                default_status=200,
-                default_schema=model_admin.get_mutation_response_schema(request),
-                hook_schema=model_admin.get_response_change_schema(request),
-                hook_name="response_change",
-            )
-
-    def _process_inlines(self, request, model_admin, obj, inline_payload, *, change):
-        return InlineMutationProcessor().process(request, model_admin, obj, inline_payload, change=change)
 
     def _copy_inline_form_row(self, formset_data, prefix, index, row, form_fields):
         return copy_form_row(formset_data, prefix, index, row, form_fields)
