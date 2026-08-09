@@ -12,6 +12,7 @@ import django_veo_admin_api.admins.model as model_module
 import django_veo_admin_api.changelist as changelist_module
 import django_veo_admin_api.sites as sites_module
 from django_veo_admin_api import ModelAdmin, NinjaAdminSite
+from django_veo_admin_api.core.operations import changelist as changelist_operations_module
 from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Category
 
@@ -29,6 +30,7 @@ def _first_error(response, status):
 
 def test_core_site_error_messages_use_gettext(monkeypatch, admin_client, staff_client):
     monkeypatch.setattr(sites_module, "_", _translate)
+    monkeypatch.setattr(changelist_operations_module, "_", _translate)
 
     denied = staff_client().get("/admin-api/testapp/product")
     missing_app = admin_client.get("/admin-api/history", {"model": "product"})

@@ -7,6 +7,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+- Extracted permission-aware changelist construction and serialization into a typed core operation service.
+
 ### Changed
 
 - Switched shared request and response contracts from `ninja.Schema` to
