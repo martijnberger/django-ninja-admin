@@ -61,6 +61,7 @@ import os
 import django
 from asgiref.sync import async_to_sync
 from django.conf import settings
+from django.db import models
 from django.test import RequestFactory
 from mcp import Client
 
@@ -79,6 +80,7 @@ settings.configure(
 )
 django.setup()
 
+from django_veo_admin_api import ModelAdmin
 from django_veo_admin_api.core import CoreAdminSite
 from django_veo_admin_api.integrations.mcp import MCPAdminServer
 
@@ -96,7 +98,15 @@ class StaffUser:
         return True
 
 
+class SmokeRecord(models.Model):
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        app_label = "auth"
+
+
 core_site = CoreAdminSite(include_auth=False)
+core_site.register(SmokeRecord, ModelAdmin)
 
 
 def request_factory(info):
@@ -112,6 +122,7 @@ async def exercise():
     async with Client(adapter.server) as client:
         tools = await client.list_tools()
         assert {tool.name for tool in tools.tools} >= {"admin.apps", "admin.permissions"}
+        assert "admin.auth.smokerecord.create" in {tool.name for tool in tools.tools}
         result = await client.call_tool("admin.permissions")
         assert result.is_error is False
         assert result.structured_content["data"]["is_staff"] is True
@@ -123,7 +134,18 @@ if profile == "all":
     from django_veo_admin_api.integrations.ninja import NinjaAdminSite
 
     ninja_site = NinjaAdminSite(auth=None, include_auth=False)
+    ninja_site.register(SmokeRecord, ModelAdmin)
     assert ninja_site._registry is not core_site._registry
+    core_admin = core_site.get_model_admin(SmokeRecord)
+    ninja_admin = ninja_site.get_model_admin(SmokeRecord)
+    assert core_admin.get_output_schema(None).model_json_schema() == ninja_admin.get_output_schema(
+        None
+    ).model_json_schema()
+    assert core_admin.get_mutation_payload_schema(
+        None, change=False, partial=False
+    ).model_json_schema() == ninja_admin.get_mutation_payload_schema(
+        None, change=False, partial=False
+    ).model_json_schema()
 """
 
 

@@ -15,8 +15,12 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Setup: setup.md
+  - Architecture: architecture.md
+  - Core API: core-api.md
   - Migrating To The Ninja Extra: migration-ninja-extra.md
   - API And Authentication: api-and-auth.md
+  - MCP Integration: mcp-integration.md
+  - Security And Threat Model: security.md
   - Frontend Integration: frontend-integration.md
   - Hook Reference: hook-reference.md
   - Contract Reference: contract-reference.md

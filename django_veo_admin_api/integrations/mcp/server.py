@@ -1,9 +1,12 @@
 """Official-SDK MCP projection of the shared admin operation services."""
 
+import json
+import logging
 from collections.abc import Callable
 from typing import Annotated, Any, Literal
 
 from asgiref.sync import sync_to_async
+from django.core.exceptions import ImproperlyConfigured
 from django.http import HttpRequest, QueryDict
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
@@ -33,6 +36,7 @@ from django_veo_admin_api.schemas import (
 type ToolPermission = Callable[[HttpRequest], bool]
 type OperationCall = Callable[[AdminRequestContext], OperationResult[Any]]
 PositiveInt = Annotated[int, Field(ge=1)]
+logger = logging.getLogger(__name__)
 
 READ_ONLY = ToolAnnotations(
     read_only_hint=True,
@@ -61,6 +65,8 @@ class MCPAdminServer:
         version: str = "2.0.0",
         policy: MCPToolPolicy | None = None,
         admin_url_prefix: str = "/admin-api",
+        max_registered_models: int = 50,
+        max_tool_manifest_bytes: int = 2 * 1024 * 1024,
         token_verifier=None,
         auth=None,
     ):
@@ -68,6 +74,20 @@ class MCPAdminServer:
         self.request_factory = request_factory
         self.policy = policy or MCPToolPolicy()
         self.admin_url_prefix = admin_url_prefix.rstrip("/")
+        self._registered_model_admins = tuple(
+            sorted(
+                admin_site.get_registered_model_admins(),
+                key=lambda item: (item[0]._meta.app_label, item[0]._meta.model_name),
+            )
+        )
+        if max_registered_models < 1:
+            raise ValueError("max_registered_models must be at least 1.")
+        if len(self._registered_model_admins) > max_registered_models:
+            raise ImproperlyConfigured(
+                "MCP model registration exceeds max_registered_models "
+                f"({len(self._registered_model_admins)} > {max_registered_models}). "
+                "Reduce the CoreAdminSite registry or explicitly raise the reviewed limit."
+            )
         self._tool_permissions: dict[str, ToolPermission | None] = {}
         self.server = MCPServer(
             name=name,
@@ -80,6 +100,7 @@ class MCPAdminServer:
         )
         self._register_read_tools()
         self._register_mutation_tools()
+        self._validate_tool_manifest_size(max_tool_manifest_bytes)
 
     def streamable_http_app(
         self,
@@ -140,7 +161,7 @@ class MCPAdminServer:
             name="admin.history",
             description="List permission-filtered Django admin audit history.",
         )
-        for model, model_admin in self.admin_site.get_registered_model_admins():
+        for model, model_admin in self._registered_model_admins:
             self._register_model_read_tools(model, model_admin)
 
     def _register_model_read_tools(self, model, model_admin):
@@ -240,7 +261,7 @@ class MCPAdminServer:
             )
 
     def _register_mutation_tools(self):
-        for model, model_admin in self.admin_site.get_registered_model_admins():
+        for model, model_admin in self._registered_model_admins:
             self._register_model_mutation_tools(model, model_admin)
 
     def _register_model_mutation_tools(self, model, model_admin):
@@ -462,6 +483,8 @@ class MCPAdminServer:
         permission: ToolPermission | None = None,
         annotations: ToolAnnotations = READ_ONLY,
     ):
+        if len(name) > 64:
+            raise ImproperlyConfigured(f"MCP tool name exceeds the 64-character protocol limit: {name!r}.")
         self._tool_permissions[name] = permission
         self.server.add_tool(
             function,
@@ -471,6 +494,26 @@ class MCPAdminServer:
             meta={"django_veo_admin_api": {"operation": name}},
             structured_output=True,
         )
+
+    def _validate_tool_manifest_size(self, limit: int) -> None:
+        if limit < 1:
+            raise ValueError("max_tool_manifest_bytes must be at least 1.")
+        tools = self.server._tool_manager.list_tools()
+        manifest = [
+            {
+                "name": tool.name,
+                "inputSchema": tool.parameters,
+                "outputSchema": tool.output_schema,
+                "annotations": tool.annotations.model_dump(mode="json") if tool.annotations else None,
+            }
+            for tool in tools
+        ]
+        size = len(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode())
+        if size > limit:
+            raise ImproperlyConfigured(
+                "MCP tool manifest exceeds max_tool_manifest_bytes "
+                f"({size} > {limit}). Reduce the registry/tool surface or explicitly raise the reviewed limit."
+            )
 
     async def _invoke(
         self,
@@ -484,6 +527,17 @@ class MCPAdminServer:
                 request_info(context), tool_name, permission, operation
             )
         except Exception as exc:
+            logger.info(
+                "MCP admin tool failed",
+                extra={
+                    "django_veo_admin_api": {
+                        "event": "mcp_tool_call",
+                        "tool": tool_name,
+                        "outcome": "error",
+                        "exception_type": type(exc).__name__,
+                    }
+                },
+            )
             return operation_error_result(exc, tool_name=tool_name)
         if result.status_code >= 400 and isinstance(result.data, ErrorResponse):
             return operation_result_error(result.data)
@@ -503,7 +557,20 @@ class MCPAdminServer:
             raise AdminPermissionError([{"message": "Permission denied.", "param": "non_field_errors"}])
         if permission is not None and not permission(request):
             raise AdminPermissionError([{"message": "Permission denied.", "param": "non_field_errors"}])
-        return operation(AdminRequestContext(request))
+        result = operation(AdminRequestContext(request))
+        logger.info(
+            "MCP admin tool completed",
+            extra={
+                "django_veo_admin_api": {
+                    "event": "mcp_tool_call",
+                    "tool": tool_name,
+                    "outcome": "success" if result.status_code < 400 else "error",
+                    "status_code": result.status_code,
+                    "user_id": str(getattr(getattr(request, "user", None), "pk", "")) or None,
+                }
+            },
+        )
+        return result
 
     def _request(self, info: MCPRequestInfo) -> HttpRequest:
         request = self.request_factory(info)

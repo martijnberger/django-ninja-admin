@@ -37,6 +37,9 @@ jobs:
       - name: Check OpenAPI snapshot
         run: just openapi-snapshot-check
 
+      - name: Check MCP tool manifest
+        run: just mcp-snapshot-check
+
   dist:
     name: Distribution / Python 3.12
     runs-on: ubuntu-latest
@@ -67,12 +70,54 @@ jobs:
           DJANGO_VEO_ADMIN_API_DIST_UV_CACHE: /tmp/django-veo-admin-api-uv-cache
         run: just dist-check
 
+      - name: Smoke-test MCP-only installed profile
+        env:
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
+        run: just mcp-package-smoke
+
+      - name: Smoke-test combined installed profile
+        env:
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
+        run: just all-package-smoke
+
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
           name: django-veo-admin-api-wheel
           path: dist/*.whl
           if-no-files-found: error
+
+  mcp-conformance:
+    name: MCP 2026-07-28 conformance smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run official MCP conformance smoke
+        run: just mcp-conformance
 
   checks:
     name: Django ${{ matrix.django-label }} / Python ${{ matrix.python-version }}

@@ -35,6 +35,21 @@ The core depends directly on Django and Pydantic. The optional HTTP/OpenAPI
 adapter intentionally uses Django Ninja instead of Django REST Framework or
 drf-spectacular.
 
+Install the MCP integration independently when an MCP client should operate on
+the same permission, form, mutation, serialization, and audit semantics:
+
+```bash
+python -m pip install 'django-veo-admin-api[mcp]'
+```
+
+```python
+from django_veo_admin_api.core import CoreAdminSite
+from django_veo_admin_api.integrations.mcp import MCPAdminServer
+```
+
+The MCP adapter uses the official SDK's stateless Streamable HTTP transport;
+it calls core operations directly and never loops back through Ninja routes.
+
 Supported versions are Python 3.12+ and Django 5.0+.
 
 ## Development Checks
@@ -68,3 +83,5 @@ The MkDocs documentation site is configured by `mkdocs.yml`; run
 `just docs-build` to run a strict local site build.
 See [API Versioning And Deprecation](docs/versioning.md) for the OpenAPI
 contract review and release compatibility policy.
+See [MCP Integration](docs/mcp-integration.md) for tool names, verified-principal
+mapping, ASGI hosting, policy, security controls, and conformance checks.

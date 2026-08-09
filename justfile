@@ -22,7 +22,7 @@ typecheck-package:
     UV_CACHE_DIR=.uv-cache uv run ty check --error all django_veo_admin_api
 
 typecheck-scripts:
-    UV_CACHE_DIR=.uv-cache uv run ty check --error all scripts/dist_check.py scripts/docs_check.py scripts/generated_client_smoke.py scripts/integration_package_smoke.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/private_django_api_audit.py scripts/sample_project_smoke.py scripts/smoke_utils.py
+    UV_CACHE_DIR=.uv-cache uv run ty check --error all scripts/dist_check.py scripts/docs_check.py scripts/generated_client_smoke.py scripts/integration_package_smoke.py scripts/mcp_conformance.py scripts/mcp_conformance_server.py scripts/mcp_snapshot.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/private_django_api_audit.py scripts/sample_project_smoke.py scripts/smoke_utils.py
 
 typecheck: typecheck-package typecheck-scripts
 
@@ -71,6 +71,15 @@ openapi-snapshot-check:
 openapi-snapshot-update:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_snapshot.py --update
 
-check: lint format-check typecheck coverage-test dist-check package-smoke mcp-package-smoke all-package-smoke sample-project-smoke openapi-snapshot-check generated-client-smoke private-api-audit docs-check docs-build
+mcp-snapshot-check:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/mcp_snapshot.py --check
+
+mcp-snapshot-update:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/mcp_snapshot.py --update
+
+mcp-conformance:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/mcp_conformance.py
+
+check: lint format-check typecheck coverage-test dist-check package-smoke mcp-package-smoke all-package-smoke sample-project-smoke openapi-snapshot-check mcp-snapshot-check generated-client-smoke private-api-audit docs-check docs-build
 
 ci: check

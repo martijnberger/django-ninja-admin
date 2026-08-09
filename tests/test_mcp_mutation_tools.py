@@ -6,12 +6,13 @@ from mcp import Client
 from django_veo_admin_api.core import CoreAdminSite
 from django_veo_admin_api.integrations.mcp import MCPAdminServer
 from django_veo_admin_api.models import ADDITION, LogEntry
-from tests.testapp.admin import ProductAdmin
-from tests.testapp.models import Product
+from tests.testapp.admin import CategoryAdmin, ProductAdmin
+from tests.testapp.models import Category, Product, ProductReview
 
 
 def make_adapter(user):
     admin_site = CoreAdminSite(include_auth=False)
+    admin_site.register(Category, CategoryAdmin)
     admin_site.register(Product, ProductAdmin)
 
     def request_factory(info):
@@ -161,3 +162,59 @@ def test_mutation_tools_return_canonical_validation_and_permission_errors(sample
     assert denied_result.structured_content["error"]["errors"] == [
         {"message": "Permission denied.", "param": "non_field_errors"}
     ]
+
+
+def test_mcp_inline_failure_rolls_back_and_extra_keys_are_rejected(sample):
+    user = get_user_model().objects.create_superuser("mcp-rollback-admin", password="pw")
+    adapter = make_adapter(user)
+
+    async def exercise():
+        async with Client(adapter.server) as client:
+            rollback_result = await client.call_tool(
+                "admin.testapp.product.create",
+                {
+                    "payload": {
+                        "data": {
+                            "name": "Rolled back MCP product",
+                            "category": sample.category_id,
+                            "price": "9.00",
+                            "stock_status": "in_stock",
+                            "description": "",
+                        },
+                        "inlines": {"testapp.productimage": {"change": [{"pk": 999999, "title": "Missing inline"}]}},
+                    }
+                },
+            )
+            assert rollback_result.is_error is True
+
+            extra_result = await client.call_tool(
+                "admin.testapp.product.update",
+                {
+                    "object_id": str(sample.pk),
+                    "payload": {"data": {"price": "99.00"}, "unexpected": True},
+                },
+            )
+            assert extra_result.is_error is True
+
+    async_to_sync(exercise)()
+    assert not Product.objects.filter(name="Rolled back MCP product").exists()
+    sample.refresh_from_db()
+    assert sample.price == 12.5
+
+
+def test_mcp_delete_preserves_protected_object_error_metadata(sample):
+    user = get_user_model().objects.create_superuser("mcp-protected-admin", password="pw")
+    ProductReview.objects.create(product=sample, note="Pinned MCP review")
+    adapter = make_adapter(user)
+
+    async def exercise():
+        async with Client(adapter.server) as client:
+            return await client.call_tool(
+                "admin.testapp.product.delete",
+                {"object_id": str(sample.pk)},
+            )
+
+    result = async_to_sync(exercise)()
+    assert result.is_error is True
+    assert result.structured_content["error"]["protected"] == ["Pinned MCP review"]
+    assert Product.objects.filter(pk=sample.pk).exists()

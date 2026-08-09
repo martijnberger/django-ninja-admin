@@ -1,7 +1,9 @@
 # Contract Reference
 
-The generated OpenAPI document is the client contract. It is intentionally
-Ninja-native and does not preserve DRF envelopes or serializer hooks.
+The generated OpenAPI document and MCP tool manifest are the client contracts.
+OpenAPI is intentionally Ninja-native and does not preserve DRF envelopes or
+serializer hooks. MCP schemas project the same Pydantic models without using
+the HTTP routes.
 
 ## OpenAPI
 
@@ -90,9 +92,14 @@ Runtime errors use HTTP status codes and the shared `ErrorResponse` body.
 Representative auth, permission, not-found, validation, form, inline, bulk-row,
 and protected-delete errors are validated against the advertised schemas.
 
+MCP expected failures use the same `ErrorResponse` inside the closed
+`{data, error}` tool envelope, set MCP `isError`, and include JSON text content
+for compatibility. Malformed JSON-RPC or tool arguments remain protocol/SDK
+validation errors.
+
 ## Release Contract
 
-Before beta, wire shapes may still change when needed to finish the v1
-contract. After Milestone 3, follow the [API versioning policy](versioning.md)
-for removed fields, renamed components, changed required fields, changed auth,
-or changed error/status maps.
+Before beta, wire shapes may still change when needed to finish the split.
+After Phase 4, follow the [API versioning policy](versioning.md) for removed
+fields or tools, renamed components, changed required fields, changed auth,
+annotations, or changed error/status maps.

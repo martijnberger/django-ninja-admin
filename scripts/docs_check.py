@@ -13,7 +13,11 @@ MKDOCS_CONFIG = ROOT / "mkdocs.yml"
 LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 REQUIRED_GUIDES = {
     "setup.md",
+    "architecture.md",
+    "core-api.md",
     "api-and-auth.md",
+    "mcp-integration.md",
+    "security.md",
     "frontend-integration.md",
     "hook-reference.md",
     "contract-reference.md",

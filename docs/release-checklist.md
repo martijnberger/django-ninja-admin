@@ -1,7 +1,7 @@
 # Release Checklist
 
-This package stays alpha until Milestones 1-3 in `PLAN.md` are complete and
-the generated OpenAPI contract has been reviewed from an installed wheel.
+This package stays alpha until Phases 0-4 in `PLAN.md` are complete and both
+generated wire contracts have been reviewed from installed wheels.
 `docs/parity-matrix.md` is an advisory admin-behavior checklist, not the
 release bar; use it to find stale evidence and untested Django-admin edge
 cases while keeping release readiness tied to the milestone criteria below.
@@ -24,6 +24,9 @@ just check
 - `just package-smoke` to build a wheel, install the base profile into a clean
   environment, import core APIs with Django Ninja absent, verify lazy
   missing-extra errors, and confirm Ninja is only an optional requirement.
+- `just mcp-package-smoke` and `just all-package-smoke` to install the MCP-only
+  and combined profiles, prove MCP does not pull in Ninja, and prove both
+  integrations keep separate registries when installed together.
 - CI builds and checks the distribution once, uploads the checked wheel, and
   passes it to smoke jobs with `DJANGO_VEO_ADMIN_API_WHEEL`; local smoke commands
   still build their own wheel unless that variable points at a wheel file or
@@ -37,8 +40,9 @@ just check
   links.
 - `just docs-build` to run a strict MkDocs build into a temporary output
   directory.
-- `just openapi-snapshot-check` and `just generated-client-smoke` to preserve
-  and exercise the reviewed OpenAPI contract from an installed wheel.
+- `just openapi-snapshot-check`, `just mcp-snapshot-check`, and
+  `just generated-client-smoke` to preserve both reviewed wire artifacts and
+  exercise the OpenAPI contract from an installed wheel.
 - Set `DJANGO_VEO_ADMIN_API_SMOKE_DJANGO` to a concrete requirement such as
   `django>=5.2,<5.3` when the installed-project smoke should use the same
   Django lane as a compatibility matrix job.
@@ -50,6 +54,10 @@ just check
 - CI also runs `just postgres-test` against PostgreSQL; local use requires
   `DJANGO_VEO_ADMIN_API_TEST_DATABASE=postgres` and the `POSTGRES_*` connection
   environment variables.
+- `just mcp-conformance` runs the pinned official MCP conformance smoke for
+  `2026-07-28` stateless behavior, tool discovery/names, and DNS-rebinding
+  protection. It requires Node/npm and localhost binding and is a release/CI
+  gate rather than part of the offline Python test loop.
 
 ## Extended Verification
 
@@ -76,6 +84,9 @@ behavior, or permission boundaries.
   requirement.
 - Run `just openapi-diff <previous-openapi.json> <candidate-openapi.json>` when
   comparing release candidates or reviewed OpenAPI artifacts.
+- Review `tests/golden/mcp-tools.json` whenever a model admin, Pydantic
+  contract, MCP annotation, tool name, or SDK dependency changes. Regenerate it
+  deliberately with `just mcp-snapshot-update`.
 - Run `just generated-client-smoke` to prove a clean installed project can use
   OpenAPI operation IDs, request examples, and schema-declared path/query
   parameters, including typed changelist query-parameter schemas, for core
@@ -123,14 +134,16 @@ behavior, or permission boundaries.
 
 ## Beta Criteria
 
-- Milestones 1-3 in `PLAN.md` are complete.
+- Phases 0-4 in `PLAN.md` are complete.
 - Upstream fixture behavior has Ninja-native tests where the v2 contract keeps
   the same semantics.
 - Changelist, filter, action, inline, delete, history, and form behavior cover
   common Django-admin edge cases.
 - The Django 5.0+ and database compatibility matrix is exercised in CI.
-- OpenAPI changes are guarded by semantic or snapshot tests and reviewed from
-  an installed wheel.
+- OpenAPI and MCP tool-manifest changes are guarded by snapshots and reviewed
+  from installed profiles.
+- The base, Ninja, MCP, and all dependency profiles pass; the official MCP
+  conformance smoke passes for the supported protocol revision.
 
 ## Stable Criteria
 

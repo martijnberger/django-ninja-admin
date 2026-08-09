@@ -26,6 +26,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
   shared core operations directly.
 - Added clean `[mcp]` and `[all]` installed-wheel profiles; the MCP-only profile
   verifies that Django Ninja remains absent.
+- Added model-scoped MCP create, partial-update, list-editable bulk, admin
+  action, delete-preview, and delete tools using the same generated Pydantic
+  contracts and core operations as Ninja.
+- Added a deterministic golden MCP tool manifest, permission and rollback
+  coverage, a bounded registry, metadata-only security logs, and an official
+  `2026-07-28` stateless/tool-discovery/DNS-rebinding conformance smoke.
 
 ### Changed
 

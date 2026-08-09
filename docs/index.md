@@ -14,8 +14,13 @@ the Pydantic schemas behind it.
 ## Start Here
 
 - [Setup](setup.md) shows the smallest Django project integration.
+- [Architecture](architecture.md) explains the core and optional transport boundaries.
+- [Core API](core-api.md) documents the transport-neutral site and operation seam.
 - [API And Authentication](api-and-auth.md) covers auth, request shapes,
   response hooks, actions, and throttling.
+- [MCP Integration](mcp-integration.md) covers tool projection, authorization,
+  ASGI hosting, policy, and conformance.
+- [Security And Threat Model](security.md) records trust boundaries and invariants.
 - [Frontend Integration](frontend-integration.md) explains how a custom SPA can
   consume the API safely.
 - [Hook Reference](hook-reference.md) summarizes the Django-admin-style hooks

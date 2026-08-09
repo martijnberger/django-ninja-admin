@@ -1,15 +1,15 @@
 # API Versioning And Deprecation
 
-`django-veo-admin-api` is still pre-beta. Wire contracts may change while
-Milestones 1-3 are being completed, but every release reviews the generated
-OpenAPI diff before publication.
+`django-veo-admin-api` is still pre-beta. Wire contracts may change while the
+split is being completed, but every release reviews the generated OpenAPI and
+MCP tool-manifest diffs before publication.
 
 ## Versioning Rules
 
 - Before beta, incompatible API changes are allowed when they move the package
   toward the documented v1 contract.
-- After Milestone 3 is complete, the OpenAPI document is treated as the public
-  wire contract for generated clients.
+- After Phase 4 is complete, the OpenAPI document and MCP tool manifest are
+  treated as public wire contracts for generated clients.
 - Patch releases contain compatible bug fixes and documentation corrections.
 - Minor releases may add compatible endpoints, fields, schemas, examples,
   hooks, or optional behavior.
@@ -17,9 +17,9 @@ OpenAPI diff before publication.
 
 ## Release Decisions
 
-Every release candidate must compare the candidate OpenAPI document with the
-previous reviewed artifact. The following changes require an explicit release
-decision:
+Every release candidate must compare candidate OpenAPI and MCP manifests with
+the previous reviewed artifacts. The following changes require an explicit
+release decision:
 
 - Removing a route, operation, field, schema, example, or response status.
 - Renaming a route parameter, response field, component, operation ID, tag, or
@@ -28,13 +28,15 @@ decision:
   media types, response status maps, or documented error bodies.
 - Changing authentication requirements for docs, OpenAPI, site routes, model
   routes, actions, autocomplete, history, or mutations.
+- Changing an MCP tool name, annotation, input/output schema, structured error
+  envelope, discovery policy, or supported protocol revision.
 
 Compatible additions still need review, but they do not require a major version
 when existing generated clients can continue to parse their current workflows.
 
 ## Deprecation Policy
 
-After Milestone 3, a deprecated field, endpoint, hook, or behavior should remain
+After Phase 4, a deprecated field, endpoint, tool, hook, or behavior should remain
 available for at least one minor release before removal unless it is a security
 fix. Deprecations should be documented in user-facing release notes and, where
 possible, reflected in OpenAPI descriptions.
@@ -45,6 +47,7 @@ path.
 
 ## Contract Gate
 
-The checked-in golden OpenAPI snapshot and generated-client smoke test are the
-default contract gate. A release is not ready if the generated OpenAPI diff is
-unreviewed or if generated clients cannot exercise the documented core flows.
+The checked-in golden OpenAPI snapshot, golden MCP manifest,
+generated-client smoke, and official MCP conformance smoke are the default
+contract gates. A release is not ready if either generated diff is unreviewed
+or either integration cannot exercise its documented core flows.

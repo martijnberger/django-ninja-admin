@@ -337,10 +337,11 @@ profile preserves the reviewed current wire contract.
 
 ### Phase 3 — Add The MCP Integration
 
-Status: in progress. The official MCP 2.0 SDK, stateless Streamable HTTP app,
-explicit authenticated Django-request boundary, tool policy, permission-filtered
-discovery, structured result/error envelope, and read-only operation projection
-were implemented and verified on 2026-08-09.
+Status: implemented and verified on 2026-08-09. The official MCP 2.0 SDK,
+stateless Streamable HTTP app, explicit authenticated Django-request boundary,
+tool policy, bounded permission-filtered discovery, structured result/error
+envelope, read and mutation operation projections, golden manifest, clean wheel
+profiles, and targeted official `2026-07-28` conformance smoke are in place.
 
 #### Protocol/hosting spike
 
@@ -401,6 +402,10 @@ cannot perform an operation that the same request context would be denied by
 core/Ninja.
 
 ### Phase 4 — Contract And Release Hardening
+
+Status: in progress. Separate core/MCP documentation, the dependency diagram,
+architecture-boundary tests, security/threat-model guide, and dual golden
+artifact gates were added on 2026-08-09.
 
 1. Document core, Ninja, and MCP public APIs separately.
 2. Add architecture-boundary tests and a dependency diagram to the docs.
