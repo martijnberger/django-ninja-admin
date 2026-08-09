@@ -12,6 +12,7 @@ import django_veo_admin_api.admins.base as base_module
 import django_veo_admin_api.admins.inline as inline_module
 import django_veo_admin_api.admins.model as model_module
 import django_veo_admin_api.changelist as changelist_module
+import django_veo_admin_api.core.site as core_site_module
 from django_veo_admin_api import ModelAdmin, NinjaAdminSite
 from django_veo_admin_api.core.operations import bulk as bulk_operations_module
 from django_veo_admin_api.core.operations import changelist as changelist_operations_module
@@ -53,7 +54,7 @@ def test_core_site_error_messages_use_gettext(monkeypatch, admin_client, staff_c
 
 
 def test_default_site_labels_use_gettext(monkeypatch, admin_client):
-    monkeypatch.setattr(sites_module, "_", _translate)
+    monkeypatch.setattr(core_site_module, "_", _translate)
 
     response = admin_client.get("/admin-api/context")
     fresh_site = NinjaAdminSite(name="translated_labels", auth=None, include_auth=False)
@@ -66,7 +67,7 @@ def test_default_site_labels_use_gettext(monkeypatch, admin_client):
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_custom_site_labels_are_not_translated_by_package_gettext(monkeypatch, admin_client):
-    monkeypatch.setattr(sites_module, "_", _translate)
+    monkeypatch.setattr(core_site_module, "_", _translate)
 
     response = admin_client.get("/context-admin/context")
 
