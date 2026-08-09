@@ -6,6 +6,7 @@ from pydantic import TypeAdapter
 
 from django_veo_admin_api.core.exceptions import AdminValidationError
 from django_veo_admin_api.core.operations.base import OperationResult
+from django_veo_admin_api.schemas import ErrorResponse
 
 type StatusResponseResolver = Callable[[Any], OperationResult[Any] | None]
 
@@ -66,6 +67,32 @@ def mutation_response_schema(
     if status_code in custom_responses:
         return custom_responses[status_code]
     raise AdminValidationError([{"message": _("Unsupported response status."), "param": hook_name}])
+
+
+def validate_action_response(
+    response,
+    *,
+    response_schema,
+    status_resolver: StatusResponseResolver | None = None,
+):
+    resolved = status_resolver(response) if status_resolver is not None else None
+    if resolved is not None:
+        status_code = resolved.status_code
+        value = resolved.data
+    else:
+        status_code = 200
+        value = response
+    if status_code == 204:
+        if value is not None:
+            raise AdminValidationError([{"message": _("Response status does not allow a body."), "param": "action"}])
+        return OperationResult(None, status_code=status_code)
+    if status_code in {200, 202}:
+        value = TypeAdapter(response_schema).validate_python(value)
+        return OperationResult(value, status_code=status_code)
+    if status_code in {400, 403, 409}:
+        value = TypeAdapter(ErrorResponse).validate_python(value)
+        return OperationResult(value, status_code=status_code)
+    raise AdminValidationError([{"message": _("Unsupported response status."), "param": "action"}])
 
 
 def _custom_hook_responses(schema, statuses):

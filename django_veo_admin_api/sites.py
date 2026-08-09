@@ -37,7 +37,6 @@ from ninja.errors import AuthenticationError, AuthorizationError, HttpError, Thr
 from ninja.errors import ValidationError as NinjaValidationError
 from ninja.security import SessionAuthIsStaff
 from ninja.utils import is_async_callable
-from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 
 from django_veo_admin_api import actions
@@ -53,6 +52,7 @@ from django_veo_admin_api.core.exceptions import (
     NotRegistered,
 )
 from django_veo_admin_api.core.operations import AdminRequestContext
+from django_veo_admin_api.core.operations.actions import ActionOperations
 from django_veo_admin_api.core.operations.autocomplete import AutocompleteOperations
 from django_veo_admin_api.core.operations.bulk import BulkMutationOperations
 from django_veo_admin_api.core.operations.changelist import ChangelistOperations
@@ -356,6 +356,10 @@ class NinjaAdminSite:
     @property
     def bulk_mutation_operations(self):
         return BulkMutationOperations()
+
+    @property
+    def action_operations(self):
+        return ActionOperations(status_resolver=resolve_ninja_status)
 
     def get_registered_model_admins(self):
         return self._registry.items()
@@ -1144,15 +1148,13 @@ class NinjaAdminSite:
                 payload: action_payload_schema,
                 to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
             ):
-                if not model_admin.has_view_or_change_permission(request):
-                    raise PermissionDenied
-                cl_queryset = site._filtered_queryset(request, model_admin)
-                with transaction.atomic(using=router_db_for_write(model_admin.model)):
-                    response = model_admin.response_action(request, cl_queryset, payload, to_field=to_field)
-                    return site._validated_action_response(
-                        response,
-                        response_schema=model_admin.get_action_response_schema(request),
-                    )
+                result = site.action_operations.execute(
+                    AdminRequestContext(request),
+                    model_admin,
+                    payload,
+                    to_field=to_field,
+                )
+                return ninja_operation_response(result)
 
         @router.put(
             f"{prefix}/bulk",
@@ -1409,9 +1411,6 @@ class NinjaAdminSite:
             to_field,
         ).data
 
-    def _filtered_queryset(self, request, model_admin):
-        return model_admin.get_changelist_instance(request).queryset
-
     def _file_form_field_names(self, model_admin, request=None, obj=None, *, change):
         form_class = model_admin.get_form_class(request, obj, change=change)
         return [name for name, field in form_class.base_fields.items() if isinstance(field, forms.FileField)]
@@ -1463,27 +1462,6 @@ class NinjaAdminSite:
         if input_schema is not None:
             payload["data"] = pydantic_model_example(input_schema)
         return payload
-
-    def _validated_action_response(self, response, *, response_schema):
-        if isinstance(response, Status):
-            status_code = response.status_code
-            value = response.value
-        else:
-            status_code = 200
-            value = response
-        if status_code == 204:
-            if value is not None:
-                raise AdminValidationError(
-                    [{"message": _("Response status does not allow a body."), "param": "action"}]
-                )
-            return Status(status_code, None)
-        if status_code in {200, 202}:
-            TypeAdapter(response_schema).validate_python(value)
-            return Status(status_code, value)
-        if status_code in {400, 403, 409}:
-            TypeAdapter(ErrorResponse).validate_python(value)
-            return Status(status_code, value)
-        raise AdminValidationError([{"message": _("Unsupported response status."), "param": "action"}])
 
     def _inline_payload_example(self, model_admin, *, change):
         examples = {}
