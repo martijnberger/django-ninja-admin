@@ -22,6 +22,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Moved the canonical admin exception vocabulary under `core` with a
   compatibility re-export at the original module path, and moved form
   permission checks ahead of form/formset construction inside the operation.
+- Added the core object lookup/detail operation so alternate-field checks,
+  not-found behavior, object permissions, and typed serialization no longer
+  live in the Ninja route implementation.
 - Renamed the distribution from `django-ninja-admin` to
   `django-veo-admin-api` and the Python/Django package from
   `django_ninja_admin` to `django_veo_admin_api`, including app labels,

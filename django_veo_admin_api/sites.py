@@ -57,6 +57,7 @@ from django_veo_admin_api.core.exceptions import (
 from django_veo_admin_api.core.operations import AdminRequestContext
 from django_veo_admin_api.core.operations.discovery import DiscoveryOperations
 from django_veo_admin_api.core.operations.forms import FormOperations, inline_remote_accessor_name
+from django_veo_admin_api.core.operations.objects import ObjectOperations
 from django_veo_admin_api.integrations.ninja.field_types import NinjaModelFieldTypeResolver
 from django_veo_admin_api.routes import AdminRoute, normalize_route_methods
 from django_veo_admin_api.schemas import (
@@ -340,6 +341,10 @@ class NinjaAdminSite:
     @property
     def form_operations(self):
         return FormOperations(self)
+
+    @property
+    def object_operations(self):
+        return ObjectOperations()
 
     def get_registered_model_admins(self):
         return self._registry.items()
@@ -1440,10 +1445,13 @@ class NinjaAdminSite:
             object_id: str,
             to_field: str | None = NinjaQuery(None, alias="_to_field", description=TO_FIELD_QUERY_DESCRIPTION),
         ):
-            obj = site._get_object_or_404(request, model_admin, object_id, to_field)
-            if not model_admin.has_view_or_change_permission(request, obj):
-                raise PermissionDenied
-            return model_admin.serialize_object(obj, request)
+            site._validate_repeated_to_field_query_param(request, model_admin)
+            return site.object_operations.detail(
+                AdminRequestContext(request),
+                model_admin,
+                object_id,
+                to_field,
+            ).data
 
         @router.get(
             f"{prefix}/{{object_id}}/form",
@@ -1633,19 +1641,12 @@ class NinjaAdminSite:
 
     def _get_object_or_404(self, request, model_admin, object_id, to_field=None):
         self._validate_repeated_to_field_query_param(request, model_admin)
-        if to_field and not model_admin.to_field_allowed(request, to_field):
-            raise AdminValidationError(
-                [
-                    {
-                        "message": _("The field '%(field)s' cannot be referenced.") % {"field": to_field},
-                        "param": "_to_field",
-                    }
-                ]
-            )
-        obj = model_admin.get_object(request, unquote(object_id), to_field)
-        if obj is None:
-            raise Http404
-        return obj
+        return self.object_operations.get_object(
+            AdminRequestContext(request),
+            model_admin,
+            object_id,
+            to_field,
+        ).data
 
     def _filtered_queryset(self, request, model_admin):
         return model_admin.get_changelist_instance(request).queryset
