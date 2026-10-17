@@ -3,12 +3,12 @@
 import json
 import logging
 from collections.abc import Callable
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from typing import Annotated, Any, Literal
 
 from asgiref.sync import sync_to_async
 from django.core.exceptions import ImproperlyConfigured
-from django.db import router, transaction
+from django.db import connections, router, transaction
 from django.http import HttpRequest, QueryDict
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
@@ -53,6 +53,24 @@ MUTATING = ToolAnnotations(
     idempotent_hint=False,
     open_world_hint=False,
 )
+
+
+@contextmanager
+def django_connection_scope():
+    """Apply Django's connection lifetime policy around non-Django HTTP work."""
+
+    def close_expired_connections():
+        for connection in connections.all(initialized_only=True):
+            # An in-process caller can own an outer transaction. Never close
+            # that caller's connection or interfere with its transaction.
+            if not connection.in_atomic_block:
+                connection.close_if_unusable_or_obsolete()
+
+    close_expired_connections()
+    try:
+        yield
+    finally:
+        close_expired_connections()
 
 
 class MCPAdminServer:
@@ -143,6 +161,7 @@ class MCPAdminServer:
             }
         )
 
+    @django_connection_scope()
     def _allowed_tool_names_sync(self, info: MCPRequestInfo) -> set[str]:
         request = self._request(info)
         return {
@@ -583,6 +602,7 @@ class MCPAdminServer:
             return operation_result_error(result.data)
         return {"data": result.data, "error": None}
 
+    @django_connection_scope()
     def _invoke_sync(
         self,
         info: MCPRequestInfo,

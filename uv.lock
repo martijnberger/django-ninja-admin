@@ -430,7 +430,7 @@ dev = [
     { name = "pytest-django", specifier = ">=4.8" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", specifier = ">=0.6" },
-    { name = "twine", specifier = ">=5.0" },
+    { name = "twine", specifier = ">=7.0" },
     { name = "ty", specifier = ">=0.0.56" },
 ]
 

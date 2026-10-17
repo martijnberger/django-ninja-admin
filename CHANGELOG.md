@@ -12,6 +12,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Supported Django versions are now 5.2 LTS, 6.0, and 6.1, tested across
   Python 3.12–3.14. Removed unsupported Django 5.0/5.1 lanes.
 - Corrected repository/documentation links to the existing GitHub repository.
+- Updated distribution-validation tooling for current core metadata versions.
 
 ### Fixed
 
@@ -24,6 +25,9 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Added deployed HTTP coverage for bearer scopes, expiry/revocation, discovery,
   custom response hooks, and rollback after output failures. Unexpected MCP
   errors now log exception types without exception messages or field contents.
+- Applied Django's connection lifetime policy around MCP discovery and tool
+  execution, releasing request connections after HTTP calls while preserving
+  transactions owned by trusted in-process callers.
 
 ### Added
 

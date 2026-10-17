@@ -1,10 +1,13 @@
 """Exercise the deployed HTTP boundary, including SDK middleware and auth."""
 
 import time
+from threading import get_ident
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.db import connection
+from django.db.backends.signals import connection_created
 from django.test import RequestFactory
 from jsonschema import Draft202012Validator
 from mcp.server.auth.provider import AccessToken
@@ -141,6 +144,29 @@ def test_http_revocation_is_applied_between_calls():
         assert rpc(client, "tools/list").status_code == 200
         verifier.tokens.clear()
         assert rpc(client, "tools/list").status_code == 401
+
+
+def test_http_releases_request_database_connections():
+    if connection.vendor != "postgresql":
+        pytest.skip("SQLite intentionally keeps shared in-memory connections open.")
+    user = get_user_model().objects.create_superuser("http-connection-admin")
+    adapter, _ = make_adapter(user)
+    caller_thread = get_ident()
+    request_connections = []
+
+    def capture_connection(sender, connection, **kwargs):
+        if get_ident() != caller_thread:
+            request_connections.append(connection)
+
+    connection_created.connect(capture_connection)
+    try:
+        with TestClient(adapter.streamable_http_app()) as client:
+            assert rpc(client, "tools/list").status_code == 200
+            assert call_tool(client, "form").get("isError", False) is False
+        assert request_connections
+        assert all(connection.connection is None for connection in request_connections)
+    finally:
+        connection_created.disconnect(capture_connection)
 
 
 def test_http_add_only_user_can_describe_add_form_but_not_existing_objects():
