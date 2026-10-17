@@ -19,6 +19,15 @@ pre-release, minor versions may still adjust public API and wire contracts.
   custom response hooks, and rollback after output failures. Unexpected MCP
   errors now log exception types without exception messages or field contents.
 
+### Added
+
+- Added `migrate_legacy_admin`, a dry-run-first PostgreSQL/SQLite upgrade path
+  that adopts the old audit table, preserves content-type and permission IDs,
+  records the renamed migration history, and refuses conflicting state.
+- Added process-isolated upgrade tests for both legacy migration states,
+  user/group permissions, foreign keys, new writes, retries, collision refusal,
+  and rollback after an injected failure.
+
 ## 0.2.0 - 2026-08-09
 
 - Extracted permission-aware changelist construction and serialization into a typed core operation service.

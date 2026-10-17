@@ -20,6 +20,10 @@ Run migrations after installation:
 python manage.py migrate
 ```
 
+For an existing `django-ninja-admin` database, follow the
+[package upgrade procedure](migration-ninja-extra.md#upgrading-from-django-ninja-admin)
+before running this command. It preserves existing audit history and permissions.
+
 Register models with the default site and mount the generated Ninja API:
 
 ```python
