@@ -24,7 +24,10 @@ logger = logging.getLogger(__name__)
 def operation_error_result(exc: Exception, *, tool_name: str) -> CallToolResult:
     payload = _error_payload(exc)
     if payload is None:
-        logger.exception("Unexpected MCP admin tool failure", extra={"tool_name": tool_name})
+        logger.error(
+            "Unexpected MCP admin tool failure",
+            extra={"tool_name": tool_name, "exception_type": type(exc).__name__},
+        )
         payload = ErrorResponse.model_validate(
             {"errors": [{"message": "Operation failed.", "param": "non_field_errors"}]}
         )

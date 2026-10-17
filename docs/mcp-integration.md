@@ -124,6 +124,11 @@ uses `{ "data": ..., "error": null }`. Expected failures set MCP `isError`,
 return `{ "data": null, "error": ErrorResponse }` as structured content, and
 include JSON text compatibility.
 
+Create/update output schemas include the default mutation response and every
+declared response-hook schema, including status-specific hook variants.
+Output validation and JSON serialization run inside the write transaction;
+schema drift or serialization failures roll back both writes and audit entries.
+
 Mutation tools are conservatively marked destructive and non-idempotent.
 Clients should request human confirmation before calling them. The adapter
 does not treat a client-supplied confirmation boolean as authorization and

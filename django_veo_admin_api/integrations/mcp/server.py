@@ -3,15 +3,17 @@
 import json
 import logging
 from collections.abc import Callable
+from contextlib import nullcontext
 from typing import Annotated, Any, Literal
 
 from asgiref.sync import sync_to_async
 from django.core.exceptions import ImproperlyConfigured
+from django.db import router, transaction
 from django.http import HttpRequest, QueryDict
 from mcp.server import MCPServer
 from mcp.server.mcpserver import Context
 from mcp.types import ListToolsResult, ToolAnnotations
-from pydantic import Field
+from pydantic import Field, TypeAdapter
 
 from django_veo_admin_api.core.exceptions import AdminPermissionError
 from django_veo_admin_api.core.operations import AdminRequestContext, OperationResult
@@ -89,6 +91,8 @@ class MCPAdminServer:
                 "Reduce the CoreAdminSite registry or explicitly raise the reviewed limit."
             )
         self._tool_permissions: dict[str, ToolPermission | None] = {}
+        self._output_adapters: dict[str, TypeAdapter[Any]] = {}
+        self._write_models: dict[str, Any] = {}
         self.server = MCPServer(
             name=name,
             version=version,
@@ -122,13 +126,22 @@ class MCPAdminServer:
 
     async def _filter_tools(self, ctx, call_next):
         result = await call_next(ctx)
-        if ctx.method != "tools/list" or not isinstance(result, ListToolsResult):
+        if ctx.method != "tools/list":
             return result
+        # The modern HTTP dispatcher serializes handler results before middleware
+        # unwinds; legacy transports can still return the model itself.
+        result = ListToolsResult.model_validate(result)
         try:
             allowed = await sync_to_async(self._allowed_tool_names_sync, thread_sensitive=True)(request_info(ctx))
         except Exception:
-            return result.model_copy(update={"tools": []})
-        return result.model_copy(update={"tools": [tool for tool in result.tools if tool.name in allowed]})
+            allowed = set()
+        return result.model_copy(
+            update={
+                "tools": [tool for tool in result.tools if tool.name in allowed],
+                "cache_scope": "private",
+                "ttl_ms": 0,
+            }
+        )
 
     def _allowed_tool_names_sync(self, info: MCPRequestInfo) -> set[str]:
         request = self._request(info)
@@ -167,6 +180,9 @@ class MCPAdminServer:
     def _register_model_read_tools(self, model, model_admin):
         prefix = f"admin.{model._meta.app_label}.{model._meta.model_name}"
         visible = model_admin.has_view_or_change_permission
+
+        def can_describe_form(request):
+            return model_admin.has_add_permission(request) or visible(request)
 
         async def list_objects(
             ctx: Context,
@@ -218,13 +234,13 @@ class MCPAdminServer:
                     obj = self.admin_site.object_operations.get_object(context, model_admin, object_id, to_field).data
                 return self.admin_site.form_operations.describe(context, model_admin, obj)
 
-            return await self._invoke(ctx, f"{prefix}.form", visible, operation)
+            return await self._invoke(ctx, f"{prefix}.form", can_describe_form, operation)
 
         self._add_tool(
             form,
             name=f"{prefix}.form",
             description=f"Describe the request-aware form and inline formsets for {model._meta.verbose_name}.",
-            permission=visible,
+            permission=can_describe_form,
         )
 
         autocomplete_fields = tuple(model_admin.autocomplete_fields)
@@ -273,6 +289,12 @@ class MCPAdminServer:
         create_payload_schema = model_admin.get_mutation_payload_schema(None, change=False, partial=False)
         update_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=True)
         mutation_response_schema = model_admin.get_mutation_response_schema(None)
+        create_response_schema = self._mutation_response_union(
+            mutation_response_schema, model_admin.get_response_add_schema(None)
+        )
+        update_response_schema = self._mutation_response_union(
+            mutation_response_schema, model_admin.get_response_change_schema(None)
+        )
 
         async def create(payload, ctx: Context):
             def operation(context):
@@ -282,13 +304,14 @@ class MCPAdminServer:
             return await self._invoke(ctx, f"{prefix}.create", can_add, operation)
 
         create.__annotations__["payload"] = create_payload_schema
-        create.__annotations__["return"] = MCPToolResponse[mutation_response_schema]
+        create.__annotations__["return"] = MCPToolResponse[create_response_schema]
         self._add_tool(
             create,
             name=f"{prefix}.create",
             description=f"Create one {model._meta.verbose_name} through its Django admin form and inlines.",
             permission=can_add,
             annotations=MUTATING,
+            write_model=model,
         )
 
         async def update(object_id: str, payload, ctx: Context, to_field: str | None = None):
@@ -306,13 +329,14 @@ class MCPAdminServer:
             return await self._invoke(ctx, f"{prefix}.update", can_change, operation)
 
         update.__annotations__["payload"] = update_payload_schema
-        update.__annotations__["return"] = MCPToolResponse[mutation_response_schema]
+        update.__annotations__["return"] = MCPToolResponse[update_response_schema]
         self._add_tool(
             update,
             name=f"{prefix}.update",
             description=f"Partially update one {model._meta.verbose_name} through its Django admin form.",
             permission=can_change,
             annotations=MUTATING,
+            write_model=model,
         )
 
         bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
@@ -333,6 +357,7 @@ class MCPAdminServer:
             description=f"Apply Django list-editable formset updates to {model._meta.verbose_name_plural}.",
             permission=can_change,
             annotations=MUTATING,
+            write_model=model,
         )
 
         if model_admin.has_registered_actions():
@@ -359,6 +384,7 @@ class MCPAdminServer:
                 description=f"Execute one registered Django admin action for {model._meta.verbose_name_plural}.",
                 permission=can_view_or_change,
                 annotations=MUTATING,
+                write_model=model,
             )
 
         async def delete_preview(
@@ -421,7 +447,17 @@ class MCPAdminServer:
             description=f"Delete one {model._meta.verbose_name} after Django admin cascade and permission checks.",
             permission=can_delete,
             annotations=MUTATING,
+            write_model=model,
         )
+
+    @staticmethod
+    def _mutation_response_union(default_schema, hook_schema):
+        schemas = hook_schema.values() if isinstance(hook_schema, dict) else (hook_schema,)
+        result = default_schema
+        for schema in schemas:
+            if schema is not None:
+                result = result | schema
+        return result
 
     async def _apps(self, ctx: Context) -> MCPToolResponse[list[AppSummary]]:
         return await self._invoke(
@@ -482,10 +518,14 @@ class MCPAdminServer:
         description: str,
         permission: ToolPermission | None = None,
         annotations: ToolAnnotations = READ_ONLY,
+        write_model=None,
     ):
         if len(name) > 64:
             raise ImproperlyConfigured(f"MCP tool name exceeds the 64-character protocol limit: {name!r}.")
         self._tool_permissions[name] = permission
+        self._output_adapters[name] = TypeAdapter(function.__annotations__["return"])
+        if write_model is not None:
+            self._write_models[name] = write_model
         self.server.add_tool(
             function,
             name=name,
@@ -557,7 +597,16 @@ class MCPAdminServer:
             raise AdminPermissionError([{"message": "Permission denied.", "param": "non_field_errors"}])
         if permission is not None and not permission(request):
             raise AdminPermissionError([{"message": "Permission denied.", "param": "non_field_errors"}])
-        result = operation(AdminRequestContext(request))
+        write_model = self._write_models.get(tool_name)
+        boundary = transaction.atomic(using=router.db_for_write(write_model)) if write_model else nullcontext()
+        with boundary:
+            result = operation(AdminRequestContext(request))
+            if result.status_code < 400:
+                # Validate and serialize the exact advertised wire contract while
+                # writes and their audit entries can still be rolled back.
+                response = self._output_adapters[tool_name].validate_python({"data": result.data, "error": None})
+                data = response.model_dump(mode="json")["data"]
+                result = OperationResult(data, status_code=result.status_code)
         logger.info(
             "MCP admin tool completed",
             extra={

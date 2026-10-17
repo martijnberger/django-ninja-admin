@@ -7,6 +7,18 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Fixed
+
+- Applied MCP discovery permission and policy filters to both dictionary and
+  model results returned by the SDK's HTTP and legacy dispatchers.
+- Allowed add-only users to describe add forms while retaining object-level
+  checks for existing objects.
+- Included custom create/update response hooks in MCP output schemas and
+  validated/serialized tool output before committing writes and audit entries.
+- Added deployed HTTP coverage for bearer scopes, expiry/revocation, discovery,
+  custom response hooks, and rollback after output failures. Unexpected MCP
+  errors now log exception types without exception messages or field contents.
+
 ## 0.2.0 - 2026-08-09
 
 - Extracted permission-aware changelist construction and serialization into a typed core operation service.
