@@ -5,8 +5,8 @@ import pytest
 from django.core.validators import MaxValueValidator
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, action, site
-from django_ninja_admin.schemas import (
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite, action, site
+from django_veo_admin_api.schemas import (
     ActionResponse,
     ChangelistConfig,
     ChangelistResponse,

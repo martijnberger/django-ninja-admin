@@ -1,0 +1,679 @@
+"""Official-SDK MCP projection of the shared admin operation services."""
+
+import json
+import logging
+from collections.abc import Callable
+from contextlib import contextmanager, nullcontext
+from typing import Annotated, Any, Literal
+
+from asgiref.sync import sync_to_async
+from django.core.exceptions import ImproperlyConfigured
+from django.db import connections, router, transaction
+from django.http import HttpRequest, QueryDict
+from mcp.server import MCPServer
+from mcp.server.mcpserver import Context
+from mcp.types import ListToolsResult, ToolAnnotations
+from pydantic import Field, TypeAdapter
+
+from django_veo_admin_api.core.exceptions import AdminPermissionError
+from django_veo_admin_api.core.operations import AdminRequestContext, OperationResult
+from django_veo_admin_api.core.site import CoreAdminSite
+from django_veo_admin_api.integrations.mcp.context import DjangoRequestFactory, MCPRequestInfo, request_info
+from django_veo_admin_api.integrations.mcp.policy import MCPToolPolicy
+from django_veo_admin_api.integrations.mcp.results import operation_error_result, operation_result_error
+from django_veo_admin_api.integrations.mcp.schemas import MCPDeleteResult, MCPToolResponse
+from django_veo_admin_api.schemas import (
+    AppSummary,
+    AutocompleteResponse,
+    ChangelistResponse,
+    DeletionPreview,
+    ErrorResponse,
+    FormResponse,
+    HistoryActionFlag,
+    HistoryResponse,
+    PermissionsResponse,
+    SiteContext,
+)
+
+type ToolPermission = Callable[[HttpRequest], bool]
+type OperationCall = Callable[[AdminRequestContext], OperationResult[Any]]
+PositiveInt = Annotated[int, Field(ge=1)]
+logger = logging.getLogger(__name__)
+
+READ_ONLY = ToolAnnotations(
+    read_only_hint=True,
+    destructive_hint=False,
+    idempotent_hint=True,
+    open_world_hint=False,
+)
+
+MUTATING = ToolAnnotations(
+    read_only_hint=False,
+    destructive_hint=True,
+    idempotent_hint=False,
+    open_world_hint=False,
+)
+
+
+@contextmanager
+def django_connection_scope():
+    """Apply Django's connection lifetime policy around non-Django HTTP work."""
+
+    def close_expired_connections():
+        for connection in connections.all(initialized_only=True):
+            # An in-process caller can own an outer transaction. Never close
+            # that caller's connection or interfere with its transaction.
+            if not connection.in_atomic_block:
+                connection.close_if_unusable_or_obsolete()
+
+    close_expired_connections()
+    try:
+        yield
+    finally:
+        close_expired_connections()
+
+
+class MCPAdminServer:
+    """Project a ``CoreAdminSite`` through the official MCP SDK."""
+
+    def __init__(
+        self,
+        admin_site: CoreAdminSite,
+        request_factory: DjangoRequestFactory,
+        *,
+        name: str = "Django Veo Admin API",
+        version: str = "2.0.0",
+        policy: MCPToolPolicy | None = None,
+        admin_url_prefix: str = "/admin-api",
+        max_registered_models: int = 50,
+        max_tool_manifest_bytes: int = 2 * 1024 * 1024,
+        token_verifier=None,
+        auth=None,
+    ):
+        self.admin_site = admin_site
+        self.request_factory = request_factory
+        self.policy = policy or MCPToolPolicy()
+        self.admin_url_prefix = admin_url_prefix.rstrip("/")
+        self._registered_model_admins = tuple(
+            sorted(
+                admin_site.get_registered_model_admins(),
+                key=lambda item: (item[0]._meta.app_label, item[0]._meta.model_name),
+            )
+        )
+        if max_registered_models < 1:
+            raise ValueError("max_registered_models must be at least 1.")
+        if len(self._registered_model_admins) > max_registered_models:
+            raise ImproperlyConfigured(
+                "MCP model registration exceeds max_registered_models "
+                f"({len(self._registered_model_admins)} > {max_registered_models}). "
+                "Reduce the CoreAdminSite registry or explicitly raise the reviewed limit."
+            )
+        self._tool_permissions: dict[str, ToolPermission | None] = {}
+        self._output_adapters: dict[str, TypeAdapter[Any]] = {}
+        self._write_models: dict[str, Any] = {}
+        self.server = MCPServer(
+            name=name,
+            version=version,
+            description="Permission-aware Django admin operations.",
+            instructions="Use discovery first; every call repeats Django admin permission checks.",
+            token_verifier=token_verifier,
+            auth=auth,
+            middleware=[self._filter_tools],
+        )
+        self._register_read_tools()
+        self._register_mutation_tools()
+        self._validate_tool_manifest_size(max_tool_manifest_bytes)
+
+    def streamable_http_app(
+        self,
+        *,
+        path: str = "/mcp",
+        json_response: bool = True,
+        max_request_body_size: int = 4 * 1024 * 1024,
+        transport_security=None,
+        host: str = "127.0.0.1",
+    ):
+        return self.server.streamable_http_app(
+            streamable_http_path=path,
+            json_response=json_response,
+            stateless_http=True,
+            max_request_body_size=max_request_body_size,
+            transport_security=transport_security,
+            host=host,
+        )
+
+    async def _filter_tools(self, ctx, call_next):
+        result = await call_next(ctx)
+        if ctx.method != "tools/list":
+            return result
+        # The modern HTTP dispatcher serializes handler results before middleware
+        # unwinds; legacy transports can still return the model itself.
+        result = ListToolsResult.model_validate(result)
+        try:
+            allowed = await sync_to_async(self._allowed_tool_names_sync, thread_sensitive=True)(request_info(ctx))
+        except Exception:
+            allowed = set()
+        return result.model_copy(
+            update={
+                "tools": [tool for tool in result.tools if tool.name in allowed],
+                "cache_scope": "private",
+                "ttl_ms": 0,
+            }
+        )
+
+    @django_connection_scope()
+    def _allowed_tool_names_sync(self, info: MCPRequestInfo) -> set[str]:
+        request = self._request(info)
+        return {
+            name
+            for name, permission in self._tool_permissions.items()
+            if self.policy.allows(name)
+            and self.admin_site.has_permission(request)
+            and (permission is None or permission(request))
+        }
+
+    def _register_read_tools(self):
+        self._add_tool(
+            self._apps,
+            name="admin.apps",
+            description="List registered apps and models visible to the current Django user.",
+        )
+        self._add_tool(
+            self._context,
+            name="admin.context",
+            description="Return permission-filtered admin site context.",
+        )
+        self._add_tool(
+            self._permissions,
+            name="admin.permissions",
+            description="Return current Django admin permission state.",
+        )
+        self._add_tool(
+            self._history,
+            name="admin.history",
+            description="List permission-filtered Django admin audit history.",
+        )
+        for model, model_admin in self._registered_model_admins:
+            self._register_model_read_tools(model, model_admin)
+
+    def _register_model_read_tools(self, model, model_admin):
+        prefix = f"admin.{model._meta.app_label}.{model._meta.model_name}"
+        visible = model_admin.has_view_or_change_permission
+
+        def can_describe_form(request):
+            return model_admin.has_add_permission(request) or visible(request)
+
+        async def list_objects(
+            ctx: Context,
+            params: dict[str, str | list[str]] | None = None,
+        ) -> MCPToolResponse[ChangelistResponse]:
+            def operation(context):
+                self._prepare_model_request(context.request, model, query=params)
+                return self.admin_site.changelist_operations.list(context, model_admin)
+
+            return await self._invoke(ctx, f"{prefix}.list", visible, operation)
+
+        self._add_tool(
+            list_objects,
+            name=f"{prefix}.list",
+            description=f"List {model._meta.verbose_name_plural} with Django changelist semantics.",
+            permission=visible,
+        )
+
+        output_schema = model_admin.get_output_schema(None)
+
+        async def detail(
+            object_id: str,
+            ctx: Context,
+            to_field: str | None = None,
+        ):
+            def operation(context):
+                self._prepare_model_request(context.request, model, object_id=object_id)
+                return self.admin_site.object_operations.detail(context, model_admin, object_id, to_field)
+
+            return await self._invoke(ctx, f"{prefix}.detail", visible, operation)
+
+        detail.__annotations__["return"] = MCPToolResponse[output_schema]
+        self._add_tool(
+            detail,
+            name=f"{prefix}.detail",
+            description=f"Get one {model._meta.verbose_name} after object-level permission checks.",
+            permission=visible,
+        )
+
+        async def form(
+            ctx: Context,
+            object_id: str | None = None,
+            to_field: str | None = None,
+        ) -> MCPToolResponse[FormResponse]:
+            def operation(context):
+                self._prepare_model_request(context.request, model, object_id=object_id, suffix="form")
+                obj = None
+                if object_id is not None:
+                    obj = self.admin_site.object_operations.get_object(context, model_admin, object_id, to_field).data
+                return self.admin_site.form_operations.describe(context, model_admin, obj)
+
+            return await self._invoke(ctx, f"{prefix}.form", can_describe_form, operation)
+
+        self._add_tool(
+            form,
+            name=f"{prefix}.form",
+            description=f"Describe the request-aware form and inline formsets for {model._meta.verbose_name}.",
+            permission=can_describe_form,
+        )
+
+        autocomplete_fields = tuple(model_admin.autocomplete_fields)
+        if autocomplete_fields:
+            field_type = Literal.__getitem__(autocomplete_fields)
+
+            async def autocomplete(
+                field_name: str,
+                ctx: Context,
+                term: str = "",
+                page: PositiveInt = 1,
+                per_page: PositiveInt = 20,
+            ) -> MCPToolResponse[AutocompleteResponse]:
+                def operation(context):
+                    self._prepare_model_request(context.request, model)
+                    return self.admin_site.autocomplete_operations.search(
+                        context,
+                        app_label=model._meta.app_label,
+                        model_name=model._meta.model_name,
+                        field_name=field_name,
+                        term=term,
+                        page=page,
+                        per_page=min(per_page, self.admin_site.autocomplete_max_per_page),
+                    )
+
+                return await self._invoke(ctx, f"{prefix}.autocomplete", visible, operation)
+
+            autocomplete.__annotations__["field_name"] = field_type
+            self._add_tool(
+                autocomplete,
+                name=f"{prefix}.autocomplete",
+                description=f"Search configured relation fields for {model._meta.verbose_name}.",
+                permission=visible,
+            )
+
+    def _register_mutation_tools(self):
+        for model, model_admin in self._registered_model_admins:
+            self._register_model_mutation_tools(model, model_admin)
+
+    def _register_model_mutation_tools(self, model, model_admin):
+        prefix = f"admin.{model._meta.app_label}.{model._meta.model_name}"
+        can_add = model_admin.has_add_permission
+        can_change = model_admin.has_change_permission
+        can_view_or_change = model_admin.has_view_or_change_permission
+        can_delete = model_admin.has_delete_permission
+        create_payload_schema = model_admin.get_mutation_payload_schema(None, change=False, partial=False)
+        update_payload_schema = model_admin.get_mutation_payload_schema(None, change=True, partial=True)
+        mutation_response_schema = model_admin.get_mutation_response_schema(None)
+        create_response_schema = self._mutation_response_union(
+            mutation_response_schema, model_admin.get_response_add_schema(None)
+        )
+        update_response_schema = self._mutation_response_union(
+            mutation_response_schema, model_admin.get_response_change_schema(None)
+        )
+
+        async def create(payload, ctx: Context):
+            def operation(context):
+                self._prepare_model_request(context.request, model, method="POST")
+                return self.admin_site.mutation_operations.create(context, model_admin, payload)
+
+            return await self._invoke(ctx, f"{prefix}.create", can_add, operation)
+
+        create.__annotations__["payload"] = create_payload_schema
+        create.__annotations__["return"] = MCPToolResponse[create_response_schema]
+        self._add_tool(
+            create,
+            name=f"{prefix}.create",
+            description=f"Create one {model._meta.verbose_name} through its Django admin form and inlines.",
+            permission=can_add,
+            annotations=MUTATING,
+            write_model=model,
+        )
+
+        async def update(object_id: str, payload, ctx: Context, to_field: str | None = None):
+            def operation(context):
+                self._prepare_model_request(context.request, model, object_id=object_id, method="PATCH")
+                return self.admin_site.mutation_operations.update(
+                    context,
+                    model_admin,
+                    object_id,
+                    payload,
+                    partial=True,
+                    to_field=to_field,
+                )
+
+            return await self._invoke(ctx, f"{prefix}.update", can_change, operation)
+
+        update.__annotations__["payload"] = update_payload_schema
+        update.__annotations__["return"] = MCPToolResponse[update_response_schema]
+        self._add_tool(
+            update,
+            name=f"{prefix}.update",
+            description=f"Partially update one {model._meta.verbose_name} through its Django admin form.",
+            permission=can_change,
+            annotations=MUTATING,
+            write_model=model,
+        )
+
+        bulk_payload_schema = model_admin.get_bulk_payload_schema(None)
+        bulk_response_schema = model_admin.get_bulk_response_schema(None)
+
+        async def bulk_update(payload, ctx: Context):
+            def operation(context):
+                self._prepare_model_request(context.request, model, suffix="bulk", method="PUT")
+                return self.admin_site.bulk_mutation_operations.update(context, model_admin, payload)
+
+            return await self._invoke(ctx, f"{prefix}.bulk_update", can_change, operation)
+
+        bulk_update.__annotations__["payload"] = bulk_payload_schema
+        bulk_update.__annotations__["return"] = MCPToolResponse[bulk_response_schema]
+        self._add_tool(
+            bulk_update,
+            name=f"{prefix}.bulk_update",
+            description=f"Apply Django list-editable formset updates to {model._meta.verbose_name_plural}.",
+            permission=can_change,
+            annotations=MUTATING,
+            write_model=model,
+        )
+
+        if model_admin.has_registered_actions():
+            action_payload_schema = model_admin.get_action_payload_schema(None)
+            action_response_schema = model_admin.get_action_response_schema(None)
+
+            async def actions(payload, ctx: Context, to_field: str | None = None):
+                def operation(context):
+                    self._prepare_model_request(context.request, model, suffix="actions", method="POST")
+                    return self.admin_site.action_operations.execute(
+                        context,
+                        model_admin,
+                        payload,
+                        to_field=to_field,
+                    )
+
+                return await self._invoke(ctx, f"{prefix}.actions", can_view_or_change, operation)
+
+            actions.__annotations__["payload"] = action_payload_schema
+            actions.__annotations__["return"] = MCPToolResponse[action_response_schema]
+            self._add_tool(
+                actions,
+                name=f"{prefix}.actions",
+                description=f"Execute one registered Django admin action for {model._meta.verbose_name_plural}.",
+                permission=can_view_or_change,
+                annotations=MUTATING,
+                write_model=model,
+            )
+
+        async def delete_preview(
+            object_id: str,
+            ctx: Context,
+            to_field: str | None = None,
+        ) -> MCPToolResponse[DeletionPreview]:
+            def operation(context):
+                self._prepare_model_request(
+                    context.request,
+                    model,
+                    object_id=object_id,
+                    suffix="delete-preview",
+                )
+                return self.admin_site.deletion_operations.preview(
+                    context,
+                    model_admin,
+                    object_id,
+                    to_field,
+                )
+
+            return await self._invoke(ctx, f"{prefix}.delete_preview", can_delete, operation)
+
+        self._add_tool(
+            delete_preview,
+            name=f"{prefix}.delete_preview",
+            description=(
+                f"Preview cascades, protection, and permissions before deleting one {model._meta.verbose_name}."
+            ),
+            permission=can_delete,
+        )
+
+        async def delete(
+            object_id: str,
+            ctx: Context,
+            to_field: str | None = None,
+        ) -> MCPToolResponse[MCPDeleteResult]:
+            def operation(context):
+                self._prepare_model_request(context.request, model, object_id=object_id, method="DELETE")
+                result = self.admin_site.deletion_operations.delete(
+                    context,
+                    model_admin,
+                    object_id,
+                    to_field,
+                )
+                if result.status_code >= 400:
+                    return result
+                return OperationResult(
+                    MCPDeleteResult(
+                        status_code=result.status_code,
+                        response=result.data,
+                    )
+                )
+
+            return await self._invoke(ctx, f"{prefix}.delete", can_delete, operation)
+
+        self._add_tool(
+            delete,
+            name=f"{prefix}.delete",
+            description=f"Delete one {model._meta.verbose_name} after Django admin cascade and permission checks.",
+            permission=can_delete,
+            annotations=MUTATING,
+            write_model=model,
+        )
+
+    @staticmethod
+    def _mutation_response_union(default_schema, hook_schema):
+        schemas = hook_schema.values() if isinstance(hook_schema, dict) else (hook_schema,)
+        result = default_schema
+        for schema in schemas:
+            if schema is not None:
+                result = result | schema
+        return result
+
+    async def _apps(self, ctx: Context) -> MCPToolResponse[list[AppSummary]]:
+        return await self._invoke(
+            ctx,
+            "admin.apps",
+            None,
+            lambda context: self.admin_site.discovery_operations.list_apps(context),
+        )
+
+    async def _context(self, ctx: Context) -> MCPToolResponse[SiteContext]:
+        return await self._invoke(
+            ctx,
+            "admin.context",
+            None,
+            lambda context: self.admin_site.discovery_operations.site_context(context),
+        )
+
+    async def _permissions(self, ctx: Context) -> MCPToolResponse[PermissionsResponse]:
+        return await self._invoke(
+            ctx,
+            "admin.permissions",
+            None,
+            lambda context: self.admin_site.discovery_operations.permissions(context),
+        )
+
+    async def _history(
+        self,
+        ctx: Context,
+        app_label: str | None = None,
+        model_name: str | None = None,
+        object_id: str | None = None,
+        action_flag: HistoryActionFlag | None = None,
+        ordering: Literal["action_time", "-action_time"] = "-action_time",
+        page: PositiveInt = 1,
+        per_page: PositiveInt = 20,
+    ) -> MCPToolResponse[HistoryResponse]:
+        return await self._invoke(
+            ctx,
+            "admin.history",
+            None,
+            lambda context: self.admin_site.history_operations.list(
+                context,
+                app_label=app_label,
+                model_name=model_name,
+                object_id=object_id,
+                action_flag=action_flag,
+                ordering=ordering,
+                page=page,
+                per_page=min(per_page, self.admin_site.history_max_per_page),
+            ),
+        )
+
+    def _add_tool(
+        self,
+        function,
+        *,
+        name: str,
+        description: str,
+        permission: ToolPermission | None = None,
+        annotations: ToolAnnotations = READ_ONLY,
+        write_model=None,
+    ):
+        if len(name) > 64:
+            raise ImproperlyConfigured(f"MCP tool name exceeds the 64-character protocol limit: {name!r}.")
+        self._tool_permissions[name] = permission
+        self._output_adapters[name] = TypeAdapter(function.__annotations__["return"])
+        if write_model is not None:
+            self._write_models[name] = write_model
+        self.server.add_tool(
+            function,
+            name=name,
+            description=description,
+            annotations=annotations,
+            meta={"django_veo_admin_api": {"operation": name}},
+            structured_output=True,
+        )
+
+    def _validate_tool_manifest_size(self, limit: int) -> None:
+        if limit < 1:
+            raise ValueError("max_tool_manifest_bytes must be at least 1.")
+        tools = self.server._tool_manager.list_tools()
+        manifest = [
+            {
+                "name": tool.name,
+                "inputSchema": tool.parameters,
+                "outputSchema": tool.output_schema,
+                "annotations": tool.annotations.model_dump(mode="json") if tool.annotations else None,
+            }
+            for tool in tools
+        ]
+        size = len(json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode())
+        if size > limit:
+            raise ImproperlyConfigured(
+                "MCP tool manifest exceeds max_tool_manifest_bytes "
+                f"({size} > {limit}). Reduce the registry/tool surface or explicitly raise the reviewed limit."
+            )
+
+    async def _invoke(
+        self,
+        context: Context,
+        tool_name: str,
+        permission: ToolPermission | None,
+        operation: OperationCall,
+    ) -> Any:
+        try:
+            result = await sync_to_async(self._invoke_sync, thread_sensitive=True)(
+                request_info(context), tool_name, permission, operation
+            )
+        except Exception as exc:
+            logger.info(
+                "MCP admin tool failed",
+                extra={
+                    "django_veo_admin_api": {
+                        "event": "mcp_tool_call",
+                        "tool": tool_name,
+                        "outcome": "error",
+                        "exception_type": type(exc).__name__,
+                    }
+                },
+            )
+            return operation_error_result(exc, tool_name=tool_name)
+        if result.status_code >= 400 and isinstance(result.data, ErrorResponse):
+            return operation_result_error(result.data)
+        return {"data": result.data, "error": None}
+
+    @django_connection_scope()
+    def _invoke_sync(
+        self,
+        info: MCPRequestInfo,
+        tool_name: str,
+        permission: ToolPermission | None,
+        operation: OperationCall,
+    ) -> OperationResult[Any]:
+        request = self._request(info)
+        if not self.policy.allows(tool_name):
+            raise AdminPermissionError([{"message": "Permission denied.", "param": "non_field_errors"}])
+        if not self.admin_site.has_permission(request):
+            raise AdminPermissionError([{"message": "Permission denied.", "param": "non_field_errors"}])
+        if permission is not None and not permission(request):
+            raise AdminPermissionError([{"message": "Permission denied.", "param": "non_field_errors"}])
+        write_model = self._write_models.get(tool_name)
+        boundary = transaction.atomic(using=router.db_for_write(write_model)) if write_model else nullcontext()
+        with boundary:
+            result = operation(AdminRequestContext(request))
+            if result.status_code < 400:
+                # Validate and serialize the exact advertised wire contract while
+                # writes and their audit entries can still be rolled back.
+                response = self._output_adapters[tool_name].validate_python({"data": result.data, "error": None})
+                data = response.model_dump(mode="json")["data"]
+                result = OperationResult(data, status_code=result.status_code)
+        logger.info(
+            "MCP admin tool completed",
+            extra={
+                "django_veo_admin_api": {
+                    "event": "mcp_tool_call",
+                    "tool": tool_name,
+                    "outcome": "success" if result.status_code < 400 else "error",
+                    "status_code": result.status_code,
+                    "user_id": str(getattr(getattr(request, "user", None), "pk", "")) or None,
+                }
+            },
+        )
+        return result
+
+    def _request(self, info: MCPRequestInfo) -> HttpRequest:
+        request = self.request_factory(info)
+        if not isinstance(request, HttpRequest):
+            raise TypeError("request_factory must return a Django HttpRequest.")
+        if not hasattr(request, "user"):
+            raise TypeError("request_factory must attach an authenticated Django user.")
+        return request
+
+    def _prepare_model_request(
+        self,
+        request,
+        model,
+        *,
+        object_id=None,
+        suffix=None,
+        query=None,
+        method="GET",
+    ):
+        parts = [self.admin_url_prefix, model._meta.app_label, model._meta.model_name]
+        if object_id is not None:
+            parts.append(str(object_id))
+        if suffix:
+            parts.append(suffix)
+        path = "/".join(part.strip("/") for part in parts if part)
+        request.path = f"/{path}"
+        request.path_info = request.path
+        request.method = method
+        request.GET = self._query_dict(query)
+
+    @staticmethod
+    def _query_dict(params):
+        query = QueryDict("", mutable=True)
+        for key, value in (params or {}).items():
+            values = value if isinstance(value, list) else [value]
+            query.setlist(key, [str(item) for item in values])
+        return query

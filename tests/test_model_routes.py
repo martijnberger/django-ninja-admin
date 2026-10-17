@@ -5,7 +5,7 @@ from django.contrib.sites.models import Site
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 
-from django_ninja_admin import site
+from django_veo_admin_api import site
 from tests.testapp.models import Category, Product, ProductReview
 
 

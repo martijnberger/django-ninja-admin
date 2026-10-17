@@ -8,9 +8,9 @@ from django.http import QueryDict
 from django.test import RequestFactory
 from django.test.utils import CaptureQueriesContext
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, display, site
-from django_ninja_admin.changelist import ChangeList
-from django_ninja_admin.exceptions import AdminValidationError
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite, display, site
+from django_veo_admin_api.changelist import ChangeList
+from django_veo_admin_api.exceptions import AdminValidationError
 from tests.testapp.models import Category, Product, Tag
 
 RENDERED_FIELD_ATTR_KEYS = {
@@ -398,8 +398,8 @@ def test_changelist_supports_callable_list_display(admin_client, sample, monkeyp
 
     assert response.status_code == 200
     error_ids = {error.id for error in product_admin.check()}
-    assert "django_ninja_admin.E002" not in error_ids
-    assert "django_ninja_admin.E057" not in error_ids
+    assert "django_veo_admin_api.E002" not in error_ids
+    assert "django_veo_admin_api.E057" not in error_ids
     body = response.json()
     stock_column = next(column for column in body["columns"] if column["field"] == "stock_badge")
     assert stock_column["header_name"] == "Stock badge"

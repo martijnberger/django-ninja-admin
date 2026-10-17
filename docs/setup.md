@@ -1,12 +1,16 @@
 # Setup
 
-Install the package into a Django 5.0+ project and add the app so the admin log
+Install the package into a Django 5.2, 6.0, or 6.1 project and add the app so the admin log
 model migration is available:
+
+```bash
+python -m pip install 'django-veo-admin-api[ninja]'
+```
 
 ```python
 INSTALLED_APPS = [
     # ...
-    "django_ninja_admin",
+    "django_veo_admin_api",
 ]
 ```
 
@@ -16,11 +20,16 @@ Run migrations after installation:
 python manage.py migrate
 ```
 
+For an existing `django-ninja-admin` database, follow the
+[package upgrade procedure](migration-ninja-extra.md#upgrading-from-django-ninja-admin)
+before running this command. It preserves existing audit history and permissions.
+
 Register models with the default site and mount the generated Ninja API:
 
 ```python
 from django.urls import path
-from django_ninja_admin import ModelAdmin, site
+from django_veo_admin_api import ModelAdmin
+from django_veo_admin_api.integrations.ninja import site
 
 from shop.models import Product
 
@@ -56,3 +65,6 @@ just generated-client-smoke
 `just check` runs linting, formatting, type checks, tests with coverage, wheel
 checks, installed-project smokes, OpenAPI snapshot checks, generated-client
 smoke, private Django API audit, and documentation navigation/link checks.
+
+See [Migrating To The Ninja Extra](migration-ninja-extra.md) for the base-wheel
+contract and compatibility import window.

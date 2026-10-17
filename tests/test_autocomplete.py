@@ -4,7 +4,7 @@ from django.db import connection, models
 from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
 
-from django_ninja_admin import site
+from django_veo_admin_api import site
 from tests.testapp.models import (
     Category,
     CategoryLimitedLink,

@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import Client
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite
 from tests.testapp.models import Category, Product, ProductImage, Tag
 
 

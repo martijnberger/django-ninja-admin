@@ -1,7 +1,7 @@
 from django.test import override_settings
 
-from django_ninja_admin import VERTICAL
-from django_ninja_admin.schemas import ErrorResponse
+from django_veo_admin_api import VERTICAL
+from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Category, Product, Tag
 
 RENDERED_FIELD_ATTR_KEYS = {

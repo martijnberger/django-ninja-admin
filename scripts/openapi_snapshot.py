@@ -26,7 +26,7 @@ def configure_django() -> None:
 
 def export_openapi() -> dict[str, Any]:
     configure_django()
-    from django_ninja_admin import site
+    from django_veo_admin_api import site
 
     document = site.api.get_openapi_schema(path_prefix="/admin-api")
     wire_document = json.loads(json.dumps(document, cls=DjangoJSONEncoder))

@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from django.urls import path
 
-from django_ninja_admin import site
+from django_veo_admin_api import site
 
 urlpatterns = [
     path("admin-api/", site.urls),

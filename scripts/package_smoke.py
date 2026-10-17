@@ -16,42 +16,48 @@ def run(command: list[str], *, cwd: Path = ROOT, env: dict[str, str] | None = No
     subprocess.run(command, cwd=cwd, env=env, check=True)
 
 
+def venv_python(venv_dir: Path) -> Path:
+    if os.name == "nt":
+        return venv_dir / "Scripts" / "python.exe"
+    return venv_dir / "bin" / "python"
+
+
 def main() -> None:
     uv = shutil.which("uv")
     if uv is None:
         raise SystemExit("uv is required to run the package smoke check.")
 
-    with tempfile.TemporaryDirectory(prefix="django-ninja-admin-smoke-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="django-veo-admin-api-smoke-") as tmp:
         tmp_path = Path(tmp)
         dist_dir = tmp_path / "dist"
-        install_dir = tmp_path / "install"
+        venv_dir = tmp_path / ".venv"
         uv_env = smoke_uv_env()
         wheel = build_or_resolve_wheel(uv, dist_dir, env=uv_env)
 
+        run([uv, "venv", "--python", sys.executable, str(venv_dir)], env=uv_env)
+        python = venv_python(venv_dir)
         run(
             [
                 uv,
                 "pip",
                 "install",
                 "--python",
-                sys.executable,
-                "--no-deps",
-                "--target",
-                str(install_dir),
+                str(python),
                 str(wheel),
             ],
             env=uv_env,
         )
 
-        env = os.environ.copy()
-        pythonpath = env.get("PYTHONPATH")
-        env["PYTHONPATH"] = str(install_dir) if not pythonpath else f"{install_dir}{os.pathsep}{pythonpath}"
-        smoke_code = f"""
+        smoke_code = """
 import importlib.metadata
-from pathlib import Path
+import importlib.util
+import sys
 
 import django
 from django.conf import settings
+
+assert importlib.util.find_spec("ninja") is None
+assert importlib.util.find_spec("mcp") is None
 
 if not settings.configured:
     settings.configure(
@@ -59,9 +65,9 @@ if not settings.configured:
         INSTALLED_APPS=[
             "django.contrib.auth",
             "django.contrib.contenttypes",
-            "django_ninja_admin",
+            "django_veo_admin_api",
         ],
-        DATABASES={{"default": {{"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}}},
+        DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
         ROOT_URLCONF=__name__,
         MIDDLEWARE=[],
         ALLOWED_HOSTS=["*"],
@@ -70,37 +76,75 @@ if not settings.configured:
     )
 django.setup()
 
-import django_ninja_admin
-from django_ninja_admin import (
+import django_veo_admin_api
+from django_veo_admin_api import (
     ModelAdmin,
-    NinjaAdminSite,
     ShowFacets,
     TabularInline,
     action,
     display,
-    site,
 )
+from django_veo_admin_api.core.operations import AdminRequestContext, OperationResult
+from django_veo_admin_api.schemas import AdminSchema
+from django.core.management import get_commands
 
-package_file = Path(django_ninja_admin.__file__).resolve()
-install_root = Path({str(install_dir)!r}).resolve()
-assert str(package_file).startswith(str(install_root)), package_file
-assert (package_file.parent / "py.typed").is_file()
-assert django_ninja_admin.site is site
-assert NinjaAdminSite is not None
+assert "ninja" not in sys.modules
 assert ModelAdmin is not None
 assert ShowFacets.ALLOW.value == "ALLOW"
 assert TabularInline is not None
 assert callable(action)
 assert callable(display)
+assert AdminSchema.model_json_schema()["type"] == "object"
+assert AdminRequestContext is not None
+assert OperationResult is not None
+assert "migrate_legacy_admin" in get_commands()
 
-metadata = importlib.metadata.metadata("django-ninja-admin")
+try:
+    django_veo_admin_api.NinjaAdminSite
+except ImportError as exc:
+    assert str(exc) == (
+        "Django Ninja is required for django_veo_admin_api.integrations.ninja; "
+        "install it with `pip install 'django-veo-admin-api[ninja]'`."
+    )
+else:
+    raise AssertionError("NinjaAdminSite unexpectedly imported without the ninja extra")
+
+try:
+    from django_veo_admin_api.integrations.mcp import MCPAdminServer
+except ImportError as exc:
+    assert str(exc) == (
+        "The MCP SDK is required for django_veo_admin_api.integrations.mcp; "
+        "install it with `pip install 'django-veo-admin-api[mcp]'`."
+    )
+else:
+    raise AssertionError(f"MCPAdminServer unexpectedly imported without the mcp extra: {MCPAdminServer}")
+
+metadata = importlib.metadata.metadata("django-veo-admin-api")
 requires = metadata.get_all("Requires-Dist") or []
+assert any(requirement.lower().startswith("django") for requirement in requires)
+assert any(requirement.lower().startswith("pydantic") for requirement in requires)
+assert all(
+    "extra == 'ninja'" in requirement.lower()
+    or 'extra == "ninja"' in requirement.lower()
+    or "extra == 'all'" in requirement.lower()
+    or 'extra == "all"' in requirement.lower()
+    for requirement in requires
+    if requirement.lower().startswith("django-ninja")
+)
+assert all(
+    "extra == 'mcp'" in requirement.lower()
+    or 'extra == "mcp"' in requirement.lower()
+    or "extra == 'all'" in requirement.lower()
+    or 'extra == "all"' in requirement.lower()
+    for requirement in requires
+    if requirement.lower().startswith("mcp")
+)
 for dependency in requires:
     lowered = dependency.lower()
     assert "djangorestframework" not in lowered
     assert "drf-spectacular" not in lowered
 """
-        run([sys.executable, "-c", smoke_code], cwd=tmp_path, env=env)
+        run([str(python), "-c", smoke_code], cwd=tmp_path)
 
 
 if __name__ == "__main__":

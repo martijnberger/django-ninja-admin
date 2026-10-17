@@ -31,7 +31,7 @@ Completed or mostly complete:
 - Model routes now advertise richer OpenAPI response maps for typed error bodies, including conditional `401` auth failures and normalized `422` request-validation responses.
 - Pydantic/Ninja request validation errors are normalized into typed API error bodies.
 - Installed-project smoke gates can now pin their Django requirement through
-  `DJANGO_NINJA_ADMIN_SMOKE_DJANGO`, allowing CI matrix lanes to verify the
+  `DJANGO_VEO_ADMIN_API_SMOKE_DJANGO`, allowing CI matrix lanes to verify the
   built wheel against the same Django version as the source-tree tests.
 - Django `ModelForm` and inline formset validation for create/update/inline mutations.
 - Mounted-route tests now cover `save_form`, `save_model`, `save_related`, `response_add`, `response_change`, `delete_model`, `delete_queryset`, and `response_delete` hooks during add/change/delete mutations, plus `save_form` skipping for unchanged bulk rows.

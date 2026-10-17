@@ -1,6 +1,6 @@
 # Hook Reference
 
-`django-ninja-admin` keeps Django-admin-style extension points where they map
+`django-veo-admin-api` keeps Django-admin-style extension points where they map
 cleanly to an HTTP API. Prefer these hooks over DRF serializer concepts.
 
 ## Registration

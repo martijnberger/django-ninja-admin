@@ -1,5 +1,5 @@
-site_name: Django Ninja Admin
-site_description: A Ninja-native API implementation of Django admin for custom frontends.
+site_name: Django Veo Admin API
+site_description: A typed Django admin engine with optional transport integrations.
 repo_url: https://github.com/martijnberger/django-ninja-admin
 docs_dir: docs
 strict: true
@@ -15,7 +15,12 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Setup: setup.md
+  - Architecture: architecture.md
+  - Core API: core-api.md
+  - Migrating To The Ninja Extra: migration-ninja-extra.md
   - API And Authentication: api-and-auth.md
+  - MCP Integration: mcp-integration.md
+  - Security And Threat Model: security.md
   - Frontend Integration: frontend-integration.md
   - Hook Reference: hook-reference.md
   - Contract Reference: contract-reference.md

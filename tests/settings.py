@@ -13,7 +13,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.sites",
-    "django_ninja_admin",
+    "django_veo_admin_api",
     "tests.testapp.apps.TestAppConfig",
 ]
 
@@ -37,11 +37,11 @@ DATABASES = {
     }
 }
 
-if os.environ.get("DJANGO_NINJA_ADMIN_TEST_DATABASE") == "postgres":
+if os.environ.get("DJANGO_VEO_ADMIN_API_TEST_DATABASE") == "postgres":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("POSTGRES_DB", "django_ninja_admin"),
+            "NAME": os.environ.get("POSTGRES_DB", "django_veo_admin_api"),
             "USER": os.environ.get("POSTGRES_USER", "postgres"),
             "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "postgres"),
             "HOST": os.environ.get("POSTGRES_HOST", "127.0.0.1"),

@@ -8,7 +8,7 @@ from django.test.utils import isolate_apps
 from pydantic import AnyUrl, IPvAnyAddress
 from pydantic import Field as PydanticField
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, display
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite, display
 
 
 @isolate_apps("tests.testapp")

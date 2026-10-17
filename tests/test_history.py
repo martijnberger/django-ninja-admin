@@ -8,9 +8,9 @@ from django.db import connection
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
-from django_ninja_admin import site
-from django_ninja_admin.models import ADDITION, CHANGE, LogEntry
-from django_ninja_admin.schemas import ErrorResponse
+from django_veo_admin_api import site
+from django_veo_admin_api.models import ADDITION, CHANGE, LogEntry
+from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Category, Product
 
 

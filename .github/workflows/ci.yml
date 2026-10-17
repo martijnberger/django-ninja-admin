@@ -37,6 +37,9 @@ jobs:
       - name: Check OpenAPI snapshot
         run: just openapi-snapshot-check
 
+      - name: Check MCP tool manifest
+        run: just mcp-snapshot-check
+
   dist:
     name: Distribution / Python 3.12
     runs-on: ubuntu-latest
@@ -63,16 +66,66 @@ jobs:
 
       - name: Build and check distribution
         env:
-          DJANGO_NINJA_ADMIN_DIST_DIR: dist
-          DJANGO_NINJA_ADMIN_DIST_UV_CACHE: /tmp/django-ninja-admin-uv-cache
+          DJANGO_VEO_ADMIN_API_DIST_DIR: dist
+          DJANGO_VEO_ADMIN_API_DIST_UV_CACHE: /tmp/django-veo-admin-api-uv-cache
         run: just dist-check
+
+      - name: Smoke-test MCP-only installed profile
+        env:
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
+        run: just mcp-package-smoke
+
+      - name: Smoke-test combined installed profile
+        env:
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
+        run: just all-package-smoke
+
+      - name: Select current supported optional dependencies
+        run: uv pip install --upgrade --editable '.[all]'
+
+      - name: Test current supported optional dependencies
+        env:
+          UV_NO_SYNC: "1"
+        run: just test
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: django-ninja-admin-wheel
+          name: django-veo-admin-api-wheel
           path: dist/*.whl
           if-no-files-found: error
+
+  mcp-conformance:
+    name: MCP 2026-07-28 conformance smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run official MCP conformance smoke
+        run: just mcp-conformance
 
   checks:
     name: Django ${{ matrix.django-label }} / Python ${{ matrix.python-version }}
@@ -85,14 +138,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - django-label: "5.0"
-            django: ">=5.0,<5.1"
-            python-version: "3.12"
-            experimental: false
-          - django-label: "5.1"
-            django: ">=5.1,<5.2"
-            python-version: "3.12"
-            experimental: false
           - django-label: "5.2"
             django: ">=5.2,<5.3"
             python-version: "3.12"
@@ -101,6 +146,10 @@ jobs:
             django: ">=5.2,<5.3"
             python-version: "3.13"
             experimental: false
+          - django-label: "5.2"
+            django: ">=5.2,<5.3"
+            python-version: "3.14"
+            experimental: false
           - django-label: "6.0"
             django: ">=6.0,<6.1"
             python-version: "3.12"
@@ -111,6 +160,18 @@ jobs:
             experimental: false
           - django-label: "6.0"
             django: ">=6.0,<6.1"
+            python-version: "3.14"
+            experimental: false
+          - django-label: "6.1"
+            django: ">=6.1,<6.2"
+            python-version: "3.12"
+            experimental: false
+          - django-label: "6.1"
+            django: ">=6.1,<6.2"
+            python-version: "3.13"
+            experimental: false
+          - django-label: "6.1"
+            django: ">=6.1,<6.2"
             python-version: "3.14"
             experimental: false
 
@@ -137,7 +198,7 @@ jobs:
       - name: Download wheel artifact
         uses: actions/download-artifact@v4
         with:
-          name: django-ninja-admin-wheel
+          name: django-veo-admin-api-wheel
           path: dist
 
       - name: Select Django version
@@ -157,18 +218,18 @@ jobs:
 
       - name: Package smoke
         env:
-          DJANGO_NINJA_ADMIN_WHEEL: dist
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
         run: just package-smoke
 
       - name: Sample project smoke
         env:
-          DJANGO_NINJA_ADMIN_WHEEL: dist
-          DJANGO_NINJA_ADMIN_SMOKE_DJANGO: django${{ matrix.django }}
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
+          DJANGO_VEO_ADMIN_API_SMOKE_DJANGO: django${{ matrix.django }}
         run: just sample-project-smoke
 
       - name: Generated client smoke
         env:
-          DJANGO_NINJA_ADMIN_WHEEL: dist
+          DJANGO_VEO_ADMIN_API_WHEEL: dist
         run: just generated-client-smoke
 
   postgres:
@@ -178,20 +239,20 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: django_ninja_admin
+          POSTGRES_DB: django_veo_admin_api
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
           - "5432:5432"
         options: >-
-          --health-cmd "pg_isready -U postgres -d django_ninja_admin"
+          --health-cmd "pg_isready -U postgres -d django_veo_admin_api"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     env:
-      DJANGO_NINJA_ADMIN_TEST_DATABASE: postgres
+      DJANGO_VEO_ADMIN_API_TEST_DATABASE: postgres
       UV_NO_SYNC: "1"
-      POSTGRES_DB: django_ninja_admin
+      POSTGRES_DB: django_veo_admin_api
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_HOST: 127.0.0.1

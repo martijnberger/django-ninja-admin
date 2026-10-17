@@ -8,7 +8,7 @@ from django.db import models
 from django.test import RequestFactory
 from django.test.utils import isolate_apps
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, display, site
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite, display, site
 from tests.testapp.models import Product, Tag
 
 RENDERED_FIELD_ATTR_KEYS = {
@@ -120,7 +120,7 @@ def test_readonly_display_fields_include_values_and_display_metadata(admin_clien
 
     assert response.status_code == 200
     assert "callable_summary" in response.json()["form"]["readonly_fields"]
-    assert "django_ninja_admin.E012" not in {error.id for error in product_admin.check()}
+    assert "django_veo_admin_api.E012" not in {error.id for error in product_admin.check()}
     fields_by_name = {field["name"]: field for field in response.json()["form"]["fields"]}
     assert fields_by_name["upper_name"]["attrs"]["label"] == "Upper name"
     assert fields_by_name["upper_name"]["attrs"]["value"] == "ALPHA"
@@ -178,7 +178,7 @@ def test_explicit_form_layouts_accept_callable_readonly_field_names(db, sample):
     request = RequestFactory().get(f"/admin-api/testapp/product/{sample.pk}/form")
     request.user = user
 
-    assert "django_ninja_admin.E014" not in {error.id for error in model_admin.check()}
+    assert "django_veo_admin_api.E014" not in {error.id for error in model_admin.check()}
     assert list(model_admin.get_form_class(request, sample, change=True).base_fields) == ["name"]
 
     form = model_admin.get_form_description(request, sample)["form"]

@@ -4,10 +4,10 @@ test *args:
     UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
 
 coverage-test *args:
-    UV_CACHE_DIR=.uv-cache uv run pytest --cov=django_ninja_admin --cov-report=term-missing --cov-report=xml {{args}}
+    UV_CACHE_DIR=.uv-cache uv run pytest --cov=django_veo_admin_api --cov-report=term-missing --cov-report=xml {{args}}
 
 postgres-test *args:
-    DJANGO_NINJA_ADMIN_TEST_DATABASE=postgres UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
+    DJANGO_VEO_ADMIN_API_TEST_DATABASE=postgres UV_CACHE_DIR=.uv-cache uv run pytest {{args}}
 
 lint:
     UV_CACHE_DIR=.uv-cache uv run ruff check .
@@ -19,10 +19,10 @@ format-check:
     UV_CACHE_DIR=.uv-cache uv run ruff format --check .
 
 typecheck-package:
-    UV_CACHE_DIR=.uv-cache uv run ty check --error all django_ninja_admin
+    UV_CACHE_DIR=.uv-cache uv run ty check --error all django_veo_admin_api
 
 typecheck-scripts:
-    UV_CACHE_DIR=.uv-cache uv run ty check --error all scripts/dist_check.py scripts/docs_check.py scripts/generated_client_smoke.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/private_django_api_audit.py scripts/sample_project_smoke.py scripts/smoke_utils.py
+    UV_CACHE_DIR=.uv-cache uv run ty check --error all scripts/dist_check.py scripts/docs_check.py scripts/generated_client_smoke.py scripts/integration_package_smoke.py scripts/mcp_conformance.py scripts/mcp_conformance_server.py scripts/mcp_snapshot.py scripts/openapi_diff.py scripts/openapi_snapshot.py scripts/package_smoke.py scripts/parity_report.py scripts/private_django_api_audit.py scripts/sample_project_smoke.py scripts/smoke_utils.py
 
 typecheck: typecheck-package typecheck-scripts
 
@@ -31,6 +31,12 @@ pre-commit:
 
 package-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/package_smoke.py
+
+mcp-package-smoke:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/integration_package_smoke.py mcp
+
+all-package-smoke:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/integration_package_smoke.py all
 
 sample-project-smoke:
     UV_CACHE_DIR=.uv-cache uv run python scripts/sample_project_smoke.py
@@ -54,7 +60,7 @@ docs-check:
     UV_CACHE_DIR=.uv-cache uv run python scripts/docs_check.py
 
 docs-build:
-    UV_CACHE_DIR=.uv-cache uv run mkdocs build --strict --site-dir /tmp/django-ninja-admin-mkdocs-site
+    UV_CACHE_DIR=.uv-cache uv run mkdocs build --strict --site-dir /tmp/django-veo-admin-api-mkdocs-site
 
 openapi-diff *args:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_diff.py {{args}}
@@ -65,6 +71,15 @@ openapi-snapshot-check:
 openapi-snapshot-update:
     UV_CACHE_DIR=.uv-cache uv run python scripts/openapi_snapshot.py --update
 
-check: lint format-check typecheck coverage-test dist-check package-smoke sample-project-smoke openapi-snapshot-check generated-client-smoke private-api-audit docs-check docs-build
+mcp-snapshot-check:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/mcp_snapshot.py --check
+
+mcp-snapshot-update:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/mcp_snapshot.py --update
+
+mcp-conformance:
+    UV_CACHE_DIR=.uv-cache uv run python scripts/mcp_conformance.py
+
+check: lint format-check typecheck coverage-test dist-check package-smoke mcp-package-smoke all-package-smoke sample-project-smoke openapi-snapshot-check mcp-snapshot-check generated-client-smoke private-api-audit docs-check docs-build
 
 ci: check

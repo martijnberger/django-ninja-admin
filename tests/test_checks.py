@@ -10,7 +10,7 @@ from django.test.utils import isolate_apps
 from ninja import Schema
 from pydantic import ConfigDict
 
-from django_ninja_admin import (
+from django_veo_admin_api import (
     VERTICAL,
     EmptyFieldListFilter,
     ListFilter,
@@ -21,7 +21,7 @@ from django_ninja_admin import (
     action,
     site,
 )
-from django_ninja_admin.filters import build_filter_spec
+from django_veo_admin_api.filters import build_filter_spec
 from tests.testapp.models import Category, Product, ProductImage, ProductReview, Tag
 
 
@@ -57,16 +57,16 @@ def test_admin_checks_report_invalid_model_admin_configuration(db, make_site):
     error_ids = {error.id for error in errors}
 
     assert {
-        "django_ninja_admin.E108",
-        "django_ninja_admin.E123",
-        "django_ninja_admin.E116",
-        "django_ninja_admin.E038",
-        "django_ninja_admin.E128",
-        "django_ninja_admin.E033",
-        "django_ninja_admin.E137",
-        "django_ninja_admin.E140",
-        "django_ninja_admin.E202",
-        "django_ninja_admin.E109",
+        "django_veo_admin_api.E108",
+        "django_veo_admin_api.E123",
+        "django_veo_admin_api.E116",
+        "django_veo_admin_api.E038",
+        "django_veo_admin_api.E128",
+        "django_veo_admin_api.E033",
+        "django_veo_admin_api.E137",
+        "django_veo_admin_api.E140",
+        "django_veo_admin_api.E202",
+        "django_veo_admin_api.E109",
     } <= error_ids
 
 
@@ -92,7 +92,7 @@ def test_admin_checks_use_django_aligned_sequence_option_ids(db, make_site, opti
 
     error_ids = {error.id for error in admin_site.get_model_admin(Product).check()}
 
-    assert f"django_ninja_admin.{django_code}" in error_ids
+    assert f"django_veo_admin_api.{django_code}" in error_ids
 
 
 def test_admin_checks_reject_empty_list_display(db, make_site):
@@ -100,7 +100,7 @@ def test_admin_checks_reject_empty_list_display(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E191"}
+    assert {error.id for error in errors} == {"django_veo_admin_api.E191"}
     assert "list_display" in errors[0].msg
 
 
@@ -149,19 +149,19 @@ def test_admin_checks_validate_inline_count_options(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E203",
-            "django_ninja_admin.E204",
-            "django_ninja_admin.E205",
-            "django_ninja_admin.E147",
-            "django_ninja_admin.E148",
-            "django_ninja_admin.E149",
-            "django_ninja_admin.E150",
+            "django_veo_admin_api.E203",
+            "django_veo_admin_api.E204",
+            "django_veo_admin_api.E205",
+            "django_veo_admin_api.E147",
+            "django_veo_admin_api.E148",
+            "django_veo_admin_api.E149",
+            "django_veo_admin_api.E150",
         }
     )
-    assert bad_ids == {"django_ninja_admin.E203", "django_ninja_admin.E204", "django_ninja_admin.E205"}
-    assert bad_boolean_ids == {"django_ninja_admin.E203", "django_ninja_admin.E204", "django_ninja_admin.E205"}
-    assert bad_range_ids == {"django_ninja_admin.E147", "django_ninja_admin.E148", "django_ninja_admin.E149"}
-    assert bad_min_max_ids == {"django_ninja_admin.E150"}
+    assert bad_ids == {"django_veo_admin_api.E203", "django_veo_admin_api.E204", "django_veo_admin_api.E205"}
+    assert bad_boolean_ids == {"django_veo_admin_api.E203", "django_veo_admin_api.E204", "django_veo_admin_api.E205"}
+    assert bad_range_ids == {"django_veo_admin_api.E147", "django_veo_admin_api.E148", "django_veo_admin_api.E149"}
+    assert bad_min_max_ids == {"django_veo_admin_api.E150"}
 
 
 def test_admin_checks_reject_non_sequence_inlines_option(db, make_site):
@@ -169,7 +169,7 @@ def test_admin_checks_reject_non_sequence_inlines_option(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E103"}
+    assert {error.id for error in errors} == {"django_veo_admin_api.E103"}
 
 
 def test_admin_checks_distinguish_missing_and_invalid_inline_models(db, make_site):
@@ -185,8 +185,8 @@ def test_admin_checks_distinguish_missing_and_invalid_inline_models(db, make_sit
     missing_errors = missing_site.get_model_admin(Product).check()
     invalid_errors = invalid_site.get_model_admin(Product).check()
 
-    assert {error.id for error in missing_errors} == {"django_ninja_admin.E105"}
-    assert {error.id for error in invalid_errors} == {"django_ninja_admin.E106"}
+    assert {error.id for error in missing_errors} == {"django_veo_admin_api.E105"}
+    assert {error.id for error in invalid_errors} == {"django_veo_admin_api.E106"}
 
 
 def test_admin_checks_validate_inline_boolean_options(db, make_site):
@@ -206,8 +206,8 @@ def test_admin_checks_validate_inline_boolean_options(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E145", "django_ninja_admin.E146"})
-    assert bad_ids == {"django_ninja_admin.E145", "django_ninja_admin.E146"}
+    assert valid_ids.isdisjoint({"django_veo_admin_api.E145", "django_veo_admin_api.E146"})
+    assert bad_ids == {"django_veo_admin_api.E145", "django_veo_admin_api.E146"}
 
 
 def test_admin_checks_validate_inline_form_layout_option_shapes(db, make_site):
@@ -231,8 +231,8 @@ def test_admin_checks_validate_inline_form_layout_option_shapes(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_errors = bad_site.get_model_admin(Product).check()
 
-    assert "django_ninja_admin.E151" not in valid_ids
-    assert [error.id for error in bad_errors] == ["django_ninja_admin.E151"] * 4
+    assert "django_veo_admin_api.E151" not in valid_ids
+    assert [error.id for error in bad_errors] == ["django_veo_admin_api.E151"] * 4
     assert {error.msg for error in bad_errors} == {
         "The value of 'fields' must be a list or tuple.",
         "The value of 'exclude' must be a list or tuple.",
@@ -278,15 +278,15 @@ def test_admin_checks_validate_inline_form_layout_option_items(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E152",
-            "django_ninja_admin.E153",
-            "django_ninja_admin.E154",
-            "django_ninja_admin.E155",
+            "django_veo_admin_api.E152",
+            "django_veo_admin_api.E153",
+            "django_veo_admin_api.E154",
+            "django_veo_admin_api.E155",
         }
     )
-    assert bad_item_ids == ["django_ninja_admin.E152", "django_ninja_admin.E152", "django_ninja_admin.E155"]
-    assert bad_unknown_ids == ["django_ninja_admin.E153", "django_ninja_admin.E153", "django_ninja_admin.E155"]
-    assert bad_duplicate_ids == ["django_ninja_admin.E154", "django_ninja_admin.E154", "django_ninja_admin.E154"]
+    assert bad_item_ids == ["django_veo_admin_api.E152", "django_veo_admin_api.E152", "django_veo_admin_api.E155"]
+    assert bad_unknown_ids == ["django_veo_admin_api.E153", "django_veo_admin_api.E153", "django_veo_admin_api.E155"]
+    assert bad_duplicate_ids == ["django_veo_admin_api.E154", "django_veo_admin_api.E154", "django_veo_admin_api.E154"]
 
 
 def test_admin_checks_validate_inline_fieldsets_items(db, make_site):
@@ -313,19 +313,19 @@ def test_admin_checks_validate_inline_fieldsets_items(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E152",
-            "django_ninja_admin.E153",
-            "django_ninja_admin.E154",
-            "django_ninja_admin.E156",
+            "django_veo_admin_api.E152",
+            "django_veo_admin_api.E153",
+            "django_veo_admin_api.E154",
+            "django_veo_admin_api.E156",
         }
     )
     assert bad_ids == [
-        "django_ninja_admin.E156",
-        "django_ninja_admin.E156",
-        "django_ninja_admin.E156",
-        "django_ninja_admin.E152",
-        "django_ninja_admin.E153",
-        "django_ninja_admin.E154",
+        "django_veo_admin_api.E156",
+        "django_veo_admin_api.E156",
+        "django_veo_admin_api.E156",
+        "django_veo_admin_api.E152",
+        "django_veo_admin_api.E153",
+        "django_veo_admin_api.E154",
     ]
 
 
@@ -350,8 +350,8 @@ def test_inline_admin_supports_custom_formset_classes(db, make_site):
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
     assert issubclass(formset_class, CustomInlineFormSet)
-    assert "django_ninja_admin.E206" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E206"}
+    assert "django_veo_admin_api.E206" not in valid_ids
+    assert bad_ids == {"django_veo_admin_api.E206"}
 
 
 def test_admin_checks_reject_inline_excluding_parent_foreign_key(db, make_site):
@@ -369,8 +369,8 @@ def test_admin_checks_reject_inline_excluding_parent_foreign_key(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_errors = bad_site.get_model_admin(Product).check()
 
-    assert "django_ninja_admin.E201" not in valid_ids
-    assert {error.id for error in bad_errors} == {"django_ninja_admin.E201"}
+    assert "django_veo_admin_api.E201" not in valid_ids
+    assert {error.id for error in bad_errors} == {"django_veo_admin_api.E201"}
     assert "parent foreign key field 'product'" in bad_errors[0].msg
 
 
@@ -379,7 +379,7 @@ def test_admin_checks_reject_reverse_relation_in_list_display(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E109"}
+    assert {error.id for error in errors} == {"django_veo_admin_api.E109"}
     assert "many-to-many or reverse field" in errors[0].msg
 
 
@@ -388,7 +388,7 @@ def test_admin_checks_allow_single_valued_relation_path_in_list_display(db, make
 
     error_ids = {error.id for error in admin_site.get_model_admin(Product).check()}
 
-    assert error_ids.isdisjoint({"django_ninja_admin.E003", "django_ninja_admin.E108", "django_ninja_admin.E109"})
+    assert error_ids.isdisjoint({"django_veo_admin_api.E003", "django_veo_admin_api.E108", "django_veo_admin_api.E109"})
 
 
 def test_admin_checks_validate_action_permission_hooks(db, make_site):
@@ -419,8 +419,8 @@ def test_admin_checks_validate_action_permission_hooks(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E129" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E129"}
+    assert "django_veo_admin_api.E129" not in valid_ids
+    assert bad_ids == {"django_veo_admin_api.E129"}
 
 
 def test_admin_checks_require_closed_custom_contract_schemas(db, make_site):
@@ -460,11 +460,11 @@ def test_admin_checks_require_closed_custom_contract_schemas(db, make_site):
         error.id for error in make_site(Product, ValidActionSchemaProductAdmin).get_model_admin(Product).check()
     }
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E196"})
+    assert valid_ids.isdisjoint({"django_veo_admin_api.E196"})
     assert [error.id for error in bad_errors] == [
-        "django_ninja_admin.E196",
-        "django_ninja_admin.E196",
-        "django_ninja_admin.E196",
+        "django_veo_admin_api.E196",
+        "django_veo_admin_api.E196",
+        "django_veo_admin_api.E196",
     ]
     assert {error.msg for error in bad_errors} == {
         "The schema for 'response_add_schema' must forbid extra object properties.",
@@ -495,12 +495,12 @@ def test_admin_checks_validate_response_hook_status_map_keys(db, make_site):
     }
     invalid_errors = make_site(Product, InvalidResponseMapProductAdmin).get_model_admin(Product).check()
 
-    assert "django_ninja_admin.E197" not in valid_ids
+    assert "django_veo_admin_api.E197" not in valid_ids
     assert [error.id for error in invalid_errors] == [
-        "django_ninja_admin.E197",
-        "django_ninja_admin.E197",
-        "django_ninja_admin.E197",
-        "django_ninja_admin.E197",
+        "django_veo_admin_api.E197",
+        "django_veo_admin_api.E197",
+        "django_veo_admin_api.E197",
+        "django_veo_admin_api.E197",
     ]
     assert {error.msg for error in invalid_errors} == {
         "Keys in 'response_add_schema' status maps must be integer HTTP status codes from 100 to 599.",
@@ -514,7 +514,7 @@ def test_admin_checks_reject_non_sequence_actions_option(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E195"}
+    assert {error.id for error in errors} == {"django_veo_admin_api.E195"}
 
 
 def test_admin_checks_reject_duplicate_action_names(db, make_site):
@@ -538,8 +538,8 @@ def test_admin_checks_reject_duplicate_action_names(db, make_site):
     callable_errors = callable_site.get_model_admin(Product).check()
     registered_errors = registered_site.get_model_admin(Product).check()
 
-    assert {error.id for error in callable_errors} == {"django_ninja_admin.E130"}
-    assert {error.id for error in registered_errors} == {"django_ninja_admin.E130"}
+    assert {error.id for error in callable_errors} == {"django_veo_admin_api.E130"}
+    assert {error.id for error in registered_errors} == {"django_veo_admin_api.E130"}
 
 
 def test_admin_checks_report_form_widget_option_conflicts(db, make_site):
@@ -556,13 +556,13 @@ def test_admin_checks_report_form_widget_option_conflicts(db, make_site):
     error_ids = {error.id for error in errors}
 
     assert {
-        "django_ninja_admin.E023",
-        "django_ninja_admin.E024",
-        "django_ninja_admin.E039",
-        "django_ninja_admin.E141",
-        "django_ninja_admin.E142",
-        "django_ninja_admin.E143",
-        "django_ninja_admin.E144",
+        "django_veo_admin_api.E023",
+        "django_veo_admin_api.E024",
+        "django_veo_admin_api.E039",
+        "django_veo_admin_api.E141",
+        "django_veo_admin_api.E142",
+        "django_veo_admin_api.E143",
+        "django_veo_admin_api.E144",
     } <= error_ids
 
 
@@ -579,8 +579,8 @@ def test_admin_checks_reject_raw_id_field_attname(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_errors = bad_site.get_model_admin(Product).check()
 
-    assert "django_ninja_admin.E002" not in valid_ids
-    assert {error.id for error in bad_errors} == {"django_ninja_admin.E002"}
+    assert "django_veo_admin_api.E002" not in valid_ids
+    assert {error.id for error in bad_errors} == {"django_veo_admin_api.E002"}
     assert "category_id" in bad_errors[0].msg
 
 
@@ -607,10 +607,10 @@ def test_admin_checks_validate_list_select_related(db, make_site):
     bad_item_errors = _check_site(bad_item_site)
     bad_path_errors = _check_site(bad_path_site)
 
-    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E117", "django_ninja_admin.E193"})
-    assert {error.id for error in bad_type_errors} == {"django_ninja_admin.E117"}
-    assert {error.id for error in bad_item_errors} == {"django_ninja_admin.E192"}
-    assert {error.id for error in bad_path_errors} == {"django_ninja_admin.E193"}
+    assert {error.id for error in valid_errors}.isdisjoint({"django_veo_admin_api.E117", "django_veo_admin_api.E193"})
+    assert {error.id for error in bad_type_errors} == {"django_veo_admin_api.E117"}
+    assert {error.id for error in bad_item_errors} == {"django_veo_admin_api.E192"}
+    assert {error.id for error in bad_path_errors} == {"django_veo_admin_api.E193"}
     assert len(bad_path_errors) == 3
 
 
@@ -636,10 +636,10 @@ def test_admin_checks_validate_list_prefetch_related(db, make_site):
     bad_type_errors = _check_site(bad_type_site)
     bad_path_errors = _check_site(bad_path_site)
 
-    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E131", "django_ninja_admin.E132"})
-    assert {error.id for error in bad_type_errors} == {"django_ninja_admin.E131"}
+    assert {error.id for error in valid_errors}.isdisjoint({"django_veo_admin_api.E131", "django_veo_admin_api.E132"})
+    assert {error.id for error in bad_type_errors} == {"django_veo_admin_api.E131"}
     assert len(bad_type_errors) == 1
-    assert {error.id for error in bad_path_errors} == {"django_ninja_admin.E132"}
+    assert {error.id for error in bad_path_errors} == {"django_veo_admin_api.E132"}
     assert len(bad_path_errors) == 3
 
 
@@ -664,9 +664,9 @@ def test_admin_checks_validate_sortable_by(db, make_site):
     bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
     bad_items_ids = {error.id for error in bad_items_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E171", "django_ninja_admin.E172", "django_ninja_admin.E173"})
-    assert bad_shape_ids == {"django_ninja_admin.E171"}
-    assert bad_items_ids == {"django_ninja_admin.E172", "django_ninja_admin.E173"}
+    assert valid_ids.isdisjoint({"django_veo_admin_api.E171", "django_veo_admin_api.E172", "django_veo_admin_api.E173"})
+    assert bad_shape_ids == {"django_veo_admin_api.E171"}
+    assert bad_items_ids == {"django_veo_admin_api.E172", "django_veo_admin_api.E173"}
 
 
 def test_admin_checks_validate_pagination_options(db, make_site):
@@ -698,15 +698,15 @@ def test_admin_checks_validate_pagination_options(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E118",
-            "django_ninja_admin.E119",
-            "django_ninja_admin.E157",
-            "django_ninja_admin.E158",
+            "django_veo_admin_api.E118",
+            "django_veo_admin_api.E119",
+            "django_veo_admin_api.E157",
+            "django_veo_admin_api.E158",
         }
     )
-    assert bad_ids == {"django_ninja_admin.E118", "django_ninja_admin.E119"}
-    assert bad_boolean_ids == {"django_ninja_admin.E118", "django_ninja_admin.E119"}
-    assert bad_range_ids == {"django_ninja_admin.E157", "django_ninja_admin.E158"}
+    assert bad_ids == {"django_veo_admin_api.E118", "django_veo_admin_api.E119"}
+    assert bad_boolean_ids == {"django_veo_admin_api.E118", "django_veo_admin_api.E119"}
+    assert bad_range_ids == {"django_veo_admin_api.E157", "django_veo_admin_api.E158"}
 
 
 def test_admin_checks_validate_paginator_class(db, make_site):
@@ -725,8 +725,8 @@ def test_admin_checks_validate_paginator_class(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E182" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E182"}
+    assert "django_veo_admin_api.E182" not in valid_ids
+    assert bad_ids == {"django_veo_admin_api.E182"}
 
 
 def test_admin_checks_validate_boolean_options(db, make_site):
@@ -758,25 +758,25 @@ def test_admin_checks_validate_boolean_options(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E101",
-            "django_ninja_admin.E102",
-            "django_ninja_admin.E025",
-            "django_ninja_admin.E183",
-            "django_ninja_admin.E184",
-            "django_ninja_admin.E185",
-            "django_ninja_admin.E186",
-            "django_ninja_admin.E187",
+            "django_veo_admin_api.E101",
+            "django_veo_admin_api.E102",
+            "django_veo_admin_api.E025",
+            "django_veo_admin_api.E183",
+            "django_veo_admin_api.E184",
+            "django_veo_admin_api.E185",
+            "django_veo_admin_api.E186",
+            "django_veo_admin_api.E187",
         }
     )
     assert bad_ids == {
-        "django_ninja_admin.E101",
-        "django_ninja_admin.E102",
-        "django_ninja_admin.E025",
-        "django_ninja_admin.E183",
-        "django_ninja_admin.E184",
-        "django_ninja_admin.E185",
-        "django_ninja_admin.E186",
-        "django_ninja_admin.E187",
+        "django_veo_admin_api.E101",
+        "django_veo_admin_api.E102",
+        "django_veo_admin_api.E025",
+        "django_veo_admin_api.E183",
+        "django_veo_admin_api.E184",
+        "django_veo_admin_api.E185",
+        "django_veo_admin_api.E186",
+        "django_veo_admin_api.E187",
     }
 
 
@@ -793,8 +793,8 @@ def test_admin_checks_reject_mixed_random_ordering(db, make_site):
     random_ids = {error.id for error in random_site.get_model_admin(Product).check()}
     mixed_errors = mixed_site.get_model_admin(Product).check()
 
-    assert "django_ninja_admin.E032" not in random_ids
-    assert {error.id for error in mixed_errors} == {"django_ninja_admin.E032"}
+    assert "django_veo_admin_api.E032" not in random_ids
+    assert {error.id for error in mixed_errors} == {"django_veo_admin_api.E032"}
     assert mixed_errors[0].hint == 'Either remove the "?", or remove the other fields.'
 
 
@@ -811,8 +811,8 @@ def test_admin_checks_validate_show_facets_option(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E188" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E188"}
+    assert "django_veo_admin_api.E188" not in valid_ids
+    assert bad_ids == {"django_veo_admin_api.E188"}
 
 
 def test_admin_checks_validate_search_help_text_option(db, make_site):
@@ -828,8 +828,8 @@ def test_admin_checks_validate_search_help_text_option(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E189" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E189"}
+    assert "django_veo_admin_api.E189" not in valid_ids
+    assert bad_ids == {"django_veo_admin_api.E189"}
 
 
 def test_admin_checks_validate_empty_value_display_option(db, make_site):
@@ -845,8 +845,8 @@ def test_admin_checks_validate_empty_value_display_option(db, make_site):
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E190" not in valid_ids
-    assert bad_ids == {"django_ninja_admin.E190"}
+    assert "django_veo_admin_api.E190" not in valid_ids
+    assert bad_ids == {"django_veo_admin_api.E190"}
 
 
 def test_admin_checks_allow_relation_path_date_hierarchy(db, make_site):
@@ -862,8 +862,8 @@ def test_admin_checks_allow_relation_path_date_hierarchy(db, make_site):
     error_ids = {error.id for error in admin_site.get_model_admin(ProductImage).check()}
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
 
-    assert error_ids.isdisjoint({"django_ninja_admin.E127", "django_ninja_admin.E128"})
-    assert bad_ids == {"django_ninja_admin.E139"}
+    assert error_ids.isdisjoint({"django_veo_admin_api.E127", "django_veo_admin_api.E128"})
+    assert bad_ids == {"django_veo_admin_api.E139"}
 
 
 def test_admin_checks_allow_expression_ordering(db, make_site):
@@ -879,8 +879,8 @@ def test_admin_checks_allow_expression_ordering(db, make_site):
     expression_ids = {error.id for error in expression_site.get_model_admin(Product).check()}
     missing_ids = {error.id for error in missing_site.get_model_admin(Product).check()}
 
-    assert expression_ids.isdisjoint({"django_ninja_admin.E033", "django_ninja_admin.E138"})
-    assert missing_ids == {"django_ninja_admin.E033"}
+    assert expression_ids.isdisjoint({"django_veo_admin_api.E033", "django_veo_admin_api.E138"})
+    assert missing_ids == {"django_veo_admin_api.E033"}
 
 
 def test_admin_checks_validate_field_based_list_filter_classes(db, make_site):
@@ -908,9 +908,9 @@ def test_admin_checks_validate_field_based_list_filter_classes(db, make_site):
     bad_shape_ids = {error.id for error in bad_shape_site.get_model_admin(Product).check()}
     bad_filter_ids = {error.id for error in bad_filter_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E115", "django_ninja_admin.E169"})
-    assert bad_shape_ids == {"django_ninja_admin.E169"}
-    assert bad_filter_ids == {"django_ninja_admin.E115"}
+    assert valid_ids.isdisjoint({"django_veo_admin_api.E115", "django_veo_admin_api.E169"})
+    assert bad_shape_ids == {"django_veo_admin_api.E169"}
+    assert bad_filter_ids == {"django_veo_admin_api.E115"}
 
     model_admin = valid_site.get_model_admin(Product)
     request = RequestFactory().get("/")
@@ -962,15 +962,15 @@ def test_admin_checks_align_top_level_list_filter_ids_with_django(db, make_site)
 
     assert isinstance(filter_spec, DirectListFilter)
     assert {error.id for error in valid_admin.check()}.isdisjoint(
-        {"django_ninja_admin.E113", "django_ninja_admin.E114", "django_ninja_admin.E170"}
+        {"django_veo_admin_api.E113", "django_veo_admin_api.E114", "django_veo_admin_api.E170"}
     )
-    assert {error.id for error in invalid_filter_site.get_model_admin(Product).check()} == {"django_ninja_admin.E113"}
-    assert {error.id for error in field_filter_site.get_model_admin(Product).check()} == {"django_ninja_admin.E114"}
+    assert {error.id for error in invalid_filter_site.get_model_admin(Product).check()} == {"django_veo_admin_api.E113"}
+    assert {error.id for error in field_filter_site.get_model_admin(Product).check()} == {"django_veo_admin_api.E114"}
     assert {error.id for error in missing_parameter_site.get_model_admin(Product).check()} == {
-        "django_ninja_admin.E170"
+        "django_veo_admin_api.E170"
     }
-    assert {error.id for error in non_string_site.get_model_admin(Product).check()} == {"django_ninja_admin.E116"}
-    assert {error.id for error in missing_field_site.get_model_admin(Product).check()} == {"django_ninja_admin.E116"}
+    assert {error.id for error in non_string_site.get_model_admin(Product).check()} == {"django_veo_admin_api.E116"}
+    assert {error.id for error in missing_field_site.get_model_admin(Product).check()} == {"django_veo_admin_api.E116"}
 
 
 def test_admin_checks_validate_form_class(db, make_site):
@@ -1027,12 +1027,12 @@ def test_admin_checks_validate_form_class(db, make_site):
     plain_inline_ids = {error.id for error in plain_inline_site.get_model_admin(Product).check()}
     wrong_model_inline_ids = {error.id for error in wrong_model_inline_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E016", "django_ninja_admin.E177"})
-    assert plain_ids == {"django_ninja_admin.E016"}
-    assert wrong_model_ids == {"django_ninja_admin.E177"}
-    assert valid_inline_ids.isdisjoint({"django_ninja_admin.E016", "django_ninja_admin.E177"})
-    assert plain_inline_ids == {"django_ninja_admin.E016"}
-    assert wrong_model_inline_ids == {"django_ninja_admin.E177"}
+    assert valid_ids.isdisjoint({"django_veo_admin_api.E016", "django_veo_admin_api.E177"})
+    assert plain_ids == {"django_veo_admin_api.E016"}
+    assert wrong_model_ids == {"django_veo_admin_api.E177"}
+    assert valid_inline_ids.isdisjoint({"django_veo_admin_api.E016", "django_veo_admin_api.E177"})
+    assert plain_inline_ids == {"django_veo_admin_api.E016"}
+    assert wrong_model_inline_ids == {"django_veo_admin_api.E177"}
 
 
 def test_admin_checks_validate_formfield_overrides(db, make_site):
@@ -1065,16 +1065,16 @@ def test_admin_checks_validate_formfield_overrides(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E178",
-            "django_ninja_admin.E179",
-            "django_ninja_admin.E180",
-            "django_ninja_admin.E181",
+            "django_veo_admin_api.E178",
+            "django_veo_admin_api.E179",
+            "django_veo_admin_api.E180",
+            "django_veo_admin_api.E181",
         }
     )
-    assert bad_shape_ids == {"django_ninja_admin.E178"}
-    assert bad_field_key_ids == {"django_ninja_admin.E179"}
-    assert bad_override_value_ids == {"django_ninja_admin.E180"}
-    assert bad_override_key_ids == {"django_ninja_admin.E181"}
+    assert bad_shape_ids == {"django_veo_admin_api.E178"}
+    assert bad_field_key_ids == {"django_veo_admin_api.E179"}
+    assert bad_override_value_ids == {"django_veo_admin_api.E180"}
+    assert bad_override_key_ids == {"django_veo_admin_api.E181"}
 
 
 def test_admin_checks_reject_reverse_relation_widget_fields(db, make_site):
@@ -1094,8 +1094,8 @@ def test_admin_checks_reject_reverse_relation_widget_fields(db, make_site):
     autocomplete_errors = autocomplete_site.get_model_admin(Product).check()
     raw_id_errors = raw_id_site.get_model_admin(Product).check()
 
-    assert {error.id for error in autocomplete_errors} == {"django_ninja_admin.E038"}
-    assert {error.id for error in raw_id_errors} == {"django_ninja_admin.E003"}
+    assert {error.id for error in autocomplete_errors} == {"django_veo_admin_api.E038"}
+    assert {error.id for error in raw_id_errors} == {"django_veo_admin_api.E003"}
 
 
 def test_admin_checks_require_registered_searchable_autocomplete_targets(db, make_site):
@@ -1120,9 +1120,9 @@ def test_admin_checks_require_registered_searchable_autocomplete_targets(db, mak
     unsearchable_errors = unsearchable_site.get_model_admin(Product).check()
     valid_errors = valid_site.get_model_admin(Product).check()
 
-    assert {error.id for error in unregistered_errors} == {"django_ninja_admin.E039"}
-    assert {error.id for error in unsearchable_errors} == {"django_ninja_admin.E040"}
-    assert {error.id for error in valid_errors}.isdisjoint({"django_ninja_admin.E039", "django_ninja_admin.E040"})
+    assert {error.id for error in unregistered_errors} == {"django_veo_admin_api.E039"}
+    assert {error.id for error in unsearchable_errors} == {"django_veo_admin_api.E040"}
+    assert {error.id for error in valid_errors}.isdisjoint({"django_veo_admin_api.E039", "django_veo_admin_api.E040"})
 
 
 def test_admin_checks_validate_prepopulated_fields(db, make_site):
@@ -1158,16 +1158,16 @@ def test_admin_checks_validate_prepopulated_fields(db, make_site):
 
     assert valid_ids.isdisjoint(
         {
-            "django_ninja_admin.E026",
-            "django_ninja_admin.E027",
-            "django_ninja_admin.E028",
-            "django_ninja_admin.E029",
-            "django_ninja_admin.E030",
+            "django_veo_admin_api.E026",
+            "django_veo_admin_api.E027",
+            "django_veo_admin_api.E028",
+            "django_veo_admin_api.E029",
+            "django_veo_admin_api.E030",
         }
     )
-    assert bad_shape_ids == {"django_ninja_admin.E026"}
-    assert bad_target_ids == {"django_ninja_admin.E027", "django_ninja_admin.E028"}
-    assert bad_source_ids == {"django_ninja_admin.E029", "django_ninja_admin.E030"}
+    assert bad_shape_ids == {"django_veo_admin_api.E026"}
+    assert bad_target_ids == {"django_veo_admin_api.E027", "django_veo_admin_api.E028"}
+    assert bad_source_ids == {"django_veo_admin_api.E029", "django_veo_admin_api.E030"}
 
 
 def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db, make_site):
@@ -1197,9 +1197,9 @@ def test_admin_checks_reject_list_editable_fields_missing_from_generated_form(db
     exclude_errors = _check_site(exclude_site)
     fieldsets_errors = _check_site(fieldsets_site)
 
-    assert "django_ninja_admin.E163" in {error.id for error in fields_errors}
-    assert "django_ninja_admin.E163" in {error.id for error in exclude_errors}
-    assert "django_ninja_admin.E163" in {error.id for error in fieldsets_errors}
+    assert "django_veo_admin_api.E163" in {error.id for error in fields_errors}
+    assert "django_veo_admin_api.E163" in {error.id for error in exclude_errors}
+    assert "django_veo_admin_api.E163" in {error.id for error in fieldsets_errors}
 
 
 def test_admin_checks_reject_first_list_editable_without_explicit_display_link(db, make_site):
@@ -1218,8 +1218,8 @@ def test_admin_checks_reject_first_list_editable_without_explicit_display_link(d
     bad_ids = {error.id for error in bad_site.get_model_admin(Product).check()}
     valid_ids = {error.id for error in valid_site.get_model_admin(Product).check()}
 
-    assert bad_ids == {"django_ninja_admin.E124"}
-    assert valid_ids.isdisjoint({"django_ninja_admin.E123", "django_ninja_admin.E124"})
+    assert bad_ids == {"django_veo_admin_api.E124"}
+    assert valid_ids.isdisjoint({"django_veo_admin_api.E123", "django_veo_admin_api.E124"})
 
 
 def test_admin_checks_reject_duplicate_list_editable_fields(db, make_site):
@@ -1232,7 +1232,7 @@ def test_admin_checks_reject_duplicate_list_editable_fields(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E168"}
+    assert {error.id for error in errors} == {"django_veo_admin_api.E168"}
 
 
 def test_admin_checks_reject_non_string_list_editable_fields(db, make_site):
@@ -1245,7 +1245,7 @@ def test_admin_checks_reject_non_string_list_editable_fields(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E167"}
+    assert {error.id for error in errors} == {"django_veo_admin_api.E167"}
 
 
 def test_admin_checks_reject_duplicate_list_display_links(db, make_site):
@@ -1257,7 +1257,7 @@ def test_admin_checks_reject_duplicate_list_display_links(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E166"}
+    assert {error.id for error in errors} == {"django_veo_admin_api.E166"}
 
 
 def test_admin_checks_reject_non_string_list_display_links(db, make_site):
@@ -1269,7 +1269,7 @@ def test_admin_checks_reject_non_string_list_display_links(db, make_site):
 
     errors = admin_site.get_model_admin(Product).check()
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E165"}
+    assert {error.id for error in errors} == {"django_veo_admin_api.E165"}
 
 
 def test_admin_checks_align_list_editable_field_ids_with_django(db, make_site):
@@ -1292,11 +1292,11 @@ def test_admin_checks_align_list_editable_field_ids_with_django(db, make_site):
     missing_from_display_site = make_site(Product, MissingFromDisplayProductAdmin)
     primary_key_site = make_site(Product, PrimaryKeyProductAdmin)
 
-    assert {error.id for error in missing_field_site.get_model_admin(Product).check()} == {"django_ninja_admin.E121"}
+    assert {error.id for error in missing_field_site.get_model_admin(Product).check()} == {"django_veo_admin_api.E121"}
     assert {error.id for error in missing_from_display_site.get_model_admin(Product).check()} == {
-        "django_ninja_admin.E122"
+        "django_veo_admin_api.E122"
     }
-    assert {error.id for error in primary_key_site.get_model_admin(Product).check()} == {"django_ninja_admin.E125"}
+    assert {error.id for error in primary_key_site.get_model_admin(Product).check()} == {"django_veo_admin_api.E125"}
 
 
 def test_admin_checks_validate_fields_and_exclude_items(db, make_site):
@@ -1333,10 +1333,10 @@ def test_admin_checks_validate_fields_and_exclude_items(db, make_site):
         "price",
         "category",
     ]
-    assert {error.id for error in fields_errors} == {"django_ninja_admin.E159"}
-    assert {error.id for error in duplicate_fields_errors} == {"django_ninja_admin.E006"}
-    assert {error.id for error in exclude_errors} == {"django_ninja_admin.E159", "django_ninja_admin.E160"}
-    assert {error.id for error in duplicate_exclude_errors} == {"django_ninja_admin.E015"}
+    assert {error.id for error in fields_errors} == {"django_veo_admin_api.E159"}
+    assert {error.id for error in duplicate_fields_errors} == {"django_veo_admin_api.E006"}
+    assert {error.id for error in exclude_errors} == {"django_veo_admin_api.E159", "django_veo_admin_api.E160"}
+    assert {error.id for error in duplicate_exclude_errors} == {"django_veo_admin_api.E015"}
 
 
 def test_admin_checks_reject_duplicate_readonly_fields(db, make_site):
@@ -1360,9 +1360,9 @@ def test_admin_checks_reject_duplicate_readonly_fields(db, make_site):
     duplicate_name_ids = {error.id for error in duplicate_name_site.get_model_admin(Product).check()}
     duplicate_callable_ids = {error.id for error in duplicate_callable_site.get_model_admin(Product).check()}
 
-    assert "django_ninja_admin.E161" not in valid_ids
-    assert duplicate_name_ids == {"django_ninja_admin.E161"}
-    assert duplicate_callable_ids == {"django_ninja_admin.E161"}
+    assert "django_veo_admin_api.E161" not in valid_ids
+    assert duplicate_name_ids == {"django_veo_admin_api.E161"}
+    assert duplicate_callable_ids == {"django_veo_admin_api.E161"}
 
 
 def test_admin_checks_validate_fieldsets_shape_and_duplicates(db, make_site):
@@ -1405,12 +1405,12 @@ def test_admin_checks_validate_fieldsets_shape_and_duplicates(db, make_site):
         "category",
         "description",
     ]
-    assert {error.id for error in _check_site(item_type_site)} == {"django_ninja_admin.E008"}
-    assert {error.id for error in _check_site(item_length_site)} == {"django_ninja_admin.E009"}
-    assert {error.id for error in _check_site(missing_site)} == {"django_ninja_admin.E011"}
-    assert {error.id for error in _check_site(string_site)} == {"django_ninja_admin.E008"}
-    assert {error.id for error in _check_site(bad_item_site)} == {"django_ninja_admin.E159"}
-    assert {error.id for error in _check_site(duplicate_site)} == {"django_ninja_admin.E012"}
+    assert {error.id for error in _check_site(item_type_site)} == {"django_veo_admin_api.E008"}
+    assert {error.id for error in _check_site(item_length_site)} == {"django_veo_admin_api.E009"}
+    assert {error.id for error in _check_site(missing_site)} == {"django_veo_admin_api.E011"}
+    assert {error.id for error in _check_site(string_site)} == {"django_veo_admin_api.E008"}
+    assert {error.id for error in _check_site(bad_item_site)} == {"django_veo_admin_api.E159"}
+    assert {error.id for error in _check_site(duplicate_site)} == {"django_veo_admin_api.E012"}
 
 
 def test_admin_checks_validate_radio_fields_shape(db, make_site):
@@ -1421,7 +1421,7 @@ def test_admin_checks_validate_radio_fields_shape(db, make_site):
 
     errors = _check_site(admin_site)
 
-    assert {error.id for error in errors} == {"django_ninja_admin.E021"}
+    assert {error.id for error in errors} == {"django_veo_admin_api.E021"}
 
 
 @isolate_apps("tests.testapp")
@@ -1458,8 +1458,8 @@ def test_admin_checks_reject_manual_through_many_to_many_widget_modes(db, make_s
     horizontal_errors = horizontal_site.get_model_admin(Article).check()
     vertical_errors = vertical_site.get_model_admin(Article).check()
 
-    assert {error.id for error in horizontal_errors} == {"django_ninja_admin.E013"}
-    assert {error.id for error in vertical_errors} == {"django_ninja_admin.E013"}
+    assert {error.id for error in horizontal_errors} == {"django_veo_admin_api.E013"}
+    assert {error.id for error in vertical_errors} == {"django_veo_admin_api.E013"}
 
 
 @isolate_apps("tests.testapp")
@@ -1496,8 +1496,8 @@ def test_admin_checks_reject_manual_through_many_to_many_form_layouts(db, make_s
     fields_errors = fields_site.get_model_admin(Article).check()
     fieldsets_errors = fieldsets_site.get_model_admin(Article).check()
 
-    assert {error.id for error in fields_errors} == {"django_ninja_admin.E013"}
-    assert {error.id for error in fieldsets_errors} == {"django_ninja_admin.E013"}
+    assert {error.id for error in fields_errors} == {"django_veo_admin_api.E013"}
+    assert {error.id for error in fieldsets_errors} == {"django_veo_admin_api.E013"}
 
 
 def test_admin_checks_validate_schema_field_overrides(db, make_site):
@@ -1523,10 +1523,10 @@ def test_admin_checks_validate_schema_field_overrides(db, make_site):
     bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
     bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E174", "django_ninja_admin.E175", "django_ninja_admin.E176"})
-    assert bad_mapping_ids == {"django_ninja_admin.E174"}
-    assert bad_key_ids == {"django_ninja_admin.E175"}
-    assert bad_tuple_ids == {"django_ninja_admin.E176"}
+    assert valid_ids.isdisjoint({"django_veo_admin_api.E174", "django_veo_admin_api.E175", "django_veo_admin_api.E176"})
+    assert bad_mapping_ids == {"django_veo_admin_api.E174"}
+    assert bad_key_ids == {"django_veo_admin_api.E175"}
+    assert bad_tuple_ids == {"django_veo_admin_api.E176"}
 
 
 def test_admin_checks_validate_form_schema_field_overrides(db, make_site):
@@ -1552,7 +1552,7 @@ def test_admin_checks_validate_form_schema_field_overrides(db, make_site):
     bad_key_ids = {error.id for error in bad_key_site.get_model_admin(Product).check()}
     bad_tuple_ids = {error.id for error in bad_tuple_site.get_model_admin(Product).check()}
 
-    assert valid_ids.isdisjoint({"django_ninja_admin.E133", "django_ninja_admin.E134", "django_ninja_admin.E135"})
-    assert bad_mapping_ids == {"django_ninja_admin.E133"}
-    assert bad_key_ids == {"django_ninja_admin.E134"}
-    assert bad_tuple_ids == {"django_ninja_admin.E135"}
+    assert valid_ids.isdisjoint({"django_veo_admin_api.E133", "django_veo_admin_api.E134", "django_veo_admin_api.E135"})
+    assert bad_mapping_ids == {"django_veo_admin_api.E133"}
+    assert bad_key_ids == {"django_veo_admin_api.E134"}
+    assert bad_tuple_ids == {"django_veo_admin_api.E135"}

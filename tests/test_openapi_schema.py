@@ -2,7 +2,7 @@ import pytest
 from django.test import Client
 from pydantic import ValidationError as PydanticValidationError
 
-from django_ninja_admin.schemas import ErrorResponse
+from django_veo_admin_api.schemas import ErrorResponse
 
 
 def _response_schema_ref(operation, status):

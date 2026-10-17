@@ -9,7 +9,7 @@ from django.test import RequestFactory, override_settings
 from django.test.utils import isolate_apps
 from django.utils import timezone
 
-from django_ninja_admin import (
+from django_veo_admin_api import (
     AllValuesFieldListFilter,
     EmptyFieldListFilter,
     ModelAdmin,
@@ -19,7 +19,7 @@ from django_ninja_admin import (
     SimpleListFilter,
     site,
 )
-from django_ninja_admin.changelist import ChangeList
+from django_veo_admin_api.changelist import ChangeList
 from tests.testapp.models import Category, CategorySlugLink, Product, ProductImage
 
 
@@ -272,7 +272,7 @@ def test_date_field_list_filter_uses_bounded_ranges(admin_client, sample, monkey
     product_admin = site.get_model_admin(Product)
     monkeypatch.setattr(product_admin, "list_filter", ("created_at",))
     monkeypatch.setattr(
-        "django_ninja_admin.filters.timezone.now",
+        "django_veo_admin_api.filters.timezone.now",
         lambda: datetime(2024, 1, 15, 12, 0, tzinfo=UTC),
     )
     Product.objects.all().update(created_at=datetime(2024, 1, 15, 10, 0, tzinfo=UTC))
@@ -351,11 +351,11 @@ def _lookup_allowed_decisions(model, lookup, value, *, list_filter=()):
 
     admin_site = NinjaAdminSite(include_auth=False)
     admin_site.register(model, NinjaModelAdmin)
-    ninja_admin = admin_site.get_model_admin(model)
+    model_admin = admin_site.get_model_admin(model)
     django_admin = DjangoModelAdminClass(model, DjangoAdminSite())
 
     return (
-        ninja_admin.lookup_allowed(lookup, value, request),
+        model_admin.lookup_allowed(lookup, value, request),
         django_admin.lookup_allowed(lookup, value, request),
     )
 

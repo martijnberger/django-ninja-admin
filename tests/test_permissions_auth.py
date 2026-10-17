@@ -3,8 +3,8 @@ from django.contrib.auth.models import Group, Permission
 from django.test import Client, override_settings
 from ninja.security import SessionAuthIsStaff
 
-from django_ninja_admin import NinjaAdminSite, site
-from django_ninja_admin.schemas import ErrorResponse
+from django_veo_admin_api import NinjaAdminSite, site
+from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Product
 
 

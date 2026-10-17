@@ -1,7 +1,8 @@
-# Django Ninja Admin
+# Django Veo Admin API
 
-`django-ninja-admin` exposes Django admin concepts as a typed HTTP API for
-custom admin frontends. It keeps Django's registry, model-admin hooks,
+`django-veo-admin-api` provides a typed Django admin engine and exposes it
+through optional transport integrations. The Django Ninja adapter provides an
+HTTP API for custom admin frontends. The shared core keeps Django's registry, model-admin hooks,
 `ModelForm` validation, changelists, actions, inlines, history, autocomplete,
 permission checks, protected deletes, and admin log entries, while publishing
 the contract through Django Ninja and Pydantic v2.
@@ -13,8 +14,13 @@ the Pydantic schemas behind it.
 ## Start Here
 
 - [Setup](setup.md) shows the smallest Django project integration.
+- [Architecture](architecture.md) explains the core and optional transport boundaries.
+- [Core API](core-api.md) documents the transport-neutral site and operation seam.
 - [API And Authentication](api-and-auth.md) covers auth, request shapes,
   response hooks, actions, and throttling.
+- [MCP Integration](mcp-integration.md) covers tool projection, authorization,
+  ASGI hosting, policy, and conformance.
+- [Security And Threat Model](security.md) records trust boundaries and invariants.
 - [Frontend Integration](frontend-integration.md) explains how a custom SPA can
   consume the API safely.
 - [Hook Reference](hook-reference.md) summarizes the Django-admin-style hooks
@@ -25,5 +31,6 @@ the Pydantic schemas behind it.
 ## Supported Runtime
 
 - Python 3.12 and newer.
-- Django 5.0 and newer, up to the package's declared dependency ceiling.
-- Django Ninja 1.6 and Pydantic v2.
+- Django 5.2 LTS, 6.0, and 6.1, using the latest patch release of each series.
+- Pydantic v2 in the base package.
+- Django Ninja 1.6 when the `[ninja]` integration extra is installed.

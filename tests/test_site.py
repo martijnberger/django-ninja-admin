@@ -7,8 +7,8 @@ from django.test.utils import isolate_apps
 from ninja import Schema
 from pydantic import ConfigDict
 
-from django_ninja_admin import ModelAdmin, NinjaAdminSite, register
-from django_ninja_admin.exceptions import AlreadyRegistered, NotRegistered
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite, register
+from django_veo_admin_api.exceptions import AlreadyRegistered, NotRegistered
 from tests.testapp.models import Category, Product, Tag
 
 
@@ -191,7 +191,7 @@ def test_site_action_changes_invalidate_openapi_schema(db):
 
 
 def test_autodiscover_rolls_back_partial_admin_imports(monkeypatch):
-    from django_ninja_admin.utils import module_loading
+    from django_veo_admin_api.utils import module_loading
 
     admin_site = NinjaAdminSite(include_auth=False)
     admin_site.register(Category)
@@ -225,7 +225,7 @@ def test_autodiscover_rolls_back_partial_admin_imports(monkeypatch):
 
 
 def test_autodiscover_ignores_missing_admin_module_and_clears_cache(monkeypatch):
-    from django_ninja_admin.utils import module_loading
+    from django_veo_admin_api.utils import module_loading
 
     admin_site = NinjaAdminSite(include_auth=False)
     admin_site._api = object()
@@ -248,7 +248,7 @@ def test_autodiscover_ignores_missing_admin_module_and_clears_cache(monkeypatch)
 
 
 def test_autodiscover_bubbles_unexpected_import_errors_without_submodule(monkeypatch):
-    from django_ninja_admin.utils import module_loading
+    from django_veo_admin_api.utils import module_loading
 
     admin_site = NinjaAdminSite(include_auth=False)
     admin_site.register(Category)

@@ -9,6 +9,88 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Changed
 
+- Supported Django versions are now 5.2 LTS, 6.0, and 6.1, tested across
+  Python 3.12–3.14. Removed unsupported Django 5.0/5.1 lanes.
+- Corrected repository/documentation links to the existing GitHub repository.
+- Updated distribution-validation tooling for current core metadata versions.
+- Bounded Pydantic below 2.14 pending review of its decimal-schema changes,
+  and added full-suite CI coverage for current supported optional dependencies.
+
+### Fixed
+
+- Applied MCP discovery permission and policy filters to both dictionary and
+  model results returned by the SDK's HTTP and legacy dispatchers.
+- Allowed add-only users to describe add forms while retaining object-level
+  checks for existing objects.
+- Included custom create/update response hooks in MCP output schemas and
+  validated/serialized tool output before committing writes and audit entries.
+- Added deployed HTTP coverage for bearer scopes, expiry/revocation, discovery,
+  custom response hooks, and rollback after output failures. Unexpected MCP
+  errors now log exception types without exception messages or field contents.
+- Applied Django's connection lifetime policy around MCP discovery and tool
+  execution, releasing request connections after HTTP calls while preserving
+  transactions owned by trusted in-process callers.
+
+### Added
+
+- Added `migrate_legacy_admin`, a dry-run-first PostgreSQL/SQLite upgrade path
+  that adopts the old audit table, preserves content-type and permission IDs,
+  records the renamed migration history, and refuses conflicting state.
+- Added process-isolated upgrade tests for both legacy migration states,
+  user/group permissions, foreign keys, new writes, retries, collision refusal,
+  and rollback after an injected failure.
+
+## 0.2.0 - 2026-08-09
+
+- Extracted permission-aware changelist construction and serialization into a typed core operation service.
+- Extracted autocomplete relation resolution, permission checks, search, and pagination into a typed core service.
+- Extracted permission-filtered admin history discovery and serialization into a typed core service.
+- Extracted shared form-data normalization and authoritative inline-formset mutation processing into core services.
+- Extracted transactional create/update behavior and mutation-hook validation into typed core operations with an adapter-owned Ninja status resolver.
+- Extracted list-editable bulk formset validation, permissions, persistence, and audit logging into a typed core operation.
+- Extracted filtered admin-action dispatch, transaction handling, and response validation into a typed core operation.
+- Extracted typed delete preview plus protected-object, permission, audit-log, and delete-hook execution into core.
+- Removed Ninja sentinels, async helpers, and response objects from core route descriptors, `ModelAdmin`, and built-in actions.
+- Moved `NinjaAdminSite`, routing, auth, throttling, docs, and OpenAPI generation to `django_veo_admin_api.integrations.ninja`, leaving lazy top-level compatibility exports.
+- Made Django Ninja optional behind the `django-veo-admin-api[ninja]` extra;
+  the base wheel now depends only on Django and Pydantic and has a clean
+  installed-profile smoke test.
+- Added the official MCP 2.x SDK behind `django-veo-admin-api[mcp]`, plus
+  permission-filtered discovery and read-only app, context, permission,
+  history, changelist, detail, form, and autocomplete tools that call the
+  shared core operations directly.
+- Added clean `[mcp]` and `[all]` installed-wheel profiles; the MCP-only profile
+  verifies that Django Ninja remains absent.
+- Added model-scoped MCP create, partial-update, list-editable bulk, admin
+  action, delete-preview, and delete tools using the same generated Pydantic
+  contracts and core operations as Ninja.
+- Added a deterministic golden MCP tool manifest, permission and rollback
+  coverage, a bounded registry, metadata-only security logs, and an official
+  `2026-07-28` stateless/tool-discovery/DNS-rebinding conformance smoke.
+
+### Changed
+
+- Switched shared request and response contracts from `ninja.Schema` to
+  Pydantic `BaseModel` without changing the reviewed OpenAPI contract.
+- Added the transport-neutral model-field resolver seam and isolated Django
+  Ninja's `register_field()` registry adapter under `integrations.ninja`.
+- Replaced core output-model generation through `ninja.orm.create_schema()`
+  with the shared Pydantic contract compiler while preserving field metadata,
+  defaults, validation behavior, and the golden OpenAPI document.
+- Added transport-neutral request/result contracts and direct operation
+  services for permission-filtered app discovery, site context, permission
+  summaries, and parent/inline form descriptions.
+- Moved the canonical admin exception vocabulary under `core` with a
+  compatibility re-export at the original module path, and moved form
+  permission checks ahead of form/formset construction inside the operation.
+- Added the core object lookup/detail operation so alternate-field checks,
+  not-found behavior, object permissions, and typed serialization no longer
+  live in the Ninja route implementation.
+- Renamed the distribution from `django-ninja-admin` to
+  `django-veo-admin-api` and the Python/Django package from
+  `django_ninja_admin` to `django_veo_admin_api`, including app labels,
+  settings, check identifiers, environment variables, build artifacts, source
+  imports, and documentation references.
 - Promoted every `ty` diagnostic to an error in the required type-check gate
   and made override relationships explicit across the package.
 - Centralized Django-form to Pydantic request-schema construction for parent
@@ -91,7 +173,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 ### Changed
 
 - Extracted shared JSON-compatible admin metadata normalization into
-  `django_ninja_admin.utils.json_values` with direct coverage for Django lazy
+  `django_veo_admin_api.utils.json_values` with direct coverage for Django lazy
   strings, `Q` objects, Decimals, model identifiers, and nested containers.
 - Removed remaining internal BaseAdmin schema-override shim methods so admin
   schema generation calls the extracted schema example helpers directly.
@@ -501,7 +583,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   numbering, moved package-only tuple-shape and missing-parameter checks into
   package-specific IDs, and allowed direct `ListFilter` subclasses at runtime.
 - Added Django-aligned duplicate action-name system checks using
-  `django_ninja_admin.E130`.
+  `django_veo_admin_api.E130`.
 - Moved package-owned `sortable_by` system checks into package-specific IDs.
 - Moved package-owned `schema_field_overrides` system checks into
   package-specific IDs.
@@ -511,7 +593,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 ### Changed
 
 - Aligned common `ModelAdmin` sequence-option check IDs with Django admin's
-  numbering while keeping the `django_ninja_admin` check namespace.
+  numbering while keeping the `django_veo_admin_api` check namespace.
 - Aligned `save_as`, `save_on_top`, `list_per_page`, and
   `list_max_show_all` check IDs with Django admin's numbering, and moved
   package-specific prefetch/form-schema checks out of that native range.
@@ -643,7 +725,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 ### Changed
 
 - Reused a single prebuilt wheel artifact across CI smoke jobs via
-  `DJANGO_NINJA_ADMIN_WHEEL`, while keeping local smoke commands able to build
+  `DJANGO_VEO_ADMIN_API_WHEEL`, while keeping local smoke commands able to build
   their own wheel.
 - Folded the full installed-project smoke writer into `sample_project_smoke.py`
   behind `--full`.
@@ -658,10 +740,10 @@ pre-release, minor versions may still adjust public API and wire contracts.
 ### Changed
 
 - Extracted shared schema/example helpers into
-  `django_ninja_admin.utils.schema_examples` for generated OpenAPI examples
+  `django_veo_admin_api.utils.schema_examples` for generated OpenAPI examples
   and choice-field schema/example handling.
 - Extracted shared Pydantic constraint helpers into
-  `django_ninja_admin.utils.schema_constraints`.
+  `django_veo_admin_api.utils.schema_constraints`.
 - Routed site pagination payload helpers through the shared `Pagination`
   schema used by changelist, history, and autocomplete responses.
 - Removed unused generic payload/response schema classes in favor of the
@@ -787,7 +869,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
 - Expanded the package typecheck gate to cover the base admin schema/form
   machinery, including subclass-provided admin attributes, dynamic Pydantic
   schemas, list-valued relation/choice types, and validator-derived bounds.
-- Simplified the package typecheck gate to run `ty check django_ninja_admin`
+- Simplified the package typecheck gate to run `ty check django_veo_admin_api`
   now that the full package passes.
 - Started the test-suite split by extracting admin-check coverage into
   `tests/test_checks.py` with a shared `make_site` fixture.
@@ -922,7 +1004,7 @@ pre-release, minor versions may still adjust public API and wire contracts.
   relations.
 - Expanded CI release-hardening coverage to include Python 3.13 and 3.14 lanes,
   non-experimental Django 6.0 checks, and matrix-pinned installed-project
-  sample smoke via `DJANGO_NINJA_ADMIN_SMOKE_DJANGO`.
+  sample smoke via `DJANGO_VEO_ADMIN_API_SMOKE_DJANGO`.
 - Added JSON-safe `deleted_objects` tree details to protected-delete and
   permission-needed delete error bodies for direct deletes and
   `delete_selected`.

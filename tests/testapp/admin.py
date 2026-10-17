@@ -3,7 +3,7 @@ from typing import Literal
 from ninja import Schema
 from pydantic import ConfigDict
 
-from django_ninja_admin import VERTICAL, ModelAdmin, SimpleListFilter, TabularInline, action, display, site
+from django_veo_admin_api import VERTICAL, ModelAdmin, SimpleListFilter, TabularInline, action, display, site
 from tests.testapp.models import Category, Product, ProductImage, Tag
 
 

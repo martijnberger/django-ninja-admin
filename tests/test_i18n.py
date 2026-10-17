@@ -1,3 +1,5 @@
+from importlib import import_module
+
 import pytest
 from django import forms
 from django.db import models
@@ -6,14 +8,20 @@ from django.test.utils import isolate_apps
 from pydantic import TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 
-import django_ninja_admin.admins.base as base_module
-import django_ninja_admin.admins.inline as inline_module
-import django_ninja_admin.admins.model as model_module
-import django_ninja_admin.changelist as changelist_module
-import django_ninja_admin.sites as sites_module
-from django_ninja_admin import ModelAdmin, NinjaAdminSite
-from django_ninja_admin.schemas import ErrorResponse
+import django_veo_admin_api.admins.base as base_module
+import django_veo_admin_api.admins.inline as inline_module
+import django_veo_admin_api.admins.model as model_module
+import django_veo_admin_api.changelist as changelist_module
+import django_veo_admin_api.core.site as core_site_module
+from django_veo_admin_api import ModelAdmin, NinjaAdminSite
+from django_veo_admin_api.core.operations import bulk as bulk_operations_module
+from django_veo_admin_api.core.operations import changelist as changelist_operations_module
+from django_veo_admin_api.core.operations import history as history_operations_module
+from django_veo_admin_api.core.operations import inlines as inline_operations_module
+from django_veo_admin_api.schemas import ErrorResponse
 from tests.testapp.models import Category
+
+sites_module = import_module("django_veo_admin_api.integrations.ninja.site")
 
 
 def _translate(message):
@@ -29,6 +37,8 @@ def _first_error(response, status):
 
 def test_core_site_error_messages_use_gettext(monkeypatch, admin_client, staff_client):
     monkeypatch.setattr(sites_module, "_", _translate)
+    monkeypatch.setattr(changelist_operations_module, "_", _translate)
+    monkeypatch.setattr(history_operations_module, "_", _translate)
 
     denied = staff_client().get("/admin-api/testapp/product")
     missing_app = admin_client.get("/admin-api/history", {"model": "product"})
@@ -44,20 +54,20 @@ def test_core_site_error_messages_use_gettext(monkeypatch, admin_client, staff_c
 
 
 def test_default_site_labels_use_gettext(monkeypatch, admin_client):
-    monkeypatch.setattr(sites_module, "_", _translate)
+    monkeypatch.setattr(core_site_module, "_", _translate)
 
     response = admin_client.get("/admin-api/context")
     fresh_site = NinjaAdminSite(name="translated_labels", auth=None, include_auth=False)
 
     assert response.status_code == 200
-    assert response.json()["site_title"] == "translated:Django Ninja site admin"
-    assert response.json()["site_header"] == "translated:Django Ninja administration"
-    assert fresh_site.api.title == "translated:Django Ninja administration"
+    assert response.json()["site_title"] == "translated:Django Veo Admin API"
+    assert response.json()["site_header"] == "translated:Django Veo administration"
+    assert fresh_site.api.title == "translated:Django Veo administration"
 
 
 @override_settings(ROOT_URLCONF="tests.custom_urls")
 def test_custom_site_labels_are_not_translated_by_package_gettext(monkeypatch, admin_client):
-    monkeypatch.setattr(sites_module, "_", _translate)
+    monkeypatch.setattr(core_site_module, "_", _translate)
 
     response = admin_client.get("/context-admin/context")
 
@@ -79,6 +89,8 @@ def test_changelist_error_messages_use_gettext(monkeypatch, admin_client):
 
 def test_mutation_helper_error_messages_use_gettext(monkeypatch, admin_client, sample):
     monkeypatch.setattr(sites_module, "_", _translate)
+    monkeypatch.setattr(bulk_operations_module, "_", _translate)
+    monkeypatch.setattr(inline_operations_module, "_", _translate)
 
     inline_response = admin_client.patch(
         f"/admin-api/testapp/product/{sample.pk}",

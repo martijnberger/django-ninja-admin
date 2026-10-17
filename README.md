@@ -1,12 +1,20 @@
-# Django Ninja Admin
+# Django Veo Admin API
 
-`django-ninja-admin` is a Ninja-native API surface for Django admin concepts.
-It exposes registered models, changelists, forms, actions, inlines, history,
-autocomplete, and view-on-site metadata for custom admin frontends.
+`django-veo-admin-api` is a typed Django admin engine with optional transport
+integrations. Its Django Ninja integration exposes registered models,
+changelists, forms, actions, inlines, history, autocomplete, and view-on-site
+metadata for custom admin frontends.
+
+Install the Ninja HTTP/OpenAPI integration explicitly:
+
+```bash
+python -m pip install 'django-veo-admin-api[ninja]'
+```
 
 ```python
 from django.urls import path
-from django_ninja_admin import ModelAdmin, site
+from django_veo_admin_api import ModelAdmin
+from django_veo_admin_api.integrations.ninja import site
 
 from shop.models import Product
 
@@ -23,10 +31,26 @@ urlpatterns = [
 ]
 ```
 
-This package intentionally uses Django Ninja and Pydantic instead of Django
-REST Framework or drf-spectacular.
+The core depends directly on Django and Pydantic. The optional HTTP/OpenAPI
+adapter intentionally uses Django Ninja instead of Django REST Framework or
+drf-spectacular.
 
-Supported versions are Python 3.12+ and Django 5.0+.
+Install the MCP integration independently when an MCP client should operate on
+the same permission, form, mutation, serialization, and audit semantics:
+
+```bash
+python -m pip install 'django-veo-admin-api[mcp]'
+```
+
+```python
+from django_veo_admin_api.core import CoreAdminSite
+from django_veo_admin_api.integrations.mcp import MCPAdminServer
+```
+
+The MCP adapter uses the official SDK's stateless Streamable HTTP transport;
+it calls core operations directly and never loops back through Ninja routes.
+
+Supported versions are Python 3.12–3.14 and Django 5.2 LTS, 6.0, and 6.1.
 
 ## Development Checks
 
@@ -42,11 +66,12 @@ just check
 just ci
 ```
 
-`just package-smoke` builds the wheel, installs it into a temporary target,
-imports the public API, and confirms the wheel metadata does not depend on DRF
-or drf-spectacular. `just sample-project-smoke` installs the built wheel into a
-temporary Django project, mounts `site.urls`, opens docs/OpenAPI, and exercises
-the registered model app list. `just postgres-test` expects PostgreSQL
+`just package-smoke` builds the wheel, installs its base profile into a clean
+environment, imports the core API without Ninja, and verifies the optional
+dependency metadata and missing-extra error. `just sample-project-smoke`
+installs the built wheel with `[ninja]` into a temporary Django project, mounts
+`site.urls`, opens docs/OpenAPI, and exercises the registered model app list.
+`just postgres-test` expects PostgreSQL
 connection env vars and is used by CI. `just test` and `just postgres-test`
 accept pytest selectors. `just ci` is an alias for the full local gate.
 
@@ -58,3 +83,5 @@ The MkDocs documentation site is configured by `mkdocs.yml`; run
 `just docs-build` to run a strict local site build.
 See [API Versioning And Deprecation](docs/versioning.md) for the OpenAPI
 contract review and release compatibility policy.
+See [MCP Integration](docs/mcp-integration.md) for tool names, verified-principal
+mapping, ASGI hosting, policy, security controls, and conformance checks.
