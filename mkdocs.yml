@@ -1,6 +1,6 @@
 site_name: Django Veo Admin API
 site_description: A typed Django admin engine with optional transport integrations.
-repo_url: https://github.com/martijnberger/django-veo-admin-api
+repo_url: https://github.com/martijnberger/django-ninja-admin
 docs_dir: docs
 strict: true
 

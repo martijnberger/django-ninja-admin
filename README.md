@@ -50,7 +50,7 @@ from django_veo_admin_api.integrations.mcp import MCPAdminServer
 The MCP adapter uses the official SDK's stateless Streamable HTTP transport;
 it calls core operations directly and never loops back through Ninja routes.
 
-Supported versions are Python 3.12+ and Django 5.0+.
+Supported versions are Python 3.12–3.14 and Django 5.2 LTS, 6.0, and 6.1.
 
 ## Development Checks
 

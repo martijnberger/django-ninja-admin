@@ -130,14 +130,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - django-label: "5.0"
-            django: ">=5.0,<5.1"
-            python-version: "3.12"
-            experimental: false
-          - django-label: "5.1"
-            django: ">=5.1,<5.2"
-            python-version: "3.12"
-            experimental: false
           - django-label: "5.2"
             django: ">=5.2,<5.3"
             python-version: "3.12"
@@ -146,6 +138,10 @@ jobs:
             django: ">=5.2,<5.3"
             python-version: "3.13"
             experimental: false
+          - django-label: "5.2"
+            django: ">=5.2,<5.3"
+            python-version: "3.14"
+            experimental: false
           - django-label: "6.0"
             django: ">=6.0,<6.1"
             python-version: "3.12"
@@ -156,6 +152,18 @@ jobs:
             experimental: false
           - django-label: "6.0"
             django: ">=6.0,<6.1"
+            python-version: "3.14"
+            experimental: false
+          - django-label: "6.1"
+            django: ">=6.1,<6.2"
+            python-version: "3.12"
+            experimental: false
+          - django-label: "6.1"
+            django: ">=6.1,<6.2"
+            python-version: "3.13"
+            experimental: false
+          - django-label: "6.1"
+            django: ">=6.1,<6.2"
             python-version: "3.14"
             experimental: false
 

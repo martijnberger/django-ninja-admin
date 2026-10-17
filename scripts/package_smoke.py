@@ -86,6 +86,7 @@ from django_veo_admin_api import (
 )
 from django_veo_admin_api.core.operations import AdminRequestContext, OperationResult
 from django_veo_admin_api.schemas import AdminSchema
+from django.core.management import get_commands
 
 assert "ninja" not in sys.modules
 assert ModelAdmin is not None
@@ -96,6 +97,7 @@ assert callable(display)
 assert AdminSchema.model_json_schema()["type"] == "object"
 assert AdminRequestContext is not None
 assert OperationResult is not None
+assert "migrate_legacy_admin" in get_commands()
 
 try:
     django_veo_admin_api.NinjaAdminSite

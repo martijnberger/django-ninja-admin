@@ -31,6 +31,6 @@ the Pydantic schemas behind it.
 ## Supported Runtime
 
 - Python 3.12 and newer.
-- Django 5.0 and newer, up to the package's declared dependency ceiling.
+- Django 5.2 LTS, 6.0, and 6.1, using the latest patch release of each series.
 - Pydantic v2 in the base package.
 - Django Ninja 1.6 when the `[ninja]` integration extra is installed.

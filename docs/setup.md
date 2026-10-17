@@ -1,6 +1,6 @@
 # Setup
 
-Install the package into a Django 5.0+ project and add the app so the admin log
+Install the package into a Django 5.2, 6.0, or 6.1 project and add the app so the admin log
 model migration is available:
 
 ```bash

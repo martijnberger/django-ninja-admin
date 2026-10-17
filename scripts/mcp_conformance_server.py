@@ -65,7 +65,7 @@ async def test_missing_capability(
     return sample.model_dump_json()
 
 
-adapter.server.add_tool(
+adapter._add_tool(
     test_missing_capability,
     name="test_missing_capability",
     description="Official conformance diagnostic for undeclared client capabilities.",

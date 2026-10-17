@@ -7,6 +7,12 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ## Unreleased
 
+### Changed
+
+- Supported Django versions are now 5.2 LTS, 6.0, and 6.1, tested across
+  Python 3.12–3.14. Removed unsupported Django 5.0/5.1 lanes.
+- Corrected repository/documentation links to the existing GitHub repository.
+
 ### Fixed
 
 - Applied MCP discovery permission and policy filters to both dictionary and

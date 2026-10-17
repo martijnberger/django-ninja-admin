@@ -79,7 +79,7 @@ behavior, or permission boundaries.
   inline constraints, and rollback after late failures.
 - Run `just postgres-test` for lookup, ordering, transaction, protected-delete,
   constraint, JSON-field, date/time, and facet/count behavior.
-- Review CI results across the supported Django 5.0+ and Python 3.12+ matrix,
+- Review CI results across Django 5.2/6.0/6.1 and Python 3.12/3.13/3.14,
   including installed-wheel sample-project smoke pinned to each matrix Django
   requirement.
 - Run `just openapi-diff <previous-openapi.json> <candidate-openapi.json>` when
@@ -139,7 +139,7 @@ behavior, or permission boundaries.
   the same semantics.
 - Changelist, filter, action, inline, delete, history, and form behavior cover
   common Django-admin edge cases.
-- The Django 5.0+ and database compatibility matrix is exercised in CI.
+- The Django 5.2/6.0/6.1 and database compatibility matrix is exercised in CI.
 - OpenAPI and MCP tool-manifest changes are guarded by snapshots and reviewed
   from installed profiles.
 - The base, Ninja, MCP, and all dependency profiles pass; the official MCP
