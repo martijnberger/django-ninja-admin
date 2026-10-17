@@ -81,7 +81,7 @@ jobs:
         run: just all-package-smoke
 
       - name: Select current supported optional dependencies
-        run: uv pip install --upgrade '.[all]'
+        run: uv pip install --upgrade --editable '.[all]'
 
       - name: Test current supported optional dependencies
         env:
