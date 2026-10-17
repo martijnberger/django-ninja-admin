@@ -21,7 +21,8 @@ classifiers = [
 ]
 dependencies = [
     "django>=5.2,<6.2",
-    "pydantic>=2,<3",
+    # 2.14 changes decimal JSON Schema; review both golden contracts before upgrading.
+    "pydantic>=2,<2.14",
 ]
 
 [project.optional-dependencies]

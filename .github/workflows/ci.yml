@@ -80,6 +80,14 @@ jobs:
           DJANGO_VEO_ADMIN_API_WHEEL: dist
         run: just all-package-smoke
 
+      - name: Select current supported optional dependencies
+        run: uv pip install --upgrade '.[all]'
+
+      - name: Test current supported optional dependencies
+        env:
+          UV_NO_SYNC: "1"
+        run: just test
+
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v4
         with:

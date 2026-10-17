@@ -79,7 +79,10 @@ adapter = MCPAdminServer(
 ```
 
 `ProjectTokenVerifier.verify_token()` must validate the bearer token and return
-an SDK `AccessToken`. Map its verified `subject` or claims to an active Django
+an SDK `AccessToken`. Validate its issuer, expiry, and resource/audience; reject
+tokens issued for another service. SDK versions exposing
+`AuthSettings.validate_token_resource` can additionally enable that check
+explicitly. Map the verified `subject` or claims to an active Django
 user in `request_factory`; do not reuse the raw token as a database lookup key
 or log it.
 

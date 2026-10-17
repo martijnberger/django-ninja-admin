@@ -34,12 +34,16 @@ class TokenVerifier:
                 client_id="http-tests",
                 subject=str(user.pk),
                 scopes=["admin:use"],
+                resource="http://127.0.0.1:8000/mcp",
                 expires_at=int(time.time()) + 3600,
             ),
         }
 
     async def verify_token(self, token):
-        return self.tokens.get(token)
+        verified = self.tokens.get(token)
+        if verified is not None and verified.resource != "http://127.0.0.1:8000/mcp":
+            return None
+        return verified
 
 
 def make_adapter(user, admin_class=ModelAdmin, *, policy=None):
@@ -55,16 +59,19 @@ def make_adapter(user, admin_class=ModelAdmin, *, policy=None):
         request.LANGUAGE_CODE = "en"
         return request
 
+    auth_options = {
+        "issuer_url": "https://issuer.example.com/",
+        "resource_server_url": "http://127.0.0.1:8000/mcp",
+        "required_scopes": ["admin:use"],
+    }
+    if "validate_token_resource" in AuthSettings.model_fields:
+        auth_options["validate_token_resource"] = True
     adapter = MCPAdminServer(
         site,
         request_factory,
         policy=policy,
         token_verifier=verifier,
-        auth=AuthSettings(
-            issuer_url="https://issuer.example.com/",
-            resource_server_url="http://127.0.0.1:8000/mcp",
-            required_scopes=["admin:use"],
-        ),
+        auth=AuthSettings(**auth_options),
     )
     return adapter, verifier
 
@@ -124,13 +131,16 @@ def test_http_discovery_filters_permissions_policy_and_rechecks_active_user():
 
 @pytest.mark.parametrize(
     ("token", "expected_status"),
-    [(None, 401), ("invalid", 401), ("expired", 401), ("unscoped", 403)],
+    [(None, 401), ("invalid", 401), ("expired", 401), ("wrong-resource", 401), ("unscoped", 403)],
 )
 def test_http_bearer_auth_rejects_missing_invalid_expired_and_unscoped_tokens(token, expected_status):
     user = get_user_model().objects.create_superuser("http-auth-admin")
     adapter, verifier = make_adapter(user)
     verifier.tokens["expired"] = verifier.tokens["valid"].model_copy(update={"expires_at": int(time.time()) - 60})
     verifier.tokens["unscoped"] = verifier.tokens["valid"].model_copy(update={"scopes": []})
+    verifier.tokens["wrong-resource"] = verifier.tokens["valid"].model_copy(
+        update={"resource": "https://another-service.example.com/mcp"}
+    )
     with TestClient(adapter.streamable_http_app()) as client:
         response = rpc(client, "tools/list", token=token, headers={"x-user-id": str(user.pk)})
     assert response.status_code == expected_status

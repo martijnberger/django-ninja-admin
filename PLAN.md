@@ -1,5 +1,32 @@
 # Django Veo Admin API — Plan
 
+## Release Reassessment — 2026-10-17
+
+The transport split is implemented. Release reassessment found and corrected
+three gaps that the original in-memory MCP tests missed: HTTP discovery
+filtering of SDK dictionary results, add-only form permissions, and custom
+mutation output schemas. Deployed HTTP tests now cover those paths plus bearer
+scopes, expiry, revocation, resource/audience validation, output rollback, and
+database connection lifetime. Validation and serialization happen before the
+outer write transaction commits.
+
+The package rename has an explicit PostgreSQL/SQLite adoption command,
+`migrate_legacy_admin`, with dry-run behavior and conflict refusal. Real legacy
+database tests preserve audit rows, content-type IDs, user/group permission
+assignments, foreign keys, sequences, and migration history across both known
+legacy migration states. Follow `docs/migration-ninja-extra.md` before ordinary
+`migrate` on existing installations.
+
+Supported Django versions are 5.2 LTS, 6.0, and 6.1 on Python 3.12–3.14. Both
+locked and current-supported dependency profiles are tested. Pydantic 2.14 is
+excluded pending explicit review of its decimal JSON Schema changes against
+the golden artifacts.
+
+The changes are under review in
+[PR #1](https://github.com/martijnberger/django-ninja-admin/pull/1). Release
+readiness requires green checks on its final revision and maintainer review.
+Merge, tagging, and publication remain separate release operations.
+
 ## Direction
 
 Commit to a transport split: `django-veo-admin-api` becomes a Django-admin engine

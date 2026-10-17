@@ -99,6 +99,13 @@ validation errors.
 
 ## Release Contract
 
+The core currently requires Pydantic below 2.14. Pydantic 2.14 changes the
+generated decimal schemas, including their precision patterns. Adopting that
+release requires explicit review of both golden artifacts; fresh installs
+must preserve the same contracts as the locked development environment.
+The distribution CI job tests the full suite against current dependencies
+within the package's declared bounds, in addition to the locked version matrix.
+
 Before beta, wire shapes may still change when needed to finish the split.
 After Phase 4, follow the [API versioning policy](versioning.md) for removed
 fields or tools, renamed components, changed required fields, changed auth,

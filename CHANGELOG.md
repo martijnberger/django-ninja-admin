@@ -13,6 +13,8 @@ pre-release, minor versions may still adjust public API and wire contracts.
   Python 3.12–3.14. Removed unsupported Django 5.0/5.1 lanes.
 - Corrected repository/documentation links to the existing GitHub repository.
 - Updated distribution-validation tooling for current core metadata versions.
+- Bounded Pydantic below 2.14 pending review of its decimal-schema changes,
+  and added full-suite CI coverage for current supported optional dependencies.
 
 ### Fixed
 
