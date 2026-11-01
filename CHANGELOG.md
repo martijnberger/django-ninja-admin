@@ -17,6 +17,13 @@ pre-release, minor versions may still adjust public API and wire contracts.
 
 ### Fixed
 
+- Applied inline `get_queryset()` scoping to form rows and inline mutations.
+  Excluded children cannot be changed or deleted, and rejected mutations roll
+  back parent changes. With the default inline queryset, deleting existing
+  children now requires inline view or change permission as well as delete
+  permission.
+- Removed duplicate changelist rows caused by many-to-many and reverse-relation
+  filters, keeping pagination, facet counts, and action querysets consistent.
 - Translated the default success message for custom actions that return no
   response body.
 - Translated the blank choice label emitted for radio-backed admin form fields.

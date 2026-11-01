@@ -1,6 +1,8 @@
 import json
 
+import pytest
 from django import forms
+from django.forms.models import BaseInlineFormSet
 from django.test import RequestFactory, override_settings
 
 from django_ninja_admin import NinjaAdminSite, TabularInline
@@ -24,6 +26,129 @@ RENDERED_FIELD_ATTR_KEYS = {
 
 def assert_no_rendered_field_attrs(attrs):
     assert RENDERED_FIELD_ATTR_KEYS.isdisjoint(attrs)
+
+
+@pytest.fixture
+def scoped_inline_queryset(monkeypatch):
+    from tests.testapp.admin import ProductImageInline
+
+    original_get_queryset = ProductImageInline.get_queryset
+
+    def get_queryset(self, request):
+        return original_get_queryset(self, request).exclude(
+            title=request.headers.get("X-Hidden-Inline-Title", "Hidden")
+        )
+
+    monkeypatch.setattr(ProductImageInline, "get_queryset", get_queryset)
+    return {"HTTP_X_HIDDEN_INLINE_TITLE": "Hidden"}
+
+
+def test_inline_queryset_scopes_form_rows_and_counts(admin_client, sample, scoped_inline_queryset):
+    included = sample.images.get()
+    hidden = ProductImage.objects.create(product=sample, title="Hidden")
+    other_parent = Product.objects.exclude(pk=sample.pk).get()
+    ProductImage.objects.create(product=other_parent, title="Other parent")
+
+    response = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form", **scoped_inline_queryset)
+
+    assert response.status_code == 200
+    inline = next(item for item in response.json()["inlines"] if item["model"] == "testapp.productimage")
+    assert inline["initial_form_count"] == 1
+    assert inline["total_form_count"] == 2
+    assert [row.get("object_id") for row in inline["formset_row_metadata"]] == [str(included.pk), None]
+    assert [
+        next(field for field in row if field["name"] == "title")["attrs"].get("value") for row in inline["formset"]
+    ] == ["Front", None]
+    management_fields = {field["name"]: field for field in inline["management_form"]}
+    assert management_fields["INITIAL_FORMS"]["attrs"]["value"] == 1
+    assert management_fields["TOTAL_FORMS"]["attrs"]["value"] == 2
+
+    other_scope = admin_client.get(f"/admin-api/testapp/product/{sample.pk}/form", HTTP_X_HIDDEN_INLINE_TITLE="Front")
+
+    assert other_scope.status_code == 200
+    other_inline = next(item for item in other_scope.json()["inlines"] if item["model"] == "testapp.productimage")
+    assert [row.get("object_id") for row in other_inline["formset_row_metadata"]] == [str(hidden.pk), None]
+
+    add_response = admin_client.get("/admin-api/testapp/product/form", **scoped_inline_queryset)
+
+    assert add_response.status_code == 200
+    add_inline = next(item for item in add_response.json()["inlines"] if item["model"] == "testapp.productimage")
+    assert add_inline["initial_form_count"] == 0
+    assert add_inline["total_form_count"] == 1
+
+
+@pytest.mark.parametrize("operation", ["change", "delete"])
+@pytest.mark.parametrize("target", ["hidden", "other_parent"])
+def test_inline_queryset_rejects_out_of_scope_mutations(
+    admin_client, sample, scoped_inline_queryset, operation, target
+):
+    included = sample.images.get()
+    hidden = ProductImage.objects.create(product=sample, title="Hidden")
+    other_parent = Product.objects.exclude(pk=sample.pk).get()
+    other = ProductImage.objects.create(product=other_parent, title="Other parent")
+    image = hidden if target == "hidden" else other
+    rows = [{"pk": image.pk, "title": "Changed"}] if operation == "change" else [image.pk]
+
+    response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {"name": "Changed parent"}, "inlines": {"testapp.productimage": {operation: rows}}},
+        content_type="application/json",
+        **scoped_inline_queryset,
+    )
+
+    assert response.status_code == 400
+    assert response.json()["errors"] == [
+        {"message": "Unknown inline object.", "param": f"inlines.testapp.productimage.{operation}.0.pk"}
+    ]
+    sample.refresh_from_db()
+    hidden.refresh_from_db()
+    other.refresh_from_db()
+    included.refresh_from_db()
+    assert sample.name == "Alpha"
+    assert hidden.title == "Hidden"
+    assert other.title == "Other parent"
+    assert included.title == "Front"
+    assert not LogEntry.objects.filter(object_id=str(sample.pk), action_flag=CHANGE).exists()
+
+
+@pytest.mark.parametrize("operation", ["change", "delete"])
+def test_inline_queryset_allows_in_scope_mutations_with_custom_formset(
+    admin_client, sample, scoped_inline_queryset, monkeypatch, operation
+):
+    from tests.testapp.admin import ProductImageInline
+
+    class ScopedInlineFormSet(BaseInlineFormSet):
+        def clean(self):
+            super().clean()
+            if any(form.instance.title == "Hidden" for form in self.initial_forms):
+                raise forms.ValidationError("Hidden rows reached formset validation.")
+
+    monkeypatch.setattr(ProductImageInline, "formset", ScopedInlineFormSet)
+    included = sample.images.get()
+    hidden = ProductImage.objects.create(product=sample, title="Hidden")
+    rows = [{"pk": included.pk, "title": "Changed"}] if operation == "change" else [included.pk]
+
+    response = admin_client.patch(
+        f"/admin-api/testapp/product/{sample.pk}",
+        data={"data": {"name": "Changed parent"}, "inlines": {"testapp.productimage": {operation: rows}}},
+        content_type="application/json",
+        **scoped_inline_queryset,
+    )
+
+    assert response.status_code == 200
+    result = response.json()["inlines"]["testapp.productimage"][operation]
+    if operation == "change":
+        included.refresh_from_db()
+        assert included.title == "Changed"
+        assert result[0]["id"] == included.pk
+        assert result[0]["title"] == "Changed"
+    else:
+        assert not ProductImage.objects.filter(pk=included.pk).exists()
+        assert result == [included.pk]
+    sample.refresh_from_db()
+    hidden.refresh_from_db()
+    assert sample.name == "Changed parent"
+    assert hidden.title == "Hidden"
 
 
 def test_form_description_uses_inline_count_hooks(admin_client, sample, monkeypatch):
@@ -433,12 +558,25 @@ def test_manual_through_many_to_many_inline_enforces_through_model_permissions(s
     assert ArticleLabel.objects.filter(pk=removed.pk).exists()
 
     delete_only_client = staff_client("change_article", "delete_articlelabel")
-    delete_allowed = delete_only_client.patch(
+    delete_hidden = delete_only_client.patch(
         f"/through-inline-admin/testapp/article/{article.pk}",
         data={"data": {}, "inlines": {"testapp.articlelabel": {"delete": [removed.pk]}}},
         content_type="application/json",
     )
-    change_denied = delete_only_client.patch(
+
+    assert delete_hidden.status_code == 400
+    assert delete_hidden.json()["errors"] == [
+        {"message": "Unknown inline object.", "param": "inlines.testapp.articlelabel.delete.0.pk"}
+    ]
+    assert ArticleLabel.objects.filter(pk=removed.pk).exists()
+
+    view_delete_client = staff_client("change_article", "view_articlelabel", "delete_articlelabel")
+    delete_allowed = view_delete_client.patch(
+        f"/through-inline-admin/testapp/article/{article.pk}",
+        data={"data": {}, "inlines": {"testapp.articlelabel": {"delete": [removed.pk]}}},
+        content_type="application/json",
+    )
+    change_denied = view_delete_client.patch(
         f"/through-inline-admin/testapp/article/{article.pk}",
         data={
             "data": {},

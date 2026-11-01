@@ -60,6 +60,14 @@ Object-level hooks are used for detail, mutation, delete, actions, inline,
 history, autocomplete, and changelist row metadata where the route has an
 object to check.
 
+Inline `get_queryset(request)` controls which existing children are exposed and
+eligible for change or deletion. The API restricts that queryset to the current
+parent for form metadata and formset processing. Excluded or other-parent child
+IDs produce an `Unknown inline object.` validation error; any parent changes in
+the same request are rolled back. Operation-specific permissions still apply.
+The default inline queryset requires view or change permission, so delete
+permission alone does not make existing children eligible for deletion.
+
 ## Save, Delete, And Response Hooks
 
 - `save_form(request, form, change)`

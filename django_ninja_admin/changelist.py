@@ -6,6 +6,7 @@ from contextlib import suppress
 from datetime import date, datetime, timedelta
 
 from django.conf import settings
+from django.contrib.admin.utils import lookup_spawns_duplicates
 from django.core.exceptions import FieldDoesNotExist, FieldError, PermissionDenied, ValidationError
 from django.core.paginator import InvalidPage
 from django.db import models
@@ -93,6 +94,17 @@ class ChangeList:
     def expected_special_params(self, filter_specs):
         return IGNORED_LOOKUP_PARAMS | self.expected_filter_params(filter_specs) | set(self.date_hierarchy_param_names)
 
+    def filters_may_have_duplicates(self, params, filter_specs):
+        for filter_spec in filter_specs:
+            field_path = getattr(filter_spec, "field_path", None)
+            if filter_spec.used_parameters and field_path and lookup_spawns_duplicates(self.model._meta, field_path):
+                return True
+        special_params = self.expected_special_params(filter_specs)
+        return any(
+            values and key not in special_params and lookup_spawns_duplicates(self.model._meta, key)
+            for key, values in self.remaining_lookup_items(params)
+        )
+
     def get_to_field(self):
         to_field = self.params.get("_to_field")
         for raw_to_field in self.param_values("_to_field"):
@@ -140,6 +152,8 @@ class ChangeList:
             except (FieldError, TypeError, ValueError, ValidationError) as exc:
                 raise self.lookup_value_error(filter_spec.used_parameters or {}, fallback_param="filters") from exc
         queryset = self.apply_remaining_lookup_params(queryset, params, filter_specs)
+        if self.filters_may_have_duplicates(params, filter_specs):
+            queryset = queryset.distinct()
         if apply_date_hierarchy:
             queryset = self.apply_date_hierarchy(queryset, params)
         queryset = self.apply_search(queryset, params)

@@ -141,11 +141,12 @@ def _normalize_response_descriptions(schema):
             _normalize_response_descriptions(child)
 
 
-def _inline_remote_accessor_name(foreign_key):
-    remote_field = foreign_key.remote_field
-    if hasattr(remote_field, "get_accessor_name"):
-        return remote_field.get_accessor_name()
-    return remote_field.accessor_name
+def _inline_queryset(request, inline, obj):
+    queryset = inline.get_queryset(request)
+    if obj is None or obj.pk is None:
+        return queryset.none()
+    fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
+    return queryset.filter(**{fk.name: obj})
 
 
 class NinjaAdminSite:
@@ -1935,14 +1936,7 @@ class NinjaAdminSite:
         for inline in model_admin.get_inline_instances(request, obj):
             count_options = inline.get_formset_count_options(request, obj)
             formset_class = inline.get_formset(request, obj, change=obj is not None, count_options=count_options)
-            queryset = inline.model.objects.none()
-            if obj is not None:
-                fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
-                related_name = _inline_remote_accessor_name(fk)
-                try:
-                    queryset = getattr(obj, related_name).all()
-                except AttributeError:
-                    queryset = inline.model.objects.none()
+            queryset = _inline_queryset(request, inline, obj)
             formset = formset_class(instance=obj, queryset=queryset)
             initial_form_count = formset.initial_form_count()
             fieldsets = inline.get_fieldsets(request, obj)
@@ -2454,20 +2448,16 @@ class NinjaAdminSite:
                     {inline_id: [{"message": _("Unknown inline."), "param": "non_field_errors"}]}
                 )
             inline = inline_by_id[inline_id]
-            fk = _get_foreign_key(inline.parent_model, inline.model, fk_name=inline.fk_name)
-            related_name = _inline_remote_accessor_name(fk)
-            related_manager = getattr(obj, related_name, None)
             results[inline_id] = self._process_inline_formset(
                 request,
                 inline,
                 obj,
                 operations,
-                related_manager,
                 change=change,
             )
         return results
 
-    def _process_inline_formset(self, request, inline, obj, operations, related_manager, *, change):
+    def _process_inline_formset(self, request, inline, obj, operations, *, change):
         allowed_operations = {"add", "change", "delete"}
         unknown_operations = set(operations) - allowed_operations
         if unknown_operations:
@@ -2526,7 +2516,7 @@ class NinjaAdminSite:
             operation="change",
         )
 
-        queryset = related_manager.all() if related_manager is not None else inline.model.objects.none()
+        queryset = _inline_queryset(request, inline, obj)
         existing_instances = list(queryset)
         existing_by_pk = {str(instance.pk): instance for instance in existing_instances}
         changes_by_pk = {}

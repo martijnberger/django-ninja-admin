@@ -80,6 +80,10 @@ types instead of hand-building query strings. History and autocomplete expose
 bounded `per_page` parameters; changelist uses `pp` and preserves Django
 admin's `all`/show-all behavior.
 
+Filters spanning many-to-many or reverse relations return each matching object
+once, even when multiple related rows match. Pagination and facet counts use
+those unique objects; actions consume the same deduplicated filtered queryset.
+
 ## Changelist Sorting
 
 Changelist column metadata includes sort state plus ready-to-use query strings.

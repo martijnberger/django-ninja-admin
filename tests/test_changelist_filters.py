@@ -676,6 +676,81 @@ def test_field_list_filters_or_repeated_values_and_validate_each(admin_client, s
     ]
 
 
+@pytest.mark.parametrize(
+    ("configured_filter", "lookup"),
+    [
+        pytest.param(True, "tags__id__exact", id="configured"),
+        pytest.param(True, "tags", id="configured-legacy"),
+        pytest.param(False, "tags__id__exact", id="direct-exact"),
+        pytest.param(False, "tags__id__in", id="direct-in"),
+    ],
+)
+def test_changelist_deduplicates_many_to_many_filters(admin_client, sample, monkeypatch, configured_filter, lookup):
+    product_admin = site.get_model_admin(Product)
+    if configured_filter:
+        monkeypatch.setattr(product_admin, "list_filter", (*product_admin.list_filter, "tags"))
+    tag_ids = list(sample.tags.order_by("pk").values_list("pk", flat=True))
+    params = {lookup: tag_ids, "_facets": "1"}
+
+    response = admin_client.get("/admin-api/testapp/product", params)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [row["id"] for row in body["rows"]] == [sample.pk]
+    assert body["config"]["result_count"] == 1
+    assert body["config"]["full_count"] == 2
+    stock_filter = next(item for item in body["config"]["filters"] if item["parameter_name"] == "stock_status__exact")
+    counts = {choice["display"]: choice["count"] for choice in stock_filter["choices"]}
+    assert counts == {"All": 1, "In Stock": 1, "Out of Stock": 0}
+
+    paginated = admin_client.get("/admin-api/testapp/product", {**params, "pp": "1"})
+
+    assert paginated.status_code == 200
+    paginated_body = paginated.json()
+    assert [row["id"] for row in paginated_body["rows"]] == [sample.pk]
+    assert paginated_body["config"]["result_count"] == 1
+    assert paginated_body["config"]["page_count"] == 1
+    assert paginated_body["config"]["pagination"]["count"] == 1
+    assert paginated_body["config"]["pagination"]["has_next"] is False
+    assert paginated_body["config"]["pagination_required"] is False
+
+
+@pytest.mark.parametrize("configured_filter", [True, False], ids=["configured", "direct"])
+def test_changelist_deduplicates_reverse_relation_filters(admin_client, sample, monkeypatch, configured_filter):
+    product_admin = site.get_model_admin(Product)
+    ProductImage.objects.create(product=sample, title="Back")
+    if configured_filter:
+        monkeypatch.setattr(product_admin, "list_filter", ("images__title",))
+        params = {"images__title__exact": ["Front", "Back"]}
+    else:
+        params = {"images__id__in": list(sample.images.values_list("pk", flat=True))}
+
+    response = admin_client.get("/admin-api/testapp/product", params)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [row["id"] for row in body["rows"]] == [sample.pk]
+    assert body["config"]["result_count"] == 1
+
+
+@pytest.mark.parametrize("configured_filter", [True, False], ids=["configured", "direct"])
+def test_actions_receive_unique_many_to_many_filtered_rows(admin_client, sample, monkeypatch, configured_filter):
+    product_admin = site.get_model_admin(Product)
+    if configured_filter:
+        monkeypatch.setattr(product_admin, "list_filter", (*product_admin.list_filter, "tags"))
+    tag_ids = list(sample.tags.order_by("pk").values_list("pk", flat=True))
+    query_string = "&".join(f"tags__id__exact={tag_id}" for tag_id in tag_ids)
+
+    response = admin_client.post(
+        f"/admin-api/testapp/product/actions?{query_string}",
+        data={"action": "report_names", "selected_ids": [], "select_across": True},
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"names": ["Alpha"]}
+
+
 def test_changelist_direct_lookup_params_prepare_in_and_isnull_values(admin_client, sample):
     beta = Product.objects.get(name="Beta")
     Product.objects.filter(pk=sample.pk).update(condition="new")
